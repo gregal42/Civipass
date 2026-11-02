@@ -1,0 +1,67 @@
+services:
+    saas_civipass_nginx:
+            extends:
+                file: "common-services.yaml"
+                service: "saas_civipass_nginx"
+            restart: "no"
+            networks:
+                - "cws"
+                - "reverse_proxy"
+            labels:
+                - "traefik.http.routers.saas_civipass_nginx.rule=HostRegexp(`civipass.cws.user.localhost`)"
+
+    saas_civipass_php-fpm:
+        extends:
+            file: "common-services.yaml"
+            service: "saas_civipass_php-fpm"
+        restart: "no"
+        networks:
+            - "cws"
+            - "reverse_proxy"
+        volumes:
+            - "../php-fpm/php-fpm.override.conf:/usr/local/etc/php-fpm.d/www.override.conf"
+
+    saas_civipass_mysql:
+        extends:
+            file: "common-services.yaml"
+            service: "saas_civipass_mysql"
+        image: "arm64v8/mysql:8.4"
+        command: mysqld --mysql-native-password=ON
+        restart: "no"
+        networks:
+            - "cws"
+            - "reverse_proxy"
+        labels:
+            - "traefik.http.routers.saas_civipass_mysql.rule=HostRegexp(`mysql-civipass.cws.user.localhost`)"
+
+    saas_civipass_pma:
+        extends:
+            file: "common-services.yaml"
+            service: "saas_civipass_pma"
+        image: "phpmyadmin:latest"
+        restart: "no"
+        environment:
+            UPLOAD_LIMIT: 1G
+        networks:
+            - "cws"
+            - "reverse_proxy"
+        labels:
+            - "traefik.http.routers.saas_civipass_pma.rule=HostRegexp(`pma-civipass.cws.user.localhost`)"
+
+    saas_civipass_mailcatcher:
+        extends:
+            file: "common-services.yaml"
+            service: "saas_civipass_mailcatcher"
+        restart: "no"
+        networks:
+            - "cws"
+            - "reverse_proxy"
+        labels:
+            - "traefik.http.routers.saas_civipass_mailcatcher.rule=HostRegexp(`mail-civipass.cws.user.localhost`)"
+            - "traefik.http.services.saas_civipass_mailcatcher.loadbalancer.server.port=1080"
+
+networks:
+    cws:
+        driver: bridge
+    reverse_proxy:
+        external: true

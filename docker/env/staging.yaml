@@ -1,0 +1,75 @@
+version: '2.1'
+
+services:
+    saas_civipass_nginx:
+        restart: "always"
+        networks:
+            - "cws"
+            - "reverse_proxy"
+        extends:
+            file: "common-services.yaml"
+            service: "saas_civipass_nginx"
+        labels:
+            - "traefik.port=80"
+            - "traefik.docker.network=reverse_proxy"
+            - "traefik.frontend.passHostHeader=true"
+            - "traefik.backend.loadbalancer.sticky=true"
+            - "traefik.frontend.rule=Host:civipass.cws.cws-studio.com"
+
+    saas_civipass_php-fpm:
+        restart: "always"
+        extends:
+            file: "common-services.yaml"
+            service: "saas_civipass_php-fpm"
+        networks:
+            - "cws"
+        labels:
+            - "traefik.enable=false"
+
+    saas_civipass_mysql:
+        extends:
+            file: "common-services.yaml"
+            service: "saas_civipass_mysql"
+        volumes:
+            - "/srv/cws-studio/cws/blog-skeleton/db/var/lib/mysql:/var/lib/mysql"
+        networks:
+            - "cws"
+        labels:
+            - "traefik.enable=false"
+            - "traefik.frontend.rule=Host:mysql.civipass.cws.cws-studio.com"
+
+    saas_civipass_pma:
+        extends:
+            file: "common-services.yaml"
+            service: "saas_civipass_pma"
+        networks:
+            - "reverse_proxy"
+            - "cws"
+        environment:
+            UPLOAD_LIMIT: 300M
+        labels:
+            - "traefik.port=80"
+            - "traefik.docker.network=reverse_proxy"
+            - "traefik.frontend.passHostHeader=true"
+            - "traefik.backend.loadbalancer.sticky=true"
+            - "traefik.frontend.rule=Host:pma.civipass.cws.cws-studio.com"
+
+    saas_civipass_mailcatcher:
+        extends:
+            file: "common-services.yaml"
+            service: "saas_civipass_mailcatcher"
+        networks:
+            - "reverse_proxy"
+            - "cws"
+        labels:
+            - "traefik.port=1080"
+            - "traefik.docker.network=reverse_proxy"
+            - "traefik.frontend.passHostHeader=true"
+            - "traefik.backend.loadbalancer.sticky=true"
+            - "traefik.frontend.rule=Host:mail.civipass.cws.cws-studio.com"
+
+networks:
+    cws:
+        driver: bridge
+    reverse_proxy:
+        external: true

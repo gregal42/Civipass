@@ -1,0 +1,91 @@
+version: "3.6"
+
+services:
+    saas_civipass_nginx:
+        container_name: "saas_civipass_nginx"
+        build: "../nginx"
+        restart: "always"
+        volumes:
+            - "../../:/var/www/html:delegated"
+        networks:
+            - "cws"
+            - "reverse_proxy"
+        environment:
+            TZ: "Europe/Paris"
+            PHP_CONTAINER_NAME: "saas_civipass_php-fpm"
+        labels:
+            - "traefik.port=80"
+            - "traefik.docker.network=reverse_proxy"
+            - "traefik.frontend.passHostHeader=true"
+            - "traefik.backend.loadbalancer.sticky=true"
+
+    saas_civipass_php-fpm:
+        container_name: "saas_civipass_php-fpm"
+        build: "../php-fpm"
+        restart: "always"
+        volumes:
+            - "../../:/var/www/html:delegated"
+        networks:
+            - "cws"
+        environment:
+            TZ: "Europe/Paris"
+        labels:
+            - "traefik.enable=false"
+
+    saas_civipass_mysql:
+        container_name: "saas_civipass_mysql"
+        image: "mysql:8.4"
+        restart: "always"
+        healthcheck:
+            test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+            interval: "1s"
+            timeout: "20s"
+            retries: 10
+        networks:
+            - "cws"
+        environment:
+            TZ: 'Europe/Paris'
+            MYSQL_ROOT_PASSWORD: "root"
+            MYSQL_DATABASE: "blog"
+            MYSQL_USER: "admin"
+            MYSQL_PASSWORD: "admin"
+        ports:
+            - "0:3306"
+        labels:
+            - "traefik.port=3306"
+            - "traefik.docker.network=reverse_proxy"
+            - "traefik.frontend.passHostHeader=true"
+            - "traefik.backend.loadbalancer.sticky=true"
+
+    saas_civipass_pma:
+        container_name: "saas_civipass_pma"
+        image: "phpmyadmin/phpmyadmin"
+        restart: "always"
+        networks:
+            - "cws"
+            - "reverse_proxy"
+        environment:
+            TZ: 'Europe/Paris'
+            PMA_HOST: "saas_civipass_mysql"
+            PMA_USER: "root"
+            PMA_PASSWORD: "root"
+        labels:
+            - "traefik.port=80"
+            - "traefik.docker.network=reverse_proxy"
+            - "traefik.frontend.passHostHeader=true"
+            - "traefik.backend.loadbalancer.sticky=true"
+
+    saas_civipass_mailcatcher:
+        container_name: "saas_civipass_mailcatcher"
+        image: "schickling/mailcatcher"
+        restart: "always"
+        networks:
+            - "cws"
+            - "reverse_proxy"
+        environment:
+            TZ: "Europe/Paris"
+        labels:
+            - "traefik.port=1080"
+            - "traefik.docker.network=reverse_proxy"
+            - "traefik.frontend.passHostHeader=true"
+            - "traefik.backend.loadbalancer.sticky=true"

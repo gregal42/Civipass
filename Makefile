@@ -1,0 +1,117 @@
+# -----------------------------------------------------------------------------------------------------------
+# Variables
+# -----------------------------------------------------------------------------------------------------------
+export ARCH := $(shell uname -m)
+export CONFIGURATION_DOCKER_DEV_CLASSIC = docker/env/development.yaml
+export CONFIGURATION_DOCKER_DEV_APPLE_CHIP = docker/env/development_apple_chip.yaml
+export CONFIGURATION_DOCKER_DEV = $(CONFIGURATION_DOCKER_DEV_CLASSIC)
+export DOCKER_PHP_CONTAINER_NAME = saas_civipass_php-fpm
+export STEP = "\\n\\r**************************************************\\n"
+
+# -----------------------------------------------------------------------------------------------------------
+# Check if user's machine is an apple ship
+# -----------------------------------------------------------------------------------------------------------
+ifeq ($(ARCH),arm64)
+	CONFIGURATION_DOCKER_DEV = $(CONFIGURATION_DOCKER_DEV_APPLE_CHIP)
+endif
+
+# -----------------------------------------------------------------------------------------------------------
+# Helpers
+# -----------------------------------------------------------------------------------------------------------
+help:
+	@echo "-- build: build the docker images required to run this project";
+	@echo "-- build-update: same as build, but updates images before building";
+	@echo "-- up: starts the project";
+	@echo "-- stop: stops the project";
+	@echo "-- install: installs the project (to run the first time you wan to launch the project)";
+	@echo "-- update: updates the project dependencies and DB (to run each time you pull the project)";
+	@echo "-- reset-db: resets the db";
+	@echo "-- fixture: installs the fixtures";
+	@echo "-- remove: stops and removes containers used for this project (can generate data loss)";
+	@echo "-- cli: enters PHP container CLI";
+	@echo "-- cc: clears and warms up project cache (dev env)";
+	@echo "-- logs: displays real time logs of containers used for this project";
+	@echo "-- get-url: display the url of the project";
+
+# -----------------------------------------------------------------------------------------------------------
+# Commands
+# -----------------------------------------------------------------------------------------------------------
+base:
+	@echo "$(STEP) Starting Docker... $(STEP)"
+	@until docker ps > /dev/null 2>&1; do sleep 1; done;
+	@echo "$(STEP) Starting Traefik reverse proxy... $(STEP)"
+	@docker ps | grep traefik > /dev/null || docker ps -a | grep traefik > /dev/null && docker start traefik > /dev/null;
+	@echo "$(STEP) Copying parameter files... $(STEP)"
+	@if [ ! -f $(CONFIGURATION_DOCKER_DEV) ]; then cp $(CONFIGURATION_DOCKER_DEV).dist $(CONFIGURATION_DOCKER_DEV); fi
+
+build-update: base
+	@echo "$(STEP) Pulling images... $(STEP)";
+	@docker-compose -f $(CONFIGURATION_DOCKER_DEV) pull;
+	@echo "$(STEP) Building images... $(STEP)";
+	@docker-compose -f $(CONFIGURATION_DOCKER_DEV) build --pull;
+
+build: base
+	@echo "$(STEP) Building images... $(STEP)";
+	@docker-compose -f $(CONFIGURATION_DOCKER_DEV) build;
+	@echo "$(STEP) Finished! $(STEP)";
+
+configure-project:
+	@if [ ! -f $(CONFIGURATION_DOCKER_DEV) ]; then cp $(CONFIGURATION_DOCKER_DEV).dist $(CONFIGURATION_DOCKER_DEV) && \
+        bash -c 'CURRENT_USER=$$(whoami) && echo "$$(tput bold)[?] What is your development URL? ("$$CURRENT_USER".localhost)$$(tput sgr0)" \
+        && read url && url=$${url:-"$$CURRENT_USER".localhost} && sed -i.bak s/user.localhost/$$url/g $(CONFIGURATION_DOCKER_DEV) && rm $(CONFIGURATION_DOCKER_DEV).bak \
+        && sed -i.bak s/{USER}/$$CURRENT_USER/g $(CONFIGURATION_DOCKER_DEV) && rm $(CONFIGURATION_DOCKER_DEV).bak'; fi
+
+do-up:
+	@echo "$(STEP) Starting up containers... $(STEP)";
+	@docker-compose -f $(CONFIGURATION_DOCKER_DEV) up -d;
+	@echo "$(STEP) Finished! $(STEP)";
+	@$(MAKE) get-url;
+
+do-up-update: build-update do-up
+
+up: build do-up
+
+install: configure-project do-up-update
+	@if [ ! -f composer.lock ]; then echo "$(STEP) Updating dependencies... $(STEP)" && docker exec -it $(DOCKER_PHP_CONTAINER_NAME) php -d memory_limit=-1 $$(which composer) update --prefer-dist --no-suggest; else echo "$(STEP) Installing dependencies... $(STEP)" && docker exec -it $(DOCKER_PHP_CONTAINER_NAME) composer install --prefer-dist --no-suggest; fi
+	@echo "$(STEP) Finished! $(STEP)";
+	@$(MAKE) get-url;
+
+update:
+	@echo "$(STEP) Updating dependencies... $(STEP)";
+	@docker exec -it $(DOCKER_PHP_CONTAINER_NAME) composer install --prefer-dist --no-suggest;
+	@echo "$(STEP) Finished! $(STEP)";
+	@$(MAKE) get-url;
+
+reset-db:
+	@echo "$(STEP) Reset db... $(STEP)";
+	@docker exec -it $(DOCKER_PHP_CONTAINER_NAME) php bin/console doctrine:database:drop --force -n;
+	@docker exec -it $(DOCKER_PHP_CONTAINER_NAME) php bin/console doctrine:database:create -n;
+	@echo "$(STEP) Finished! $(STEP)";
+
+fixture:
+	@echo "$(STEP) Running DB fixtures... $(STEP)";
+	@docker exec -it $(DOCKER_PHP_CONTAINER_NAME) php bin/console doctrine:fixtures:load -n --append;
+	@echo "$(STEP) Finished! $(STEP)";
+
+stop:
+	@echo "$(STEP) Stopping containers... $(STEP)";
+	@docker-compose -f $(CONFIGURATION_DOCKER_DEV) stop;
+	@echo "$(STEP) Finished! $(STEP)";
+
+cli:
+	@echo "$(STEP) Entering bash CLI in $(DOCKER_PHP_CONTAINER_NAME)... $(STEP)";
+	@docker exec -it $(DOCKER_PHP_CONTAINER_NAME) /bin/bash;
+
+cc:
+	@echo "$(STEP) Clearing the cache on DEV env... $(STEP)";
+	@docker exec -it $(DOCKER_PHP_CONTAINER_NAME) php bin/console cache:clear;
+	@echo "$(STEP) Finished! $(STEP)";
+
+logs:
+	@echo "$(STEP) Displaying logs... $(STEP)";
+	@docker-compose -f $(CONFIGURATION_DOCKER_DEV) logs -f;
+
+get-url:
+	$(eval PROJECT_URLS=$(shell cat $(CONFIGURATION_DOCKER_DEV) | sed -n 's/^.*HostRegexp(`\([^`]*\.localhost\)`).*/\1/p'))
+	@echo "$(STEP)Project URL:$(STEP)";
+	@echo $(PROJECT_URLS) | tr ' ' '\n' | sed 's|^|http://|'
