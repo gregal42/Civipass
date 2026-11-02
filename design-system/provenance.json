@@ -10,7 +10,7 @@
     "layouts": 2,
     "examples": 56,
     "controllers": 15,
-    "files": 218
+    "files": 219
   },
   "components": [
     "action_bar",
@@ -341,6 +341,12 @@
       "id": "P7",
       "target": "src/Shared/UI/DevUi/Resources/prototype.json",
       "description": "Données fictives du prototype (aucune personne réelle) exportées en JSON depuis data.mjs, sans modification.",
+      "occurrences": null
+    },
+    {
+      "id": "M1",
+      "target": "assets/images/civipass-monogram.svg",
+      "description": "Monogramme « Cp » du design system (composant .cp-logo__mark : carré brand de 30 px, rayon 8 px, Atkinson Hyperlegible Mono Bold 14 px, couleur on-brand) en SVG vectoriel, glyphes convertis en tracés depuis la police du design system. Sert de logo au back-office Sonata, qui ne charge ni le CSS ni les polices du design system. Aucune forme nouvelle.",
       "occurrences": null
     }
   ],
@@ -1407,6 +1413,13 @@
       "target": "src/Shared/UI/DevUi/Resources/catalog.json",
       "sourceSha": "cd11a17492d989f5fd8908d404173e4d1bc293c611f7bff0da12640af54acc7c",
       "targetSha": "a65891546bb8d776b8f983750bc21f7dadae30f0d58e724d95b2e09e56f99383",
+      "adapted": true
+    },
+    {
+      "source": "node_modules/@fontsource/atkinson-hyperlegible-mono/files/atkinson-hyperlegible-mono-latin-700-normal.woff",
+      "target": "assets/images/civipass-monogram.svg",
+      "sourceSha": "7eff8deee4dedc05ffe9591f48a7dbbb4ccb512af77e21498015d6ad033694ca",
+      "targetSha": "b5a38aac954eb4d292acd09c5ca0fd65c87776af0b22fd175d0d395fe18def7b",
       "adapted": true
     },
     {

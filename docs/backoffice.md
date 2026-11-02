@@ -1,0 +1,51 @@
+# Civipass — Back-office CWS (Sonata Admin)
+
+Réservé aux **super-administrateurs CWS**. Lecture seule intégrale : navigation dans les données, aucune écriture.
+
+## Accès
+
+| Condition | Mise en œuvre |
+|---|---|
+| Authentification | Firewall Symfony existant (`/login`) ; Sonata n'a **aucun** système d'authentification propre |
+| Rôle | `ROLE_SUPER_ADMIN` **et** `IS_AUTHENTICATED_FULLY` (`access_control` de `security.yaml`) |
+| Compte communal | 403, quels que soient ses rôles communaux (un membership ne donne aucun rôle Symfony) |
+| Session « mémorisée » (remember-me) seule | Redirigée vers `/login` : mot de passe exigé |
+| Compte désactivé | Session invalidée immédiatement |
+| Déconnexion | POST + jeton CSRF (bouton du menu Sonata) |
+
+Un superadmin n'a **aucun rôle communal implicite**. Les trois permissions de supervision de `MembershipAccessPolicy` (gérer les membres, modifier le contact, lire l'audit d'une commune) sont inchangées et **non utilisées par Sonata** : elles ne servent qu'aux services applicatifs audités. Elles ne s'étendent ni aux événements, ni aux zones, ni aux demandes, décisions ou laissez-passer.
+
+## Modules (URLs)
+
+| Module | Liste | Fiche |
+|---|---|---|
+| Utilisateurs | `/admin/identity/user/list` | `/admin/identity/user/{uuid}/show` |
+| Communes | `/admin/communes/commune/list` | `/admin/communes/commune/{uuid}/show` |
+| Appartenances communales | `/admin/communes/appartenance/list` | `/admin/communes/appartenance/{uuid}/show` |
+
+Titre : **« BO Civipass »**. Logo : le **monogramme « Cp »** du design system (carré `brand`, Atkinson Hyperlegible Mono Bold), en SVG vectoriel (`assets/images/civipass-monogram.svg`, glyphes en tracés : aucune dépendance à une police ni au CSS du design system, que Sonata ne charge pas). Il est généré par `design-system/tools/import.mjs` (adaptation M1 de `PROVENANCE.md`), sans aucune forme nouvelle : le design system n'a pas d'autre logo.
+
+Autres : `/admin/dashboard`, `/admin/` (redirige), `/admin/search`.
+
+- **Utilisateurs** : adresse email, nom, prénom, actif, superadmin, dernière connexion, dates. **Jamais** le hash du mot de passe, ni aucun jeton (réinitialisation, remember-me) : les champs sont déclarés un par un, il n'y a pas de découverte automatique.
+- **Communes** : nom, code INSEE, statut administratif, contact, adresse, dates. Pas de module Abonnements : l'entité n'existe pas encore.
+- **Appartenances** : utilisateur (lien vers sa fiche), commune (lien vers sa fiche), rôles communaux en clair, activation, dates.
+- **Navigation** : depuis une fiche utilisateur ou commune, l'onglet « Appartenances » ouvre la liste filtrée ; depuis une appartenance, liens vers l'utilisateur et la commune.
+- **Filtres, recherche, tri** : sur chaque liste (ex. `?filter[email][value]=maire`, `?filter[_sort_by]=email&filter[_sort_order]=ASC`).
+- Les identifiants sont des **UUID** : tout autre format donne un 404 propre (contrainte de route), jamais une erreur serveur.
+
+## Lecture seule stricte : quatre barrières indépendantes
+
+1. **Routes** : chaque admin ne déclare que `list` et `show`. Create, edit, delete, batch, export, history, acl **n'existent pas** (404, y compris pour un superadmin).
+2. **Méthodes HTTP** : `access_control` refuse `POST`, `PUT`, `PATCH`, `DELETE` sur `/admin` (403), même au superadmin.
+3. **Routes techniques de Sonata** (édition inline, éléments de formulaire, autocomplétion, aperçu d'objet) : fermées à tous (403) ; restent le tableau de bord, la recherche, les listes et fiches.
+4. **Droits Sonata** : `ReadOnlySecurityHandler` s'appuie sur le gestionnaire par rôles de Sonata et n'accorde que `LIST` et `VIEW` ; `CREATE`, `EDIT`, `DELETE`, `EXPORT`… sont refusés **même à `ROLE_SUPER_ADMIN`**.
+
+Les rôles communaux, les statuts de commune et les privilèges superadmin ne se modifient que par `MembershipManager`, `MunicipalityManager` et `UserManager` (transaction, verrou, audit).
+
+## Limites et évolutions
+
+- Écrire depuis Sonata exigerait de passer par ces services (jamais par le formulaire d'entité) et de rouvrir explicitement les barrières ci-dessus, avec leurs tests.
+- L'audit (`audit_log`) et les demandes de réinitialisation n'ont volontairement aucun module.
+- Les assets Sonata (`public/bundles/`) ne sont pas versionnés : `assets:install` (script Composer) doit tourner au déploiement.
+- Apparence : native Sonata (seuls le titre et le logo sont ceux de Civipass) ; le design system n'est pas chargé dans les pages Sonata.

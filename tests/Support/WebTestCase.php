@@ -20,11 +20,14 @@ abstract class WebTestCase extends BaseWebTestCase
 
     public const PASSWORD = 'correct horse battery';
 
-    protected function freshClient(): KernelBrowser
+    /**
+     * @param array<string, mixed> $options options du noyau (ex. ['debug' => false] pour les vraies pages d'erreur)
+     */
+    protected function freshClient(array $options = []): KernelBrowser
     {
         // État statique de Request : aucun proxy de confiance, quoi qu'un test précédent ait démarré (noyau dev, par exemple).
         Request::setTrustedProxies([], Request::HEADER_X_FORWARDED_FOR);
-        $client = static::createClient();
+        $client = static::createClient($options);
         TestDatabase::reset($this->em());
         // Le client redémarre le noyau à chaque requête : l'état des limiteurs de connexion doit être persistant
         // (cache fichier) pendant un test, et vidé entre deux tests.

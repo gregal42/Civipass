@@ -131,4 +131,24 @@ final class IntegrityTest extends TestCase
         self::assertStringContainsString('assertDevelopment', $controller);
         self::assertDoesNotMatchRegularExpression('/use Doctrine|EntityManager|Repository/', $controller, 'La prévisualisation ne dépend d\'aucune entité.');
     }
+
+    public function testTheMonogramLogoIsTheDesignSystemMarkAsSelfContainedVectors(): void
+    {
+        $svg = (string) file_get_contents(self::ROOT.'/assets/images/civipass-monogram.svg');
+
+        self::assertStringContainsString('fill="#1d3f73"', $svg, 'Fond : token brand du design system.');
+        self::assertStringContainsString('rx="8"', $svg, 'Rayon du composant .cp-logo__mark.');
+        self::assertStringContainsString('fill="#ffffff"', $svg, 'Glyphes : token on-brand.');
+        self::assertStringNotContainsString('<text', $svg, 'Glyphes en tracés : aucune dépendance à une police.');
+        self::assertStringNotContainsString('<script', $svg);
+        self::assertDoesNotMatchRegularExpression('~(href|src)=|url\(|@import|<style~i', $svg, 'SVG autonome : aucune ressource externe.');
+        self::assertSame(3, substr_count($svg, 'M'), 'Trois contours : « C », « p » et la contreforme du « p ».');
+        self::assertSame(1, substr_count($svg, '<path'));
+
+        $sonata = (string) file_get_contents(self::ROOT.'/config/packages/sonata_admin.yaml');
+        self::assertStringContainsString("title: 'BO Civipass'", $sonata);
+        self::assertStringContainsString('title_logo: images/civipass-monogram.svg', $sonata);
+        $recorded = array_filter(self::provenance()['files'], static fn (array $f): bool => 'assets/images/civipass-monogram.svg' === $f['target']);
+        self::assertCount(1, $recorded, 'Le monogramme est enregistré dans la provenance.');
+    }
 }

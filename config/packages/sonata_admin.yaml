@@ -1,5 +1,10 @@
 sonata_admin:
-    title: 'Sonata Admin'
+    title: 'BO Civipass'
+    # Logo : monogramme « Cp » du design system (assets/images/civipass-monogram.svg, généré par design-system/tools/import.mjs).
+    title_logo: images/civipass-monogram.svg
+    # Gestionnaire par rôles, limité à la consultation (LIST, VIEW) : toute permission d'écriture est refusée, même au superadmin.
+    security:
+        handler: App\Admin\Security\ReadOnlySecurityHandler
     dashboard:
         blocks:
             - { type: sonata.admin.block.admin_list, position: left }

@@ -57,6 +57,11 @@ security:
 
     # Note: Only the *first* matching rule is applied
     access_control:
+        # Back-office en LECTURE SEULE : toute méthode d'écriture est refusée côté serveur, y compris au superadmin.
+        - { path: ^/admin, methods: [POST, PUT, PATCH, DELETE], allow_if: "false" }
+        # Routes techniques de Sonata inutiles en lecture seule (édition inline, éléments de formulaire, autocomplétion,
+        # aperçu d'objet) : fermées à tous. Restent : /admin/, /admin/dashboard, /admin/search et les listes/fiches des admins.
+        - { path: '^/admin/core/(set-object-field-value|append-form-field-element|get-form-field-element|get-autocomplete-items|get-short-object-description)', allow_if: "false" }
         # Sonata : authentification COMPLÈTE exigée (un utilisateur seulement « mémorisé » doit retaper son mot de
         # passe). Même règle pour les futures opérations sensibles (#[IsGranted('IS_AUTHENTICATED_FULLY')]).
         # allow_if et non roles : une liste de rôles se combine en OU.

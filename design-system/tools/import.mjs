@@ -14,6 +14,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
+import { buildMonogramSvg } from './monogram.mjs';
 
 const archive = path.resolve(process.argv[2] ?? '');
 if (!process.argv[2] || !fs.existsSync(path.join(archive, 'tokens/tokens.json'))) {
@@ -152,6 +153,14 @@ for (const [f, name] of Object.entries(SCREEN)) {
 {
   const { catalog } = await import(pathToFileURL(src('scripts/catalog.mjs')).href);
   put('src/Shared/UI/DevUi/Resources/catalog.json', JSON.stringify(catalog.map((c) => ({ name: c.name, group: c.group }))), { source: 'scripts/catalog.mjs', adapted: true });
+}
+
+/* ── 6 ter. Monogramme « Cp » (logo du back-office Sonata) ───────────────── */
+{
+  const color = (name) => tokens.color.tokens.find((t) => t.name === name).value.light;
+  const woff = 'node_modules/@fontsource/atkinson-hyperlegible-mono/files/atkinson-hyperlegible-mono-latin-700-normal.woff';
+  put('assets/images/civipass-monogram.svg', buildMonogramSvg(src(woff), { brand: color('brand'), onBrand: color('on-brand') }), { source: woff, adapted: true });
+  adaptations.push({ id: 'M1', target: 'assets/images/civipass-monogram.svg', description: 'Monogramme « Cp » du design system (composant .cp-logo__mark : carré brand de 30 px, rayon 8 px, Atkinson Hyperlegible Mono Bold 14 px, couleur on-brand) en SVG vectoriel, glyphes convertis en tracés depuis la police du design system. Sert de logo au back-office Sonata, qui ne charge ni le CSS ni les polices du design system. Aucune forme nouvelle.', occurrences: null });
 }
 
 /* ── 7. Référentiel et documentation ─────────────────────────────────────── */

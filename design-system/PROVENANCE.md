@@ -7,7 +7,7 @@
 | Source | archive « civipass-design-system 2 » (dépôt du design system, `package.json` : `civipass-design-system` 1.0.0) |
 | Référentiel de tokens | version 1 — Prototype UI Civipass V1 (direction « Signalétique civique »), validé le 01/11/2026 |
 | Date d'import | 2026-11-02 |
-| Contenu importé | 64 gabarits de composants, 2 layouts du design system, 56 exemples, 15 contrôleurs Stimulus, 2 feuilles de style, 5 polices, 218 fichiers au total dont 27 adaptés |
+| Contenu importé | 64 gabarits de composants, 2 layouts du design system, 56 exemples, 15 contrôleurs Stimulus, 2 feuilles de style, 5 polices, 219 fichiers au total dont 28 adaptés |
 
 ## Où se trouve chaque chose
 
@@ -26,7 +26,7 @@
 
 **Non importés** : `node_modules/`, `dist/` (sauf les deux CSS ci-dessus), `scripts/` de construction, `prototype/proto.js`, `proto.css`, `viewer.html` (simulation du serveur par le prototype), `package*.json`, `tsconfig.json`. **Créés par Civipass, hors design system** : `assets/styles/civipass-app.css`, `templates/layouts/auth.html.twig`, les pages d'authentification recomposées, `templates/dev/ui/*` (galerie), `src/Shared/UI/DevUi/*`.
 
-## Adaptations appliquées (44 substitutions, vérifiées une à une à chaque import)
+## Adaptations appliquées (45 substitutions, vérifiées une à une à chaque import)
 
 | Id | Fichier(s) | Description |
 |---|---|---|
@@ -47,6 +47,7 @@
 | P6 | `templates/dev/ui/screens/request.html.twig` | Zone de message : alerte de prévisualisation après envoi d’un formulaire (simulation du serveur retirée). |
 | P9 | `templates/dev/ui/screens/forbidden.html.twig` | Lien de retour : « links » transmis au bloc de l’alerte (embed … only). |
 | P7 | `src/Shared/UI/DevUi/Resources/prototype.json` | Données fictives du prototype (aucune personne réelle) exportées en JSON depuis data.mjs, sans modification. |
+| M1 | `assets/images/civipass-monogram.svg` | Monogramme « Cp » du design system (composant .cp-logo__mark : carré brand de 30 px, rayon 8 px, Atkinson Hyperlegible Mono Bold 14 px, couleur on-brand) en SVG vectoriel, glyphes convertis en tracés depuis la police du design system. Sert de logo au back-office Sonata, qui ne charge ni le CSS ni les polices du design system. Aucune forme nouvelle. |
 
 ## Écarts constatés dans l'archive (à corriger à la source)
 
