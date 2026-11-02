@@ -3,11 +3,20 @@
 {% block title %}Civipass — Accueil{% endblock %}
 
 {% block body %}
-    <main>
-        <h1>Bienvenue sur Civipass 🚀</h1>
+    <div class="page">
+        <main class="card">
+            <h1>Civipass</h1>
 
-        <p>Le socle Symfony est opérationnel.</p>
-
-        <div data-controller="hello"></div>
-    </main>
+            {% if app.user %}
+                <p>Connecté en tant que <strong>{{ app.user.userIdentifier }}</strong>.</p>
+                <form method="post" action="{{ path('app_logout') }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}">
+                    <button type="submit" class="button">Se déconnecter</button>
+                </form>
+            {% else %}
+                <p class="muted">Plateforme de gestion des laissez-passer en situation de crise.</p>
+                <a class="button button--link" href="{{ path('app_login') }}">Se connecter</a>
+            {% endif %}
+        </main>
+    </div>
 {% endblock %}

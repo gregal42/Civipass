@@ -10,12 +10,12 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 final class AdminAccessTest extends WebTestCase
 {
-    public function testAnonymousIsDeniedOnEveryAdminRoute(): void
+    public function testAnonymousIsSentToTheLoginPageOnEveryAdminRoute(): void
     {
         $client = static::createClient();
         foreach (['/admin/', '/admin/dashboard', '/admin/search', '/admin/core/get-autocomplete-items'] as $path) {
             $client->request('GET', $path);
-            self::assertResponseStatusCodeSame(401, $path);
+            self::assertResponseRedirects('/login', 302, $path);
         }
     }
 

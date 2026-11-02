@@ -48,12 +48,7 @@ final readonly class UserManager
         $address = EmailAddress::fromString($email);
         PlainPasswordPolicy::assertValid($plainPassword);
 
-        $user = new User($address, 'pending', $firstName, $lastName, $this->clock->now());
-        try {
-            $user->changePassword($this->passwordHasher->hashPassword($user, $plainPassword), $this->clock->now());
-        } catch (InvalidPasswordException $e) {
-            throw new DomainRuleViolation('Mot de passe refusé par le hacheur.', 0, $e);
-        }
+        $user = $this->newUserWithHashedPassword($address, $plainPassword, $firstName, $lastName);
 
         return $this->transaction->run(function () use ($address, $user): User {
             if (null !== $this->users->findByEmail($address)) {
@@ -62,6 +57,58 @@ final readonly class UserManager
             $this->users->add($user);
 
             return $user;
+        });
+    }
+
+    /**
+     * Initialise le premier superadmin (installation, ou récupération d'incident) depuis la console.
+     *
+     * - Réservé à la situation « aucun superadmin actif » : sinon refus. Ce n'est PAS un contournement de la
+     *   protection du dernier superadmin : elle ne permet ni retrait ni désactivation, seulement une désignation.
+     * - Idempotente : si le compte visé est déjà l'unique superadmin actif, rien n'est modifié ni audité.
+     * - Compte existant : promu s'il est actif (son mot de passe n'est jamais modifié) ; refusé s'il est désactivé.
+     * - Compte inexistant : créé avec le mot de passe fourni (politique de mot de passe appliquée).
+     * - Audit `USER_SUPER_ADMIN_CHANGED` avec origine CONSOLE.
+     * La lecture verrouillée des superadmins actifs sérialise deux initialisations concurrentes.
+     */
+    public function initializeSuperAdmin(string $email, #[\SensitiveParameter] ?string $plainPassword, string $firstName, string $lastName): User
+    {
+        $address = EmailAddress::fromString($email);
+
+        $newUser = null;
+        if (null !== $plainPassword) {
+            PlainPasswordPolicy::assertValid($plainPassword);
+            $newUser = $this->newUserWithHashedPassword($address, $plainPassword, $firstName, $lastName);
+        }
+
+        return $this->transaction->run(function () use ($address, $newUser): User {
+            $activeSuperAdmins = $this->users->lockActiveSuperAdmins();
+            foreach ($activeSuperAdmins as $existing) {
+                if ($existing->email() === $address->value) {
+                    return $existing; // déjà initialisé : idempotent
+                }
+            }
+            if ([] !== $activeSuperAdmins) {
+                throw new OperationNotAllowed('Un superadmin actif existe déjà : cette commande ne sert qu\'à l\'initialisation ou à la récupération.');
+            }
+
+            $existing = $this->users->findByEmail($address);
+            if (null !== $existing) {
+                $existing = $this->users->lock($existing);
+                if (!$existing->isActive()) {
+                    throw new OperationNotAllowed('Ce compte existe mais est désactivé : réactivez-le avant de le promouvoir.');
+                }
+                $this->applySuperAdmin($existing, true, null);
+
+                return $existing;
+            }
+            if (null === $newUser) {
+                throw new DomainRuleViolation('Aucun compte n\'existe avec cette adresse : un mot de passe est requis pour le créer.');
+            }
+            $this->users->add($newUser);
+            $this->applySuperAdmin($newUser, true, null);
+
+            return $newUser;
         });
     }
 
@@ -125,6 +172,18 @@ final readonly class UserManager
             $target->activate($now);
             $this->recordActivation($target, true, $actor, $now);
         });
+    }
+
+    private function newUserWithHashedPassword(EmailAddress $address, #[\SensitiveParameter] string $plainPassword, string $firstName, string $lastName): User
+    {
+        $user = new User($address, 'pending', $firstName, $lastName, $this->clock->now());
+        try {
+            $user->changePassword($this->passwordHasher->hashPassword($user, $plainPassword), $this->clock->now());
+        } catch (InvalidPasswordException $e) {
+            throw new DomainRuleViolation('Mot de passe refusé par le hacheur.', 0, $e);
+        }
+
+        return $user;
     }
 
     private function applySuperAdmin(User $target, bool $value, ?User $actor): void

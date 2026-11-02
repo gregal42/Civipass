@@ -13,7 +13,7 @@ use PHPUnit\Framework\Assert;
  */
 final class TestDatabase
 {
-    private const TABLES = ['audit_log', 'municipality_membership', 'municipality', 'identity_user'];
+    private const TABLES = ['audit_log', 'municipality_membership', 'municipality', 'identity_password_reset_request', 'identity_user'];
 
     public static function reset(EntityManagerInterface $em): void
     {

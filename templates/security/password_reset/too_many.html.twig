@@ -1,0 +1,14 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Trop de tentatives — Civipass{% endblock %}
+{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block body %}
+    <div class="page">
+        <main class="card">
+            <h1>Trop de tentatives</h1>
+            <p role="alert">Trop de tentatives ont été effectuées depuis votre connexion. Réessayez dans quelques minutes.</p>
+            <p><a href="{{ path('app_login') }}">Retour à la connexion</a></p>
+        </main>
+    </div>
+{% endblock %}

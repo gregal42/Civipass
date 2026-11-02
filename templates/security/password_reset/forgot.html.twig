@@ -1,0 +1,29 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mot de passe oublié — Civipass{% endblock %}
+{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block body %}
+    <div class="page">
+        <main class="card">
+            <h1>Mot de passe oublié</h1>
+            <p class="muted">Saisissez l'adresse email de votre compte. Si elle correspond à un compte actif, vous recevrez un lien valable 30 minutes pour choisir un nouveau mot de passe.</p>
+
+            {% if error is defined and error %}
+                <div class="alert" role="alert" id="form-error">{{ error }}</div>
+            {% endif %}
+
+            <form method="post" action="{{ path('app_forgot_password') }}" novalidate>
+                <div class="field">
+                    <label for="email">Adresse email</label>
+                    <input type="email" id="email" name="email" autocomplete="username" autocapitalize="none"
+                           spellcheck="false" required autofocus>
+                </div>
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('forgot_password') }}">
+                <button type="submit" class="button">Envoyer le lien</button>
+            </form>
+
+            <p><a href="{{ path('app_login') }}">Retour à la connexion</a></p>
+        </main>
+    </div>
+{% endblock %}

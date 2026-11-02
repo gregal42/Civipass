@@ -1,0 +1,14 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mot de passe modifié — Civipass{% endblock %}
+{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block body %}
+    <div class="page">
+        <main class="card">
+            <h1>Mot de passe modifié</h1>
+            <p role="status">Votre mot de passe a été modifié. Toutes vos sessions ouvertes ont été déconnectées. Un email de confirmation vous a été envoyé.</p>
+            <a class="button" href="{{ path('app_login') }}">Se connecter</a>
+        </main>
+    </div>
+{% endblock %}

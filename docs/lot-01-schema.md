@@ -331,7 +331,12 @@ Dans `tests/Support/` : `UserBuilder`, `MunicipalityBuilder`, `MembershipBuilder
 | M4 | `docs/testing.md` et cible `make test-db` (provisionnement reproductible de `civipass_test`). |
 | Archi | Le test d'architecture couvre aussi `deactivate()` et `activate()` (appelables uniquement par `UserManager` et `MembershipManager`). |
 
-**Rappel pour le LOT 01.2** (inchangé et à conserver explicitement) : `UserChecker` refusant les comptes inactifs ; authentification avec protection CSRF ; limitation des tentatives de connexion ; mise à jour de `lastLoginAt`.
+**Rappel pour le LOT 01.2 (réalisé : voir `docs/authentication.md`)** : `UserChecker` refusant les comptes inactifs ; authentification avec protection CSRF ; limitation des tentatives de connexion ; mise à jour de `lastLoginAt`.
+
+## 14 ter. Ajouts du LOT 01.2
+
+- Nouvelle entité `PasswordResetRequest` (table `identity_password_reset_request`, migration `Version20261102164047`) : voir `docs/authentication.md`.
+- Nouvelle valeur d'audit `USER_PASSWORD_RESET` (aucune migration : colonne `VARCHAR`).
 
 ## 15. Commandes
 

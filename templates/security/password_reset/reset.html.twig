@@ -1,0 +1,33 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouveau mot de passe — Civipass{% endblock %}
+{% block meta %}<meta name="robots" content="noindex, nofollow"><meta name="referrer" content="no-referrer">{% endblock %}
+
+{% block body %}
+    <div class="page">
+        <main class="card">
+            <h1>Choisissez un nouveau mot de passe</h1>
+            <p class="muted">12 caractères minimum. Aucune autre règle n'est imposée : préférez une phrase longue.</p>
+
+            {% if error is defined and error %}
+                <div class="alert" role="alert" id="form-error">{{ error }}</div>
+            {% endif %}
+
+            <form method="post" action="{{ path('app_reset_password') }}" novalidate>
+                <div class="field">
+                    <label for="password">Nouveau mot de passe</label>
+                    <input type="password" id="password" name="password" autocomplete="new-password"
+                           minlength="12" required autofocus
+                           {% if error is defined and error %}aria-invalid="true" aria-describedby="form-error"{% endif %}>
+                </div>
+                <div class="field">
+                    <label for="password_confirm">Confirmez le mot de passe</label>
+                    <input type="password" id="password_confirm" name="password_confirm" autocomplete="new-password"
+                           minlength="12" required>
+                </div>
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('reset_password') }}">
+                <button type="submit" class="button">Enregistrer le mot de passe</button>
+            </form>
+        </main>
+    </div>
+{% endblock %}

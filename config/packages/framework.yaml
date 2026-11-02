@@ -3,10 +3,46 @@ framework:
     secret: '%env(APP_SECRET)%'
 
     # Note that the session will be started ONLY if you read or write from it.
-    session: true
+    session:
+        cookie_secure: auto
+        cookie_httponly: true
+        cookie_samesite: lax
+
+    # Limiteurs de la connexion : 5 tentatives / 15 min par identifiant+IP ; 50 / 15 min par IP
+    # (seuil large pour les réseaux partagés : mairies, NAT d'entreprise).
+    rate_limiter:
+        login_local:
+            policy: sliding_window
+            limit: 5
+            interval: '15 minutes'
+        login_global:
+            policy: sliding_window
+            limit: 50
+            interval: '15 minutes'
+        # Mot de passe oublié : 3 demandes / heure par adresse, 10 / heure par IP (réponse identique, envoi
+        # abandonné en silence au-delà) ; 10 validations ou soumissions de jeton / 15 min par IP.
+        password_reset_email:
+            policy: sliding_window
+            limit: 3
+            interval: '1 hour'
+        password_reset_ip:
+            policy: sliding_window
+            limit: 10
+            interval: '1 hour'
+        password_reset_token_ip:
+            policy: sliding_window
+            limit: 10
+            interval: '15 minutes'
 
     #esi: true
     #fragments: true
+
+# Proxys de confiance : AUCUN par défaut (en-têtes X-Forwarded-* d'un client ignorés). Seul le développement
+# local, derrière Traefik (réseaux privés Docker), en déclare. Voir docs/authentication.md.
+when@dev:
+    framework:
+        trusted_proxies: private_ranges
+        trusted_headers: ['x-forwarded-for', 'x-forwarded-proto', 'x-forwarded-port']
 
 when@test:
     framework:

@@ -16,16 +16,51 @@ security:
         main:
             lazy: true
             provider: app_user_provider
+            # Refuse les comptes inactifs APRÈS vérification du mot de passe (pas d'énumération de comptes).
+            user_checker: App\Identity\Infrastructure\Security\UserChecker
 
-            # Activate different ways to authenticate:
-            # https://symfony.com/doc/current/security.html#the-firewall
+            form_login:
+                login_path: app_login
+                check_path: app_login
+                username_parameter: email
+                password_parameter: password
+                # Jeton CSRF de session (voir csrf.yaml) : id « authenticate », champ « _csrf_token ».
+                enable_csrf: true
+                csrf_token_id: authenticate
+                # /login redirige ensuite selon le rôle (superadmin → Sonata, sinon accueil).
+                default_target_path: app_login
+                # Ne jamais renvoyer vers une URL arbitraire fournie par le client.
+                use_referer: false
 
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
+            logout:
+                path: app_logout
+                target: app_login
+                enable_csrf: true
+                csrf_token_id: logout
+
+            # 5 tentatives / 15 min par couple identifiant+IP, plafond global par IP (seuils : framework.yaml,
+            # section rate_limiter).
+            # « Se souvenir de moi » : cookie signé (sans table), 30 jours maximum, HttpOnly, SameSite=Lax, Secure en
+            # HTTPS. La signature couvre le mot de passe, l'état actif et le privilège superadmin : tout changement
+            # invalide les cookies existants. Case décochée par défaut (always_remember_me: false).
+            remember_me:
+                secret: '%kernel.secret%'
+                lifetime: 2592000
+                secure: auto
+                httponly: true
+                samesite: lax
+                always_remember_me: false
+                signature_properties: [password, active, superAdmin]
+
+            login_throttling:
+                limiter: App\Identity\Infrastructure\Security\LoginRateLimiter
 
     # Note: Only the *first* matching rule is applied
     access_control:
-        - { path: ^/admin(?:/|$), roles: ROLE_SUPER_ADMIN }
+        # Sonata : authentification COMPLÈTE exigée (un utilisateur seulement « mémorisé » doit retaper son mot de
+        # passe). Même règle pour les futures opérations sensibles (#[IsGranted('IS_AUTHENTICATED_FULLY')]).
+        # allow_if et non roles : une liste de rôles se combine en OU.
+        - { path: ^/admin(?:/|$), allow_if: "is_granted('IS_AUTHENTICATED_FULLY') and is_granted('ROLE_SUPER_ADMIN')" }
 
 when@test:
     security:

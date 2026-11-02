@@ -14,4 +14,5 @@ enum AuditAction: string
     case MunicipalityContactChanged = 'MUNICIPALITY_CONTACT_CHANGED';
     case UserSuperAdminChanged = 'USER_SUPER_ADMIN_CHANGED';
     case UserActivationChanged = 'USER_ACTIVATION_CHANGED';
+    case UserPasswordReset = 'USER_PASSWORD_RESET';
 }

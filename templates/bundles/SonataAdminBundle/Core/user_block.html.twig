@@ -1,0 +1,8 @@
+{# Menu utilisateur Sonata : identité et déconnexion (POST + jeton CSRF « logout »). #}
+<li class="px-3 py-2">
+    <span class="d-block small">{{ app.user.userIdentifier }}</span>
+    <form method="post" action="{{ path('app_logout') }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}">
+        <button type="submit" class="btn btn-link p-0">Se déconnecter</button>
+    </form>
+</li>

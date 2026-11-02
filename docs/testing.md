@@ -46,6 +46,11 @@ Elle ne touche jamais à la base `civipass`.
 
 Le pipeline doit disposer d'un serveur MySQL 8.4 et exécuter : création de la base de test (compte disposant du droit `CREATE`), `doctrine:migrations:migrate --env=test`, puis `make quality`. L'URL de test est fournie par la variable d'environnement `DATABASE_URL` du pipeline (secret du CI), pas par un fichier versionné.
 
+## Emails et limiteurs en test
+
+- `MAILER_DSN=null://null` : aucun email ne part ; les messages sont capturés par le transport de test (`assertEmailCount`, `getMailerMessage`). Le client HTTP redémarre le noyau à chaque requête : les assertions d'emails portent sur **la dernière requête**.
+- Les limiteurs (connexion, mot de passe oublié) utilisent un cache **fichier** persistant (nécessaire entre les requêtes d'un même test) ; `WebTestCase::freshClient()` le vide au début de chaque test.
+
 ## Structure des tests
 
 - `tests/Unit` : sans base (valeurs, règles pures, architecture).

@@ -5,7 +5,7 @@ framework:
             token_id: submit
 
     csrf_protection:
+        # « authenticate » et « logout » utilisent des jetons de SESSION (connexion/déconnexion) :
+        # ils fonctionnent sans JavaScript et sont vérifiables en test.
         stateless_token_ids:
             - submit
-            - authenticate
-            - logout
