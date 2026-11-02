@@ -1,0 +1,11 @@
+{#
+  Bannière de page, pleine largeur sous la barre supérieure : situation qui touche tout l’écran.
+  @param string variant  warning (événement ou participation suspendu) | info | assist (mode assistance CWS, permanent)
+  @param string text     Message (échappé).   @param object link  { label, href }   @param string icon
+#}
+{%- set icons = { warning: 'alert', info: 'info', assist: 'shield' } -%}
+<div class="cp-banner cp-banner--{{ variant|default('info') }}" role="{{ variant|default('info') == 'warning' ? 'alert' : 'status' }}">
+  {%- include 'components/icon.html.twig' with { name: icon|default(icons[variant|default('info')]) } only -%}
+  <p class="cp-banner__text">{{ text }}</p>
+  {%- if link|default(false) %}<a href="{{ link.href }}">{{ link.label }}</a>{% endif %}
+</div>

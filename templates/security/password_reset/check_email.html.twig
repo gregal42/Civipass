@@ -1,15 +1,12 @@
-{% extends 'base.html.twig' %}
+{% extends 'layouts/auth.html.twig' %}
+{% set page_title = 'Vérifiez votre messagerie' %}
 
-{% block title %}Vérifiez votre messagerie — Civipass{% endblock %}
-{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
-
-{% block body %}
-    <div class="page">
-        <main class="card">
-            <h1>Vérifiez votre messagerie</h1>
-            <p role="status">Si cette adresse correspond à un compte actif, un email contenant un lien de réinitialisation vient d'être envoyé. Le lien est valable 30 minutes et ne peut être utilisé qu'une seule fois.</p>
-            <p class="muted">Rien reçu ? Vérifiez vos courriers indésirables, puis réessayez dans quelques minutes.</p>
-            <p><a href="{{ path('app_login') }}">Retour à la connexion</a></p>
-        </main>
-    </div>
+{% block content %}
+    {% embed 'components/panel.html.twig' with { id: 'check-h', title: 'Vérifiez votre messagerie', level: 1 } only %}
+        {% block body %}
+            {% include 'components/alert.html.twig' with { variant: 'info', text: 'Si cette adresse correspond à un compte actif, un email contenant un lien de réinitialisation vient d’être envoyé. Le lien est valable 30 minutes et ne peut être utilisé qu’une seule fois.' } only %}
+            <p class="cp-help">Rien reçu ? Vérifiez vos courriers indésirables, puis réessayez dans quelques minutes.</p>
+            <p class="cp-auth__links"><a href="{{ path('app_login') }}">Retour à la connexion</a></p>
+        {% endblock %}
+    {% endembed %}
 {% endblock %}

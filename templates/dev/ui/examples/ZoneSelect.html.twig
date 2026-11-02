@@ -1,0 +1,7 @@
+<div style="max-width: 560px">
+{% include 'components/zone_select.html.twig' with { id: 'terr', legend: 'Communes et zones demandées', communes: [
+  { id: 'letemple', name: 'Le Temple', preselected: true, scope: 'zones', zones: [ { id: 'sfn', name: 'Secteur forestier nord', checked: true }, { id: 'lau', name: 'Hameau de Lauros' }, { id: 'lag', name: 'Lagune de la Sablière', status: 'suspended' } ] },
+  { id: 'saumos', name: 'Saumos', checked: true, zones: [ { id: 'centre', name: 'Zone centre' } ] },
+  { id: 'lacanau', name: 'Commune fictive C', zones: [] }
+] } only %}
+</div>

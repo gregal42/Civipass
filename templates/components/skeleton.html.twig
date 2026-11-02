@@ -1,0 +1,8 @@
+{#
+  Squelette de chargement. La zone parente porte aria-busy="true" et un texte « Chargement… » pour les lecteurs d’écran.
+  @param array blocks  Liste de { h: hauteur px, w: largeur CSS (défaut 100%) }.
+  @param string label  Texte annoncé (défaut « Chargement… »).
+#}
+<div class="cp-skeleton-group" aria-busy="true"><span class="cp-sr-only" role="status">{{ label|default('Chargement…') }}</span>
+{%- for b in blocks %}<span class="cp-skeleton" style="height: {{ b.h }}px; width: {{ b.w|default('100%') }}"></span>{% endfor -%}
+</div>

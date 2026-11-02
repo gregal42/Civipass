@@ -1,0 +1,13 @@
+{%- set modes %}<span class="cp-modes">{% include 'components/mode_chip.html.twig' with { mode: 'vehicle' } only %}{% include 'components/mode_chip.html.twig' with { mode: 'foot' } only %}</span>{% endset -%}
+{%- set plates %}<span class="cp-plates">{% include 'components/plate.html.twig' with { number: 'AB-123-CD' } only %}{% include 'components/plate.html.twig' with { number: 'EF-456-GH' } only %}</span>{% endset -%}
+{% embed 'components/panel.html.twig' with { id: 'demo-req', title: 'Ce qui est demandé', modes: modes, plates: plates } only %}
+  {% block body %}
+  {% include 'components/facts.html.twig' with { items: [
+    { label: 'Motif', value: 'Accès à la résidence principale', note: '· sans commentaire' },
+    { label: 'Territoire demandé', value: 'Le Temple — Commune entière' },
+    { label: 'Déplacements', html: modes },
+    { label: 'Immatriculations', html: plates },
+    { label: 'Justificatifs', html: '<span class="cp-facts__plain">Aucun justificatif joint</span>' }
+  ] } only %}
+  {% endblock %}
+{% endembed %}

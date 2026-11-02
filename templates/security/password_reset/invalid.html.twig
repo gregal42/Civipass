@@ -1,14 +1,11 @@
-{% extends 'base.html.twig' %}
+{% extends 'layouts/auth.html.twig' %}
+{% set page_title = 'Lien invalide' %}
 
-{% block title %}Lien invalide — Civipass{% endblock %}
-{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
-
-{% block body %}
-    <div class="page">
-        <main class="card">
-            <h1>Lien invalide ou expiré</h1>
-            <p role="alert">Ce lien de réinitialisation est invalide, a expiré ou a déjà été utilisé.</p>
-            <p><a href="{{ path('app_forgot_password') }}">Demander un nouveau lien</a></p>
-        </main>
-    </div>
+{% block content %}
+    {% embed 'components/panel.html.twig' with { id: 'invalid-h', title: 'Lien invalide ou expiré', level: 1 } only %}
+        {% block body %}
+            {% include 'components/alert.html.twig' with { variant: 'error', text: 'Ce lien de réinitialisation est invalide, a expiré ou a déjà été utilisé.' } only %}
+            <p class="cp-auth__links"><a href="{{ path('app_forgot_password') }}">Demander un nouveau lien</a></p>
+        {% endblock %}
+    {% endembed %}
 {% endblock %}

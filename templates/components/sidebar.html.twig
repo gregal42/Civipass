@@ -1,0 +1,20 @@
+{#
+  Barre latérale municipale (≥ 1024 px complète, 640–1023 px en rail). Entrées affichées selon les permissions : ne passer que les entrées autorisées.
+  @param array  items  Liste de { label, icon, href, current, count }.
+  @param object user   { name, role, extra_roles }.
+  @param string home   URL du tableau de bord.
+#}
+<aside class="cp-sidebar" aria-label="Navigation principale">
+  <a class="cp-logo" href="{{ home|default('#') }}"><span class="cp-logo__mark" aria-hidden="true">Cp</span><span class="cp-logo__text">Civipass</span></a>
+  <nav aria-label="Rubriques"><ul class="cp-nav">
+    {%- for i in items %}
+    <li><a class="cp-nav__link" href="{{ i.href }}"{% if i.current|default(false) %} aria-current="page"{% endif %}>
+      {%- include 'components/icon.html.twig' with { name: i.icon } only %}<span>{{ i.label }}</span>
+      {%- if i.count|default(0) %}<span class="cp-nav__count"><span class="cp-sr-only">, </span>{{ i.count }}<span class="cp-sr-only"> en attente</span></span>{% endif -%}
+    </a></li>
+    {%- endfor %}
+  </ul></nav>
+  {%- if user|default(false) %}
+  <div class="cp-sidebar__foot"><strong>{{ user.name }}</strong><span>{{ user.role }}</span>{% if user.extra_roles|default('') %}<span>{{ user.extra_roles }}</span>{% endif %}</div>
+  {%- endif %}
+</aside>

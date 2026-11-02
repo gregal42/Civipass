@@ -1,0 +1,11 @@
+{#
+  Liste d’onglets (cp--tabs). Les panneaux sont écrits par la page : <div role="tabpanel" id="{id}-{tab.id}-panel" aria-labelledby="{id}-{tab.id}" class="cp-tabs__panel" [hidden]>.
+  @param string id        Préfixe d’identifiants.    @param string label  Nom accessible de la liste.
+  @param array  tabs      Liste de { id, label, count }.    @param string selected  id de l’onglet actif.
+#}
+<div class="cp-tabs__list" role="tablist" aria-label="{{ label }}">
+  {%- for t in tabs %}
+  {%- set on = t.id == selected -%}
+  <button type="button" class="cp-tabs__tab" role="tab" id="{{ id }}-{{ t.id }}" aria-controls="{{ id }}-{{ t.id }}-panel" aria-selected="{{ on ? 'true' : 'false' }}" tabindex="{{ on ? 0 : -1 }}" data-cp--tabs-target="tab" data-action="cp--tabs#select keydown->cp--tabs#keydown">{{ t.label }}{% if t.count is defined %}<span class="cp-tabs__count">{{ t.count }}</span>{% endif %}</button>
+  {%- endfor %}
+</div>

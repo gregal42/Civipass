@@ -1,0 +1,6 @@
+{#
+  Mode de déplacement.
+  @param string mode  vehicle | foot | bike
+#}
+{%- set m = { vehicle: ['car', 'Véhicule'], foot: ['walk', 'À pied'], bike: ['bike', 'À vélo'] }[mode] -%}
+<span class="cp-mode">{% include 'components/icon.html.twig' with { name: m[0], size: 's' } only %} {{ m[1] }}</span>

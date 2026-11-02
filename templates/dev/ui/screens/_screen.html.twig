@@ -1,0 +1,9 @@
+{#
+  Layout des écrans de prévisualisation : layouts/app.html.twig du design system + bandeau « données fictives ».
+  Les écrans (copies adaptées des gabarits du prototype) remplissent « content ».
+#}
+{% extends 'layouts/app.html.twig' %}
+{% block banner %}
+  {% include 'components/banner.html.twig' with { variant: 'assist', text: 'Prévisualisation du design system — données fictives, aucune action n’est enregistrée.', link: { label: 'Retour à la galerie', href: path('dev_ui_index') } } only %}
+  {% if switch_banner|default(false) %}{% include 'components/banner.html.twig' with { variant: 'info', text: 'Vous êtes maintenant dans l’espace de ' ~ commune_name ~ ' (rôle : ' ~ role ~ '). Les données, les rubriques et les actions ont été mises à jour.' } only %}{% endif %}
+{% endblock %}

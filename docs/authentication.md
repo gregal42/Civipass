@@ -110,5 +110,5 @@ docker exec -it saas_civipass_php-fpm php bin/console app:super-admin:create adm
 3. **Pas de révocation de tous les appareils sans changement de mot de passe** (voir la stratégie de révocation).
 4. **Envoi des emails sans relance** (V1) : un incident SMTP est journalisé mais le lien n'est pas renvoyé ; l'utilisateur peut refaire une demande (limites : 3 / heure).
 5. **Résidu de canal temporel** : une demande pour un compte existant écrit en base (quelques ms de plus).
-6. **Écran de connexion provisoire** : palette neutre et variables CSS dans `assets/styles/app.css`, à remplacer par les jetons du Design System Civipass quand il sera intégré.
+6. **Pages d'authentification** : recomposées avec les composants du design system (`layouts/auth.html.twig`, voir `docs/design-system.md`) ; comportement, noms de champs et jetons CSRF inchangés. Elles fonctionnent toujours sans JavaScript.
 7. **Base de développement** : la migration du LOT 01.1 n'est pas jouée sur `civipass` ; la connexion n'y fonctionnera qu'après cette migration (décision à prendre).

@@ -1,0 +1,14 @@
+{#
+  Boîte de dialogue de confirmation globale : une fois dans le layout. Répond à cp:confirm (sortie avec saisie non enregistrée, action irréversible).
+  Ne sert jamais à l’approbation d’une demande, qui se fait dans la fiche (formulaire inline).
+#}
+<dialog class="cp-dialog" data-controller="cp--dialog" data-cp--dialog-global-value="true" aria-labelledby="cp-dialog-title" aria-describedby="cp-dialog-message">
+  <div class="cp-dialog__inner">
+    <h2 class="cp-dialog__title" id="cp-dialog-title" data-cp--dialog-target="title">Confirmer</h2>
+    <p id="cp-dialog-message" data-cp--dialog-target="message"></p>
+    <div class="cp-dialog__actions">
+      <button type="button" class="cp-btn cp-btn--secondary" data-cp--dialog-target="cancel" data-action="cp--dialog#cancel">Annuler</button>
+      <button type="button" class="cp-btn cp-btn--primary" data-cp--dialog-target="confirm" data-action="cp--dialog#confirm">Confirmer</button>
+    </div>
+  </div>
+</dialog>

@@ -1,0 +1,5 @@
+{#
+  Titre de section (h2) avec méta optionnelle.
+  @param string id  Identifiant du titre (aria-labelledby de la section).  @param string title  @param string meta
+#}
+<div class="cp-section__head"><h2 class="cp-section__title" id="{{ id }}">{{ title }}</h2>{% if meta|default('') %}<span class="cp-section__meta">{{ meta }}</span>{% endif %}</div>

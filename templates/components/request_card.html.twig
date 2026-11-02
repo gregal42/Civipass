@@ -1,0 +1,15 @@
+{#
+  Carte de demande (liste compacte, résultats de recherche, tableau de bord) : demandeur, statut pour votre commune, territoires, modes, plaques.
+  @param string ref  @param string name  @param string href  @param string status  Statut d’instruction pour votre commune.
+  @param string when  « Reçue aujourd’hui à 09:42 »   @param array territories  Liste de { commune, zone, mine }.
+  @param array modes  Clés de mode_chip.   @param array plates  Immatriculations.   @param int documents  Nombre de justificatifs.
+#}
+<article class="cp-request-card" aria-labelledby="rc-{{ ref }}">
+  <div class="cp-request-card__head"><h3 class="cp-request-card__name" id="rc-{{ ref }}"><a href="{{ href }}">{{ name }}</a></h3>{% include 'components/status_pill.html.twig' with { status: status } only %}</div>
+  <p class="cp-request-card__meta"><span class="cp-mono">{{ ref }}</span><span>{{ when }}</span>{% if documents|default(0) %}<span>{% include 'components/icon.html.twig' with { name: 'paperclip', size: 's' } only %} {{ documents }} justificatif{{ documents > 1 ? 's' : '' }}</span>{% endif %}</p>
+  <p class="cp-request-card__terr">{% for t in territories %}<span>{% include 'components/icon.html.twig' with { name: 'pin', size: 's' } only %}{% if t.mine|default(false) %}<b>{{ t.commune }}</b>{% else %}{{ t.commune }}{% endif %} — {{ t.zone }}</span>{% endfor %}</p>
+  <div class="cp-request-card__foot">
+    {%- for m in modes|default([]) %}{% include 'components/mode_chip.html.twig' with { mode: m } only %}{% endfor %}
+    {%- for p in plates|default([]) %}{% include 'components/plate.html.twig' with { number: p } only %}{% endfor -%}
+  </div>
+</article>

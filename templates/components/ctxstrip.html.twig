@@ -1,0 +1,9 @@
+{#
+  Bandeau de contexte en largeur compacte (< 640 px) : commune › événement, toujours visible sous la barre supérieure.
+  @param array parts  Liste de { text, strong, tone } ; tone = signal pour un compteur à traiter.
+  @param string role  Rôle exercé dans ce contexte (toujours visible en compact).
+#}
+<div class="cp-ctxstrip">
+  {%- for p in parts %}{% if not loop.first %}<span aria-hidden="true">›</span>{% endif %}{% if p.strong|default(false) %}<b>{{ p.text }}</b>{% elseif p.tone|default('') == 'signal' %}<span class="cp-ctxstrip__signal">{{ p.text }}</span>{% else %}<span>{{ p.text }}</span>{% endif %}{% endfor -%}
+  {%- if role|default('') %}<span aria-hidden="true">·</span><span class="cp-ctxstrip__role">{% include 'components/icon.html.twig' with { name: 'shield', size: 's' } only %}{{ role }}</span>{% endif -%}
+</div>

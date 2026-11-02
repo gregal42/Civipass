@@ -1,0 +1,18 @@
+<form class="cp-stack" data-controller="cp--choice-trace" onsubmit="return false">
+  <fieldset class="cp-fieldset">
+    <legend class="cp-fieldset__legend">Zones accordées à Le Temple</legend>
+    <div class="cp-choices">
+      {% include 'components/choice.html.twig' with { name: 'zones[]', value: 'ce', id: 'z-ce', label: 'Commune entière', checked: true, tag: { label: 'Demandée' }, note: 'Demandée' } only %}
+      {% include 'components/choice.html.twig' with { name: 'zones[]', value: 'sfn', id: 'z-sfn', label: 'Secteur forestier nord', trace_texts: { on: 'Ajout non demandé — sera tracé dans l’historique', off: 'Zone active, non demandée' } } only %}
+      {% include 'components/choice.html.twig' with { name: 'zones[]', value: 'lag', id: 'z-lag', label: 'Lagune de la Sablière', disabled: true, tag: { label: 'Suspendue', variant: 'off' }, note: 'Zone suspendue — indisponible' } only %}
+    </div>
+  </fieldset>
+  <fieldset class="cp-fieldset">
+    <legend class="cp-fieldset__legend">Modes de déplacement autorisés</legend>
+    <div class="cp-choices cp-choices--grid">
+      {% include 'components/choice.html.twig' with { name: 'modes[]', value: 'vehicle', id: 'm-veh', icon: 'car', label: 'Véhicule', checked: true, tag: { label: 'Demandé' } } only %}
+      {% include 'components/choice.html.twig' with { name: 'modes[]', value: 'foot', id: 'm-foot', icon: 'walk', label: 'À pied', checked: true, tag: { label: 'Demandé' } } only %}
+      {% include 'components/choice.html.twig' with { name: 'modes[]', value: 'bike', id: 'm-bike', icon: 'bike', label: 'À vélo', trace_texts: { on: 'Ajout non demandé — sera tracé', off: 'Non demandé' } } only %}
+    </div>
+  </fieldset>
+</form>

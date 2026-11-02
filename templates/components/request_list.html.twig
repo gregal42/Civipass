@@ -1,0 +1,19 @@
+{#
+  Liste de demandes : tableau en large, cartes en compact (< 560 px de conteneur). Chaque ligne est un lien vers la fiche.
+  @param array  rows  Liste de { ref, name, territory, when, status, href }.
+  @param string foot  Note de bas de liste (pagination, filtre actif).
+#}
+<div class="cp-list">
+  <div class="cp-list__head" aria-hidden="true"><span>Référence</span><span>Demandeur</span><span class="cp-list__sub--wide">Territoire demandé</span><span>Reçue</span><span>Statut</span><span></span></div>
+  <ul class="cp-list__items">
+    {%- for r in rows %}
+    <li>
+      {%- set inner -%}
+      <span class="cp-list__ref">{{ r.ref }}</span><span class="cp-list__name">{{ r.name }}</span><span class="cp-list__sub cp-list__sub--wide">{{ r.territory }}</span><span class="cp-list__when">{{ r.when }}</span><span class="cp-list__status">{% include 'components/status_pill.html.twig' with { status: r.status } only %}</span><span class="cp-list__go">{% if r.href|default('') %}{% include 'components/icon.html.twig' with { name: 'right' } only %}{% endif %}</span>
+      {%- endset -%}
+      {%- if r.href|default('') %}<a class="cp-list__row" href="{{ r.href }}">{{ inner|raw }}</a>{% else %}<div class="cp-list__row">{{ inner|raw }}</div>{% endif -%}
+    </li>
+    {%- endfor %}
+  </ul>
+  {%- if foot|default('') %}<p class="cp-list__foot">{{ foot }}</p>{% endif %}
+</div>

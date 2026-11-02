@@ -1,50 +1,28 @@
-{% extends 'base.html.twig' %}
+{% extends 'layouts/auth.html.twig' %}
+{% set page_title = 'Connexion' %}
 
-{% block title %}Connexion — Civipass{% endblock %}
-
-{% block meta %}
-    <meta name="robots" content="noindex, nofollow">
-{% endblock %}
-
-{% block body %}
-    <div class="page">
-        <main class="card">
-            <h1>Connexion à Civipass</h1>
-
+{% block content %}
+    {% embed 'components/panel.html.twig' with { id: 'login-h', title: 'Connexion à Civipass', level: 1, error: error, last_username: last_username } only %}
+        {% block body %}
             {% if error %}
-                <div class="alert" role="alert" id="login-error">
-                    {{ error.messageKey|trans(error.messageData, 'security') }}
-                </div>
+                {% include 'components/alert.html.twig' with { variant: 'error', id: 'login-error', text: error.messageKey|trans(error.messageData, 'security') } only %}
             {% endif %}
 
-            <form method="post" action="{{ path('app_login') }}" novalidate>
-                <div class="field">
-                    <label for="email">Adresse email</label>
-                    <input type="email" id="email" name="email" value="{{ last_username }}"
-                           autocomplete="username" autocapitalize="none" spellcheck="false"
-                           required autofocus
-                           {% if error %}aria-invalid="true" aria-describedby="login-error"{% endif %}>
-                </div>
+            <form method="post" action="{{ path('app_login') }}" novalidate data-controller="cp--submit-state">
+                {% set invalid = error ? ' aria-invalid="true" aria-describedby="login-error"' : '' %}
+                {% include 'components/field.html.twig' with { id: 'email', name: 'email', type: 'email', label: 'Adresse email', value: last_username, required: true, autocomplete: 'username', attrs: 'autofocus autocapitalize="none"' ~ invalid } only %}
+                {% include 'components/field.html.twig' with { id: 'password', name: 'password', type: 'password', label: 'Mot de passe', required: true, autocomplete: 'current-password', attrs: invalid } only %}
 
-                <div class="field">
-                    <label for="password">Mot de passe</label>
-                    <input type="password" id="password" name="password"
-                           autocomplete="current-password" required
-                           {% if error %}aria-invalid="true" aria-describedby="login-error"{% endif %}>
-                </div>
-
-                <div class="field field--check">
-                    <input type="checkbox" id="remember_me" name="_remember_me" aria-describedby="remember-hint">
-                    <label for="remember_me">Se souvenir de moi</label>
-                    <p class="muted" id="remember-hint">30 jours maximum. À éviter sur un ordinateur partagé.</p>
+                <div class="cp-stack" style="gap: var(--space-1)">
+                    {% include 'components/check.html.twig' with { id: 'remember_me', name: '_remember_me', value: '1', label: 'Se souvenir de moi', attrs: 'aria-describedby="remember-hint"' } only %}
+                    <p class="cp-help" id="remember-hint">30 jours maximum. À éviter sur un ordinateur partagé.</p>
                 </div>
 
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-
-                <button type="submit" class="button">Se connecter</button>
+                {% include 'components/button.html.twig' with { label: 'Se connecter', type: 'submit', size: 'l', block: true, loading_label: 'Connexion…' } only %}
             </form>
 
-            <p><a href="{{ path('app_forgot_password') }}">Mot de passe oublié ?</a></p>
-        </main>
-    </div>
+            <p class="cp-auth__links"><a href="{{ path('app_forgot_password') }}">Mot de passe oublié ?</a></p>
+        {% endblock %}
+    {% endembed %}
 {% endblock %}

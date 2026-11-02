@@ -1,0 +1,23 @@
+{#
+  Sélecteur de contexte (commune active, événement actif) avec menu déroulant (cp--dropdown).
+  @param string id       Identifiant unique (ex. « commune »).
+  @param string kicker   « Commune active » | « Événement ».
+  @param string value    Valeur affichée.
+  @param array  options  Liste de { label, description, href, current } ; vide = bouton sans menu.
+  @param string note     Ligne d’aide en bas du menu.
+  @param string class    Classe supplémentaire (ex. cp-topbar__event).
+#}
+<div class="cp-selector {{ class|default('') }}" data-controller="cp--dropdown">
+  <button type="button" class="cp-selector__btn" data-cp--dropdown-target="button" data-action="cp--dropdown#toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="cp-menu-{{ id }}">
+    <span><span class="cp-selector__kicker">{{ kicker }}</span><span class="cp-selector__value">{{ value }}</span></span>
+    {%- include 'components/icon.html.twig' with { name: 'down', size: 's' } only -%}
+  </button>
+  <div class="cp-menu" id="cp-menu-{{ id }}" role="menu" aria-label="{{ kicker }}" data-cp--dropdown-target="menu" hidden>
+    {%- for o in options|default([]) %}
+    <a class="cp-menu__item" role="menuitemradio" aria-checked="{{ o.current|default(false) ? 'true' : 'false' }}" href="{{ o.href|default('#') }}" tabindex="-1">
+      <span>{% if o.current|default(false) %}{% include 'components/icon.html.twig' with { name: 'check', size: 's' } only %}{% endif %}</span><b>{{ o.label }}</b>{% if o.description|default('') %}<span class="cp-menu__item-desc">{{ o.description }}</span>{% endif %}
+    </a>
+    {%- endfor %}
+    {%- if note|default('') %}<p class="cp-menu__note">{{ note }}</p>{% endif %}
+  </div>
+</div>

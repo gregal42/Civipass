@@ -1,0 +1,10 @@
+<div class="cp-cluster" style="align-items: flex-start; min-height: 230px">
+  {% include 'components/context_selector.html.twig' with { id: 'demo-commune', kicker: 'Commune active', value: 'Le Temple', options: [
+      { label: 'Le Temple', description: 'Administratrice communale · Responsable d’événement · Instructrice', current: true },
+      { label: 'Saumos', description: 'Instructrice' }
+    ], note: 'Vos rôles dépendent de la commune choisie.' } only %}
+  {% include 'components/context_selector.html.twig' with { id: 'demo-event', kicker: 'Événement', value: 'Incendie — Secteur forestier nord', options: [
+      { label: 'Incendie — Secteur forestier nord', description: 'Actif', current: true },
+      { label: 'Inondation — Zone du bourg', description: 'Brouillon' }
+    ] } only %}
+</div>

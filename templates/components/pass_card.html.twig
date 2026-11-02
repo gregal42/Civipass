@@ -1,0 +1,22 @@
+{#
+  Carte de laissez-passer : QR, titulaire, référence, événement, validité, droits par commune, plaques ; actions selon permissions.
+  Les coordonnées personnelles n’y figurent jamais.
+  @param string ref  @param string holder  @param string event  @param object qr  Paramètres de qr_code (svg ou src).
+  @param object validity  Paramètres de validity.   @param array rights  Liste de { commune, zone, period }.
+  @param array plates  @param array modes  @param array actions  Boutons : { label, href, icon, variant }.
+#}
+<article class="cp-pass" aria-labelledby="pass-{{ ref }}">
+  <div class="cp-pass__body">
+    <div class="cp-pass__qr">{% include 'components/qr_code.html.twig' with qr|merge({ ref: ref, size: qr.size|default('s') }) only %}</div>
+    <div class="cp-pass__info">
+      <div><p class="cp-eyebrow">Laissez-passer · <span class="cp-mono">{{ ref }}</span></p><h3 class="cp-pass__holder" id="pass-{{ ref }}">{{ holder }}</h3></div>
+      <p class="cp-pass__meta">{% include 'components/icon.html.twig' with { name: 'flag', size: 's' } only %} {{ event }}</p>
+      {% include 'components/validity.html.twig' with validity only %}
+      <ul class="cp-pass__rights">{% for r in rights %}<li><b>{{ r.commune }}</b> — {{ r.zone }} <span class="cp-muted cp-num">· {{ r.period }}</span></li>{% endfor %}</ul>
+      {%- if plates|default([])|length or modes|default([])|length %}<div class="cp-plates">{% for p in plates|default([]) %}{% include 'components/plate.html.twig' with { number: p } only %}{% endfor %}{% for m in modes|default([]) %}{% include 'components/mode_chip.html.twig' with { mode: m } only %}{% endfor %}</div>{% endif %}
+    </div>
+  </div>
+  {%- if actions|default([])|length %}
+  <div class="cp-pass__foot">{% for a in actions %}{% include 'components/button.html.twig' with { label: a.label, href: a.href|default(''), icon: a.icon|default(''), variant: a.variant|default('secondary'), attrs: a.attrs|default('') } only %}{% endfor %}</div>
+  {%- endif %}
+</article>

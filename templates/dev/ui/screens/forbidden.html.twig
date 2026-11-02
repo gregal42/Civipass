@@ -1,0 +1,7 @@
+{% extends 'dev/ui/screens/_screen.html.twig' %}
+{% block content %}
+  {% embed 'components/page_head.html.twig' with { eyebrow: commune_name, title: 'Accès refusé' } only %}{% endembed %}
+  {% embed 'components/alert.html.twig' with { variant: 'info', icon: 'lock', title: 'Votre rôle dans ' ~ commune_name ~ ' ne donne pas accès à la gestion des utilisateurs (403)', role_label: role, links: links } only %}
+    {% block content %}<p>Vous êtes connectée en tant que {{ role_label }}. Demandez cette habilitation à un administrateur communal de Saumos, ou changez de commune si vous gérez les utilisateurs ailleurs.</p><p><a href="{{ links.dashboard }}">Revenir au tableau de bord</a></p>{% endblock %}
+  {% endembed %}
+{% endblock %}

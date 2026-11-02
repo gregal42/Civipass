@@ -1,0 +1,4 @@
+{%- set names = ['home', 'inbox', 'pass', 'flag', 'map', 'users', 'settings', 'plus', 'check', 'x', 'alert', 'info', 'wifi', 'wifioff', 'lock', 'down', 'right', 'left', 'clock', 'car', 'walk', 'bike', 'file', 'menu', 'refresh', 'shield', 'eye', 'pin', 'question', 'fire', 'wave', 'search', 'more', 'upload', 'download', 'trash', 'logout', 'user', 'sort', 'filter', 'qr', 'print', 'external', 'up', 'back', 'mail', 'phone', 'paperclip', 'calendar', 'zap'] -%}
+<ul style="display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px">
+  {%- for n in names %}<li style="display: grid; justify-items: center; gap: 6px; padding: 10px 4px; border: 1px solid var(--line); border-radius: var(--radius-m); background: var(--surface)">{% include 'components/icon.html.twig' with { name: n, size: 'l' } only %}<code class="cp-mono" style="font-size: 12px; color: var(--ink-2)">{{ n }}</code></li>{% endfor -%}
+</ul>

@@ -1,0 +1,4 @@
+{% embed 'components/page_head.html.twig' with { eyebrow: 'Commune de Le Temple', title: 'Tableau de bord', sub: 'Dimanche 1er novembre 2026 · données à 10:05' } only %}
+  {% block actions %}{% include 'components/button.html.twig' with { label: 'Créer un événement', icon: 'plus' } only %}{% endblock %}
+{% endembed %}
+<div class="cp-section" style="margin-top: 24px">{% include 'components/section_head.html.twig' with { id: 'demo-sec', title: 'Situation', meta: 'Événements actifs de la commune' } only %}</div>

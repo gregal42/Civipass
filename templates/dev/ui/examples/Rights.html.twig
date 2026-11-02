@@ -1,0 +1,4 @@
+<div class="cp-stack" style="max-width: 560px">
+  {% include 'components/rights.html.twig' with { rights: [ { commune: 'Le Temple', zone: 'Commune entière', period: '01/11/2026 10:00 → 05/11/2026 20:00', status: 'valid' }, { commune: 'Saumos', zone: 'Zone centre', period: '01/11/2026 10:00 → 05/11/2026 20:00', status: 'invalid', reason: 'Participation de Saumos suspendue — droit inutilisable' } ] } only %}
+  {% include 'components/rights.html.twig' with { title: 'Selon la dernière synchronisation', rights: [ { commune: 'Le Temple', zone: 'Commune entière', period: '01/11/2026 10:00 → 05/11/2026 20:00', status: 'sync' } ] } only %}
+</div>

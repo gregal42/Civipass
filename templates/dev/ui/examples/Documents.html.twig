@@ -1,0 +1,4 @@
+<div style="max-width: 640px">
+{% include 'components/documents.html.twig' with { docs: [ { name: 'attestation-domicile.pdf', type: 'PDF', size: '412 Ko', date: '01/11/2026', modal: 'doc-view' }, { name: 'carte-grise-GH789JK.jpg', type: 'JPG', size: '1,8 Mo', date: '01/11/2026', modal: 'doc-view' } ] } only %}
+</div>
+{% embed 'components/modal.html.twig' with { id: 'doc-view', title: 'Justificatif', size: 'wide' } only %}{% block body %}<div class="cp-doc-viewer"><p>Aperçu du document (rendu par le serveur).</p></div>{% endblock %}{% endembed %}

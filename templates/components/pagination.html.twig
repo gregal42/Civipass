@@ -1,0 +1,18 @@
+{#
+  Pagination d’une liste : portée affichée + pages. Liens GET (?page=), compatibles Turbo.
+  @param int from  @param int to  @param int total  @param string noun (« demandes »)
+  @param int page  @param int pages  @param string href_pattern  URL avec « __PAGE__ » (ex. ?page=__PAGE__).
+#}
+<nav class="cp-pagination" aria-label="Pagination">
+  <p class="cp-pagination__info">{{ from }}–{{ to }} sur {{ total }} {{ noun|default('éléments') }}</p>
+  <ul class="cp-pagination__pages">
+    {%- if page > 1 %}<li><a class="cp-pagination__page" href="{{ href_pattern|replace({'__PAGE__': page - 1}) }}" aria-label="Page précédente">{% include 'components/icon.html.twig' with { name: 'back', size: 's' } only %}</a></li>{% endif %}
+    {%- set last = 0 -%}
+    {%- for p in 1..pages %}{% if p == 1 or p == pages or (p >= page - 1 and p <= page + 1) %}
+      {%- if p - last > 1 %}<li class="cp-pagination__gap" aria-hidden="true">…</li>{% endif -%}
+      <li><a class="cp-pagination__page" href="{{ href_pattern|replace({'__PAGE__': p}) }}"{% if p == page %} aria-current="page"{% endif %} aria-label="Page {{ p }}">{{ p }}</a></li>
+      {%- set last = p -%}
+    {% endif %}{% endfor -%}
+    {%- if page < pages %}<li><a class="cp-pagination__page" href="{{ href_pattern|replace({'__PAGE__': page + 1}) }}" aria-label="Page suivante">{% include 'components/icon.html.twig' with { name: 'right', size: 's' } only %}</a></li>{% endif %}
+  </ul>
+</nav>

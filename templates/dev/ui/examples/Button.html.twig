@@ -1,0 +1,16 @@
+<div class="cp-stack">
+  <div class="cp-cluster">
+    {% include 'components/button.html.twig' with { label: 'Créer un événement', icon: 'plus' } only %}
+    {% include 'components/button.html.twig' with { label: 'Reprendre le brouillon', variant: 'secondary' } only %}
+    {% include 'components/button.html.twig' with { label: 'Voir la vérification', variant: 'ghost', href: '#' } only %}
+  </div>
+  <div class="cp-cluster">
+    {% include 'components/button.html.twig' with { label: 'Approuver…', variant: 'approve', icon: 'check', size: 'l' } only %}
+    {% include 'components/button.html.twig' with { label: 'Refuser…', variant: 'refuse', icon: 'x', size: 'l' } only %}
+    {% include 'components/button.html.twig' with { label: 'Révoquer…', variant: 'danger-ghost' } only %}
+  </div>
+  <div class="cp-cluster">
+    <button class="cp-btn cp-btn--approve cp-btn--l" type="button" disabled aria-busy="true"><span class="cp-spinner" aria-hidden="true"></span> Émission en cours…</button>
+    {% include 'components/button.html.twig' with { label: 'Indisponible', variant: 'secondary', disabled: true } only %}
+  </div>
+</div>

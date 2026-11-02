@@ -1,0 +1,152 @@
+{% extends 'dev/ui/screens/_screen.html.twig' %}
+{% block title %}Demande {{ q.ref }} · {{ q.name }} · Civipass{% endblock %}
+{% block content %}
+<div class="cp-dossier" data-controller="cp--disclosure">
+  <div class="cp-stack" style="gap: 20px">
+  {% include 'components/breadcrumb.html.twig' with { items: [ { label: 'Tableau de bord', href: links.dashboard }, { label: 'Demandes', href: list_href }, { label: q.ref, mono: true } ], back: { label: 'Demandes', href: list_href } } only %}
+
+  <header class="cp-dossier-head">
+    <p class="cp-eyebrow cp-mono">{{ q.ref }}</p>
+    <h1 class="cp-dossier-head__title">{{ q.name }} <span>{% include 'components/status_pill.html.twig' with { status: status, size: 'l' } only %}</span></h1>
+    <div class="cp-dossier-head__meta">
+      <span>{% include 'components/icon.html.twig' with { name: 'clock', size: 's' } only %} Déposée le {{ q.date }} à {{ q.time }} via le formulaire public</span>
+      <span>{% include 'components/icon.html.twig' with { name: 'pin', size: 's' } only %} {{ q.territories|length > 1 ? q.territories|length ~ ' communes concernées' : 'Commune : ' ~ commune_name }}</span>
+    </div>
+    {%- if status == 'pending' %}<div>{% include 'components/alert.html.twig' with { variant: 'inline', text: 'Dossier réservé à votre nom pendant l’instruction (libéré après 15 min d’inactivité).' } only %}</div>{% endif %}
+  </header>
+  <div aria-live="polite">{% if flash|default(false) %}{% include 'components/alert.html.twig' with { variant: 'info', focus: true, title: 'Prévisualisation : aucune décision n’a été enregistrée', text: 'Ce formulaire n’écrit rien : les écrans de décision réels arrivent avec le lot Instruction.' } only %}{% endif %}</div>
+  </div>
+
+  <div class="cp-dossier__grid" style="margin-top: 20px">
+    <div class="cp-dossier__main">
+      {%- set modes_html %}<span class="cp-modes">{% for m in q.modes %}{% include 'components/mode_chip.html.twig' with { mode: m } only %}{% endfor %}</span>{% endset -%}
+      {%- set plates_html %}{% if q.plates|length %}<span class="cp-plates">{% for p in q.plates %}{% include 'components/plate.html.twig' with { number: p } only %}{% endfor %}</span>{% else %}<span class="cp-facts__plain">Sans véhicule</span>{% endif %}{% endset -%}
+      {%- set terr_html %}{% for d in decisions %}<span>{{ d.commune }} — {{ d.territory }}{% if not loop.last %} ·{% endif %}</span>{% endfor %}{% endset -%}
+      {%- set docs_html %}{% if q.docs|length %}<a href="#docs-h">{{ q.docs|length }} justificatif{{ q.docs|length > 1 ? 's' : '' }}</a>{% else %}<span class="cp-facts__plain">Aucun justificatif joint</span>{% endif %}{% endset -%}
+      {% embed 'components/panel.html.twig' with { id: 'req-h', title: 'Ce qui est demandé', q: q, items: [
+          { label: 'Motif', value: q.motif, note: q.comment ? '· « ' ~ q.comment ~ ' »' : '· sans commentaire' },
+          { label: 'Territoires demandés', html: terr_html }, { label: 'Déplacements', html: modes_html },
+          { label: 'Immatriculations', html: plates_html }, { label: 'Justificatifs', html: docs_html } ] } only %}
+        {% block body %}{% include 'components/facts.html.twig' with { items: items } only %}{% endblock %}
+      {% endembed %}
+
+      {% embed 'components/panel.html.twig' with { id: 'com-h', title: 'Communes et décisions', decisions: decisions } only %}
+        {% block body %}{% include 'components/commune_decisions.html.twig' with { items: decisions } only %}<p class="cp-help">Chaque commune décide pour son territoire. Un refus de l’une n’affecte pas les droits accordés par une autre.</p>{% endblock %}
+      {% endembed %}
+
+      <div>
+      {%- if status == 'pending' %}
+        {% embed 'components/panel.html.twig' with { id: 'dec-h', title: 'Décision de ' ~ commune_name, meta: 'Statut : En attente' } only %}
+          {% block body %}
+          <div class="cp-decision-bar cp-decision-bar--desktop">
+            {% include 'components/button.html.twig' with { label: 'Approuver…', variant: 'approve', icon: 'check', size: 'l', attrs: 'data-cp--disclosure-target="trigger" data-action="cp--disclosure#open" data-cp--disclosure-panel-param="approve" aria-expanded="false" aria-controls="approve-panel"' } only %}
+            <span class="cp-decision-bar__spacer"></span>
+            {% include 'components/button.html.twig' with { label: 'Refuser…', variant: 'refuse', icon: 'x', size: 'l', attrs: 'data-cp--disclosure-target="trigger" data-action="cp--disclosure#open" data-cp--disclosure-panel-param="refuse" aria-expanded="false" aria-controls="refuse-panel"' } only %}
+            <p class="cp-decision-bar__hint">L’approbation s’ouvre ici, dans le dossier : vous définissez la période, les zones, les modes et les plaques avant de confirmer.</p>
+          </div>
+          <p class="cp-help cp-decision-bar__mobile-hint">Utilisez les boutons en bas de l’écran pour décider.</p>
+          {% endblock %}
+        {% endembed %}
+
+        <div id="approve-panel" data-cp--disclosure-target="panel" data-panel="approve" hidden>
+        {% embed 'components/decision_form.html.twig' with { kind: 'approve', id: 'approve-form', title: 'Approuver pour ' ~ commune_name, intro: 'Définissez les droits accordés. Le laissez-passer ' ~ q.pass_ref ~ ' est émis dès la confirmation.', zones: zones, all_modes: all_modes, q: q, commune_name: commune_name, plate_items: plate_items } only %}
+          {% block messages %}<div></div>{% endblock %}
+          {% block fields %}
+            {% include 'components/period.html.twig' with { id: 'validity', value: { start_date: '2026-11-01', start_time: '10:00', end_date: '2026-11-05', end_time: '20:00' } } only %}
+            <fieldset class="cp-fieldset" id="zones">
+              <legend class="cp-fieldset__legend">Zones accordées à {{ commune_name }}</legend>
+              <p class="cp-help">La zone demandée est présélectionnée. Vous pouvez ajouter une zone active non demandée.</p>
+              <div class="cp-choices">
+                {%- for z in zones %}
+                {%- if z.status|default('active') == 'suspended' %}
+                {% include 'components/choice.html.twig' with { name: 'zones[]', value: z.id, id: 'zone-' ~ z.id, label: z.name, disabled: true, tag: { label: 'Suspendue', variant: 'off' }, note: 'Zone suspendue — indisponible' } only %}
+                {%- elseif z.requested %}
+                {% include 'components/choice.html.twig' with { name: 'zones[]', value: z.id, id: 'zone-' ~ z.id, label: z.name, checked: true, tag: { label: 'Demandée' }, trace_texts: { on: 'Demandée', off: 'Zone demandée non accordée — sera tracé', when: 'unchecked' } } only %}
+                {%- else %}
+                {% include 'components/choice.html.twig' with { name: 'zones[]', value: z.id, id: 'zone-' ~ z.id, label: z.name, trace_texts: { on: 'Ajout non demandé — sera tracé dans l’historique', off: 'Zone active, non demandée' } } only %}
+                {%- endif %}
+                {%- endfor %}
+              </div>
+            </fieldset>
+            <fieldset class="cp-fieldset" id="modes">
+              <legend class="cp-fieldset__legend">Modes de déplacement autorisés</legend>
+              <div class="cp-choices cp-choices--grid">
+                {%- for m in all_modes %}
+                {% include 'components/choice.html.twig' with { name: 'modes[]', value: m.id, id: 'mode-' ~ m.id, icon: m.icon, label: m.label, recap_label: m.label, checked: m.requested, tag: m.requested ? { label: 'Demandé' } : false,
+                  trace_texts: m.requested ? { on: '', off: 'Mode demandé non accordé — sera tracé', when: 'unchecked' } : { on: 'Ajout non demandé — sera tracé', off: 'Non demandé' } } only %}
+                {%- endfor %}
+              </div>
+            </fieldset>
+            {% include 'components/plates_field.html.twig' with { id: 'plates', name: 'plates[]', vehicle: 'mode-vehicle', hint: 'Format non contrôlé : règle à arbitrer.', plates: plate_items } only %}
+            {% include 'components/recap.html.twig' with { rows: [
+              { key: 'Période', format: '{validity_start_date} à {validity_start_time} → {validity_end_date} à {validity_end_time}', value: '01/11/2026 à 10:00 → 05/11/2026 à 20:00' },
+              { key: 'Zones', group: 'zones[]', empty: 'aucune' }, { key: 'Modes', group: 'modes[]', empty: 'aucun' },
+              { key: 'Plaques', group: 'plates[]', empty: 'aucune', when: 'mode-vehicle', sep: ' ; ', mono: true },
+              { key: 'Émission', value: 'Laissez-passer ' ~ q.pass_ref ~ ', QR stable' } ] } only %}
+          {% endblock %}
+          {% block actions %}
+            {% include 'components/button.html.twig' with { label: 'Confirmer l’approbation', variant: 'approve', icon: 'check', type: 'submit', loading_label: 'Émission en cours…' } only %}
+            {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', attrs: 'data-action="cp--disclosure#close"' } only %}
+          {% endblock %}
+        {% endembed %}
+        </div>
+
+        <div id="refuse-panel" data-cp--disclosure-target="panel" data-panel="refuse" hidden>
+        {% embed 'components/decision_form.html.twig' with { kind: 'refuse', id: 'refuse-form', title: 'Refuser pour ' ~ commune_name, intro: q.territories|length > 1 ? 'Le refus ne concerne que le territoire de ' ~ commune_name ~ ' : les décisions des autres communes ne changent pas.' : 'Le refus ne concerne que le territoire de ' ~ commune_name ~ '.' } only %}
+          {% block messages %}<div></div>{% endblock %}
+          {% block fields %}{% include 'components/field.html.twig' with { id: 'refuse-reason', name: 'reason', type: 'textarea', label: 'Motif du refus', optional: true, help: 'Inscrit à l’historique du dossier.' } only %}{% endblock %}
+          {% block actions %}
+            {% include 'components/button.html.twig' with { label: 'Confirmer le refus', variant: 'refuse', icon: 'x', type: 'submit', loading_label: 'Enregistrement…' } only %}
+            {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', attrs: 'data-action="cp--disclosure#close"' } only %}
+          {% endblock %}
+        {% endembed %}
+        </div>
+      {%- elseif status == 'approved' %}
+        {% embed 'components/panel.html.twig' with { id: 'dec-h', title: 'Droits accordés', grants: grants, q: q, qr_svg: qr_svg, validity: validity, decisions: decisions, pass_rights: pass_rights } only %}
+          {% block head_end %}<span style="margin-left: auto">{% include 'components/action_menu.html.twig' with { id: 'grant-actions', label: 'Actions sur les droits de ' ~ q.ref, items: [ { label: 'Modifier les droits', icon: 'settings', href: '#' }, { label: 'Renvoyer par e-mail', icon: 'mail', href: '#' }, { separator: true }, { label: 'Révoquer…', icon: 'x', danger: true, href: '#' } ] } only %}</span>{% endblock %}
+          {% block body %}
+            {% include 'components/authorization.html.twig' with { grants: grants } only %}
+            {% include 'components/pass_card.html.twig' with { ref: q.pass_ref, holder: q.name, event: 'Incendie — Secteur forestier nord', qr: { svg: qr_svg }, validity: validity,
+              rights: pass_rights, plates: q.plates,
+              actions: [ { label: 'Télécharger le PDF', icon: 'download', href: '#' }, { label: 'Imprimer', icon: 'print', href: '#', variant: 'ghost' } ] } only %}
+          {% endblock %}
+        {% endembed %}
+      {%- else %}
+        {% embed 'components/panel.html.twig' with { id: 'dec-h', title: 'Décision de ' ~ commune_name, q: q } only %}
+          {% block head_end %}<span style="margin-left: auto">{% include 'components/status_pill.html.twig' with { status: 'refused' } only %}</span>{% endblock %}
+          {% block body %}<p>Refusée le {{ q.decided_at }} par {{ q.agent }}.</p>{% if q.refuseReason %}<p class="cp-help">Motif : {{ q.refuseReason }}</p>{% else %}<p class="cp-help">Aucun motif saisi.</p>{% endif %}{% endblock %}
+        {% endembed %}
+      {%- endif %}
+      </div>
+
+      {% embed 'components/panel.html.twig' with { id: 'docs-h', title: 'Justificatifs', meta: q.docs|length ~ ' fichier' ~ (q.docs|length > 1 ? 's' : ''), docs: doc_items } only %}
+        {% block body %}{% include 'components/documents.html.twig' with { docs: docs } only %}{% endblock %}
+      {% endembed %}
+    </div>
+
+    <div class="cp-dossier__side">
+      {% embed 'components/panel.html.twig' with { id: 'id-h', title: 'Identité et contact', q: q } only %}
+        {% block body %}{% include 'components/contact.html.twig' with { items: [ { label: 'Nom', value: q.name, strong: true }, { label: 'Adresse', value: q.address }, { label: 'E-mail', value: q.email }, { label: 'Téléphone', value: q.phone } ] } only %}{% endblock %}
+      {% endembed %}
+      {% embed 'components/panel.html.twig' with { id: 'hist-h', title: 'Historique', meta: 'Audit', history: history } only %}
+        {% block body %}<div>{% include 'components/timeline.html.twig' with { items: history } only %}</div>{% endblock %}
+      {% endembed %}
+    </div>
+  </div>
+
+  {%- if status == 'pending' %}
+  {% embed 'components/action_bar.html.twig' only %}
+    {% block actions %}
+      {% include 'components/button.html.twig' with { label: 'Refuser', variant: 'refuse', icon: 'x', attrs: 'data-action="cp--disclosure#open" data-cp--disclosure-panel-param="refuse"' } only %}
+      {% include 'components/button.html.twig' with { label: 'Approuver', variant: 'approve', icon: 'check', attrs: 'data-action="cp--disclosure#open" data-cp--disclosure-panel-param="approve"' } only %}
+    {% endblock %}
+  {% endembed %}
+  {%- endif %}
+</div>
+
+{% embed 'components/modal.html.twig' with { id: 'doc-viewer', title: 'Justificatif', size: 'wide', has_foot: true } only %}
+  {% block body %}<div class="cp-doc-viewer"><div>{% include 'components/icon.html.twig' with { name: 'file', size: 'xl' } only %}<p>Aperçu du document, rendu par le serveur.</p><p class="cp-help">Prototype : aucun fichier réel.</p></div></div>{% endblock %}
+  {% block foot %}{% include 'components/button.html.twig' with { label: 'Fermer', attrs: 'data-action="cp--modal#close"' } only %}{% endblock %}
+{% endembed %}
+
+{% endblock %}

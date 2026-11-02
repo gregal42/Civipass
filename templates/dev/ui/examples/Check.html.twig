@@ -1,0 +1,13 @@
+<fieldset class="cp-fieldset"><legend class="cp-fieldset__legend">Afficher</legend>
+  <div class="cp-checks">
+    {% include 'components/check.html.twig' with { id: 'c1', name: 'with_docs', label: 'Avec justificatifs', checked: true } only %}
+    {% include 'components/check.html.twig' with { id: 'c2', name: 'multi', label: 'Plusieurs communes' } only %}
+    {% include 'components/check.html.twig' with { id: 'c3', name: 'dis', label: 'Option indisponible', disabled: true } only %}
+  </div>
+</fieldset>
+<fieldset class="cp-fieldset"><legend class="cp-fieldset__legend">Trier par</legend>
+  <div class="cp-checks">
+    {% include 'components/check.html.twig' with { type: 'radio', id: 'r1', name: 'sort', value: 'recent', label: 'Plus récentes', checked: true } only %}
+    {% include 'components/check.html.twig' with { type: 'radio', id: 'r2', name: 'sort', value: 'old', label: 'Plus anciennes' } only %}
+  </div>
+</fieldset>

@@ -1,0 +1,9 @@
+{#
+  Données d’un dossier (liste de définitions). Deux colonnes, puis libellé au-dessus de la valeur sous 480 px.
+  @param array items  Liste de { label, value (texte), html (contenu de confiance, ex. plaques), note (texte discret) }.
+#}
+<div class="cp-facts"><dl class="cp-facts__list">
+  {%- for f in items %}
+  <div class="cp-facts__item"><dt class="cp-facts__label">{{ f.label }}</dt><dd class="cp-facts__value">{% if f.html is defined %}{{ f.html|raw }}{% else %}{{ f.value }}{% endif %}{% if f.note|default('') %}<span class="cp-facts__plain">{{ f.note }}</span>{% endif %}</dd></div>
+  {%- endfor %}
+</dl></div>

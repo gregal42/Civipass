@@ -1,0 +1,8 @@
+<div class="cp-stack">
+{% embed 'components/panel.html.twig' with { id: 'demo-dec', title: 'Décision de Le Temple', meta: 'Statut : En attente' } only %}
+  {% block body %}<p>Contenu du panneau : données, formulaire, liste.</p>{% endblock %}
+{% endembed %}
+{% embed 'components/panel.html.twig' with { id: 'demo-id', title: 'Identité et contact' } only %}
+  {% block body %}{% include 'components/contact.html.twig' with { items: [ { label: 'Nom', value: 'Camille Martin', strong: true }, { label: 'Adresse', value: '12 chemin des Pins, Le Temple' }, { label: 'E-mail', value: 'camille.martin@exemple.fr' }, { label: 'Téléphone', value: '06 39 98 01 56' } ] } only %}{% endblock %}
+{% endembed %}
+</div>

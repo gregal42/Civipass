@@ -1,0 +1,36 @@
+<!-- @dsCard height=288 -->
+<div class="cover">
+  <!--
+    blocks: brand 192×288 (radius-l), tape-dark 264×128 (radius-l), signal-fill 120×136 (radius-m), surface-2 136×136 (radius-m), ok-band 40×40 (radius-pill)
+    arrangement: one tall brand slab on the left of the zone, a striped band top right, two squared tiles and one small disc beneath — a road-sign stack
+    pattern: stripes (rubalise) — the system marks the active crisis with amber/black barrier tape, its one signature motif; 10 stripes at a 24px pitch (space-6)
+    steps and radii: gaps space-2 (8px) and space-4 (16px); radius-l on slab and band, radius-m on tiles, radius-pill on the disc
+  -->
+  <svg class="cover__art" viewBox="480 0 480 288" width="480" height="288" aria-hidden="true">
+    <defs><clipPath id="cv-band"><rect x="680" y="0" width="280" height="128" rx="14"/></clipPath></defs>
+    <rect class="b-brand" x="480" y="0" width="192" height="288" rx="14"/>
+    <rect class="b-tape" x="680" y="0" width="280" height="128" rx="14"/>
+    <g class="b-signal" clip-path="url(#cv-band)">
+      <polygon points="668,128 692,128 744,0 720,0"/><polygon points="716,128 740,128 792,0 768,0"/><polygon points="764,128 788,128 840,0 816,0"/>
+      <polygon points="812,128 836,128 888,0 864,0"/><polygon points="860,128 884,128 936,0 912,0"/><polygon points="908,128 932,128 984,0 960,0"/>
+      <polygon points="956,128 980,128 1032,0 1008,0"/><polygon points="620,128 644,128 696,0 672,0"/>
+    </g>
+    <rect class="b-signal" x="680" y="136" width="120" height="152" rx="10"/>
+    <rect class="b-tint" x="808" y="136" width="152" height="152" rx="10"/>
+    <circle class="b-ok" cx="884" cy="212" r="20"/>
+  </svg>
+  <div class="cover__text">
+    <p class="cover__name">Civipass</p>
+    <p class="cover__tag">Laissez-passer en situation de crise, lisibles sous stress.</p>
+  </div>
+</div>
+<style>
+  html, body { margin: 0; }
+  .cover { position: relative; width: 960px; height: 288px; background: var(--paper); overflow: hidden; font-family: var(--font-sans); }
+  .cover__art { position: absolute; left: 480px; top: 0; }
+  .b-brand { fill: var(--brand); } .b-tape { fill: var(--tape-dark); } .b-signal { fill: var(--signal-fill); }
+  .b-tint { fill: var(--surface-2); } .b-ok { fill: var(--ok-band); }
+  .cover__text { position: absolute; left: 40px; bottom: 36px; max-width: 420px; }
+  .cover__name { margin: 0; font-size: 88px; line-height: .92; font-weight: 800; letter-spacing: -0.03em; color: var(--ink); }
+  .cover__tag { margin: 14px 0 0; font-size: 14px; color: var(--ink-3); }
+</style>

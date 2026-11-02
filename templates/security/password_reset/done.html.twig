@@ -1,14 +1,11 @@
-{% extends 'base.html.twig' %}
+{% extends 'layouts/auth.html.twig' %}
+{% set page_title = 'Mot de passe modifié' %}
 
-{% block title %}Mot de passe modifié — Civipass{% endblock %}
-{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
-
-{% block body %}
-    <div class="page">
-        <main class="card">
-            <h1>Mot de passe modifié</h1>
-            <p role="status">Votre mot de passe a été modifié. Toutes vos sessions ouvertes ont été déconnectées. Un email de confirmation vous a été envoyé.</p>
-            <a class="button" href="{{ path('app_login') }}">Se connecter</a>
-        </main>
-    </div>
+{% block content %}
+    {% embed 'components/panel.html.twig' with { id: 'done-h', title: 'Mot de passe modifié', level: 1 } only %}
+        {% block body %}
+            {% include 'components/alert.html.twig' with { variant: 'success', text: 'Votre mot de passe a été modifié. Toutes vos sessions ouvertes ont été déconnectées. Un email de confirmation vous a été envoyé.' } only %}
+            {% include 'components/button.html.twig' with { label: 'Se connecter', href: path('app_login'), size: 'l', block: true } only %}
+        {% endblock %}
+    {% endembed %}
 {% endblock %}

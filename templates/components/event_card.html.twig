@@ -1,0 +1,35 @@
+{#
+  Carte d’événement. Variante « active » : rubalise + compteur d’attente + accès « Ouvrir l’événement ». Variante « compact » : brouillon, suspendu, participation externe.
+  @param string id        Identifiant (titre : {id}-title).
+  @param string variant   active (défaut) | compact
+  @param string title     « Incendie — Secteur forestier nord »    @param string type  « Incendie »   @param string icon  fire | wave | flag
+  @param string status    Clé de status_pill (active, draft, suspended, closed).   @param string status_label
+  @param array  meta      Liste de { icon, text } (activation, organisateur, communes participantes).
+  @param array  figures   Liste de { value, label } (approuvées, refusées, pass valides).
+  @param int    pending   Demandes en attente (variante active).
+  @param string href      Lien du tableau de bord de l’événement (jamais directement la liste des demandes).
+  @param string action_label  Libellé de l’action (défaut « Ouvrir l’événement »).
+#}
+{%- set v = variant|default('active') -%}
+<article class="cp-event cp-event--{{ v }}" aria-labelledby="{{ id }}-title">
+  {%- if v == 'active' %}<div class="cp-event__tape" aria-hidden="true"></div>{% endif %}
+  <div class="cp-event__body">
+    {%- if v == 'compact' %}
+    {% include 'components/icon.html.twig' with { name: icon|default('flag'), size: 'l' } only %}
+    <div><h3 class="cp-event__title" id="{{ id }}-title">{{ title }}</h3>{% for m in meta|default([]) %}<p class="cp-event__meta">{{ m.text }}</p>{% endfor %}</div>
+    {% include 'components/status_pill.html.twig' with { status: status, label: status_label|default(null) } only %}
+    <div class="cp-event__action">{% include 'components/button.html.twig' with { label: action_label|default('Ouvrir'), variant: 'secondary', href: href, block: true } only %}</div>
+    {%- else %}
+    <div>
+      <div class="cp-event__kicker">{% include 'components/status_pill.html.twig' with { status: status|default('active'), label: status_label|default(null) } only %}<span class="cp-eyebrow">{% include 'components/icon.html.twig' with { name: icon|default('flag'), size: 's' } only %} {{ type }}</span></div>
+      <h3 class="cp-event__title" id="{{ id }}-title">{{ title }}</h3>
+      <div class="cp-event__meta">{% for m in meta|default([]) %}<span>{% include 'components/icon.html.twig' with { name: m.icon, size: 's' } only %} {{ m.text }}</span>{% endfor %}</div>
+      {%- if figures|default([]) %}<div class="cp-event__figures">{% for f in figures %}<span><b>{{ f.value }}</b> {{ f.label }}</span>{% endfor %}</div>{% endif %}
+    </div>
+    <div class="cp-event__cta">
+      <p class="cp-event__pending"><span class="cp-event__pending-n">{{ pending }}</span><span class="cp-event__pending-l">demandes en attente</span></p>
+      {% include 'components/button.html.twig' with { label: action_label|default('Ouvrir l’événement'), href: href, icon_after: 'right' } only %}
+    </div>
+    {%- endif %}
+  </div>
+</article>

@@ -51,6 +51,12 @@ Le pipeline doit disposer d'un serveur MySQL 8.4 et exécuter : création de la 
 - `MAILER_DSN=null://null` : aucun email ne part ; les messages sont capturés par le transport de test (`assertEmailCount`, `getMailerMessage`). Le client HTTP redémarre le noyau à chaque requête : les assertions d'emails portent sur **la dernière requête**.
 - Les limiteurs (connexion, mot de passe oublié) utilisent un cache **fichier** persistant (nécessaire entre les requêtes d'un même test) ; `WebTestCase::freshClient()` le vide au début de chaque test.
 
+## Design system et prévisualisation
+
+- `tests/Unit/DesignSystem/IntegrityTest` : empreintes des fichiers importés, contrôleurs JavaScript compatibles navigateur, CSS scopé, polices présentes, layouts sans ressource externe ni CSS par JavaScript.
+- `tests/Integration/DesignSystemTwigTest` : compilation des 66 gabarits et rendu des 56 exemples sous le Twig PHP du projet.
+- `tests/Functional/DesignPreviewTest` : `/dev/ui` absent en `test` et en `prod`, présent en `dev` ; les noyaux `dev` et `prod` sont démarrés dans le test (sans base de données). Le noyau `dev` déclare des proxys de confiance dans l'état **statique** de `Request` : `tearDown()` et `WebTestCase::freshClient()` le remettent à zéro pour ne pas fausser les tests de sécurité.
+
 ## Structure des tests
 
 - `tests/Unit` : sans base (valeurs, règles pures, architecture).

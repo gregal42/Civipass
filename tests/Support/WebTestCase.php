@@ -8,6 +8,7 @@ use App\Identity\Application\UserManager;
 use App\Identity\Domain\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase as BaseWebTestCase;
 
 /**
@@ -21,6 +22,8 @@ abstract class WebTestCase extends BaseWebTestCase
 
     protected function freshClient(): KernelBrowser
     {
+        // État statique de Request : aucun proxy de confiance, quoi qu'un test précédent ait démarré (noyau dev, par exemple).
+        Request::setTrustedProxies([], Request::HEADER_X_FORWARDED_FOR);
         $client = static::createClient();
         TestDatabase::reset($this->em());
         // Le client redémarre le noyau à chaque requête : l'état des limiteurs de connexion doit être persistant

@@ -1,0 +1,37 @@
+{%- set nav = [
+  { label: 'Tableau de bord', icon: 'home', href: '#', current: true }, { label: 'Demandes', icon: 'inbox', href: '#', count: 18 },
+  { label: 'Laissez-passer', icon: 'pass', href: '#' }, { label: 'Événements', icon: 'flag', href: '#' }, { label: 'Zones', icon: 'map', href: '#' },
+  { label: 'Utilisateurs', icon: 'users', href: '#' }, { label: 'Paramètres', icon: 'settings', href: '#' } ] -%}
+{%- set bottom = [ { label: 'Accueil', icon: 'home', href: '#', current: true }, { label: 'Demandes', icon: 'inbox', href: '#', count: 18 }, { label: 'Pass', icon: 'pass', href: '#' }, { label: 'Menu', icon: 'menu', href: '#' } ] -%}
+{%- set user = { name: 'Sophie Lambert', initials: 'SL', role: 'Administratrice communale', extra_roles: '+ Responsable d’événement, Instructrice' } -%}
+{%- set commune = { id: 'c', kicker: 'Commune active', value: 'Le Temple', options: [ { label: 'Le Temple', current: true }, { label: 'Saumos' } ] } -%}
+{%- set event = { id: 'e', kicker: 'Événement', value: 'Tous les événements', options: [] } -%}
+<div class="shell-demo">
+  {%- for w in [ { w: 1180, label: 'Large ≥ 1024 px · barre latérale' }, { w: 768, label: 'Moyen 640–1023 px · rail (768 px)' }, { w: 375, label: 'Compact < 640 px · barre basse (375 px)' } ] %}
+  <figure class="shell-demo__fig" style="width: {{ w.w }}px">
+    <figcaption class="cp-eyebrow">{{ w.label }}</figcaption>
+    <div class="cp-app shell-demo__app">
+      <div class="cp-shell">
+        {% include 'components/sidebar.html.twig' with { items: nav, user: user } only %}
+        <div class="cp-main">
+          {% include 'components/topbar.html.twig' with { commune: commune|merge({ id: 'c' ~ loop.index }), event: event|merge({ id: 'e' ~ loop.index }), role: 'Administratrice communale', user: user } only %}
+          {% include 'components/ctxstrip.html.twig' with { parts: [ { text: 'Le Temple', strong: true }, { text: '1 événement actif' }, { text: '18 en attente', tone: 'signal' } ] } only %}
+          <div class="cp-content">
+            {% embed 'components/page_head.html.twig' with { eyebrow: 'Commune de Le Temple', title: 'Tableau de bord', sub: 'Dimanche 1er novembre 2026 · données à 10:05' } only %}{% block actions %}{% include 'components/button.html.twig' with { label: 'Créer un événement', icon: 'plus' } only %}{% endblock %}{% endembed %}
+            {% include 'components/kpi_tiles.html.twig' with { tiles: [ { label: 'Demandes en attente', value: 18, urgent: true }, { label: 'Approuvées', value: 126 }, { label: 'Refusées', value: 9 }, { label: 'Laissez-passer valides', value: 103 } ] } only %}
+          </div>
+          {% include 'components/bottom_nav.html.twig' with { items: bottom } only %}
+        </div>
+      </div>
+    </div>
+  </figure>
+  {%- endfor %}
+</div>
+<style>
+  .shell-demo { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  .shell-demo__fig { margin: 0; display: grid; gap: 8px; }
+  .shell-demo__app { min-height: 0; border: 1px solid var(--line-strong); border-radius: var(--radius-l); overflow: clip; }
+  .shell-demo__app .cp-shell { min-height: 0; }
+  .shell-demo__app .cp-sidebar { position: static; height: auto; }
+  .shell-demo__app .cp-topbar, .shell-demo__app .cp-bottomnav { position: static; }
+</style>

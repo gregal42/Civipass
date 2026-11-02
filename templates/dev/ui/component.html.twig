@@ -1,0 +1,20 @@
+{% extends 'dev/ui/_layout.html.twig' %}
+{% block title %}{{ name }}{% endblock %}
+
+{% block content %}
+  <header class="cp-stack">
+    <p class="cp-eyebrow"><a href="{{ path('dev_ui_index', { theme: theme|default(null) }) }}" data-turbo="false">Design system</a> / Composant</p>
+    <h1 class="cp-h1">{{ name }}</h1>
+    <div class="dev-ui__bar">
+      <span class="cp-help">Largeur :</span>
+      {% include 'components/button.html.twig' with { label: 'Pleine', variant: 'secondary', href: path('dev_ui_component', { name: name, theme: theme|default(null) }) } only %}
+      {% for w in widths %}{% include 'components/button.html.twig' with { label: w ~ ' px', variant: 'secondary', href: path('dev_ui_component', { name: name, width: w, theme: theme|default(null) }) } only %}{% endfor %}
+      <span class="cp-help">Thème :</span>
+      {% include 'components/button.html.twig' with { label: 'Clair', variant: 'secondary', href: path('dev_ui_component', { name: name, width: width ?: null, theme: 'light' }) } only %}
+      {% include 'components/button.html.twig' with { label: 'Sombre', variant: 'secondary', href: path('dev_ui_component', { name: name, width: width ?: null, theme: 'dark' }) } only %}
+    </div>
+  </header>
+  <div class="dev-ui__frame"{% if width %} style="width: {{ width }}px"{% endif %}>
+    {% include 'dev/ui/examples/' ~ name ~ '.html.twig' with { qr_svg: qr_svg } %}
+  </div>
+{% endblock %}

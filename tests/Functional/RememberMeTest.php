@@ -187,7 +187,7 @@ final class RememberMeTest extends WebTestCase
     private function loginRemembered(KernelBrowser $client): void
     {
         $client->request('GET', '/login');
-        $client->submitForm('Se connecter', ['email' => 'admin@example.test', 'password' => self::PASSWORD, '_remember_me' => 'on']);
+        $client->submitForm('Se connecter', ['email' => 'admin@example.test', 'password' => self::PASSWORD, '_remember_me' => '1']);
     }
 
     private function rememberCookieOfLastResponse(KernelBrowser $client): \Symfony\Component\HttpFoundation\Cookie

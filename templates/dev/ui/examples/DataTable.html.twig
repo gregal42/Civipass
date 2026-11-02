@@ -1,0 +1,16 @@
+{%- set pill_p %}{% include 'components/status_pill.html.twig' with { status: 'pending' } only %}{% endset -%}
+{%- set pill_a %}{% include 'components/status_pill.html.twig' with { status: 'approved' } only %}{% endset -%}
+{%- set pill_r %}{% include 'components/status_pill.html.twig' with { status: 'refused' } only %}{% endset -%}
+{% include 'components/data_table.html.twig' with { caption: '1–4 sur 153 demandes · triées par date de dépôt, plus récentes d’abord',
+  columns: [
+    { key: 'name', label: 'Demandeur', card: 'title' }, { key: 'ref', label: 'Référence', card: 'sub' },
+    { key: 'terr', label: 'Territoire', wide: true, card: 'full' }, { key: 'when', label: 'Reçue', sortable: true, sort: 'desc', sort_href: '#', card: 'aside' },
+    { key: 'status', label: 'Statut', card: 'status' } ],
+  rows: [
+    { cells: { name: { text: 'Camille Martin', href: '#' }, ref: { text: 'DEM-2026-0156', mono: true }, terr: { text: 'Le Temple — Commune entière' }, when: { text: '01/11 09:42', muted: true }, status: { html: pill_p } } },
+    { cells: { name: { text: 'Julien Robert', href: '#' }, ref: { text: 'DEM-2026-0155', mono: true }, terr: { text: 'Le Temple — Secteur forestier nord · Saumos — Zone centre' }, when: { text: '01/11 09:31', muted: true }, status: { html: pill_p } } },
+    { cells: { name: { text: 'Nadia Benali', href: '#' }, ref: { text: 'DEM-2026-0154', mono: true }, terr: { text: 'Le Temple — Commune entière' }, when: { text: '01/11 09:12', muted: true }, status: { html: pill_a } } },
+    { cells: { name: { text: 'Thomas Girard', href: '#' }, ref: { text: 'DEM-2026-0153', mono: true }, terr: { text: 'Le Temple — Hameau de Lauros' }, when: { text: '01/11 08:57', muted: true }, status: { html: pill_r } } }
+  ] } only %}
+<div style="height: 16px"></div>
+{% include 'components/data_table.html.twig' with { columns: [ { key: 'name', label: 'Demandeur' } ], rows: [], empty: 'Aucune demande ne correspond à « AB-999 »' } only %}

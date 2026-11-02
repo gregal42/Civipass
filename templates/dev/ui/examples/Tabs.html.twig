@@ -1,0 +1,12 @@
+<div data-controller="cp--tabs">
+  {% include 'components/tabs.html.twig' with { id: 'other', label: 'Autres événements', selected: 'drafts', tabs: [ { id: 'drafts', label: 'Brouillons', count: 1 }, { id: 'suspended', label: 'Suspendus', count: 0 }, { id: 'external', label: 'Participations externes', count: 0 } ] } only %}
+  <div class="cp-tabs__panel" role="tabpanel" id="other-drafts-panel" aria-labelledby="other-drafts">
+    {% include 'components/event_card.html.twig' with { id: 'ev-draft', variant: 'compact', icon: 'wave', title: 'Inondation — Zone du bourg', status: 'draft', meta: [ { text: 'Brouillon créé le 28/10/2026 · formulaire public inactif, aucun droit émis' } ], href: '#', action_label: 'Reprendre le brouillon' } only %}
+  </div>
+  <div class="cp-tabs__panel" role="tabpanel" id="other-suspended-panel" aria-labelledby="other-suspended" hidden>
+    {% include 'components/empty_state.html.twig' with { title: 'Aucun événement suspendu', text: 'Un événement suspendu apparaîtra ici, avec son motif de suspension.' } only %}
+  </div>
+  <div class="cp-tabs__panel" role="tabpanel" id="other-external-panel" aria-labelledby="other-external" hidden>
+    {% include 'components/empty_state.html.twig' with { title: 'Aucune participation à un événement d’une autre commune', text: 'Les invitations reçues et acceptées seront listées ici.' } only %}
+  </div>
+</div>

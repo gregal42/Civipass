@@ -1,0 +1,31 @@
+{#
+  Plaques autorisées : cases (demandées / ajoutées), ajout d’une immatriculation, désactivé si le mode Véhicule n’est pas accordé (cp--plate-list).
+  @param string id        Préfixe.       @param string name  Nom des cases (ex. plates[]).
+  @param string vehicle   id de la case « Véhicule ».
+  @param array  plates    Liste de { number, requested, checked }.
+  @param string legend    @param string hint (ex. « Format non contrôlé »)    @param string error
+#}
+<div data-controller="cp--plate-list" data-cp--plate-list-vehicle-value="{{ vehicle }}">
+  <fieldset class="cp-fieldset" id="{{ id }}" data-cp--plate-list-target="fieldset"{% if error|default('') %} aria-describedby="{{ id }}-error"{% endif %}>
+    <legend class="cp-fieldset__legend">{{ legend|default('Plaques autorisées') }}</legend>
+    <div class="cp-choices cp-choices--grid" data-cp--plate-list-target="list"{% if error|default('') %} aria-invalid="true"{% endif %}>
+      {%- for p in plates %}
+      {%- set plate_html %}{% include 'components/plate.html.twig' with { number: p.number, off: not p.checked|default(true) } only %}{% endset -%}
+      {% include 'components/choice.html.twig' with {
+        name: name, value: p.number, id: id ~ '-' ~ loop.index, html: plate_html, checked: p.checked|default(true), recap_label: p.number,
+        tag: p.requested|default(true) ? { label: 'Demandée' } : { label: 'Ajout agent', variant: 'agent' },
+        trace_texts: p.requested|default(true) ? { on: 'Accordée', off: 'Non accordée — sera tracé', when: 'unchecked' } : { on: 'Ajoutée par l’agent — sera tracé', off: 'Retirée' }
+      } only %}
+      {%- endfor %}
+    </div>
+    <template data-cp--plate-list-target="template">{% include 'components/choice.html.twig' with { name: name, value: '__VALUE__', id: id ~ '-__VALUE__', html: '<span class="cp-plate"><span class="cp-plate__num">__VALUE__</span></span>', checked: true, recap_label: '__VALUE__', tag: { label: 'Ajout agent', variant: 'agent' }, note: 'Ajoutée par l’agent — sera tracé', trace: true, trace_texts: { on: 'Ajoutée par l’agent — sera tracé', off: 'Retirée' } } only %}</template>
+    <div class="cp-add-plate">
+      <label class="cp-sr-only" for="{{ id }}-new">Ajouter une immatriculation</label>
+      <input class="cp-input cp-input--mono" type="text" id="{{ id }}-new" placeholder="Ex. GH-789-JK" autocomplete="off" maxlength="15" data-cp--plate-list-target="input" data-action="keydown->cp--plate-list#keydown">
+      {% include 'components/button.html.twig' with { label: 'Ajouter', variant: 'secondary', icon: 'plus', attrs: 'data-action="cp--plate-list#add"' } only %}
+    </div>
+    {%- if hint|default('') %}<p class="cp-help">{{ hint }}</p>{% endif %}
+    {%- if error|default('') %}<p class="cp-field-error" id="{{ id }}-error">{% include 'components/icon.html.twig' with { name: 'alert', size: 's' } only %}{{ error }}</p>{% endif %}
+  </fieldset>
+  <p class="cp-help" data-cp--plate-list-target="empty" hidden>Aucun véhicule accordé : aucune plaque ne sera inscrite sur le laissez-passer.</p>
+</div>

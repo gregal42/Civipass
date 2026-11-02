@@ -1,0 +1,16 @@
+{#
+  Formulaire de décision INLINE (approbation ou refus), déployé dans la fiche — jamais une modale (référentiel §7).
+  À utiliser avec {% embed %} ; bloc « fields » pour les champs, bloc « actions » pour les boutons.
+  Contrôleurs posés : cp--unsaved-guard (sortie protégée), cp--recap (récapitulatif), cp--submit-state (envoi bloqué), cp--choice-trace (notes de traçabilité).
+  @param string kind    approve | refuse      @param string id  @param string title  @param string intro
+  @param string action  URL d’envoi.          @param string method (défaut post)
+#}
+<form class="cp-decision{% if kind|default('approve') == 'refuse' %} cp-decision--refuse{% endif %}" id="{{ id }}" action="{{ action|default('') }}" method="{{ method|default('post') }}" novalidate aria-labelledby="{{ id }}-title"
+      data-controller="cp--unsaved-guard cp--recap cp--submit-state cp--choice-trace" data-action="input->cp--recap#update change->cp--recap#update">
+  <div class="cp-decision__head">{% include 'components/icon.html.twig' with { name: kind|default('approve') == 'refuse' ? 'x' : 'check' } only %}<h2 class="cp-decision__title" id="{{ id }}-title">{{ title }}</h2>{% if intro|default('') %}<p class="cp-decision__intro">{{ intro }}</p>{% endif %}</div>
+  <div class="cp-decision__body">
+    {% block messages %}{% endblock %}
+    {% block fields %}{% endblock %}
+    <div class="cp-form-actions">{% block actions %}{% endblock %}</div>
+  </div>
+</form>

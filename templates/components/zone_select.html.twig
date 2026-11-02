@@ -1,0 +1,31 @@
+{#
+  Sélection des territoires : les communes d’abord, les zones seulement si nécessaire (référentiel §8, étape 3). « Commune entière » ne demande aucun choix de plus.
+  @param string id  @param string legend
+  @param array communes  Liste de { id, name, checked, preselected (verrouillée), scope (all | zones), zones: [{ id, name, checked, status (active | suspended) }] }.
+  @param string error
+#}
+<fieldset class="cp-fieldset cp-zone-select" id="{{ id }}" data-controller="cp--zone-select"{% if error|default('') %} aria-describedby="{{ id }}-error"{% endif %}>
+  <legend class="cp-fieldset__legend">{{ legend|default('Communes et zones') }}</legend>
+  {%- for c in communes %}
+  <div class="cp-zone-select__commune" data-role="item">
+    <label class="cp-zone-select__head"><input type="checkbox" name="{{ id }}[{{ c.id }}][selected]" value="1" data-role="commune"{% if c.checked|default(false) or c.preselected|default(false) %} checked{% endif %}{% if c.preselected|default(false) %} disabled data-locked="true"{% endif %}><span>{{ c.name }}</span>{% if c.preselected|default(false) %}{% include 'components/tag.html.twig' with { label: 'Présélectionnée' } only %}{% endif %}</label>
+    {%- if c.preselected|default(false) %}<input type="hidden" name="{{ id }}[{{ c.id }}][selected]" value="1">{% endif %}
+    <div class="cp-zone-select__body" data-role="body">
+      <div class="cp-checks cp-checks--stack" role="radiogroup" aria-label="Territoire demandé à {{ c.name }}">
+        {% include 'components/check.html.twig' with { type: 'radio', id: id ~ '-' ~ c.id ~ '-all', name: id ~ '[' ~ c.id ~ '][scope]', value: 'all', label: 'Commune entière', checked: c.scope|default('all') == 'all', attrs: 'data-role="scope"' } only %}
+        {%- if c.zones|default([])|length %}
+        {% include 'components/check.html.twig' with { type: 'radio', id: id ~ '-' ~ c.id ~ '-zones', name: id ~ '[' ~ c.id ~ '][scope]', value: 'zones', label: 'Certaines zones seulement', checked: c.scope|default('all') == 'zones', attrs: 'data-role="scope"' } only %}
+        {%- endif %}
+      </div>
+      {%- if c.zones|default([])|length %}
+      <div class="cp-zone-select__zones" data-role="zones">
+        {%- for z in c.zones %}
+        {% include 'components/check.html.twig' with { id: id ~ '-' ~ c.id ~ '-' ~ z.id, name: id ~ '[' ~ c.id ~ '][zones][]', value: z.id, label: z.status|default('active') == 'suspended' ? z.name ~ ' — zone suspendue' : z.name, checked: z.checked|default(false), disabled: z.status|default('active') == 'suspended', attrs: z.status|default('active') == 'suspended' ? 'data-locked="true"' : '' } only %}
+        {%- endfor %}
+      </div>
+      {%- endif %}
+    </div>
+  </div>
+  {%- endfor %}
+  {%- if error|default('') %}<p class="cp-field-error" id="{{ id }}-error">{% include 'components/icon.html.twig' with { name: 'alert', size: 's' } only %}{{ error }}</p>{% endif %}
+</fieldset>

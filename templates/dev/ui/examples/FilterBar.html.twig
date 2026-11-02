@@ -1,0 +1,7 @@
+{% embed 'components/filter_bar.html.twig' with { id: 'fb', search: { id: 'fb-q', label: 'Rechercher une demande', placeholder: 'Nom, téléphone, e-mail, plaque ou référence', submit: false }, active_count: 1, count_label: '18 demandes', chips: [ { label: 'En attente', remove_href: '#' } ], reset_href: '#' } only %}
+  {% block filters %}
+    {% include 'components/select.html.twig' with { id: 'fb-status', label: 'Statut', value: 'pending', options: [ { value: '', label: 'Tous les statuts' }, { value: 'pending', label: 'En attente' }, { value: 'approved', label: 'Approuvée' }, { value: 'refused', label: 'Refusée' } ] } only %}
+    {% include 'components/select.html.twig' with { id: 'fb-event', label: 'Événement', value: 'fire', options: [ { value: 'fire', label: 'Incendie — Secteur forestier nord' }, { value: '', label: 'Tous les événements' } ] } only %}
+    {% include 'components/select.html.twig' with { id: 'fb-date', label: 'Dépôt', options: [ { value: '', label: 'Toutes les dates' }, { value: 'today', label: 'Aujourd’hui' }, { value: '24h', label: 'Dernières 24 h' } ] } only %}
+  {% endblock %}
+{% endembed %}

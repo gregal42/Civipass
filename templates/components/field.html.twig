@@ -1,0 +1,22 @@
+{#
+  Champ de saisie avec libellé, aide et erreur reliés (aria-describedby).
+  @param string id  @param string name  @param string label  @param string type  text (défaut) | email | tel | date | time | search | textarea
+  @param string value  @param string help  @param string error  @param bool required  @param bool optional (affiche « facultatif »)
+  @param bool mono  Saisie en capitales à chasse fixe (immatriculation, référence).   @param string attrs  Attributs de confiance.
+  @param string valid  Message de validation positive (champ vérifié).   @param bool disabled   @param bool readonly
+  @param string autocomplete  (email et tel : renseigné par défaut).
+#}
+{%- set desc = [] -%}
+{%- if help|default('') %}{% set desc = desc|merge([id ~ '-help']) %}{% endif -%}
+{%- if error|default('') %}{% set desc = desc|merge([id ~ '-error']) %}{% endif -%}
+{%- if valid|default('') %}{% set desc = desc|merge([id ~ '-valid']) %}{% endif -%}
+{%- set t = type|default('text') -%}
+{%- set ac = autocomplete|default(t == 'email' ? 'email' : (t == 'tel' ? 'tel' : '')) -%}
+<div class="cp-field">
+  <label class="cp-field__label" for="{{ id }}">{{ label }}{% if optional|default(false) %} <span class="cp-field__opt">(facultatif)</span>{% endif %}</label>
+  {%- set common -%} id="{{ id }}" name="{{ name|default(id) }}" class="cp-input{% if mono|default(false) %} cp-input--mono{% endif %}"{% if required|default(false) %} required{% endif %}{% if error|default('') %} aria-invalid="true"{% endif %}{% if valid|default('') %} data-valid="true"{% endif %}{% if disabled|default(false) %} disabled{% endif %}{% if readonly|default(false) %} readonly{% endif %}{% if ac %} autocomplete="{{ ac }}"{% endif %}{% if t == 'tel' %} inputmode="tel"{% endif %}{% if t == 'email' %} inputmode="email" spellcheck="false"{% endif %}{% if desc|length %} aria-describedby="{{ desc|join(' ') }}"{% endif %} {{ attrs|default('')|raw }}{%- endset -%}
+  {%- if type|default('text') == 'textarea' %}<textarea {{ common|raw }}>{{ value|default('') }}</textarea>{% else %}<input type="{{ type|default('text') }}" value="{{ value|default('') }}" {{ common|raw }}>{% endif %}
+  {%- if help|default('') %}<p class="cp-help" id="{{ id }}-help">{{ help }}</p>{% endif %}
+  {%- if valid|default('') %}<p class="cp-field-valid" id="{{ id }}-valid">{% include 'components/icon.html.twig' with { name: 'check', size: 's' } only %}{{ valid }}</p>{% endif %}
+  {%- if error|default('') %}<p class="cp-field-error" id="{{ id }}-error">{% include 'components/icon.html.twig' with { name: 'alert', size: 's' } only %}{{ error }}</p>{% endif %}
+</div>

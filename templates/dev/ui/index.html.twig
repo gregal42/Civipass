@@ -1,0 +1,40 @@
+{% extends 'dev/ui/_layout.html.twig' %}
+{% block title %}Accueil{% endblock %}
+
+{% block content %}
+  <header class="cp-stack">
+    <p class="cp-eyebrow">Design system Civipass</p>
+    <h1 class="cp-h1">Prévisualisation</h1>
+    <p class="cp-help">Composants du design system et écrans du prototype UI-001 rendus par Symfony (Twig, Stimulus, Turbo, AssetMapper). Données fictives ; rien n’est enregistré ; ces pages n’existent pas en production.</p>
+    <div class="dev-ui__bar">
+      <span class="cp-help">Thème :</span>
+      {% include 'components/button.html.twig' with { label: 'Système', variant: 'secondary', href: path('dev_ui_index') } only %}
+      {% include 'components/button.html.twig' with { label: 'Clair', variant: 'secondary', href: path('dev_ui_index', { theme: 'light' }) } only %}
+      {% include 'components/button.html.twig' with { label: 'Sombre', variant: 'secondary', href: path('dev_ui_index', { theme: 'dark' }) } only %}
+    </div>
+  </header>
+
+  <section class="cp-stack" aria-labelledby="screens-h">
+    <h2 class="cp-h3" id="screens-h">Écrans du prototype</h2>
+    <div class="dev-ui__grid">
+      <a href="{{ path('dev_ui_dashboard', { slug: 'le-temple' }) }}" data-turbo="false"><b>Tableau de bord</b><br><span class="cp-help">Le Temple — administratrice (7 rubriques)</span></a>
+      <a href="{{ path('dev_ui_dashboard', { slug: 'saumos' }) }}" data-turbo="false"><b>Tableau de bord</b><br><span class="cp-help">Saumos — instructrice (3 rubriques)</span></a>
+      <a href="{{ path('dev_ui_requests', { slug: 'le-temple' }) }}" data-turbo="false"><b>Liste des demandes</b><br><span class="cp-help">Le Temple — 153 demandes, filtres, tri, pagination</span></a>
+      <a href="{{ path('dev_ui_requests', { slug: 'saumos' }) }}" data-turbo="false"><b>Liste des demandes</b><br><span class="cp-help">Saumos — 44 demandes</span></a>
+      <a href="{{ path('dev_ui_request', { slug: 'le-temple', ref: 'DEM-2026-0156' }) }}" data-turbo="false"><b>Fiche — en attente</b><br><span class="cp-help">DEM-2026-0156 · formulaire d’approbation</span></a>
+      <a href="{{ path('dev_ui_request', { slug: 'le-temple', ref: 'DEM-2026-0154' }) }}" data-turbo="false"><b>Fiche — approuvée</b><br><span class="cp-help">DEM-2026-0154 · droits, laissez-passer, QR fictif</span></a>
+      <a href="{{ path('dev_ui_request', { slug: 'le-temple', ref: 'DEM-2026-0153' }) }}" data-turbo="false"><b>Fiche — refusée</b><br><span class="cp-help">DEM-2026-0153</span></a>
+      <a href="{{ path('dev_ui_request', { slug: 'le-temple', ref: 'DEM-2026-0155' }) }}" data-turbo="false"><b>Fiche — deux communes</b><br><span class="cp-help">DEM-2026-0155 · décisions croisées</span></a>
+      <a href="{{ path('dev_ui_forbidden') }}" data-turbo="false"><b>Accès refusé (403)</b><br><span class="cp-help">Saumos — rubrique non autorisée</span></a>
+    </div>
+  </section>
+
+  {% for group, names in groups %}
+    <section class="cp-stack" aria-labelledby="g-{{ loop.index }}">
+      <h2 class="cp-h3" id="g-{{ loop.index }}">{{ group }} <span class="cp-help">({{ names|length }})</span></h2>
+      <div class="dev-ui__grid">
+        {% for name in names %}<a href="{{ path('dev_ui_component', { name: name, theme: theme|default(null) }) }}" data-turbo="false">{{ name }}</a>{% endfor %}
+      </div>
+    </section>
+  {% endfor %}
+{% endblock %}

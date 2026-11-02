@@ -1,0 +1,25 @@
+{#
+  Menu d’actions contextuel (ligne de tableau, carte, utilisateur), ouvert par un bouton icône ou un bouton texte (cp--dropdown).
+  @param string id      Identifiant unique.     @param string label  Nom du menu (« Actions sur DEM-2026-0156 »).
+  @param string icon    Icône du déclencheur (défaut more).   @param string trigger_label  Libellé visible (sinon bouton icône).
+  @param string align   end (aligné à droite, défaut) | start      @param object head  { title, text } : en-tête (menu utilisateur).
+  @param array  items   Liste de { label, icon, href, danger, disabled, separator, attrs } — n’y passer que les actions permises.
+#}
+<div class="cp-selector" data-controller="cp--dropdown">
+  {%- set trig = 'data-cp--dropdown-target="button" data-action="cp--dropdown#toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="' ~ id ~ '"' -%}
+  {%- if trigger_label|default('') -%}
+  <button type="button" class="cp-btn cp-btn--secondary" {{ trig|raw }}><span>{{ trigger_label }}</span>{% include 'components/icon.html.twig' with { name: 'down', size: 's' } only %}</button>
+  {%- else -%}
+  {% include 'components/icon_button.html.twig' with { icon: icon|default('more'), label: label, attrs: trig } only %}
+  {%- endif %}
+  <div class="cp-menu{% if align|default('end') == 'end' %} cp-menu--end{% endif %}" id="{{ id }}" role="menu" aria-label="{{ label }}" data-cp--dropdown-target="menu" hidden>
+    {%- if head|default(false) %}<div class="cp-menu__head" role="presentation"><b>{{ head.title }}</b>{% if head.text|default('') %}<span>{{ head.text }}</span>{% endif %}</div><div class="cp-menu__sep" role="separator"></div>{% endif %}
+    {%- for i in items %}
+    {%- if i.separator|default(false) %}<div class="cp-menu__sep" role="separator"></div>
+    {%- elseif i.disabled|default(false) %}<span class="cp-menu__action" role="menuitem" aria-disabled="true" tabindex="-1">{% if i.icon|default('') %}{% include 'components/icon.html.twig' with { name: i.icon, size: 's' } only %}{% endif %}{{ i.label }}</span>
+    {%- elseif i.href|default('') %}<a class="cp-menu__action{% if i.danger|default(false) %} cp-menu__action--danger{% endif %}" role="menuitem" tabindex="-1" href="{{ i.href }}" {{ i.attrs|default('')|raw }}>{% if i.icon|default('') %}{% include 'components/icon.html.twig' with { name: i.icon, size: 's' } only %}{% endif %}{{ i.label }}</a>
+    {%- else %}<button type="button" class="cp-menu__action{% if i.danger|default(false) %} cp-menu__action--danger{% endif %}" role="menuitem" tabindex="-1" {{ i.attrs|default('')|raw }}>{% if i.icon|default('') %}{% include 'components/icon.html.twig' with { name: i.icon, size: 's' } only %}{% endif %}{{ i.label }}</button>
+    {%- endif %}
+    {%- endfor %}
+  </div>
+</div>

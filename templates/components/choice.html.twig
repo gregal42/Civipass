@@ -1,0 +1,16 @@
+{#
+  Carte de choix (case à cocher ou bouton radio) : grande cible, étiquette d’origine, note de traçabilité.
+  @param string type   checkbox (défaut) | radio     @param string name  @param string value  @param string id
+  @param string label  Texte de l’option.            @param string icon   Icône avant le libellé.
+  @param string html   Contenu de confiance à la place du libellé (ex. composant Plaque).
+  @param object tag    { label, variant } (« Demandée », « Ajout agent », « Suspendue »).
+  @param string note   Note sous l’option.           @param bool trace  La note signale une écriture dans l’historique.
+  @param object trace_texts  { on, off, when } : textes de note mis à jour par cp--choice-trace (when = unchecked si l’écart est de décocher).
+  @param bool checked  @param bool disabled  @param string recap_label  Libellé utilisé par cp--recap.
+#}
+<label class="cp-choice">
+  <input class="cp-choice__input" type="{{ type|default('checkbox') }}" name="{{ name }}" value="{{ value }}" id="{{ id }}"{% if checked|default(false) %} checked{% endif %}{% if disabled|default(false) %} disabled{% endif %}{% if recap_label|default('') %} data-recap-label="{{ recap_label }}"{% endif %}{% if trace_texts|default(false) %} data-trace-on="{{ trace_texts.on }}" data-trace-off="{{ trace_texts.off }}"{% if trace_texts.when|default('') %} data-trace-when="{{ trace_texts.when }}"{% endif %}{% endif %}>
+  <span class="cp-choice__label">{% if icon|default('') %}{% include 'components/icon.html.twig' with { name: icon, size: 's' } only %} {% endif %}{% if html is defined %}{{ html|raw }}{% else %}<span>{{ label }}</span>{% endif %}</span>
+  {%- if tag|default(false) %}{% include 'components/tag.html.twig' with tag only %}{% else %}<span></span>{% endif %}
+  {%- if note|default('') or trace_texts|default(false) %}<span class="cp-choice__note{% if trace|default(false) %} is-trace{% endif %}" data-trace-note>{{ note|default('') }}</span>{% endif %}
+</label>

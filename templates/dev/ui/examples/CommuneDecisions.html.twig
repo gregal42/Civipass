@@ -1,0 +1,7 @@
+<div style="max-width: 560px">
+{% include 'components/commune_decisions.html.twig' with { items: [
+  { commune: 'Le Temple', territory: 'Secteur forestier nord', status: 'pending', mine: true, who: 'À instruire par vous' },
+  { commune: 'Saumos', territory: 'Zone centre', status: 'approved', who: 'Décision de Saumos' },
+  { commune: 'Commune fictive C', territory: 'Commune entière', status: 'concerned', who: 'Commune pas encore active sur l’événement' }
+] } only %}
+</div>

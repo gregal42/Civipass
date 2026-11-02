@@ -1,0 +1,11 @@
+{#
+  Véhicules et autres modes autorisés (contrôle), plaques en grand.
+  @param array plates  Immatriculations.   @param array modes  Clés de mode_chip hors véhicule (foot, bike).
+#}
+<section class="cp-box" aria-labelledby="cp-veh-title">
+  <div class="cp-box__head"><h2 class="cp-box__title" id="cp-veh-title">Véhicules autorisés</h2></div>
+  <div class="cp-box__body">
+    {%- if plates|length %}<div class="cp-plates">{% for p in plates %}{% include 'components/plate.html.twig' with { number: p, size: 'lg' } only %}{% endfor %}</div>{% else %}<p>Sans véhicule.</p>{% endif %}
+    {%- if modes|default([])|length %}<div class="cp-kv"><span class="cp-kv__key">Autre mode autorisé</span><span class="cp-modes">{% for m in modes %}{% include 'components/mode_chip.html.twig' with { mode: m } only %}{% endfor %}</span></div>{% endif %}
+  </div>
+</section>

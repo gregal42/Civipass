@@ -1,0 +1,34 @@
+/*
+ * Extensions Civipass (hors design system). N'utilisent que les tokens du design system
+ * (assets/styles/civipass/tokens.css) : aucune couleur, taille ni rayon inventés ici.
+ * Chargé après civipass.css par les layouts.
+ */
+
+/* Déconnexion : bouton dans un menu / une navigation (le design system prévoyait un lien GET ; la déconnexion est POST). */
+.cp-menu__form { margin: 0; }
+button.cp-nav__link { width: 100%; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; }
+
+/* Écrans d'authentification (layouts/auth.html.twig) : une colonne étroite, centrée, sous l'en-tête public. */
+.cp-auth {
+  width: 100%; max-width: 30rem; margin: 0 auto; display: grid; gap: var(--space-4); align-content: start;
+  padding-block: var(--space-6) var(--space-14);
+  padding-inline: max(var(--space-4), env(safe-area-inset-left, 0px)) max(var(--space-4), env(safe-area-inset-right, 0px));
+}
+.cp-auth .cp-panel__body { display: grid; gap: var(--space-4); }
+.cp-auth form { display: grid; gap: var(--space-4); }
+.cp-auth__links { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); margin: 0; }
+
+/* Écrans du prototype (repris de prototype/proto.css du design system). */
+.proto-quick { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); padding: var(--space-4) var(--space-5); border: 1px solid var(--line); border-radius: var(--radius-l); background: var(--surface); }
+.proto-two { container: proto-two / inline-size; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: var(--space-6); align-items: start; }
+@container cp-app (max-width: 1023px) { .proto-two { grid-template-columns: minmax(0, 1fr); } }
+@container cp-app (max-width: 639px) { .proto-quick { padding: var(--space-4); } .proto-quick .cp-cluster .cp-btn { width: 100%; justify-content: flex-start; } }
+.proto-quick > * { min-width: 0; }
+
+/* Prévisualisation du design system (/dev/ui, environnement dev uniquement). */
+.dev-ui { max-width: var(--content-max); margin: 0 auto; padding: var(--space-6) var(--space-4) var(--space-14); display: grid; gap: var(--space-6); }
+.dev-ui__bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
+.dev-ui__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: var(--space-2); }
+.dev-ui__grid a { display: block; padding: var(--space-2) var(--space-3); border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--surface); text-decoration: none; }
+.dev-ui__grid a:hover, .dev-ui__grid a:focus-visible { background: var(--brand-soft); }
+.dev-ui__frame { border: 1px dashed var(--line-strong); border-radius: var(--radius-m); background: var(--paper); padding: var(--space-4); margin-inline: auto; max-width: 100%; }

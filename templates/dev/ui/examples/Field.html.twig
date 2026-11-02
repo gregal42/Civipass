@@ -1,0 +1,10 @@
+<div class="cp-stack" style="max-width: 560px">
+  {% include 'components/field.html.twig' with { id: 'f-name', label: 'Nom', value: 'Martin' } only %}
+  {% include 'components/field.html.twig' with { id: 'f-mail', type: 'email', label: 'Adresse e-mail', value: 'camille.martin@exemple.fr', help: 'Au moins une adresse e-mail ou un numéro de téléphone.', valid: 'Format de l’adresse correct.' } only %}
+  {% include 'components/field.html.twig' with { id: 'f-tel', type: 'tel', label: 'Téléphone', optional: true, value: '06 39 98 01 56' } only %}
+  {% include 'components/field.html.twig' with { id: 'f-date', type: 'date', label: 'Date de dépôt', value: '2026-11-01' } only %}
+  {% include 'components/field.html.twig' with { id: 'f-plate', label: 'Immatriculation', mono: true, value: 'AB-123', error: 'Saisissez l’immatriculation complète.' } only %}
+  {% include 'components/field.html.twig' with { id: 'f-ref', label: 'Référence', mono: true, value: 'DEM-2026-0156', readonly: true, help: 'Attribuée à la réception, non modifiable.' } only %}
+  {% include 'components/field.html.twig' with { id: 'f-dis', label: 'Commune', value: 'Le Temple', disabled: true, help: 'Champ désactivé : la commune dépend du contexte actif.' } only %}
+  {% include 'components/field.html.twig' with { id: 'f-reason', type: 'textarea', label: 'Motif du refus', optional: true } only %}
+</div>

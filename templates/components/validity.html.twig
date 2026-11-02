@@ -1,0 +1,7 @@
+{#
+  Indicateur de validité d’un laissez-passer (back-office, pass, consultation). Icône + libellé + précision : jamais la couleur seule.
+  @param string state   valid | partial | upcoming | expired | revoked | suspended
+  @param string detail  Précision (« jusqu’au 05/11/2026 à 20:00 », « 1 commune sur 2 »).   @param string label  Remplace le libellé.
+#}
+{%- set d = { valid: ['check', 'Valide'], partial: ['alert', 'Partiellement valide'], upcoming: ['clock', 'Pas encore valide'], expired: ['clock', 'Expiré'], revoked: ['x', 'Révoqué'], suspended: ['alert', 'Suspendu'] }[state] -%}
+<p class="cp-validity cp-validity--{{ state }}">{% include 'components/icon.html.twig' with { name: d[0], size: 's' } only %}<span class="cp-validity__label">{{ label|default(d[1]) }}</span>{% if detail|default('') %}<span class="cp-validity__detail">{{ detail }}</span>{% endif %}</p>

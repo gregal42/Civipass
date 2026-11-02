@@ -1,0 +1,7 @@
+{#
+  Immatriculation, rendue comme une plaque pour faciliter la comparaison visuelle.
+  @param string number  « AB-123-CD » (affiché tel quel, format non contrôlé).
+  @param string size    m (défaut) | lg (contrôle QR)
+  @param bool   off     Plaque non accordée (barrée).
+#}
+<span class="cp-plate{% if size|default('m') == 'lg' %} cp-plate--lg{% endif %}{% if off|default(false) %} cp-plate--off{% endif %}"><span class="cp-plate__num">{{ number }}</span></span>

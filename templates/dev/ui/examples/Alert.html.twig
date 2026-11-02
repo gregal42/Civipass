@@ -1,0 +1,8 @@
+<div class="cp-stack">
+  {% include 'components/alert.html.twig' with { variant: 'success', title: 'Demande approuvée — laissez-passer LP-2026-0156 émis', text: 'Le Temple · Commune entière · du 01/11/2026 à 10:00 au 05/11/2026 à 20:00.' } only %}
+  {% include 'components/alert.html.twig' with { variant: 'error', icon: 'wifioff', title: 'L’approbation n’a pas été enregistrée', text: 'Le serveur ne répond pas. Vos choix sont conservés : vérifiez la connexion puis confirmez à nouveau.' } only %}
+  {% include 'components/alert.html.twig' with { variant: 'warning', title: 'Participation suspendue', text: 'Les droits de Saumos sont inutilisables tant que la participation reste suspendue.' } only %}
+  {% include 'components/alert.html.twig' with { variant: 'info', title: 'Accès refusé (403)', text: 'Votre rôle dans cette commune ne permet pas d’instruire ce dossier. Demandez l’habilitation à un administrateur communal.' } only %}
+  {% include 'components/alert.html.twig' with { variant: 'quiet', text: 'Le document papier peut être présenté pendant 48 h au plus après son émission, sans dépasser la fin des droits.' } only %}
+  {% include 'components/alert.html.twig' with { variant: 'inline', text: 'Dossier réservé à votre nom pendant l’instruction (libéré après 15 min d’inactivité).' } only %}
+</div>

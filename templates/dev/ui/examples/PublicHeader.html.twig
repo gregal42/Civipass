@@ -1,0 +1,5 @@
+<div class="cp-stack" style="gap: 0; border: 1px solid var(--line); border-radius: var(--radius-l); overflow: clip">
+  {% include 'components/public_header.html.twig' with { title: 'Vérification d’un laissez-passer', connection: 'online' } only %}
+  {% include 'components/public_header.html.twig' with { title: 'Vérification d’un laissez-passer', connection: 'offline', device: ['Appareil de contrôle activé · Incendie — Secteur forestier nord', 'Hors ligne — données du 02/11/2026 à 08:05'] } only %}
+  {% include 'components/public_header.html.twig' with { title: 'Vérification d’un laissez-passer', connection: 'unreachable' } only %}
+</div>

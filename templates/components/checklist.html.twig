@@ -1,0 +1,10 @@
+{#
+  « À vérifier par vous » : accompagne tout verdict positif ou incertain. Statique (aucune case enregistrée, aucun journal).
+  @param string title  (défaut « Avant de laisser passer, vérifiez »)
+  @param array  items  Textes de confiance (défaut : commune, zone, immatriculation).
+#}
+{%- set list = items|default(['La <b>commune</b> de votre point de contrôle figure dans la liste', 'La <b>zone</b> où se trouve votre point de contrôle est couverte', 'L’<b>immatriculation</b> du véhicule est autorisée']) -%}
+<section class="cp-checklist" aria-labelledby="cp-checklist-title">
+  <h2 class="cp-checklist__title" id="cp-checklist-title">{% include 'components/icon.html.twig' with { name: 'eye' } only %} {{ title|default('Avant de laisser passer, vérifiez') }}</h2>
+  <ol class="cp-checklist__items">{% for i in list %}<li class="cp-checklist__item"><span class="cp-checklist__num" aria-hidden="true">{{ loop.index }}</span><span>{{ i|raw }}</span></li>{% endfor %}</ol>
+</section>

@@ -1,0 +1,6 @@
+<div class="cp-stack">
+{% include 'components/event_card.html.twig' with { id: 'ev-fire', title: 'Incendie — Secteur forestier nord', type: 'Incendie', icon: 'fire', status: 'active', pending: 18, href: '#',
+  meta: [ { icon: 'clock', text: 'Activé le 31/10/2026 à 22:15' }, { icon: 'flag', text: 'Organisé par Le Temple · ma participation active' }, { icon: 'pin', text: 'Commune participante : Saumos' } ],
+  figures: [ { value: 126, label: 'approuvées' }, { value: 9, label: 'refusées' }, { value: 103, label: 'pass valides' } ] } only %}
+{% include 'components/event_card.html.twig' with { id: 'ev-draft2', variant: 'compact', icon: 'wave', title: 'Inondation — Zone du bourg', status: 'draft', meta: [ { text: 'Brouillon créé le 28/10/2026 · formulaire public inactif, aucun droit émis' } ], href: '#', action_label: 'Reprendre le brouillon' } only %}
+</div>

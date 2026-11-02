@@ -1,0 +1,6 @@
+{#
+  Case à cocher ou bouton radio simple (filtres, préférences). Pour un choix qui engage un droit, utiliser la carte de choix.
+  @param string type  checkbox (défaut) | radio   @param string id  @param string name  @param string value  @param string label
+  @param bool checked  @param bool disabled  @param string attrs
+#}
+<label class="cp-check" for="{{ id }}"><input type="{{ type|default('checkbox') }}" id="{{ id }}" name="{{ name }}" value="{{ value|default('1') }}"{% if checked|default(false) %} checked{% endif %}{% if disabled|default(false) %} disabled{% endif %} {{ attrs|default('')|raw }}><span>{{ label }}</span></label>

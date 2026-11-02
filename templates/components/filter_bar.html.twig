@@ -1,0 +1,20 @@
+{#
+  Barre de recherche et de filtres d’une liste (formulaire GET). En compact, les filtres se replient derrière « Filtres (n) » (cp--toggle).
+  À utiliser avec {% embed %} : bloc « filters » (listes déroulantes), bloc « actions » (bouton d’action de la liste).
+  @param string id  @param string action  URL de la liste.   @param object search  Paramètres de search_field.
+  @param int active_count  Nombre de filtres actifs.   @param array chips  Filtres actifs : { label, remove_href }.
+  @param string count_label  « 153 demandes » / « 12 résultats ».   @param string reset_href
+#}
+<form class="cp-filters" id="{{ id }}" action="{{ action|default('') }}" method="get" data-controller="cp--toggle" aria-label="Rechercher et filtrer">
+  <div class="cp-filters__row">
+    <div class="cp-filters__search">{% include 'components/search_field.html.twig' with search only %}</div>
+    <button type="button" class="cp-btn cp-btn--secondary cp-filters__toggle" data-cp--toggle-target="button" data-action="cp--toggle#toggle" aria-expanded="false" aria-controls="{{ id }}-panel">{% include 'components/icon.html.twig' with { name: 'filter', size: 's' } only %}<span>Filtres{% if active_count|default(0) %} ({{ active_count }}){% endif %}</span></button>
+  </div>
+  <div class="cp-filters__panel" id="{{ id }}-panel" data-cp--toggle-target="panel" hidden>{% block filters %}{% endblock %}</div>
+  <div class="cp-filters__foot">
+    <p class="cp-filters__count" role="status">{{ count_label|default('') }}</p>
+    {%- for c in chips|default([]) %}<span class="cp-chip">{{ c.label }}<a class="cp-chip__remove" href="{{ c.remove_href }}" aria-label="Retirer le filtre {{ c.label }}">{% include 'components/icon.html.twig' with { name: 'x', size: 's' } only %}</a></span>{% endfor -%}
+    {%- if chips|default([])|length %}<a class="cp-btn cp-btn--ghost" href="{{ reset_href|default('?') }}">Tout effacer</a>{% endif %}
+    {% block actions %}{% endblock %}
+  </div>
+</form>

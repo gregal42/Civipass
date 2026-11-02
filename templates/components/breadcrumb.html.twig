@@ -1,0 +1,14 @@
+{#
+  Fil d’Ariane (≥ 640 px) et lien retour (< 640 px).
+  @param array  items  Liste de { label, href } ; le dernier élément est la page courante.
+  @param object back   { label, href } pour le lien retour compact.
+#}
+<nav class="cp-crumbs" aria-label="Fil d’Ariane">
+  {%- for i in items %}
+  {% if not loop.first %}{% include 'components/icon.html.twig' with { name: 'right', size: 's' } only %}{% endif %}
+  {%- if loop.last %}<span aria-current="page"{% if i.mono|default(false) %} class="cp-mono"{% endif %}>{{ i.label }}</span>{% elseif i.href|default('') %}<a href="{{ i.href }}">{{ i.label }}</a>{% else %}<span>{{ i.label }}</span>{% endif -%}
+  {%- endfor %}
+</nav>
+{%- if back|default(false) %}
+<a class="cp-back" href="{{ back.href }}">{% include 'components/icon.html.twig' with { name: 'left', size: 's' } only %} {{ back.label }}</a>
+{%- endif %}

@@ -1,0 +1,28 @@
+{#
+  Layout des pages d'authentification et de l'accueil public (Civipass, hors design system) : composition de composants
+  du design system (en-tête public, panneau, champs, boutons, alertes), sans navigation municipale ni compte affiché.
+  Variable : page_title.   Blocs : title, meta, content.
+  Noindex, pas de cache Turbo (jetons CSRF, messages d'erreur) ; fonctionne sans JavaScript.
+#}
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="turbo-cache-control" content="no-cache">
+  {% block meta %}{% endblock %}
+  <title>{% block title %}{{ page_title|default('Civipass') }} · Civipass{% endblock %}</title>
+  <link rel="stylesheet" href="{{ asset('styles/civipass/tokens.css') }}">
+  <link rel="stylesheet" href="{{ asset('styles/civipass/civipass.css') }}">
+  <link rel="stylesheet" href="{{ asset('styles/civipass-app.css') }}">
+  {% block javascripts %}{{ importmap('app') }}{% endblock %}
+</head>
+<body class="cp-root">
+  <a class="cp-skip" href="#main">Aller au contenu</a>
+  <div class="cp-public">
+    {% include 'components/public_header.html.twig' with { title: page_title|default('') } only %}
+    <main id="main" class="cp-auth" tabindex="-1">{% block content %}{% endblock %}</main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,12 @@
+<div class="cp-public" style="min-height: 0"><div class="cp-public__main" style="padding: 0; max-width: none">
+  <div class="cp-public__col">
+    {% include 'components/verdict.html.twig' with { state: 'valid', when: 'Vérifié le 02/11/2026 à 18:20 · heure de Paris' } only %}
+    {% include 'components/verdict.html.twig' with { state: 'invalid', when: 'Vérifié le 02/11/2026 à 18:20' } only %}
+    {% include 'components/verdict.html.twig' with { state: 'loading' } only %}
+  </div>
+  <div class="cp-public__col">
+    {% include 'components/verdict.html.twig' with { state: 'uncertain', when: 'Lu le 02/11/2026 à 18:20 · comparé aux données du 02/11/2026 à 08:05' } only %}
+    {% include 'components/verdict.html.twig' with { state: 'blocked', when: 'Lu le 02/11/2026 à 18:20' } only %}
+    {% include 'components/verdict.html.twig' with { state: 'impossible', when: 'Tentative le 02/11/2026 à 18:20' } only %}
+  </div>
+</div></div>

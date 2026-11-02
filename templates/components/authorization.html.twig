@@ -1,0 +1,16 @@
+{#
+  Résumé d’autorisation : droits accordés, commune par commune (chaque commune décide pour son territoire).
+  @param array grants  Liste de { commune, by (« Accordé le … par … »), mine, period, zones (texte), modes (clés), plates }.
+#}
+<div class="cp-auth">
+  {%- for g in grants %}
+  <section class="cp-auth__commune" aria-label="Droits accordés par {{ g.commune }}">
+    <div class="cp-auth__head"><span class="cp-auth__name">{{ g.commune }}</span>{% if g.mine|default(false) %}{% include 'components/tag.html.twig' with { label: 'Votre commune', variant: 'agent' } only %}{% endif %}<span class="cp-auth__by">{{ g.by }}</span></div>
+    <div class="cp-auth__body">
+      {%- set modes_html %}<span class="cp-modes">{% for m in g.modes %}{% include 'components/mode_chip.html.twig' with { mode: m } only %}{% endfor %}</span>{% endset -%}
+      {%- set plates_html %}{% if g.plates|length %}<span class="cp-plates">{% for p in g.plates %}{% include 'components/plate.html.twig' with { number: p } only %}{% endfor %}</span>{% else %}<span class="cp-facts__plain">Sans véhicule</span>{% endif %}{% endset -%}
+      {% include 'components/facts.html.twig' with { items: [ { label: 'Période', value: g.period }, { label: 'Zones', value: g.zones }, { label: 'Déplacements', html: modes_html }, { label: 'Plaques', html: plates_html } ] } only %}
+    </div>
+  </section>
+  {%- endfor %}
+</div>

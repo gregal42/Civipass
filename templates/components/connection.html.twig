@@ -1,0 +1,6 @@
+{#
+  Statut de connexion du contrôle, affiché en permanence.
+  @param string state  online | offline | unreachable    @param string label  Remplace le libellé par défaut.
+#}
+{%- set d = { online: ['wifi', 'En ligne — vérification temps réel'], offline: ['wifioff', 'Hors ligne'], unreachable: ['wifioff', 'Serveur injoignable'] }[state] -%}
+<span class="cp-conn{% if state != 'unreachable' %} cp-conn--{{ state }}{% endif %}">{% include 'components/icon.html.twig' with { name: d[0], size: 's' } only %} {{ label|default(d[1]) }}</span>

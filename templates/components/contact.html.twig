@@ -1,0 +1,7 @@
+{#
+  Identité et coordonnées du demandeur (back-office uniquement : jamais sur le contrôle QR ni le PDF).
+  @param array items  Liste de { label, value, strong }.
+#}
+<dl class="cp-contact">
+  {%- for c in items %}<dt>{{ c.label }}</dt><dd>{% if c.strong|default(false) %}<b>{{ c.value }}</b>{% else %}{{ c.value }}{% endif %}</dd>{% endfor -%}
+</dl>

@@ -1,0 +1,19 @@
+{#
+  Message dans la page. Pour du contenu riche, utiliser {% embed %} et le bloc « content ».
+  @param string variant  info | success | error | warning | quiet | inline
+  @param string title    Première ligne en gras.
+  @param string text     Texte simple (échappé).
+  @param string icon     Remplace l’icône par défaut de la variante.
+  @param string role     status (défaut pour success/info) | alert (erreur bloquante) | none
+  @param string id       @param bool focus  Reçoit le focus à l’affichage (cp--autofocus).
+#}
+{%- set v = variant|default('info') -%}
+{%- set icons = { info: 'info', success: 'check', error: 'alert', warning: 'alert', quiet: 'info', inline: 'lock' } -%}
+{%- set r = role|default(v == 'error' ? 'alert' : (v in ['success', 'info'] ? 'status' : 'none')) -%}
+<div class="cp-alert cp-alert--{{ v }}"{% if id|default('') %} id="{{ id }}"{% endif %}{% if r != 'none' %} role="{{ r }}"{% endif %}{% if focus|default(false) %} tabindex="-1" data-controller="cp--autofocus"{% endif %}>
+  {%- include 'components/icon.html.twig' with { name: icon|default(icons[v]), size: v == 'inline' ? 's' : 'm' } only -%}
+  <div class="cp-alert__body">
+    {%- if title|default('') %}<b class="cp-alert__title">{{ title }}</b>{% endif -%}
+    {%- block content %}{% if text|default('') %}<p>{{ text }}</p>{% endif %}{% endblock -%}
+  </div>
+</div>

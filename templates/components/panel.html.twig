@@ -1,0 +1,8 @@
+{#
+  Panneau titré. À utiliser avec {% embed %} : bloc « body » (contenu) et bloc « head_end » (pastille, action).
+  @param string id  @param string title (h2 par défaut, level pour changer)  @param string meta  @param int level  @param bool raised
+#}
+<section class="cp-panel{% if raised|default(false) %} cp-panel--raised{% endif %}" aria-labelledby="{{ id }}">
+  <div class="cp-panel__head"><h{{ level|default(2) }} class="cp-panel__title" id="{{ id }}">{{ title }}</h{{ level|default(2) }}>{% if meta|default('') %}<span class="cp-panel__meta">{{ meta }}</span>{% endif %}{% block head_end %}{% endblock %}</div>
+  <div class="cp-panel__body">{% block body %}{% endblock %}</div>
+</section>

@@ -1,0 +1,13 @@
+{#
+  Communes et territoires demandés, avec la décision de chaque commune. Seule votre commune décide pour son territoire ; les autres sont en lecture seule.
+  @param array items  Liste de { commune, territory, status, mine, who (« Décision de Saumos », « En attente d’activation de la commune »…) }.
+#}
+<ul class="cp-decisions">
+  {%- for i in items %}
+  <li class="cp-decisions__item{% if i.mine|default(false) %} cp-decisions__item--mine{% endif %}">
+    <p class="cp-decisions__commune">{{ i.commune }}{% if i.mine|default(false) %} <span class="cp-help">(votre commune)</span>{% endif %}</p>
+    <p class="cp-decisions__terr">{{ i.territory }}</p>
+    <div class="cp-decisions__status">{% include 'components/status_pill.html.twig' with { status: i.status, label: i.status_label|default(null) } only %}{% if i.who|default('') %}<span class="cp-decisions__who">{{ i.who }}</span>{% endif %}</div>
+  </li>
+  {%- endfor %}
+</ul>

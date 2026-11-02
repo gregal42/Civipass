@@ -1,0 +1,6 @@
+<div class="cp-request-cards" style="max-width: 420px">
+  {% include 'components/request_card.html.twig' with { ref: 'DEM-2026-0155', name: 'Julien Robert', href: '#', status: 'pending', when: 'Reçue aujourd’hui à 09:31', documents: 2,
+    territories: [ { commune: 'Le Temple', zone: 'Secteur forestier nord', mine: true }, { commune: 'Saumos', zone: 'Zone centre' } ], modes: ['vehicle'], plates: ['GH-789-JK'] } only %}
+  {% include 'components/request_card.html.twig' with { ref: 'DEM-2026-0154', name: 'Nadia Benali', href: '#', status: 'approved', when: 'Reçue aujourd’hui à 09:12',
+    territories: [ { commune: 'Le Temple', zone: 'Commune entière', mine: true } ], modes: ['foot'] } only %}
+</div>

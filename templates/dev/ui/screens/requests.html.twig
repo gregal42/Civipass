@@ -1,0 +1,26 @@
+{% extends 'dev/ui/screens/_screen.html.twig' %}
+{% block content %}
+  {% include 'components/breadcrumb.html.twig' with { items: [ { label: 'Tableau de bord', href: links.dashboard }, { label: 'Demandes' } ], back: { label: 'Tableau de bord', href: links.dashboard } } only %}
+  {% embed 'components/page_head.html.twig' with { eyebrow: commune_name ~ ' · Incendie — Secteur forestier nord', title: 'Demandes', sub: st.total ~ ' demandes · ' ~ st.pending ~ ' en attente d’instruction' } only %}{% endembed %}
+
+  {% embed 'components/filter_bar.html.twig' with { filters: filters, id: 'filters', action: links.requests, search: { id: 'q', label: 'Rechercher une demande', placeholder: 'Nom, téléphone, e-mail, plaque ou référence', value: filters.q }, count_label: total ~ (total > 1 ? ' demandes' : ' demande'), chips: chips, active_count: active_count, reset_href: links.requests } only %}
+    {% block filters %}
+      {% include 'components/select.html.twig' with { id: 'statut', label: 'Statut', value: filters.statut, options: [ { value: '', label: 'Tous les statuts' }, { value: 'pending', label: 'En attente' }, { value: 'approved', label: 'Approuvée' }, { value: 'refused', label: 'Refusée' } ], attrs: '' } only %}
+      {% include 'components/select.html.twig' with { id: 'evenement', label: 'Événement', value: 'fire', options: [ { value: 'fire', label: 'Incendie — Secteur forestier nord' }, { value: '', label: 'Tous les événements' } ], attrs: '' } only %}
+      {% include 'components/select.html.twig' with { id: 'depot', label: 'Date de dépôt', value: filters.depot, options: [ { value: '', label: 'Toutes les dates' }, { value: 'today', label: 'Aujourd’hui (01/11)' }, { value: 'before', label: 'Avant aujourd’hui' } ], attrs: '' } only %}
+      {% include 'components/select.html.twig' with { id: 'tri', label: 'Trier par', value: filters.tri, options: [ { value: 'recent', label: 'Plus récentes d’abord' }, { value: 'old', label: 'Plus anciennes d’abord' }, { value: 'name', label: 'Demandeur (A → Z)' } ], attrs: '' } only %}
+    {% endblock %}
+  {% endembed %}
+
+  <div>
+    {% include 'components/data_table.html.twig' with { caption: caption,
+      columns: [
+        { key: 'name', label: 'Demandeur', card: 'title' }, { key: 'ref', label: 'Référence', card: 'sub' },
+        { key: 'terr', label: 'Territoires demandés', wide: true, card: 'full' },
+        { key: 'when', label: 'Reçue', sortable: true, sort: sort_dir, sort_href: sort_href, card: 'aside' },
+        { key: 'status', label: 'Statut pour ' ~ commune_name, card: 'status' } ],
+      rows: table_rows } only %}
+  </div>
+  {% if pg.pages > 0 %}<div>{% include 'components/pagination.html.twig' with { from: pg.from, to: pg.to, total: total, noun: 'demandes', page: pg.page, pages: pg.pages, href_pattern: pg.pattern } only %}</div>{% endif %}
+
+{% endblock %}

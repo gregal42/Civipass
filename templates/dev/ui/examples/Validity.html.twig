@@ -1,0 +1,8 @@
+<div class="cp-cluster" style="align-items: flex-start">
+  {% include 'components/validity.html.twig' with { state: 'valid', detail: 'jusqu’au 05/11/2026 à 20:00' } only %}
+  {% include 'components/validity.html.twig' with { state: 'partial', detail: '1 commune sur 2' } only %}
+  {% include 'components/validity.html.twig' with { state: 'upcoming', detail: 'à partir du 03/11/2026 à 08:00' } only %}
+  {% include 'components/validity.html.twig' with { state: 'expired', detail: 'le 05/11/2026 à 20:00' } only %}
+  {% include 'components/validity.html.twig' with { state: 'revoked', detail: 'par Le Temple le 03/11/2026' } only %}
+  {% include 'components/validity.html.twig' with { state: 'suspended', detail: 'événement suspendu' } only %}
+</div>

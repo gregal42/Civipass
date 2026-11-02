@@ -1,0 +1,5 @@
+<form class="cp-stack" data-controller="cp--choice-trace" onsubmit="return false">
+  <label class="cp-choice" style="max-width: 320px"><input class="cp-choice__input" type="checkbox" id="pf-vehicle" checked><span class="cp-choice__label">{% include 'components/icon.html.twig' with { name: 'car', size: 's' } only %} Véhicule</span><span></span><span class="cp-choice__note">Décochez pour voir l’état sans véhicule</span></label>
+  {% include 'components/plates_field.html.twig' with { id: 'pf', name: 'plates[]', vehicle: 'pf-vehicle', hint: 'Format non contrôlé : règle à arbitrer (français / étrangers).', plates: [ { number: 'AB-123-CD', requested: true, checked: true }, { number: 'EF-456-GH', requested: true, checked: false } ] } only %}
+</form>
+{% include 'components/toasts.html.twig' %}

@@ -1,0 +1,7 @@
+<div class="cp-stack">
+  <div class="cp-cluster">{% for s in ['pending', 'approved', 'refused'] %}{% include 'components/status_pill.html.twig' with { status: s } only %}{% endfor %}<span class="cp-muted">Demandes</span></div>
+  <div class="cp-cluster">{% for s in ['active', 'draft', 'suspended', 'closed'] %}{% include 'components/status_pill.html.twig' with { status: s } only %}{% endfor %}<span class="cp-muted">Événements</span></div>
+  <div class="cp-cluster">{% for s in ['concerned', 'invited'] %}{% include 'components/status_pill.html.twig' with { status: s } only %}{% endfor %}{% include 'components/status_pill.html.twig' with { status: 'active', label: 'Active' } only %}{% include 'components/status_pill.html.twig' with { status: 'suspended', label: 'Suspendue' } only %}{% include 'components/status_pill.html.twig' with { status: 'closed', label: 'Clôturée' } only %}<span class="cp-muted">Participations</span></div>
+  <div class="cp-cluster">{% for s in ['valid', 'invalid', 'revoked', 'sync'] %}{% include 'components/status_pill.html.twig' with { status: s } only %}{% endfor %}<span class="cp-muted">Droits</span></div>
+  <div class="cp-cluster">{% include 'components/status_pill.html.twig' with { status: 'pending', size: 'l' } only %}<span class="cp-muted">Taille l (en-tête de dossier)</span></div>
+</div>

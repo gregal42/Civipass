@@ -1,0 +1,68 @@
+{% extends 'dev/ui/screens/_screen.html.twig' %}
+{% block content %}
+  {% embed 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ commune_name, title: 'Tableau de bord', sub: 'Dimanche 1er novembre 2026 · données à 10:05', can: can } only %}
+    {% block actions %}{% if can.create_event|default(false) %}{% include 'components/button.html.twig' with { label: 'Créer un événement', icon: 'plus', href: '#' } only %}{% endif %}{% endblock %}
+  {% endembed %}
+
+  <section class="cp-section" aria-labelledby="quick-h">
+    {% include 'components/section_head.html.twig' with { id: 'quick-h', title: 'Actions rapides' } only %}
+    <div class="proto-quick">
+      <form action="{{ links.requests }}" method="get" class="proto-quick__search">{% include 'components/search_field.html.twig' with { id: 'quick-q', label: 'Rechercher une demande ou un laissez-passer', placeholder: 'Nom, téléphone, e-mail, plaque ou référence' } only %}</form>
+      <div class="cp-cluster">
+        {% include 'components/button.html.twig' with { label: 'Instruire les demandes en attente (' ~ st.pending ~ ')', icon: 'inbox', variant: 'secondary', href: links.requests_pending } only %}
+        {% include 'components/button.html.twig' with { label: 'Créer un laissez-passer', icon: 'pass', variant: 'secondary', href: '#' } only %}
+        {% if can.zones|default(false) %}{% include 'components/button.html.twig' with { label: 'Gérer les zones', icon: 'map', variant: 'secondary', href: '#' } only %}{% endif %}
+      </div>
+    </div>
+  </section>
+
+  <section class="cp-section" aria-labelledby="kpi-h">
+    {% include 'components/section_head.html.twig' with { id: 'kpi-h', title: 'Situation', meta: 'Événements actifs de ' ~ commune_name } only %}
+    <div>
+    {% include 'components/kpi_tiles.html.twig' with { tiles: [
+      { label: 'Demandes en attente', value: st.pending, foot: 'à instruire par ' ~ commune_name, urgent: true },
+      { label: 'Approuvées', value: st.approved, foot: 'depuis l’activation' },
+      { label: 'Refusées', value: st.refused, foot: 'depuis l’activation' },
+      { label: 'Laissez-passer valides', value: st.valid, foot: 'à cet instant' } ] } only %}
+    </div>
+  </section>
+
+  <section class="cp-section" aria-labelledby="act-h">
+    {% include 'components/section_head.html.twig' with { id: 'act-h', title: 'Événement actif', meta: '1 en cours' } only %}
+    {% include 'components/event_card.html.twig' with { id: 'ev-active', title: ev.title, type: ev.type, icon: ev.icon, status: 'active', pending: st.pending, href: '#',
+      meta: is_organizer
+        ? [ { icon: 'clock', text: 'Activé le ' ~ ev.activated }, { icon: 'flag', text: 'Organisé par Le Temple · ma participation active' }, { icon: 'pin', text: 'Commune participante : Saumos' } ]
+        : [ { icon: 'clock', text: 'Activé le ' ~ ev.activated }, { icon: 'flag', text: 'Organisé par Le Temple · participation de Saumos active' } ],
+      figures: [ { value: st.approved, label: 'approuvées' }, { value: st.refused, label: 'refusées' }, { value: st.valid, label: 'pass valides' } ] } only %}
+  </section>
+
+  <section class="cp-section" aria-labelledby="oth-h">
+    {% include 'components/section_head.html.twig' with { id: 'oth-h', title: 'Autres événements' } only %}
+    <div data-controller="cp--tabs">
+      {% include 'components/tabs.html.twig' with { id: 'other', label: 'Autres événements', selected: is_organizer ? 'drafts' : 'external', tabs: [ { id: 'drafts', label: 'Brouillons', count: is_organizer ? 1 : 0 }, { id: 'suspended', label: 'Suspendus', count: 0 }, { id: 'external', label: 'Participations externes', count: is_organizer ? 0 : 1 } ] } only %}
+      <div class="cp-tabs__panel" role="tabpanel" id="other-drafts-panel" aria-labelledby="other-drafts"{% if not is_organizer %} hidden{% endif %}>
+        {% if is_organizer %}{% include 'components/event_card.html.twig' with { id: 'ev-draft', variant: 'compact', icon: 'wave', title: draft.title, status: 'draft', meta: [ { text: 'Brouillon créé le ' ~ draft.created ~ ' · formulaire public inactif, aucun droit émis' } ], href: '#', action_label: 'Reprendre le brouillon' } only %}
+        {% else %}{% include 'components/empty_state.html.twig' with { title: 'Aucun brouillon', text: 'Les événements préparés par votre commune apparaîtront ici.' } only %}{% endif %}
+      </div>
+      <div class="cp-tabs__panel" role="tabpanel" id="other-suspended-panel" aria-labelledby="other-suspended" hidden>{% include 'components/empty_state.html.twig' with { title: 'Aucun événement suspendu', text: 'Un événement suspendu apparaîtra ici, avec son motif de suspension.' } only %}</div>
+      <div class="cp-tabs__panel" role="tabpanel" id="other-external-panel" aria-labelledby="other-external"{% if is_organizer %} hidden{% endif %}>
+        {% if is_organizer %}{% include 'components/empty_state.html.twig' with { title: 'Aucune participation à un événement d’une autre commune', text: 'Les invitations reçues et acceptées seront listées ici.' } only %}
+        {% else %}{% include 'components/empty_state.html.twig' with { icon: 'flag', title: 'Incendie — Secteur forestier nord (organisé par Le Temple)', text: 'Cette participation est l’événement actif ci-dessus.' } only %}{% endif %}
+      </div>
+    </div>
+  </section>
+
+  <div class="proto-two">
+    <section class="cp-section" aria-labelledby="todo-h">
+      {% include 'components/section_head.html.twig' with { id: 'todo-h', title: 'En attente d’instruction', meta: 'Les plus récentes' } only %}
+      <div class="cp-request-cards">
+        {% for r in pending_cards %}{% include 'components/request_card.html.twig' with { ref: r.ref, name: r.name, href: r.href, status: r.status, when: 'Reçue le ' ~ r.date ~ ' à ' ~ r.time, territories: r.terr_list, modes: r.modes, plates: r.plates, documents: r.docs } only %}{% endfor %}
+      </div>
+      {% include 'components/button.html.twig' with { label: 'Voir les ' ~ st.pending ~ ' demandes en attente', variant: 'ghost', icon_after: 'right', href: links.requests_pending } only %}
+    </section>
+    <section class="cp-section" aria-labelledby="rec-h">
+      {% include 'components/section_head.html.twig' with { id: 'rec-h', title: 'Activité récente', meta: 'Dernières demandes reçues' } only %}
+      {% include 'components/request_list.html.twig' with { rows: recent, foot: st.total ~ ' demandes au total · ' ~ commune_name } only %}
+    </section>
+  </div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{#
+  Période de validité : UNE période continue, date + heure de début → date + heure de fin (référentiel §7). Fuseau affiché.
+  @param string id      Préfixe (champs {id}_start_date, {id}_start_time, {id}_end_date, {id}_end_time).
+  @param string legend  @param string note (défaut « une seule période continue, heure de Paris »)
+  @param object value   { start_date: 'AAAA-MM-JJ', start_time: 'HH:MM', end_date, end_time }
+  @param string error   Message d’erreur de la période (ex. fin antérieure au début).
+#}
+<fieldset class="cp-fieldset cp-period" id="{{ id }}"{% if error|default('') %} aria-describedby="{{ id }}-error"{% endif %}>
+  <legend class="cp-fieldset__legend">{{ legend|default('Période de validité') }} <span class="cp-fieldset__legend-note">· {{ note|default('une seule période continue, heure de Paris') }}</span></legend>
+  <div class="cp-period__grid">
+    {%- for part in [['start', 'Début'], ['end', 'Fin']] %}
+    <div class="cp-field"><span class="cp-field__label" id="{{ id }}-{{ part[0] }}-label">{{ part[1] }}</span>
+      <div class="cp-period__dt">
+        <input class="cp-input" type="date" id="{{ id }}_{{ part[0] }}_date" name="{{ id }}[{{ part[0] }}_date]" value="{{ attribute(value|default({}), part[0] ~ '_date')|default('') }}" aria-label="Date de {{ part[1]|lower }}" required{% if error|default('') %} aria-invalid="true"{% endif %}>
+        <input class="cp-input" type="time" id="{{ id }}_{{ part[0] }}_time" name="{{ id }}[{{ part[0] }}_time]" value="{{ attribute(value|default({}), part[0] ~ '_time')|default('') }}" aria-label="Heure de {{ part[1]|lower }}" required{% if error|default('') %} aria-invalid="true"{% endif %}>
+      </div>
+    </div>
+    {%- endfor %}
+  </div>
+  {%- if error|default('') %}<p class="cp-field-error" id="{{ id }}-error">{% include 'components/icon.html.twig' with { name: 'alert', size: 's' } only %}{{ error }}</p>{% endif %}
+</fieldset>

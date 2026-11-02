@@ -1,0 +1,9 @@
+{#
+  Historique audité d’un dossier, du plus ancien au plus récent.
+  @param array items  Liste de { time, text, kind } ; kind = ok (approbation, émission) | bad (refus, révocation) | agent (action ou modification de l’agent) | vide.
+#}
+<ol class="cp-timeline">
+  {%- for i in items %}
+  <li class="cp-timeline__item{% if i.kind|default('') %} cp-timeline__item--{{ i.kind }}{% endif %}"><div><p class="cp-timeline__time"><time>{{ i.time }}</time></p><p class="cp-timeline__text">{{ i.text }}</p></div></li>
+  {%- endfor %}
+</ol>

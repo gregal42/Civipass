@@ -1,0 +1,11 @@
+{#
+  En-tête des écrans publics (sans navigation municipale ni compte).
+  @param string title       « Vérification d’un laissez-passer ».    @param string connection  online | offline | unreachable | (vide).
+  @param array  device      Bandeau PWA activée : liste de textes (appareil, données du…).
+#}
+<header class="cp-public__head">
+  <span class="cp-logo cp-logo--flush"><span class="cp-logo__mark" aria-hidden="true">Cp</span><span class="cp-logo__text">Civipass</span></span>
+  <span class="cp-public__title">{{ title }}</span>
+  {%- if connection|default('') %}{% include 'components/connection.html.twig' with { state: connection } only %}{% endif %}
+</header>
+{%- if device|default([])|length %}<div class="cp-public__device">{% for d in device %}<span>{% if loop.first %}{% include 'components/icon.html.twig' with { name: 'shield', size: 's' } only %} {% endif %}{{ d }}</span>{% endfor %}</div>{% endif %}

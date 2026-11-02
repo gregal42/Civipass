@@ -1,0 +1,16 @@
+{#
+  Navigation basse mobile agent (< 640 px) : Accueil / Demandes / Pass / Menu (référentiel §3).
+  @param array items  Liste de { label, icon, href, current, count, modal } ; modal = id de la feuille à ouvrir (entrée « Menu »).
+#}
+<nav class="cp-bottomnav" aria-label="Navigation principale">
+  {%- for i in items %}
+  {%- if i.modal|default('') %}
+  <button type="button" class="cp-bottomnav__link" data-modal-open="{{ i.modal }}" aria-haspopup="dialog">{% include 'components/icon.html.twig' with { name: i.icon } only %}<span>{{ i.label }}</span></button>
+  {%- else %}
+  <a class="cp-bottomnav__link" href="{{ i.href }}"{% if i.current|default(false) %} aria-current="page"{% endif %}>
+    {%- include 'components/icon.html.twig' with { name: i.icon } only %}<span>{{ i.label }}</span>
+    {%- if i.count|default(0) %}<span class="cp-bottomnav__badge"><span class="cp-sr-only">, </span>{{ i.count }}<span class="cp-sr-only"> en attente</span></span>{% endif -%}
+  </a>
+  {%- endif %}
+  {%- endfor %}
+</nav>

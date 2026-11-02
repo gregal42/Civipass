@@ -1,0 +1,4 @@
+<div class="cp-stack">
+  <div class="cp-plates">{% include 'components/plate.html.twig' with { number: 'AB-123-CD' } only %}{% include 'components/plate.html.twig' with { number: 'EF-456-GH' } only %}{% include 'components/plate.html.twig' with { number: 'EF-456-GH', off: true } only %}</div>
+  <div class="cp-plates">{% include 'components/plate.html.twig' with { number: 'AB-123-CD', size: 'lg' } only %}{% include 'components/plate.html.twig' with { number: 'EF-456-GH', size: 'lg' } only %}</div>
+</div>

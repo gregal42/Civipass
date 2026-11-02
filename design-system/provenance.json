@@ -1,0 +1,1875 @@
+{
+  "name": "civipass-design-system",
+  "version": "1.0.0",
+  "tokensVersion": 1,
+  "tokensSource": "Prototype UI Civipass V1 (direction « Signalétique civique »), validé le 01/11/2026",
+  "importedAt": "2026-11-02",
+  "tool": "design-system/tools/import.mjs",
+  "counts": {
+    "componentTemplates": 64,
+    "layouts": 2,
+    "examples": 56,
+    "controllers": 15,
+    "files": 218
+  },
+  "components": [
+    "action_bar",
+    "action_menu",
+    "alert",
+    "authorization",
+    "banner",
+    "bottom_nav",
+    "breadcrumb",
+    "button",
+    "check",
+    "checklist",
+    "choice",
+    "commune_decisions",
+    "confirm_panel",
+    "connection",
+    "contact",
+    "context_selector",
+    "ctxstrip",
+    "data_table",
+    "decision_form",
+    "dialog",
+    "documents",
+    "empty_state",
+    "error_summary",
+    "event_card",
+    "facts",
+    "field",
+    "file_upload",
+    "filter_bar",
+    "freshness",
+    "holder",
+    "icon",
+    "icon_button",
+    "kpi_tiles",
+    "mobile_menu",
+    "modal",
+    "mode_chip",
+    "page_head",
+    "pagination",
+    "panel",
+    "pass_card",
+    "period",
+    "plate",
+    "plates_field",
+    "public_header",
+    "qr_code",
+    "recap",
+    "request_card",
+    "request_list",
+    "rights",
+    "search_field",
+    "section_head",
+    "select",
+    "sidebar",
+    "skeleton",
+    "status_pill",
+    "tabs",
+    "tag",
+    "timeline",
+    "toasts",
+    "topbar",
+    "validity",
+    "vehicles",
+    "verdict",
+    "zone_select"
+  ],
+  "adaptations": [
+    {
+      "id": "A1",
+      "target": "assets/styles/civipass/tokens.css",
+      "description": "Chemins des polices ajustés à l’emplacement AssetMapper (assets/styles/civipass → assets/fonts).",
+      "occurrences": 5
+    },
+    {
+      "id": "A2",
+      "target": "assets/styles/civipass/tokens.css",
+      "description": "Classes typographiques préfixées cp- (écart à signaler à la source : tokens.css devrait les générer préfixées).",
+      "occurrences": 9
+    },
+    {
+      "id": "A3",
+      "target": "assets/styles/civipass/tokens.css",
+      "description": "Classes .eyebrow, .plate, .plate-lg retirées : doublons des composants .cp-eyebrow et .cp-plate, avec risque de collision.",
+      "occurrences": 3
+    },
+    {
+      "id": "A4",
+      "target": "assets/controllers/cp/disclosure_controller.js",
+      "description": "Import relatif « ./events » → « ./events.js » (le navigateur et AssetMapper exigent l’extension).",
+      "occurrences": 1
+    },
+    {
+      "id": "A4",
+      "target": "assets/controllers/cp/plate_list_controller.js",
+      "description": "Import relatif « ./events » → « ./events.js » (le navigateur et AssetMapper exigent l’extension).",
+      "occurrences": 1
+    },
+    {
+      "id": "A4",
+      "target": "assets/controllers/cp/unsaved_guard_controller.js",
+      "description": "Import relatif « ./events » → « ./events.js » (le navigateur et AssetMapper exigent l’extension).",
+      "occurrences": 1
+    },
+    {
+      "id": "A6",
+      "target": "templates/components/mobile_menu.html.twig",
+      "description": "Déconnexion du menu mobile : formulaire POST avec jeton CSRF.",
+      "occurrences": 1
+    },
+    {
+      "id": "A6",
+      "target": "templates/components/mobile_menu.html.twig",
+      "description": "Fermeture du formulaire de déconnexion du menu mobile.",
+      "occurrences": 1
+    },
+    {
+      "id": "A5",
+      "target": "templates/components/topbar.html.twig",
+      "description": "Déconnexion : lien GET remplacé par un formulaire POST avec jeton CSRF « logout » (la déconnexion Civipass est POST uniquement).",
+      "occurrences": 1
+    },
+    {
+      "id": "A5",
+      "target": "templates/components/topbar.html.twig",
+      "description": "Fermeture du formulaire de déconnexion.",
+      "occurrences": 1
+    },
+    {
+      "id": "A7",
+      "target": "templates/layouts/app.html.twig",
+      "description": "Feuilles de style chargées par <link> (pas par import JavaScript : pas de flash de page non stylée, fonctionne sans JS) et meta Turbo no-cache (pages à données personnelles).",
+      "occurrences": 1
+    },
+    {
+      "id": "A8",
+      "target": "templates/layouts/app.html.twig",
+      "description": "Point d’entrée JavaScript AssetMapper (Stimulus, Turbo, contrôleurs cp--*).",
+      "occurrences": 1
+    },
+    {
+      "id": "A7",
+      "target": "templates/layouts/public.html.twig",
+      "description": "Feuilles de style chargées par <link> (pas par import JavaScript : pas de flash de page non stylée, fonctionne sans JS) et meta Turbo no-cache (pages à données personnelles).",
+      "occurrences": 1
+    },
+    {
+      "id": "A8",
+      "target": "templates/layouts/public.html.twig",
+      "description": "Point d’entrée JavaScript AssetMapper (Stimulus, Turbo, contrôleurs cp--*).",
+      "occurrences": 1
+    },
+    {
+      "id": "P1",
+      "target": "templates/dev/ui/screens/dashboard.html.twig",
+      "description": "Layout de prévisualisation Civipass (layouts/app + bandeau « données fictives ») à la place du layout statique du prototype.",
+      "occurrences": 1
+    },
+    {
+      "id": "P2",
+      "target": "templates/dev/ui/screens/dashboard.html.twig",
+      "description": "Liens relatifs du prototype (tableau-de-bord.html, demandes.html…) remplacés par les routes /dev/ui via la variable « links ».",
+      "occurrences": null
+    },
+    {
+      "id": "P3",
+      "target": "templates/dev/ui/screens/dashboard.html.twig",
+      "description": "Liens « #todo:… » (écrans prévus dans un lot ultérieur) remplacés par « # » : le prototype les signalait par un toast simulé, non repris.",
+      "occurrences": null
+    },
+    {
+      "id": "P4",
+      "target": "templates/dev/ui/screens/dashboard.html.twig",
+      "description": "Attributs data-proto-* (simulation du serveur par proto.js) retirés.",
+      "occurrences": null
+    },
+    {
+      "id": "P1",
+      "target": "templates/dev/ui/screens/requests.html.twig",
+      "description": "Layout de prévisualisation Civipass (layouts/app + bandeau « données fictives ») à la place du layout statique du prototype.",
+      "occurrences": 1
+    },
+    {
+      "id": "P2",
+      "target": "templates/dev/ui/screens/requests.html.twig",
+      "description": "Liens relatifs du prototype (tableau-de-bord.html, demandes.html…) remplacés par les routes /dev/ui via la variable « links ».",
+      "occurrences": null
+    },
+    {
+      "id": "P8",
+      "target": "templates/dev/ui/screens/requests.html.twig",
+      "description": "Valeurs courantes des filtres transmises au bloc « filters » (embed … only).",
+      "occurrences": 1
+    },
+    {
+      "id": "P8",
+      "target": "templates/dev/ui/screens/requests.html.twig",
+      "description": "Recherche : valeur courante et bouton « Rechercher » (le prototype filtrait en direct par proto.js).",
+      "occurrences": 1
+    },
+    {
+      "id": "P8",
+      "target": "templates/dev/ui/screens/requests.html.twig",
+      "description": "Filtre Statut : valeur courante.",
+      "occurrences": 1
+    },
+    {
+      "id": "P8",
+      "target": "templates/dev/ui/screens/requests.html.twig",
+      "description": "Filtre Date de dépôt : valeur courante.",
+      "occurrences": 1
+    },
+    {
+      "id": "P8",
+      "target": "templates/dev/ui/screens/requests.html.twig",
+      "description": "Tri : valeur courante.",
+      "occurrences": 1
+    },
+    {
+      "id": "P8",
+      "target": "templates/dev/ui/screens/requests.html.twig",
+      "description": "Compteur, puces de filtres actifs et « Tout effacer » calculés côté serveur.",
+      "occurrences": 1
+    },
+    {
+      "id": "P8",
+      "target": "templates/dev/ui/screens/requests.html.twig",
+      "description": "Légende du tableau calculée côté serveur.",
+      "occurrences": 1
+    },
+    {
+      "id": "P8",
+      "target": "templates/dev/ui/screens/requests.html.twig",
+      "description": "Tri par colonne « Reçue » calculé côté serveur.",
+      "occurrences": 1
+    },
+    {
+      "id": "P8",
+      "target": "templates/dev/ui/screens/requests.html.twig",
+      "description": "Pagination calculée côté serveur (filtres conservés dans les liens).",
+      "occurrences": 1
+    },
+    {
+      "id": "P8",
+      "target": "templates/dev/ui/screens/requests.html.twig",
+      "description": "Pagination masquée sans résultat.",
+      "occurrences": 1
+    },
+    {
+      "id": "P3",
+      "target": "templates/dev/ui/screens/requests.html.twig",
+      "description": "Liens « #todo:… » (écrans prévus dans un lot ultérieur) remplacés par « # » : le prototype les signalait par un toast simulé, non repris.",
+      "occurrences": null
+    },
+    {
+      "id": "P4",
+      "target": "templates/dev/ui/screens/requests.html.twig",
+      "description": "Attributs data-proto-* (simulation du serveur par proto.js) retirés.",
+      "occurrences": null
+    },
+    {
+      "id": "P5",
+      "target": "templates/dev/ui/screens/requests.html.twig",
+      "description": "Gabarits <template> et JSON de simulation du prototype retirés ; filtres, tri et pagination sont rendus côté serveur (données fictives).",
+      "occurrences": 1
+    },
+    {
+      "id": "P1",
+      "target": "templates/dev/ui/screens/request.html.twig",
+      "description": "Layout de prévisualisation Civipass (layouts/app + bandeau « données fictives ») à la place du layout statique du prototype.",
+      "occurrences": 1
+    },
+    {
+      "id": "P2",
+      "target": "templates/dev/ui/screens/request.html.twig",
+      "description": "Liens relatifs du prototype (tableau-de-bord.html, demandes.html…) remplacés par les routes /dev/ui via la variable « links ».",
+      "occurrences": null
+    },
+    {
+      "id": "P3",
+      "target": "templates/dev/ui/screens/request.html.twig",
+      "description": "Liens « #todo:… » (écrans prévus dans un lot ultérieur) remplacés par « # » : le prototype les signalait par un toast simulé, non repris.",
+      "occurrences": null
+    },
+    {
+      "id": "P4",
+      "target": "templates/dev/ui/screens/request.html.twig",
+      "description": "Attributs data-proto-* (simulation du serveur par proto.js) retirés.",
+      "occurrences": null
+    },
+    {
+      "id": "P6",
+      "target": "templates/dev/ui/screens/request.html.twig",
+      "description": "Zone de message : alerte de prévisualisation après envoi d’un formulaire (simulation du serveur retirée).",
+      "occurrences": 1
+    },
+    {
+      "id": "P1",
+      "target": "templates/dev/ui/screens/forbidden.html.twig",
+      "description": "Layout de prévisualisation Civipass (layouts/app + bandeau « données fictives ») à la place du layout statique du prototype.",
+      "occurrences": 1
+    },
+    {
+      "id": "P2",
+      "target": "templates/dev/ui/screens/forbidden.html.twig",
+      "description": "Liens relatifs du prototype (tableau-de-bord.html, demandes.html…) remplacés par les routes /dev/ui via la variable « links ».",
+      "occurrences": null
+    },
+    {
+      "id": "P3",
+      "target": "templates/dev/ui/screens/forbidden.html.twig",
+      "description": "Liens « #todo:… » (écrans prévus dans un lot ultérieur) remplacés par « # » : le prototype les signalait par un toast simulé, non repris.",
+      "occurrences": null
+    },
+    {
+      "id": "P4",
+      "target": "templates/dev/ui/screens/forbidden.html.twig",
+      "description": "Attributs data-proto-* (simulation du serveur par proto.js) retirés.",
+      "occurrences": null
+    },
+    {
+      "id": "P9",
+      "target": "templates/dev/ui/screens/forbidden.html.twig",
+      "description": "Lien de retour : « links » transmis au bloc de l’alerte (embed … only).",
+      "occurrences": 1
+    },
+    {
+      "id": "P7",
+      "target": "src/Shared/UI/DevUi/Resources/prototype.json",
+      "description": "Données fictives du prototype (aucune personne réelle) exportées en JSON depuis data.mjs, sans modification.",
+      "occurrences": null
+    }
+  ],
+  "files": [
+    {
+      "source": "dist/tokens.css",
+      "target": "assets/styles/civipass/tokens.css",
+      "sourceSha": "30e9051e766334d0fa92cf87c823eb5b2568ad26232ce71bc131e1529d0a8194",
+      "targetSha": "34110eda63933742718432a3a18dddf96b08d6aabeb86b0ded940800a34127f9",
+      "adapted": true
+    },
+    {
+      "source": "dist/civipass.css",
+      "target": "assets/styles/civipass/civipass.css",
+      "sourceSha": "8d101798a15a7f1192353c8869379f861b5cc73e03120ae634398ee531528d1b",
+      "targetSha": "8d101798a15a7f1192353c8869379f861b5cc73e03120ae634398ee531528d1b",
+      "adapted": false
+    },
+    {
+      "source": "fonts/AtkinsonHyperlegibleMono-Bold.woff2",
+      "target": "assets/fonts/AtkinsonHyperlegibleMono-Bold.woff2",
+      "sourceSha": "f30319aa2ab224c5a19d177617e2141b002fcb95c1afe233214f9d342e47687d",
+      "targetSha": "f30319aa2ab224c5a19d177617e2141b002fcb95c1afe233214f9d342e47687d",
+      "adapted": false
+    },
+    {
+      "source": "fonts/AtkinsonHyperlegibleMono-Regular.woff2",
+      "target": "assets/fonts/AtkinsonHyperlegibleMono-Regular.woff2",
+      "sourceSha": "87b5b94c18025729fc6ed4e8c25221ade3746dc87213943fa4de49f1f0f26787",
+      "targetSha": "87b5b94c18025729fc6ed4e8c25221ade3746dc87213943fa4de49f1f0f26787",
+      "adapted": false
+    },
+    {
+      "source": "fonts/AtkinsonHyperlegibleNext-Bold.woff2",
+      "target": "assets/fonts/AtkinsonHyperlegibleNext-Bold.woff2",
+      "sourceSha": "0dbe07ed7679407db9d90f747d5ca3bd1b2bb7ccbcbe41c8246cfc6d2c7bc3bc",
+      "targetSha": "0dbe07ed7679407db9d90f747d5ca3bd1b2bb7ccbcbe41c8246cfc6d2c7bc3bc",
+      "adapted": false
+    },
+    {
+      "source": "fonts/AtkinsonHyperlegibleNext-ExtraBold.woff2",
+      "target": "assets/fonts/AtkinsonHyperlegibleNext-ExtraBold.woff2",
+      "sourceSha": "377d6c32d80cdc2c257b48b4e02a6437ff1019c77e49c160ede8ebd6453be061",
+      "targetSha": "377d6c32d80cdc2c257b48b4e02a6437ff1019c77e49c160ede8ebd6453be061",
+      "adapted": false
+    },
+    {
+      "source": "fonts/AtkinsonHyperlegibleNext-Regular.woff2",
+      "target": "assets/fonts/AtkinsonHyperlegibleNext-Regular.woff2",
+      "sourceSha": "5cb240a4d99ab7e6fc3a4d4e6d11d89789fdffe9c86a8384000d662c53283f6f",
+      "targetSha": "5cb240a4d99ab7e6fc3a4d4e6d11d89789fdffe9c86a8384000d662c53283f6f",
+      "adapted": false
+    },
+    {
+      "source": "fonts/OFL.txt",
+      "target": "assets/fonts/OFL.txt",
+      "sourceSha": "474a034e99845062f661855caaa505880d0e9009deddc2727a92795eab374955",
+      "targetSha": "474a034e99845062f661855caaa505880d0e9009deddc2727a92795eab374955",
+      "adapted": false
+    },
+    {
+      "source": "src/controllers/cp/autofocus_controller.ts",
+      "target": "assets/controllers/cp/autofocus_controller.js",
+      "sourceSha": "a5f82a07da7883beb42c2e5258ebe3e28b4f5002ee64d36fdd1bd7becb79aea5",
+      "targetSha": "2719c829a16d7fea5d3a0dbc83783e21f502dccf557bac092e2dd151ea5a6d8c",
+      "adapted": true
+    },
+    {
+      "source": "src/controllers/cp/choice_trace_controller.ts",
+      "target": "assets/controllers/cp/choice_trace_controller.js",
+      "sourceSha": "49760dc8f9d304cfcdb542b14d9db70c0ea8b83f6d75e434db246208a230343c",
+      "targetSha": "31d61b6093410f912e9bc05077b71458b6e66f5cee7a1edafa0e68f0985d0463",
+      "adapted": true
+    },
+    {
+      "source": "src/controllers/cp/dialog_controller.ts",
+      "target": "assets/controllers/cp/dialog_controller.js",
+      "sourceSha": "4e2bad90e8921482383259b480be07511d758f35039e72c531aa9ecd5b2db5a7",
+      "targetSha": "c55bf0d2e6eb593aeef27f1b8e7e64d51d415b4569db64f922d6fd4d60ea9a01",
+      "adapted": true
+    },
+    {
+      "source": "src/controllers/cp/disclosure_controller.ts",
+      "target": "assets/controllers/cp/disclosure_controller.js",
+      "sourceSha": "fa3d1727e720c6014ffb6a04b7c0cd878606f73f7df7575c8fa3b7e979372ac7",
+      "targetSha": "4250075cc1e4a89131d001b9a2d0c6c64a4cb0ac1c8899bd11bf17d5e7aa3dec",
+      "adapted": true
+    },
+    {
+      "source": "src/controllers/cp/dropdown_controller.ts",
+      "target": "assets/controllers/cp/dropdown_controller.js",
+      "sourceSha": "3bbc710481030516523404098b9796f8fa77e063629b7880c3d887111321bded",
+      "targetSha": "59d843162670a70e278f15c3e4bc0d636515f08682c08a14af7dcd636aba822f",
+      "adapted": true
+    },
+    {
+      "source": "src/controllers/cp/events.ts",
+      "target": "assets/controllers/cp/events.js",
+      "sourceSha": "3958ab1da2506753e69c951e2d2eb6e66d7b18b7ec1f65b5e68cbf65de14b336",
+      "targetSha": "0362e63fe51e6c9dffdec6b7e466d7a6acc0019ef86685159ff830294b3e879c",
+      "adapted": true
+    },
+    {
+      "source": "src/controllers/cp/file_upload_controller.ts",
+      "target": "assets/controllers/cp/file_upload_controller.js",
+      "sourceSha": "ee951ea263609579c049ad10c01036b06fae299c75c33864192fbfe0ae0c44c1",
+      "targetSha": "a460009f752aa3a3294cdaa409be64646da8f5af005988985c03d1836ad63d32",
+      "adapted": true
+    },
+    {
+      "source": "src/controllers/cp/modal_controller.ts",
+      "target": "assets/controllers/cp/modal_controller.js",
+      "sourceSha": "aef9e9b24097bc9fbf9e40fce762b5a78f50376121f46101d8864bce453b6480",
+      "targetSha": "f7c311cce3d40d07459dd2d32423472785e4310f792098209bdbab6e5d2b2eb0",
+      "adapted": true
+    },
+    {
+      "source": "src/controllers/cp/plate_list_controller.ts",
+      "target": "assets/controllers/cp/plate_list_controller.js",
+      "sourceSha": "836abe49405e9976543833a9a1e5dc596069cad25bc7b76a7b7dc4a1b9696f51",
+      "targetSha": "2f94c4e485615fa607b3ec73187e12a09800fe38dd38e51db8e389332a6d26da",
+      "adapted": true
+    },
+    {
+      "source": "src/controllers/cp/recap_controller.ts",
+      "target": "assets/controllers/cp/recap_controller.js",
+      "sourceSha": "5f498cde7b006c5c18ca93ec5dcb81fa4f53bfa59c4d931a8edc22e1bbd5ee18",
+      "targetSha": "7baa99cfd20438c4926c87690080ecb9e199163f67548329b7a3f32dcc8f1e80",
+      "adapted": true
+    },
+    {
+      "source": "src/controllers/cp/submit_state_controller.ts",
+      "target": "assets/controllers/cp/submit_state_controller.js",
+      "sourceSha": "b46714e5e30f5393e6bb0a7520fd7d4cd69d957147c157c4856a275c2bb4ad68",
+      "targetSha": "8f108e3092f1413e0dd9686807e172b181df8d2058f34c3b8579384eedd79dfc",
+      "adapted": true
+    },
+    {
+      "source": "src/controllers/cp/tabs_controller.ts",
+      "target": "assets/controllers/cp/tabs_controller.js",
+      "sourceSha": "64c011ac39cdc14c912a75fa29eaab7e440c08749f983bff102bd97da049ddd1",
+      "targetSha": "3c4601c8a1c21425a78cb7fe844ef03890203d8ac6bb9533fe0ceb872d5a9c24",
+      "adapted": true
+    },
+    {
+      "source": "src/controllers/cp/toast_controller.ts",
+      "target": "assets/controllers/cp/toast_controller.js",
+      "sourceSha": "928feffd6747e45b806c875fd7465ad5d63f4d39f13ca6288242b18034785621",
+      "targetSha": "46bf6464ff2fdecd8f2afb45139bfadff5b5f78e88321d82b268a3c9f95dd34d",
+      "adapted": true
+    },
+    {
+      "source": "src/controllers/cp/toggle_controller.ts",
+      "target": "assets/controllers/cp/toggle_controller.js",
+      "sourceSha": "21e84f28252a7f030c97d80fcd73e718e4451548650595e4c75526ee680a2cef",
+      "targetSha": "547ee04cb726c1bb95f30ece2867a18183cc523d609ee64cf0d736cdd5e9926f",
+      "adapted": true
+    },
+    {
+      "source": "src/controllers/cp/unsaved_guard_controller.ts",
+      "target": "assets/controllers/cp/unsaved_guard_controller.js",
+      "sourceSha": "be0cdb8a757c5e1cc912ef7220b21ba42cf7f7d92e55a1c6686151ae42e89305",
+      "targetSha": "367f1c03edba66a0dd9b1588d4d30a3bbf268c4fc6bca75b27f373549472730b",
+      "adapted": true
+    },
+    {
+      "source": "src/controllers/cp/zone_select_controller.ts",
+      "target": "assets/controllers/cp/zone_select_controller.js",
+      "sourceSha": "cfa0b5617d63a6cc5648d5500bebcc07078933d304c1dbe7c2639e57e29e8d86",
+      "targetSha": "8a3ff63a7021042b4149b28380d157ee5e023836f2c5aad4533600fd0a87444b",
+      "adapted": true
+    },
+    {
+      "source": "templates/components/action_bar.html.twig",
+      "target": "templates/components/action_bar.html.twig",
+      "sourceSha": "8d39057d9c128e080d827d1662e914b4e2157401599babef58666a8155825a19",
+      "targetSha": "8d39057d9c128e080d827d1662e914b4e2157401599babef58666a8155825a19",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/action_menu.html.twig",
+      "target": "templates/components/action_menu.html.twig",
+      "sourceSha": "7908c9cd7da5568e77e00818d85de20f65d2251e0e94e43596d8763269aa481b",
+      "targetSha": "7908c9cd7da5568e77e00818d85de20f65d2251e0e94e43596d8763269aa481b",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/alert.html.twig",
+      "target": "templates/components/alert.html.twig",
+      "sourceSha": "0bf96ba0e479cca57f2634ef3b3e9b32484795d7c3405d243b99f832df5925d5",
+      "targetSha": "0bf96ba0e479cca57f2634ef3b3e9b32484795d7c3405d243b99f832df5925d5",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/authorization.html.twig",
+      "target": "templates/components/authorization.html.twig",
+      "sourceSha": "4a470740a96bb0e2578396efc96967dc02ec70fd506c450688bfb70d6f1aa5b8",
+      "targetSha": "4a470740a96bb0e2578396efc96967dc02ec70fd506c450688bfb70d6f1aa5b8",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/banner.html.twig",
+      "target": "templates/components/banner.html.twig",
+      "sourceSha": "69cc485c8b6446e4e4247d55f18812f96be6f1e9e8c4bd390e8b0bd883ea2d8c",
+      "targetSha": "69cc485c8b6446e4e4247d55f18812f96be6f1e9e8c4bd390e8b0bd883ea2d8c",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/bottom_nav.html.twig",
+      "target": "templates/components/bottom_nav.html.twig",
+      "sourceSha": "a5333477ce033ccf9a86dce621c7f0f082e93feae491a5d2d435ac0a782fa7e7",
+      "targetSha": "a5333477ce033ccf9a86dce621c7f0f082e93feae491a5d2d435ac0a782fa7e7",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/breadcrumb.html.twig",
+      "target": "templates/components/breadcrumb.html.twig",
+      "sourceSha": "a9abb583fee15131f019be7e4b59c4fdbe359008d4a31be53e9b38304ef573d4",
+      "targetSha": "a9abb583fee15131f019be7e4b59c4fdbe359008d4a31be53e9b38304ef573d4",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/button.html.twig",
+      "target": "templates/components/button.html.twig",
+      "sourceSha": "06ca729ca5f14abb54283c3ed1217a89fe504a1a79c06fc0d95c9665372af44f",
+      "targetSha": "06ca729ca5f14abb54283c3ed1217a89fe504a1a79c06fc0d95c9665372af44f",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/check.html.twig",
+      "target": "templates/components/check.html.twig",
+      "sourceSha": "a23f6b35b26c2e1990189100a758b24d03eff31671e2cb8645db5f501ab573d0",
+      "targetSha": "a23f6b35b26c2e1990189100a758b24d03eff31671e2cb8645db5f501ab573d0",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/checklist.html.twig",
+      "target": "templates/components/checklist.html.twig",
+      "sourceSha": "b9ee6ed1043ba974968cc2dcbea93c2d6c8e641aaa9bf153167e5dfa678421f9",
+      "targetSha": "b9ee6ed1043ba974968cc2dcbea93c2d6c8e641aaa9bf153167e5dfa678421f9",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/choice.html.twig",
+      "target": "templates/components/choice.html.twig",
+      "sourceSha": "7dbf3fc50d46ccccaa573acfe5045bc2c874a1468b2dd579bd781e9c4d90e8db",
+      "targetSha": "7dbf3fc50d46ccccaa573acfe5045bc2c874a1468b2dd579bd781e9c4d90e8db",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/commune_decisions.html.twig",
+      "target": "templates/components/commune_decisions.html.twig",
+      "sourceSha": "ca454eee562443c53e52b71e45c7a2b7c4c46a9d15d14827957a19dbfce9d5d2",
+      "targetSha": "ca454eee562443c53e52b71e45c7a2b7c4c46a9d15d14827957a19dbfce9d5d2",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/confirm_panel.html.twig",
+      "target": "templates/components/confirm_panel.html.twig",
+      "sourceSha": "8b14cedc45b08a5e02a537e4380180f087b2a2aeba548898632ff2ee4227d533",
+      "targetSha": "8b14cedc45b08a5e02a537e4380180f087b2a2aeba548898632ff2ee4227d533",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/connection.html.twig",
+      "target": "templates/components/connection.html.twig",
+      "sourceSha": "ed9be39f6c75951fa7428eaa0a97beaff9cb1dc65a56b4a8ce0c98df462bcc3c",
+      "targetSha": "ed9be39f6c75951fa7428eaa0a97beaff9cb1dc65a56b4a8ce0c98df462bcc3c",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/contact.html.twig",
+      "target": "templates/components/contact.html.twig",
+      "sourceSha": "b590526ae6793dea42abbc761875e1fb435bc04d738b0fce6066e7a3be5dabfa",
+      "targetSha": "b590526ae6793dea42abbc761875e1fb435bc04d738b0fce6066e7a3be5dabfa",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/context_selector.html.twig",
+      "target": "templates/components/context_selector.html.twig",
+      "sourceSha": "e306ca863709dfde7180752dafd72e6646531eaf6c67358814ef0f15fc5978e1",
+      "targetSha": "e306ca863709dfde7180752dafd72e6646531eaf6c67358814ef0f15fc5978e1",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/ctxstrip.html.twig",
+      "target": "templates/components/ctxstrip.html.twig",
+      "sourceSha": "ef05934da9e03132558bb5eaba88052188e825f832ab51d8edb5d21fcecfbecd",
+      "targetSha": "ef05934da9e03132558bb5eaba88052188e825f832ab51d8edb5d21fcecfbecd",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/data_table.html.twig",
+      "target": "templates/components/data_table.html.twig",
+      "sourceSha": "5eb038d61d5edddeabb4525acded013fb4141c083e094ecbd14e6f5f368a9e1c",
+      "targetSha": "5eb038d61d5edddeabb4525acded013fb4141c083e094ecbd14e6f5f368a9e1c",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/decision_form.html.twig",
+      "target": "templates/components/decision_form.html.twig",
+      "sourceSha": "fdb86d009c886c5dc971cf3616edc102b43fe3ad388135e7abe6b96b6e3feb9e",
+      "targetSha": "fdb86d009c886c5dc971cf3616edc102b43fe3ad388135e7abe6b96b6e3feb9e",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/dialog.html.twig",
+      "target": "templates/components/dialog.html.twig",
+      "sourceSha": "1e385442a4bf27f525ab382bbe75ec8e522455e4da1de97fb158edc428f1f468",
+      "targetSha": "1e385442a4bf27f525ab382bbe75ec8e522455e4da1de97fb158edc428f1f468",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/documents.html.twig",
+      "target": "templates/components/documents.html.twig",
+      "sourceSha": "8293ed8f3b15bb68dd76a8b4af154cdc52a509d41e65825bbef1e2441f3542be",
+      "targetSha": "8293ed8f3b15bb68dd76a8b4af154cdc52a509d41e65825bbef1e2441f3542be",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/empty_state.html.twig",
+      "target": "templates/components/empty_state.html.twig",
+      "sourceSha": "8e1ae6d1c36bc7060a9672aa072101b7136268000aeeab8888e4e09d4d462fd9",
+      "targetSha": "8e1ae6d1c36bc7060a9672aa072101b7136268000aeeab8888e4e09d4d462fd9",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/error_summary.html.twig",
+      "target": "templates/components/error_summary.html.twig",
+      "sourceSha": "f88683af5a0c267b575123106d583995cd98e3d2873771857c0e1b50674f11c4",
+      "targetSha": "f88683af5a0c267b575123106d583995cd98e3d2873771857c0e1b50674f11c4",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/event_card.html.twig",
+      "target": "templates/components/event_card.html.twig",
+      "sourceSha": "ec5aa6ab860f9757822eb52c537d86d740e43fb918bc722f5a1dc04b6da39a0c",
+      "targetSha": "ec5aa6ab860f9757822eb52c537d86d740e43fb918bc722f5a1dc04b6da39a0c",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/facts.html.twig",
+      "target": "templates/components/facts.html.twig",
+      "sourceSha": "38e918e419964ee3f6c7f9978cfca2e087429236a93b0b0364fa6ffe3925e62f",
+      "targetSha": "38e918e419964ee3f6c7f9978cfca2e087429236a93b0b0364fa6ffe3925e62f",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/field.html.twig",
+      "target": "templates/components/field.html.twig",
+      "sourceSha": "e9065be31e4d30f58bd98904a0e9ab5425e76430252d5fe3640e4392b51180a4",
+      "targetSha": "e9065be31e4d30f58bd98904a0e9ab5425e76430252d5fe3640e4392b51180a4",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/file_upload.html.twig",
+      "target": "templates/components/file_upload.html.twig",
+      "sourceSha": "d5526abca2c425cf6f7a402a42c7e5b8459a61034ba8cc254b010a1d03e8463f",
+      "targetSha": "d5526abca2c425cf6f7a402a42c7e5b8459a61034ba8cc254b010a1d03e8463f",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/filter_bar.html.twig",
+      "target": "templates/components/filter_bar.html.twig",
+      "sourceSha": "82e2585f64484e15c958cd8349c8ecc7faea568dd2f80765e8127a4eb164145f",
+      "targetSha": "82e2585f64484e15c958cd8349c8ecc7faea568dd2f80765e8127a4eb164145f",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/freshness.html.twig",
+      "target": "templates/components/freshness.html.twig",
+      "sourceSha": "7421fab8154627b1d5f44bd9dba913a46b858b6bb5f440c7dffdd1b1f980e66a",
+      "targetSha": "7421fab8154627b1d5f44bd9dba913a46b858b6bb5f440c7dffdd1b1f980e66a",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/holder.html.twig",
+      "target": "templates/components/holder.html.twig",
+      "sourceSha": "ff64d8a3b1daae6ef2cddadcb89049c439b32a29dca60c00d8546e026217cf63",
+      "targetSha": "ff64d8a3b1daae6ef2cddadcb89049c439b32a29dca60c00d8546e026217cf63",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/icon.html.twig",
+      "target": "templates/components/icon.html.twig",
+      "sourceSha": "514d9ddc7a98bb62589f072c63aeea9b54518bd2c9176495c1bb978916b2b28d",
+      "targetSha": "514d9ddc7a98bb62589f072c63aeea9b54518bd2c9176495c1bb978916b2b28d",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/icon_button.html.twig",
+      "target": "templates/components/icon_button.html.twig",
+      "sourceSha": "d0294184e4dde8237f4a1bfe0c5248237ebcdacf0d5fa8fd3b2e67b1ba4d473d",
+      "targetSha": "d0294184e4dde8237f4a1bfe0c5248237ebcdacf0d5fa8fd3b2e67b1ba4d473d",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/kpi_tiles.html.twig",
+      "target": "templates/components/kpi_tiles.html.twig",
+      "sourceSha": "2bf3c5f956eb14dd993beff6a69d627e3b5529fb0f0736d208f2dfeb6c6ad829",
+      "targetSha": "2bf3c5f956eb14dd993beff6a69d627e3b5529fb0f0736d208f2dfeb6c6ad829",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/mobile_menu.html.twig",
+      "target": "templates/components/mobile_menu.html.twig",
+      "sourceSha": "53201b1446f5b819d8f27bbab905c2309e33a865b619e36c3550f626f4830e40",
+      "targetSha": "fc7a0fb0fc7c0c3a179c8bee9905f38f593c11952304ac925722d452d12da95a",
+      "adapted": true
+    },
+    {
+      "source": "templates/components/modal.html.twig",
+      "target": "templates/components/modal.html.twig",
+      "sourceSha": "5ea89ac4442253032bef6ea3510cd0970caebc5e3d88360a12046d4bf86fc157",
+      "targetSha": "5ea89ac4442253032bef6ea3510cd0970caebc5e3d88360a12046d4bf86fc157",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/mode_chip.html.twig",
+      "target": "templates/components/mode_chip.html.twig",
+      "sourceSha": "64de75dda82dd00a398f1becce31933c24b80f939d31e1cc1ec45c45f19ee25f",
+      "targetSha": "64de75dda82dd00a398f1becce31933c24b80f939d31e1cc1ec45c45f19ee25f",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/page_head.html.twig",
+      "target": "templates/components/page_head.html.twig",
+      "sourceSha": "be68ecd377fd65508ad242b04b32844e9182d2dce31a504f88fdc092eeb77705",
+      "targetSha": "be68ecd377fd65508ad242b04b32844e9182d2dce31a504f88fdc092eeb77705",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/pagination.html.twig",
+      "target": "templates/components/pagination.html.twig",
+      "sourceSha": "35571dba0fa758dc0a9eb25e29040fc8fce3141b13a4edcb91924c09b74d2d64",
+      "targetSha": "35571dba0fa758dc0a9eb25e29040fc8fce3141b13a4edcb91924c09b74d2d64",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/panel.html.twig",
+      "target": "templates/components/panel.html.twig",
+      "sourceSha": "a50adb423a0b61b199bfa1de35abad4bc8f42b4d7eb31ed31a816aea6f0ebd21",
+      "targetSha": "a50adb423a0b61b199bfa1de35abad4bc8f42b4d7eb31ed31a816aea6f0ebd21",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/pass_card.html.twig",
+      "target": "templates/components/pass_card.html.twig",
+      "sourceSha": "fb2b1ea239fe1b8df6127b4b9fc2072ecdc68d78ea5b5a7d3dfa78b2c81bc2be",
+      "targetSha": "fb2b1ea239fe1b8df6127b4b9fc2072ecdc68d78ea5b5a7d3dfa78b2c81bc2be",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/period.html.twig",
+      "target": "templates/components/period.html.twig",
+      "sourceSha": "7aa99aa95910fb832ed6a448745848920805169007e4db28fff6d8ee44f58d96",
+      "targetSha": "7aa99aa95910fb832ed6a448745848920805169007e4db28fff6d8ee44f58d96",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/plate.html.twig",
+      "target": "templates/components/plate.html.twig",
+      "sourceSha": "73211322e267fc2649dfa423b45ccba2bb1d51f7c2366dcc7a9109f1c4143d64",
+      "targetSha": "73211322e267fc2649dfa423b45ccba2bb1d51f7c2366dcc7a9109f1c4143d64",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/plates_field.html.twig",
+      "target": "templates/components/plates_field.html.twig",
+      "sourceSha": "a651265ac836dc82bd794174e8b96c09eff5dacfce176f4724b7ae89da007699",
+      "targetSha": "a651265ac836dc82bd794174e8b96c09eff5dacfce176f4724b7ae89da007699",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/public_header.html.twig",
+      "target": "templates/components/public_header.html.twig",
+      "sourceSha": "1f10109a5c56632fc80f128263d9eff5fd942140c3fd34ccc3b309c35a6ebf83",
+      "targetSha": "1f10109a5c56632fc80f128263d9eff5fd942140c3fd34ccc3b309c35a6ebf83",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/qr_code.html.twig",
+      "target": "templates/components/qr_code.html.twig",
+      "sourceSha": "83af7e9e73ce7583c9c5bb1b0ab3da252277c7c58f0267a8f3dac5452abd7e87",
+      "targetSha": "83af7e9e73ce7583c9c5bb1b0ab3da252277c7c58f0267a8f3dac5452abd7e87",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/recap.html.twig",
+      "target": "templates/components/recap.html.twig",
+      "sourceSha": "0b6c1c6400339ea4d856076bcc2a58434e5d00ee377c9503ed5e978ac3c18cf6",
+      "targetSha": "0b6c1c6400339ea4d856076bcc2a58434e5d00ee377c9503ed5e978ac3c18cf6",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/request_card.html.twig",
+      "target": "templates/components/request_card.html.twig",
+      "sourceSha": "7b764ccf4c220cb16ed9df26c31596067196f6a65d9b59f3890971bd5d342085",
+      "targetSha": "7b764ccf4c220cb16ed9df26c31596067196f6a65d9b59f3890971bd5d342085",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/request_list.html.twig",
+      "target": "templates/components/request_list.html.twig",
+      "sourceSha": "37aee07bdb586e7c684931ae1c926fe089886bb69e46e6bdb99cdcfd4e2a5141",
+      "targetSha": "37aee07bdb586e7c684931ae1c926fe089886bb69e46e6bdb99cdcfd4e2a5141",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/rights.html.twig",
+      "target": "templates/components/rights.html.twig",
+      "sourceSha": "72a748a1e885a23f0cc95acf3dab7bb6362e73ea105cae2e262daef2e3afb221",
+      "targetSha": "72a748a1e885a23f0cc95acf3dab7bb6362e73ea105cae2e262daef2e3afb221",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/search_field.html.twig",
+      "target": "templates/components/search_field.html.twig",
+      "sourceSha": "ae30ea5ed593099ce79a5b18eeb35a92417120ddb3b1dfff2a7a9fb46fd488b9",
+      "targetSha": "ae30ea5ed593099ce79a5b18eeb35a92417120ddb3b1dfff2a7a9fb46fd488b9",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/section_head.html.twig",
+      "target": "templates/components/section_head.html.twig",
+      "sourceSha": "343b2b09624774ddd2efa135a4a613ddf0f5fdac3fb6e0fb5f94e2ff6e5cea0e",
+      "targetSha": "343b2b09624774ddd2efa135a4a613ddf0f5fdac3fb6e0fb5f94e2ff6e5cea0e",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/select.html.twig",
+      "target": "templates/components/select.html.twig",
+      "sourceSha": "76a35de0db2187fab24c98643fd6f964739c7941ddd4e5d82e47af72aa160e01",
+      "targetSha": "76a35de0db2187fab24c98643fd6f964739c7941ddd4e5d82e47af72aa160e01",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/sidebar.html.twig",
+      "target": "templates/components/sidebar.html.twig",
+      "sourceSha": "853d44146dfac6ea62b59884e38d60b7afddd4f11361732d8db02b15ec0aea36",
+      "targetSha": "853d44146dfac6ea62b59884e38d60b7afddd4f11361732d8db02b15ec0aea36",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/skeleton.html.twig",
+      "target": "templates/components/skeleton.html.twig",
+      "sourceSha": "219f8018f9dd8f0039f01d30705340c0df5eacbb7811d2b673750b8d04541923",
+      "targetSha": "219f8018f9dd8f0039f01d30705340c0df5eacbb7811d2b673750b8d04541923",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/status_pill.html.twig",
+      "target": "templates/components/status_pill.html.twig",
+      "sourceSha": "663c1c1eddcba75d8fb6b02e817f4c7cc488821387b195e87e79623ed16181aa",
+      "targetSha": "663c1c1eddcba75d8fb6b02e817f4c7cc488821387b195e87e79623ed16181aa",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/tabs.html.twig",
+      "target": "templates/components/tabs.html.twig",
+      "sourceSha": "ffbdba7d7a366e398108f3fd0e36516308b85f7ec0145e3154f70e3d7047a8fe",
+      "targetSha": "ffbdba7d7a366e398108f3fd0e36516308b85f7ec0145e3154f70e3d7047a8fe",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/tag.html.twig",
+      "target": "templates/components/tag.html.twig",
+      "sourceSha": "8e662c706084832ea21f9cbc05089990bf2f9d0383e0f3ac7efffd50e6288b5d",
+      "targetSha": "8e662c706084832ea21f9cbc05089990bf2f9d0383e0f3ac7efffd50e6288b5d",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/timeline.html.twig",
+      "target": "templates/components/timeline.html.twig",
+      "sourceSha": "4c1c2c3f23d106e0e744e9c48e09875272b02d44426ec5038156cbd4c8ec9853",
+      "targetSha": "4c1c2c3f23d106e0e744e9c48e09875272b02d44426ec5038156cbd4c8ec9853",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/toasts.html.twig",
+      "target": "templates/components/toasts.html.twig",
+      "sourceSha": "b456dc075eee5a29dff260d72f0575b4265295e96c9342c106bd2f7242bc9c7e",
+      "targetSha": "b456dc075eee5a29dff260d72f0575b4265295e96c9342c106bd2f7242bc9c7e",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/topbar.html.twig",
+      "target": "templates/components/topbar.html.twig",
+      "sourceSha": "ac55c1ae7b436ae661cf144980f107fba6e2b724f4cba438604d865655497194",
+      "targetSha": "c14617d3ad9af09801fb0f39fd4dd8a6e68365f796c1c96c5d60948081b0ba02",
+      "adapted": true
+    },
+    {
+      "source": "templates/components/validity.html.twig",
+      "target": "templates/components/validity.html.twig",
+      "sourceSha": "51634890792c0a4b2fefc0262bda8a2d9d70ac5a2c0144310cb8a758d41ee446",
+      "targetSha": "51634890792c0a4b2fefc0262bda8a2d9d70ac5a2c0144310cb8a758d41ee446",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/vehicles.html.twig",
+      "target": "templates/components/vehicles.html.twig",
+      "sourceSha": "0cc03f39b81151c9ca68ec1a6a7087f3d3219c427b7dd76cb79d63244f6879a6",
+      "targetSha": "0cc03f39b81151c9ca68ec1a6a7087f3d3219c427b7dd76cb79d63244f6879a6",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/verdict.html.twig",
+      "target": "templates/components/verdict.html.twig",
+      "sourceSha": "4bd55980ff59e8b6d8bfbf68d4caa48ee1e33263cec149be3e257a3096ab6631",
+      "targetSha": "4bd55980ff59e8b6d8bfbf68d4caa48ee1e33263cec149be3e257a3096ab6631",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/zone_select.html.twig",
+      "target": "templates/components/zone_select.html.twig",
+      "sourceSha": "aa44fe2fc0e3c84595d6ec2d1f4872a46dcd4c6f03a6f01032c9bdfc3c57206a",
+      "targetSha": "aa44fe2fc0e3c84595d6ec2d1f4872a46dcd4c6f03a6f01032c9bdfc3c57206a",
+      "adapted": false
+    },
+    {
+      "source": "templates/layouts/app.html.twig",
+      "target": "templates/layouts/app.html.twig",
+      "sourceSha": "71221c6eed131f29a1811c092d51b3eaaa141c94537a2d70c1bd42f1521416a7",
+      "targetSha": "d0aa0fc08e3efbd91e01c7bdd26299613a423a8311cf2a8f5b83b3842afafbb4",
+      "adapted": true
+    },
+    {
+      "source": "templates/layouts/public.html.twig",
+      "target": "templates/layouts/public.html.twig",
+      "sourceSha": "dc918005a7067d42029a28a6039c69ffcf2c64807220ad52cfb07d7cd015efd2",
+      "targetSha": "b71af24bc975dd976676557c5ebeca471af62e6e2813e6952280beae88e38255",
+      "adapted": true
+    },
+    {
+      "source": "examples/ActionMenu.html.twig",
+      "target": "templates/dev/ui/examples/ActionMenu.html.twig",
+      "sourceSha": "d63ccf8da51cbcdf957d20a36bad729f3af6bdc9d9965cfdfd3ab22ce3625f1b",
+      "targetSha": "d63ccf8da51cbcdf957d20a36bad729f3af6bdc9d9965cfdfd3ab22ce3625f1b",
+      "adapted": false
+    },
+    {
+      "source": "examples/Alert.html.twig",
+      "target": "templates/dev/ui/examples/Alert.html.twig",
+      "sourceSha": "329fead07ad72cf454b5921f6a925f0b25b01afb80cc250adb98c66bcf0df4da",
+      "targetSha": "329fead07ad72cf454b5921f6a925f0b25b01afb80cc250adb98c66bcf0df4da",
+      "adapted": false
+    },
+    {
+      "source": "examples/AppShell.html.twig",
+      "target": "templates/dev/ui/examples/AppShell.html.twig",
+      "sourceSha": "db49f7e1df0823217c96cd47f0c8acbf7f52a979a6cf8592fc9f633fea2fad03",
+      "targetSha": "db49f7e1df0823217c96cd47f0c8acbf7f52a979a6cf8592fc9f633fea2fad03",
+      "adapted": false
+    },
+    {
+      "source": "examples/Authorization.html.twig",
+      "target": "templates/dev/ui/examples/Authorization.html.twig",
+      "sourceSha": "05415a055f91b5ccd6e2cbd565cf31da9f69f03b4eb20dab76b9333c96966263",
+      "targetSha": "05415a055f91b5ccd6e2cbd565cf31da9f69f03b4eb20dab76b9333c96966263",
+      "adapted": false
+    },
+    {
+      "source": "examples/Banner.html.twig",
+      "target": "templates/dev/ui/examples/Banner.html.twig",
+      "sourceSha": "8d49bf5df514b69285de399eba56d4fa8844f85034d6cfac761ddcc49382b2a1",
+      "targetSha": "8d49bf5df514b69285de399eba56d4fa8844f85034d6cfac761ddcc49382b2a1",
+      "adapted": false
+    },
+    {
+      "source": "examples/Breadcrumb.html.twig",
+      "target": "templates/dev/ui/examples/Breadcrumb.html.twig",
+      "sourceSha": "2089d94a6226297507b8a0225c0ff69cfc4aae1e2957b67108325777f78a7c46",
+      "targetSha": "2089d94a6226297507b8a0225c0ff69cfc4aae1e2957b67108325777f78a7c46",
+      "adapted": false
+    },
+    {
+      "source": "examples/Button.html.twig",
+      "target": "templates/dev/ui/examples/Button.html.twig",
+      "sourceSha": "c676693aa1f7634b60fe0ff174173ca9ac44e3444cd3c5981ed243fe008971df",
+      "targetSha": "c676693aa1f7634b60fe0ff174173ca9ac44e3444cd3c5981ed243fe008971df",
+      "adapted": false
+    },
+    {
+      "source": "examples/Check.html.twig",
+      "target": "templates/dev/ui/examples/Check.html.twig",
+      "sourceSha": "08f8b5beff6861ad0ec9086a0617addbb00a9ba2f829fbdc9da3008d1c46ec30",
+      "targetSha": "08f8b5beff6861ad0ec9086a0617addbb00a9ba2f829fbdc9da3008d1c46ec30",
+      "adapted": false
+    },
+    {
+      "source": "examples/Checklist.html.twig",
+      "target": "templates/dev/ui/examples/Checklist.html.twig",
+      "sourceSha": "6fa51711820129faee1d0ee7783be1e0d4c89e7a5aea05ccf4071e451d645f4e",
+      "targetSha": "6fa51711820129faee1d0ee7783be1e0d4c89e7a5aea05ccf4071e451d645f4e",
+      "adapted": false
+    },
+    {
+      "source": "examples/Choice.html.twig",
+      "target": "templates/dev/ui/examples/Choice.html.twig",
+      "sourceSha": "09b1f335c76bba3614eedc1158fce8ea1e5fd2f65123beacc1c0dae9ffff8a8e",
+      "targetSha": "09b1f335c76bba3614eedc1158fce8ea1e5fd2f65123beacc1c0dae9ffff8a8e",
+      "adapted": false
+    },
+    {
+      "source": "examples/CommuneDecisions.html.twig",
+      "target": "templates/dev/ui/examples/CommuneDecisions.html.twig",
+      "sourceSha": "986e5cd77eb6b4c1466a27fe26e026c82e2ad2c5eec1678b62f9d756ec725339",
+      "targetSha": "986e5cd77eb6b4c1466a27fe26e026c82e2ad2c5eec1678b62f9d756ec725339",
+      "adapted": false
+    },
+    {
+      "source": "examples/ConfirmDialog.html.twig",
+      "target": "templates/dev/ui/examples/ConfirmDialog.html.twig",
+      "sourceSha": "71dd369734a59547302122c70e24bdd7e7c9b1ad83705f0209a7d0d7fa496ac5",
+      "targetSha": "71dd369734a59547302122c70e24bdd7e7c9b1ad83705f0209a7d0d7fa496ac5",
+      "adapted": false
+    },
+    {
+      "source": "examples/ConfirmPanel.html.twig",
+      "target": "templates/dev/ui/examples/ConfirmPanel.html.twig",
+      "sourceSha": "675f012824caa7121daf6cc9c548809735191a27cc058cafa4ed126c967069c8",
+      "targetSha": "675f012824caa7121daf6cc9c548809735191a27cc058cafa4ed126c967069c8",
+      "adapted": false
+    },
+    {
+      "source": "examples/ContextSelector.html.twig",
+      "target": "templates/dev/ui/examples/ContextSelector.html.twig",
+      "sourceSha": "2b7f69435767c0d0d77f38c6f5c5757f5df0ca5804ebfa9d68c9ef1594f718ab",
+      "targetSha": "2b7f69435767c0d0d77f38c6f5c5757f5df0ca5804ebfa9d68c9ef1594f718ab",
+      "adapted": false
+    },
+    {
+      "source": "examples/DataTable.html.twig",
+      "target": "templates/dev/ui/examples/DataTable.html.twig",
+      "sourceSha": "f8948f37e712a79d5e0797ed55a344ebc3eaa943424f4da23c25c720bf4f348d",
+      "targetSha": "f8948f37e712a79d5e0797ed55a344ebc3eaa943424f4da23c25c720bf4f348d",
+      "adapted": false
+    },
+    {
+      "source": "examples/DecisionForm.html.twig",
+      "target": "templates/dev/ui/examples/DecisionForm.html.twig",
+      "sourceSha": "951d0d5ec22f17f49b53ddddac17ce1a8efee38419194f64fcfc0174c9c48b89",
+      "targetSha": "951d0d5ec22f17f49b53ddddac17ce1a8efee38419194f64fcfc0174c9c48b89",
+      "adapted": false
+    },
+    {
+      "source": "examples/Documents.html.twig",
+      "target": "templates/dev/ui/examples/Documents.html.twig",
+      "sourceSha": "54bdae52a4bf89bac47d8ac5393b240116f3e19e7620d2cee2d010b3a92c4297",
+      "targetSha": "54bdae52a4bf89bac47d8ac5393b240116f3e19e7620d2cee2d010b3a92c4297",
+      "adapted": false
+    },
+    {
+      "source": "examples/EmptyState.html.twig",
+      "target": "templates/dev/ui/examples/EmptyState.html.twig",
+      "sourceSha": "f25f85f63e1bd99198f0ea4a7264141fa156c9f172391ef84f35a61f76598615",
+      "targetSha": "f25f85f63e1bd99198f0ea4a7264141fa156c9f172391ef84f35a61f76598615",
+      "adapted": false
+    },
+    {
+      "source": "examples/ErrorSummary.html.twig",
+      "target": "templates/dev/ui/examples/ErrorSummary.html.twig",
+      "sourceSha": "4469862cf9421140e8bb613627f00b29b0e053b56e02dd5ffc10c6ba1cbac2c1",
+      "targetSha": "4469862cf9421140e8bb613627f00b29b0e053b56e02dd5ffc10c6ba1cbac2c1",
+      "adapted": false
+    },
+    {
+      "source": "examples/EventCard.html.twig",
+      "target": "templates/dev/ui/examples/EventCard.html.twig",
+      "sourceSha": "e1258f6cf78f0d9ed62619a238d4cc5070d680e66d2feb0a7437cb2242e5de18",
+      "targetSha": "e1258f6cf78f0d9ed62619a238d4cc5070d680e66d2feb0a7437cb2242e5de18",
+      "adapted": false
+    },
+    {
+      "source": "examples/Facts.html.twig",
+      "target": "templates/dev/ui/examples/Facts.html.twig",
+      "sourceSha": "cf22e5518a72ab9e2e73f3eb291309bf7ff5922e02237a01a4b2969f4de6e343",
+      "targetSha": "cf22e5518a72ab9e2e73f3eb291309bf7ff5922e02237a01a4b2969f4de6e343",
+      "adapted": false
+    },
+    {
+      "source": "examples/Field.html.twig",
+      "target": "templates/dev/ui/examples/Field.html.twig",
+      "sourceSha": "dfb7b5d0a4802ff2f05910b4d49a6f726d8650bfc58d94a7947d5e7b007a3bbb",
+      "targetSha": "dfb7b5d0a4802ff2f05910b4d49a6f726d8650bfc58d94a7947d5e7b007a3bbb",
+      "adapted": false
+    },
+    {
+      "source": "examples/FileUpload.html.twig",
+      "target": "templates/dev/ui/examples/FileUpload.html.twig",
+      "sourceSha": "3941603bfd0c4148a5ac8f1abea63c4791f613a761b6cafea20468e0feff118d",
+      "targetSha": "3941603bfd0c4148a5ac8f1abea63c4791f613a761b6cafea20468e0feff118d",
+      "adapted": false
+    },
+    {
+      "source": "examples/FilterBar.html.twig",
+      "target": "templates/dev/ui/examples/FilterBar.html.twig",
+      "sourceSha": "9d4ff7eaa853904dfb4ab62a9fee0fec4fa29869647a144404ccb9d2110ba39b",
+      "targetSha": "9d4ff7eaa853904dfb4ab62a9fee0fec4fa29869647a144404ccb9d2110ba39b",
+      "adapted": false
+    },
+    {
+      "source": "examples/Freshness.html.twig",
+      "target": "templates/dev/ui/examples/Freshness.html.twig",
+      "sourceSha": "bbbc75ca0e688733d48aa2823260b77d42cf06475628a1831f8382a2738d6f14",
+      "targetSha": "bbbc75ca0e688733d48aa2823260b77d42cf06475628a1831f8382a2738d6f14",
+      "adapted": false
+    },
+    {
+      "source": "examples/Holder.html.twig",
+      "target": "templates/dev/ui/examples/Holder.html.twig",
+      "sourceSha": "4778010ee48d5be7af441b50fa20390b51eed9bda4de746901c37ff030cc6340",
+      "targetSha": "4778010ee48d5be7af441b50fa20390b51eed9bda4de746901c37ff030cc6340",
+      "adapted": false
+    },
+    {
+      "source": "examples/Icon.html.twig",
+      "target": "templates/dev/ui/examples/Icon.html.twig",
+      "sourceSha": "1e1c3db28d4751c0c58a64ec5edd460b8e46cf3438d44a7f483125d63d6296d0",
+      "targetSha": "1e1c3db28d4751c0c58a64ec5edd460b8e46cf3438d44a7f483125d63d6296d0",
+      "adapted": false
+    },
+    {
+      "source": "examples/IconButton.html.twig",
+      "target": "templates/dev/ui/examples/IconButton.html.twig",
+      "sourceSha": "07d271f4c59e585863f421da4ece3431eb128fd744204b0b88223564ee386e12",
+      "targetSha": "07d271f4c59e585863f421da4ece3431eb128fd744204b0b88223564ee386e12",
+      "adapted": false
+    },
+    {
+      "source": "examples/KpiTiles.html.twig",
+      "target": "templates/dev/ui/examples/KpiTiles.html.twig",
+      "sourceSha": "5835797535ecde61b2be143bd3323ea11d95314c308d27089fd18ab3c2e21db0",
+      "targetSha": "5835797535ecde61b2be143bd3323ea11d95314c308d27089fd18ab3c2e21db0",
+      "adapted": false
+    },
+    {
+      "source": "examples/MobileMenu.html.twig",
+      "target": "templates/dev/ui/examples/MobileMenu.html.twig",
+      "sourceSha": "9299a9830b05d148d75e53647726cb063e5f9c35bc1f5838b00451d62efff836",
+      "targetSha": "9299a9830b05d148d75e53647726cb063e5f9c35bc1f5838b00451d62efff836",
+      "adapted": false
+    },
+    {
+      "source": "examples/Modal.html.twig",
+      "target": "templates/dev/ui/examples/Modal.html.twig",
+      "sourceSha": "4d864b9bc5cc6117462c41b9fbf732a2b1102f1de6146143f9af09260a5eaf80",
+      "targetSha": "4d864b9bc5cc6117462c41b9fbf732a2b1102f1de6146143f9af09260a5eaf80",
+      "adapted": false
+    },
+    {
+      "source": "examples/ModeChip.html.twig",
+      "target": "templates/dev/ui/examples/ModeChip.html.twig",
+      "sourceSha": "56c468bfc10920c9ee5aba6a2a329785a1a055243d6dbb10bdd20aa242a91395",
+      "targetSha": "56c468bfc10920c9ee5aba6a2a329785a1a055243d6dbb10bdd20aa242a91395",
+      "adapted": false
+    },
+    {
+      "source": "examples/PageHead.html.twig",
+      "target": "templates/dev/ui/examples/PageHead.html.twig",
+      "sourceSha": "db628f55cffe328bfdf2b9ea24cae771fe0f0feda2e779cbbb47f67307e46889",
+      "targetSha": "db628f55cffe328bfdf2b9ea24cae771fe0f0feda2e779cbbb47f67307e46889",
+      "adapted": false
+    },
+    {
+      "source": "examples/Pagination.html.twig",
+      "target": "templates/dev/ui/examples/Pagination.html.twig",
+      "sourceSha": "6b8271953e534d01c279cf874cfb338e4a66f09deab77d7cfe520728e52f4c8f",
+      "targetSha": "6b8271953e534d01c279cf874cfb338e4a66f09deab77d7cfe520728e52f4c8f",
+      "adapted": false
+    },
+    {
+      "source": "examples/Panel.html.twig",
+      "target": "templates/dev/ui/examples/Panel.html.twig",
+      "sourceSha": "f0f808ca80170cb89732a99fc9cee80dc70f48aa427a140a4f1cdc61983b3478",
+      "targetSha": "f0f808ca80170cb89732a99fc9cee80dc70f48aa427a140a4f1cdc61983b3478",
+      "adapted": false
+    },
+    {
+      "source": "examples/PassCard.html.twig",
+      "target": "templates/dev/ui/examples/PassCard.html.twig",
+      "sourceSha": "9e4ed79c0fdb1d670172177ce8788d981a6db55344c1e345e78a80867c4af263",
+      "targetSha": "9e4ed79c0fdb1d670172177ce8788d981a6db55344c1e345e78a80867c4af263",
+      "adapted": false
+    },
+    {
+      "source": "examples/Period.html.twig",
+      "target": "templates/dev/ui/examples/Period.html.twig",
+      "sourceSha": "17ae9a41e84017e1a52c0dd5d76dab4491f795a2c2f622c7dc668993e4215a9d",
+      "targetSha": "17ae9a41e84017e1a52c0dd5d76dab4491f795a2c2f622c7dc668993e4215a9d",
+      "adapted": false
+    },
+    {
+      "source": "examples/Plate.html.twig",
+      "target": "templates/dev/ui/examples/Plate.html.twig",
+      "sourceSha": "80f903497016967ab5c8ccf866ef76184a4789a9cfc4f1f61918df8bed1d5647",
+      "targetSha": "80f903497016967ab5c8ccf866ef76184a4789a9cfc4f1f61918df8bed1d5647",
+      "adapted": false
+    },
+    {
+      "source": "examples/PlatesField.html.twig",
+      "target": "templates/dev/ui/examples/PlatesField.html.twig",
+      "sourceSha": "c8db67ba1bdabd7a94da94407d74c6087279f0cf06ea0ed2c98697ce37c5b5da",
+      "targetSha": "c8db67ba1bdabd7a94da94407d74c6087279f0cf06ea0ed2c98697ce37c5b5da",
+      "adapted": false
+    },
+    {
+      "source": "examples/PublicHeader.html.twig",
+      "target": "templates/dev/ui/examples/PublicHeader.html.twig",
+      "sourceSha": "727a67ecfcbcc4ef5e197cbbdf273742a35e31d47dd6cba3edd494fcdc6420e5",
+      "targetSha": "727a67ecfcbcc4ef5e197cbbdf273742a35e31d47dd6cba3edd494fcdc6420e5",
+      "adapted": false
+    },
+    {
+      "source": "examples/QrCode.html.twig",
+      "target": "templates/dev/ui/examples/QrCode.html.twig",
+      "sourceSha": "850c574e494f579e67d53b2015d298590cef7a35853f2cc10a3d34f5f9c9b7f1",
+      "targetSha": "850c574e494f579e67d53b2015d298590cef7a35853f2cc10a3d34f5f9c9b7f1",
+      "adapted": false
+    },
+    {
+      "source": "examples/RequestCard.html.twig",
+      "target": "templates/dev/ui/examples/RequestCard.html.twig",
+      "sourceSha": "833d517d240b548d327209bce4e803de6a542508a923c00fcb966f6bac9b81b1",
+      "targetSha": "833d517d240b548d327209bce4e803de6a542508a923c00fcb966f6bac9b81b1",
+      "adapted": false
+    },
+    {
+      "source": "examples/RequestList.html.twig",
+      "target": "templates/dev/ui/examples/RequestList.html.twig",
+      "sourceSha": "77438f3e95b886e91232b4089f384bdc8c8087ed2362f3514455c910f2ee1fd5",
+      "targetSha": "77438f3e95b886e91232b4089f384bdc8c8087ed2362f3514455c910f2ee1fd5",
+      "adapted": false
+    },
+    {
+      "source": "examples/Rights.html.twig",
+      "target": "templates/dev/ui/examples/Rights.html.twig",
+      "sourceSha": "caf14a9a460f5f783bfb0560d0ed9831a1c9ed6319783f316c62666247681686",
+      "targetSha": "caf14a9a460f5f783bfb0560d0ed9831a1c9ed6319783f316c62666247681686",
+      "adapted": false
+    },
+    {
+      "source": "examples/SearchField.html.twig",
+      "target": "templates/dev/ui/examples/SearchField.html.twig",
+      "sourceSha": "b4cb5c541763368f446e968b539eab623928170e966bb166f842092859e4897a",
+      "targetSha": "b4cb5c541763368f446e968b539eab623928170e966bb166f842092859e4897a",
+      "adapted": false
+    },
+    {
+      "source": "examples/Select.html.twig",
+      "target": "templates/dev/ui/examples/Select.html.twig",
+      "sourceSha": "81adb312f5bf792eab79e45ec90b9cb8b2fbd8132ce7c0345063e6f8cf45e531",
+      "targetSha": "81adb312f5bf792eab79e45ec90b9cb8b2fbd8132ce7c0345063e6f8cf45e531",
+      "adapted": false
+    },
+    {
+      "source": "examples/Skeleton.html.twig",
+      "target": "templates/dev/ui/examples/Skeleton.html.twig",
+      "sourceSha": "c533e371b0649ca16485bd80250e5eb7c19ffafb524dd37ccd27c1d2c8784d3a",
+      "targetSha": "c533e371b0649ca16485bd80250e5eb7c19ffafb524dd37ccd27c1d2c8784d3a",
+      "adapted": false
+    },
+    {
+      "source": "examples/StatusPill.html.twig",
+      "target": "templates/dev/ui/examples/StatusPill.html.twig",
+      "sourceSha": "ccc7d199455cd52985dbb381f759b0c88688e3f97881d0a5fa6800edac89bb38",
+      "targetSha": "ccc7d199455cd52985dbb381f759b0c88688e3f97881d0a5fa6800edac89bb38",
+      "adapted": false
+    },
+    {
+      "source": "examples/Tabs.html.twig",
+      "target": "templates/dev/ui/examples/Tabs.html.twig",
+      "sourceSha": "c4f4cc10054d6bcb42507551d12b3a4f95b8c2a4e6c93af0acc9cc6dfc1b37fe",
+      "targetSha": "c4f4cc10054d6bcb42507551d12b3a4f95b8c2a4e6c93af0acc9cc6dfc1b37fe",
+      "adapted": false
+    },
+    {
+      "source": "examples/Tag.html.twig",
+      "target": "templates/dev/ui/examples/Tag.html.twig",
+      "sourceSha": "f97bf293a276c484923ff272ead34350c8d1fe593992c9f059458ae5733877bd",
+      "targetSha": "f97bf293a276c484923ff272ead34350c8d1fe593992c9f059458ae5733877bd",
+      "adapted": false
+    },
+    {
+      "source": "examples/Timeline.html.twig",
+      "target": "templates/dev/ui/examples/Timeline.html.twig",
+      "sourceSha": "1de555928c96a66f6602b250c45fada0f4386c0089e02e1c87f8caa909222459",
+      "targetSha": "1de555928c96a66f6602b250c45fada0f4386c0089e02e1c87f8caa909222459",
+      "adapted": false
+    },
+    {
+      "source": "examples/Toast.html.twig",
+      "target": "templates/dev/ui/examples/Toast.html.twig",
+      "sourceSha": "90a3ff5a3300f63e56bf5effdc83c9bb193101201a68a80c7ea7294f236c164d",
+      "targetSha": "90a3ff5a3300f63e56bf5effdc83c9bb193101201a68a80c7ea7294f236c164d",
+      "adapted": false
+    },
+    {
+      "source": "examples/Validity.html.twig",
+      "target": "templates/dev/ui/examples/Validity.html.twig",
+      "sourceSha": "e03dc37b9bb3b1299ba33764c57ed746e9f89462f9d3d60cedc578d9a63d84a8",
+      "targetSha": "e03dc37b9bb3b1299ba33764c57ed746e9f89462f9d3d60cedc578d9a63d84a8",
+      "adapted": false
+    },
+    {
+      "source": "examples/Vehicles.html.twig",
+      "target": "templates/dev/ui/examples/Vehicles.html.twig",
+      "sourceSha": "8d61a2d4b8b165e380b4c3aaedfc9fb9ed847e7101be8150adac0fe8751863c1",
+      "targetSha": "8d61a2d4b8b165e380b4c3aaedfc9fb9ed847e7101be8150adac0fe8751863c1",
+      "adapted": false
+    },
+    {
+      "source": "examples/Verdict.html.twig",
+      "target": "templates/dev/ui/examples/Verdict.html.twig",
+      "sourceSha": "eef350d9a9cb4b120ac9a556ee0fff1ff39d9b6b867c957a73bea0e51b0300fe",
+      "targetSha": "eef350d9a9cb4b120ac9a556ee0fff1ff39d9b6b867c957a73bea0e51b0300fe",
+      "adapted": false
+    },
+    {
+      "source": "examples/ZoneSelect.html.twig",
+      "target": "templates/dev/ui/examples/ZoneSelect.html.twig",
+      "sourceSha": "95403f4b76a32ea376cdc27018a9bee9e60a4c20532c8774eeaf50778c95a6ba",
+      "targetSha": "95403f4b76a32ea376cdc27018a9bee9e60a4c20532c8774eeaf50778c95a6ba",
+      "adapted": false
+    },
+    {
+      "source": "prototype/templates/dashboard.html.twig",
+      "target": "templates/dev/ui/screens/dashboard.html.twig",
+      "sourceSha": "9eda83606829d2d0678451fe72aae4ff316495f860f722b6f9f98cdb1aa30e2f",
+      "targetSha": "6c822ac789537ec14f805259086ada314d915dc4ba76d8a79be7053ff8dde4e6",
+      "adapted": true
+    },
+    {
+      "source": "prototype/templates/requests.html.twig",
+      "target": "templates/dev/ui/screens/requests.html.twig",
+      "sourceSha": "8cbab3c66a6cbcffb2265a1200dbc4fbd4b76c6bbebabf21dbcb4c502281b895",
+      "targetSha": "73ac121f05e611ba310a6d66d607b8d21e87f879a294b8bf1050c3dab2aa48f5",
+      "adapted": true
+    },
+    {
+      "source": "prototype/templates/request.html.twig",
+      "target": "templates/dev/ui/screens/request.html.twig",
+      "sourceSha": "70ee1d76b9f99310392ee755728b168ee5ef193b709cbb0a8e9e902bc3be0a67",
+      "targetSha": "652a4121945211979cf5a007823c2eb2912077ede00a86c0e877d64d349e2811",
+      "adapted": true
+    },
+    {
+      "source": "prototype/templates/forbidden.html.twig",
+      "target": "templates/dev/ui/screens/forbidden.html.twig",
+      "sourceSha": "d19441f51da924955fbf8167a64df6db628e6ac81fcf59be245e6fee9782fec4",
+      "targetSha": "720f352536a0de6bc67f1a814d2bfc72c4e46430503179c1c8bcb8ab7c242348",
+      "adapted": true
+    },
+    {
+      "source": "prototype/data.mjs",
+      "target": "src/Shared/UI/DevUi/Resources/prototype.json",
+      "sourceSha": "1bb542d053be7d64768c047aa49784ac1301abc6e5035ef23c2fec1bb5cdd1fc",
+      "targetSha": "baa766105c6274941a651159e3dcd22e6663f53d456e60cac6032e97d695be31",
+      "adapted": true
+    },
+    {
+      "source": "scripts/catalog.mjs",
+      "target": "src/Shared/UI/DevUi/Resources/catalog.json",
+      "sourceSha": "cd11a17492d989f5fd8908d404173e4d1bc293c611f7bff0da12640af54acc7c",
+      "targetSha": "a65891546bb8d776b8f983750bc21f7dadae30f0d58e724d95b2e09e56f99383",
+      "adapted": true
+    },
+    {
+      "source": "tokens/tokens.json",
+      "target": "design-system/tokens.json",
+      "sourceSha": "046df4fee9596b433d0897bbbfd0ccaf79a97c846042d91fa66a67b4419923c0",
+      "targetSha": "046df4fee9596b433d0897bbbfd0ccaf79a97c846042d91fa66a67b4419923c0",
+      "adapted": false
+    },
+    {
+      "source": "docs/README.md",
+      "target": "design-system/docs/README.md",
+      "sourceSha": "25e00e7252b5e8d65f82ee65e99e0948010ff8d234a22dc7091e22ca09610f65",
+      "targetSha": "25e00e7252b5e8d65f82ee65e99e0948010ff8d234a22dc7091e22ca09610f65",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/ActionMenu.md",
+      "target": "design-system/docs/components/ActionMenu.md",
+      "sourceSha": "1576a538e38006ed0867a27bc9ff5e849cc0508e66ff98d2c3c9a7377cdbe62c",
+      "targetSha": "1576a538e38006ed0867a27bc9ff5e849cc0508e66ff98d2c3c9a7377cdbe62c",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Alert.md",
+      "target": "design-system/docs/components/Alert.md",
+      "sourceSha": "823de1c451f9c576f1eb9a9d4db478964a0177be6fd4b0a87809a3b362bcce53",
+      "targetSha": "823de1c451f9c576f1eb9a9d4db478964a0177be6fd4b0a87809a3b362bcce53",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/AppShell.md",
+      "target": "design-system/docs/components/AppShell.md",
+      "sourceSha": "ef468549879848848b1d74751ef8838cf4077a678854b4848a26ae60a15dcefc",
+      "targetSha": "ef468549879848848b1d74751ef8838cf4077a678854b4848a26ae60a15dcefc",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Authorization.md",
+      "target": "design-system/docs/components/Authorization.md",
+      "sourceSha": "115504ddf6cddb76042576a525089ea492305bfe2e3aa8eeacff8be3f27d21c6",
+      "targetSha": "115504ddf6cddb76042576a525089ea492305bfe2e3aa8eeacff8be3f27d21c6",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Banner.md",
+      "target": "design-system/docs/components/Banner.md",
+      "sourceSha": "efe4de583363798d09132faa66babd27e5387731d246a07b0843d37397e71044",
+      "targetSha": "efe4de583363798d09132faa66babd27e5387731d246a07b0843d37397e71044",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Breadcrumb.md",
+      "target": "design-system/docs/components/Breadcrumb.md",
+      "sourceSha": "b0bc185e653d99752b4098c07f781342d3ceacbd312b9eaa2c012833205f7714",
+      "targetSha": "b0bc185e653d99752b4098c07f781342d3ceacbd312b9eaa2c012833205f7714",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Button.md",
+      "target": "design-system/docs/components/Button.md",
+      "sourceSha": "7e851f924a2b01ed823010b4c5118b414e04ae5ced65eab37e3cf1ddbad28bb0",
+      "targetSha": "7e851f924a2b01ed823010b4c5118b414e04ae5ced65eab37e3cf1ddbad28bb0",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Check.md",
+      "target": "design-system/docs/components/Check.md",
+      "sourceSha": "1e997059a2af5c88b1ed200a8b208099b2bb899241ca4fe62592450e9be44846",
+      "targetSha": "1e997059a2af5c88b1ed200a8b208099b2bb899241ca4fe62592450e9be44846",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Checklist.md",
+      "target": "design-system/docs/components/Checklist.md",
+      "sourceSha": "6d288e260d8d0306d12cf990ceec2b3e0fe32f1ec207a580eb476488d6bff77d",
+      "targetSha": "6d288e260d8d0306d12cf990ceec2b3e0fe32f1ec207a580eb476488d6bff77d",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Choice.md",
+      "target": "design-system/docs/components/Choice.md",
+      "sourceSha": "36e17cebd6415f7781eb6ec5f39d2bbc4ade2f474ccbb5a46ac6da444c76fb7b",
+      "targetSha": "36e17cebd6415f7781eb6ec5f39d2bbc4ade2f474ccbb5a46ac6da444c76fb7b",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/CommuneDecisions.md",
+      "target": "design-system/docs/components/CommuneDecisions.md",
+      "sourceSha": "3c59bf519807e807e38890fecf0a77fe1a8a500a186093b2fd3be33dc2b6e8b7",
+      "targetSha": "3c59bf519807e807e38890fecf0a77fe1a8a500a186093b2fd3be33dc2b6e8b7",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/ConfirmDialog.md",
+      "target": "design-system/docs/components/ConfirmDialog.md",
+      "sourceSha": "123fde3f97eddba414329bd67d37ef6efed3cfb967f9b5a07c02a8aa3e2dd85b",
+      "targetSha": "123fde3f97eddba414329bd67d37ef6efed3cfb967f9b5a07c02a8aa3e2dd85b",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/ConfirmPanel.md",
+      "target": "design-system/docs/components/ConfirmPanel.md",
+      "sourceSha": "37624d30312f0373a341e7e0de4422ad5fb5f1a57627625c24d5beb8730719d4",
+      "targetSha": "37624d30312f0373a341e7e0de4422ad5fb5f1a57627625c24d5beb8730719d4",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/ContextSelector.md",
+      "target": "design-system/docs/components/ContextSelector.md",
+      "sourceSha": "b690375bd1601d827890d8020694ab9c0062b20edbd75f93866b15c7d1bc022d",
+      "targetSha": "b690375bd1601d827890d8020694ab9c0062b20edbd75f93866b15c7d1bc022d",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/DataTable.md",
+      "target": "design-system/docs/components/DataTable.md",
+      "sourceSha": "e27a1c035fb915b2114d8fa9eb3a7d80260e6ea70b5a793ec32e209be6615fa3",
+      "targetSha": "e27a1c035fb915b2114d8fa9eb3a7d80260e6ea70b5a793ec32e209be6615fa3",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/DecisionForm.md",
+      "target": "design-system/docs/components/DecisionForm.md",
+      "sourceSha": "682708b40c06c2d2b8dddc2747953c5b393c7f65e5f00d518f6035e5c335de3e",
+      "targetSha": "682708b40c06c2d2b8dddc2747953c5b393c7f65e5f00d518f6035e5c335de3e",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Documents.md",
+      "target": "design-system/docs/components/Documents.md",
+      "sourceSha": "09d2768be18553c5993114cd0d6c1d6b8b1e31d6e7efce325ae3905077c8821e",
+      "targetSha": "09d2768be18553c5993114cd0d6c1d6b8b1e31d6e7efce325ae3905077c8821e",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/EmptyState.md",
+      "target": "design-system/docs/components/EmptyState.md",
+      "sourceSha": "c2a94431fe07d4e3165e3ef77fd6736c8237c4e632d58e9061f49debb02f5bd8",
+      "targetSha": "c2a94431fe07d4e3165e3ef77fd6736c8237c4e632d58e9061f49debb02f5bd8",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/ErrorSummary.md",
+      "target": "design-system/docs/components/ErrorSummary.md",
+      "sourceSha": "c9fdd3b73e5fb93d812f04331d71f389c192a92d56f8f13b6187eb8eb61eacb0",
+      "targetSha": "c9fdd3b73e5fb93d812f04331d71f389c192a92d56f8f13b6187eb8eb61eacb0",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/EventCard.md",
+      "target": "design-system/docs/components/EventCard.md",
+      "sourceSha": "2aaeb78f56f89e2c6c0602cfa53aa1c7deb68db6bc9c30a27b113230e33fb8b0",
+      "targetSha": "2aaeb78f56f89e2c6c0602cfa53aa1c7deb68db6bc9c30a27b113230e33fb8b0",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Facts.md",
+      "target": "design-system/docs/components/Facts.md",
+      "sourceSha": "45e17e1b33f295f910c1e87d384aad7b66c46fa59b1f3357647aa06e0403a1ae",
+      "targetSha": "45e17e1b33f295f910c1e87d384aad7b66c46fa59b1f3357647aa06e0403a1ae",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Field.md",
+      "target": "design-system/docs/components/Field.md",
+      "sourceSha": "e9151cc0f5b19c076c5137dde4f44d6f381ceffc9c5fa558e7c52eb3f459afb8",
+      "targetSha": "e9151cc0f5b19c076c5137dde4f44d6f381ceffc9c5fa558e7c52eb3f459afb8",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/FileUpload.md",
+      "target": "design-system/docs/components/FileUpload.md",
+      "sourceSha": "1d0803ff04bf67d9b074609020c7d0f6cfbc6199b619e6561932d673734e2714",
+      "targetSha": "1d0803ff04bf67d9b074609020c7d0f6cfbc6199b619e6561932d673734e2714",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/FilterBar.md",
+      "target": "design-system/docs/components/FilterBar.md",
+      "sourceSha": "feda5ab08c30b07ecad99a915bbc1256415e34cdc1f8865a8f6345b8f1a154be",
+      "targetSha": "feda5ab08c30b07ecad99a915bbc1256415e34cdc1f8865a8f6345b8f1a154be",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Freshness.md",
+      "target": "design-system/docs/components/Freshness.md",
+      "sourceSha": "9d71e38af9d127e117b7c6c0b4d265a6f045632dbbf60fd3d5d51d7013daa4c0",
+      "targetSha": "9d71e38af9d127e117b7c6c0b4d265a6f045632dbbf60fd3d5d51d7013daa4c0",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Holder.md",
+      "target": "design-system/docs/components/Holder.md",
+      "sourceSha": "c85c29f66572549495fbe5e7d03b7e4da8bf4063380e7bf2ea741c15b2a84b6c",
+      "targetSha": "c85c29f66572549495fbe5e7d03b7e4da8bf4063380e7bf2ea741c15b2a84b6c",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Icon.md",
+      "target": "design-system/docs/components/Icon.md",
+      "sourceSha": "f724e563ae4467d7daa131c0ff477f4f86baacc304126b25bd6e368a2cadab8b",
+      "targetSha": "f724e563ae4467d7daa131c0ff477f4f86baacc304126b25bd6e368a2cadab8b",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/IconButton.md",
+      "target": "design-system/docs/components/IconButton.md",
+      "sourceSha": "c9b9928698e1912b76c5732115d1e85d73f2167ca5874d82964729549bb8c81f",
+      "targetSha": "c9b9928698e1912b76c5732115d1e85d73f2167ca5874d82964729549bb8c81f",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/KpiTiles.md",
+      "target": "design-system/docs/components/KpiTiles.md",
+      "sourceSha": "ae2507dbcf824d5fda84c21433975fccdd4ad569a4dbf6de46e81ea9b1f5b30f",
+      "targetSha": "ae2507dbcf824d5fda84c21433975fccdd4ad569a4dbf6de46e81ea9b1f5b30f",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/MobileMenu.md",
+      "target": "design-system/docs/components/MobileMenu.md",
+      "sourceSha": "71d3cac921b5da6834b4f1762abecfee0c29d55e0162cdd212b539dcf91a1204",
+      "targetSha": "71d3cac921b5da6834b4f1762abecfee0c29d55e0162cdd212b539dcf91a1204",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Modal.md",
+      "target": "design-system/docs/components/Modal.md",
+      "sourceSha": "0b05e8676845533a9cc618de4d62112778de3538c9ce9e71e71dcc93bf4779ac",
+      "targetSha": "0b05e8676845533a9cc618de4d62112778de3538c9ce9e71e71dcc93bf4779ac",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/ModeChip.md",
+      "target": "design-system/docs/components/ModeChip.md",
+      "sourceSha": "f22bf4b781b8fca258c901cf9c79df685a8d824ae741b1f0e19167b97826d907",
+      "targetSha": "f22bf4b781b8fca258c901cf9c79df685a8d824ae741b1f0e19167b97826d907",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/PageHead.md",
+      "target": "design-system/docs/components/PageHead.md",
+      "sourceSha": "7cd13af7439b255b1530ebfef9ccefd63a0eb2adea42769a248b3a1e31769865",
+      "targetSha": "7cd13af7439b255b1530ebfef9ccefd63a0eb2adea42769a248b3a1e31769865",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Pagination.md",
+      "target": "design-system/docs/components/Pagination.md",
+      "sourceSha": "86b24c70dbce2fdec524e157a7d851c0efb50deee601742b796d56478907167f",
+      "targetSha": "86b24c70dbce2fdec524e157a7d851c0efb50deee601742b796d56478907167f",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Panel.md",
+      "target": "design-system/docs/components/Panel.md",
+      "sourceSha": "9e269d0a8896051b4869489548b0a0dfd2e23ac8ad02fe0c246f6c768eb057c7",
+      "targetSha": "9e269d0a8896051b4869489548b0a0dfd2e23ac8ad02fe0c246f6c768eb057c7",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/PassCard.md",
+      "target": "design-system/docs/components/PassCard.md",
+      "sourceSha": "2796917eb4b03a2579a51171e57be86ed17d77be731fae738bc63cdf33b57db9",
+      "targetSha": "2796917eb4b03a2579a51171e57be86ed17d77be731fae738bc63cdf33b57db9",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Period.md",
+      "target": "design-system/docs/components/Period.md",
+      "sourceSha": "424313b83eb5e3f27c89e9ff92772ab83d916c61047264d79ce12867f2c1a472",
+      "targetSha": "424313b83eb5e3f27c89e9ff92772ab83d916c61047264d79ce12867f2c1a472",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Plate.md",
+      "target": "design-system/docs/components/Plate.md",
+      "sourceSha": "e75f41ace26bfb1cd3626beaf045dc759c18bedacab1e9e9bdb06c5d63c7e574",
+      "targetSha": "e75f41ace26bfb1cd3626beaf045dc759c18bedacab1e9e9bdb06c5d63c7e574",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/PlatesField.md",
+      "target": "design-system/docs/components/PlatesField.md",
+      "sourceSha": "a1535d4d38f5de3f70715cbce384f601fef3ea840bb616139c504e02b1d66b88",
+      "targetSha": "a1535d4d38f5de3f70715cbce384f601fef3ea840bb616139c504e02b1d66b88",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/PublicHeader.md",
+      "target": "design-system/docs/components/PublicHeader.md",
+      "sourceSha": "8b2511ccbff19af35d1ebbc72f6f266c0cf19ad2e3f63d7d0fe7ae7b03d4bd8f",
+      "targetSha": "8b2511ccbff19af35d1ebbc72f6f266c0cf19ad2e3f63d7d0fe7ae7b03d4bd8f",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/QrCode.md",
+      "target": "design-system/docs/components/QrCode.md",
+      "sourceSha": "be9ac039fe29918de499c2ef4d88979ec3675f252771fcc7b79eaaf4dbc3b3ab",
+      "targetSha": "be9ac039fe29918de499c2ef4d88979ec3675f252771fcc7b79eaaf4dbc3b3ab",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/RequestCard.md",
+      "target": "design-system/docs/components/RequestCard.md",
+      "sourceSha": "1896603fe5ccea07f3313af6d5e08962fc140430146b6faaa8341b95c02069c4",
+      "targetSha": "1896603fe5ccea07f3313af6d5e08962fc140430146b6faaa8341b95c02069c4",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/RequestList.md",
+      "target": "design-system/docs/components/RequestList.md",
+      "sourceSha": "0074eaef6dfb952f3bdcbd91fc1f67fbfac34806233dd758ed8d29af8fce0aca",
+      "targetSha": "0074eaef6dfb952f3bdcbd91fc1f67fbfac34806233dd758ed8d29af8fce0aca",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Rights.md",
+      "target": "design-system/docs/components/Rights.md",
+      "sourceSha": "faf23fe52ebeadf61663faffcf4c9f4b9476cf7c34d42f13746e7d620aecc79d",
+      "targetSha": "faf23fe52ebeadf61663faffcf4c9f4b9476cf7c34d42f13746e7d620aecc79d",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/SearchField.md",
+      "target": "design-system/docs/components/SearchField.md",
+      "sourceSha": "3cf2139914687eecf23d99f564a12ce1901c762bc686714849fba506c94c29f5",
+      "targetSha": "3cf2139914687eecf23d99f564a12ce1901c762bc686714849fba506c94c29f5",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Select.md",
+      "target": "design-system/docs/components/Select.md",
+      "sourceSha": "4ce3748904769b4245c958f649a1be8c77cc8e48dc6b90c0471b935aba1d3ef9",
+      "targetSha": "4ce3748904769b4245c958f649a1be8c77cc8e48dc6b90c0471b935aba1d3ef9",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Skeleton.md",
+      "target": "design-system/docs/components/Skeleton.md",
+      "sourceSha": "0545068c4239a2f4270530a79cad2b2edbf896164f6788a05e627b8e303fe7a1",
+      "targetSha": "0545068c4239a2f4270530a79cad2b2edbf896164f6788a05e627b8e303fe7a1",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/StatusPill.md",
+      "target": "design-system/docs/components/StatusPill.md",
+      "sourceSha": "0c74ffaef4ae8df5489b66ce68f0101ce8563c65ccc244d5192a072111934c13",
+      "targetSha": "0c74ffaef4ae8df5489b66ce68f0101ce8563c65ccc244d5192a072111934c13",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Tabs.md",
+      "target": "design-system/docs/components/Tabs.md",
+      "sourceSha": "3f09e19759d622b1f149227dc021de5890dae3464e7b7f02a93521a93bd154a4",
+      "targetSha": "3f09e19759d622b1f149227dc021de5890dae3464e7b7f02a93521a93bd154a4",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Tag.md",
+      "target": "design-system/docs/components/Tag.md",
+      "sourceSha": "3050e3855f8fac0ba009a2d9ff629a3d1dc2c7e836e830fd51062572c16ed429",
+      "targetSha": "3050e3855f8fac0ba009a2d9ff629a3d1dc2c7e836e830fd51062572c16ed429",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Timeline.md",
+      "target": "design-system/docs/components/Timeline.md",
+      "sourceSha": "c52f725b8c832bc0539d9cabfc6925d654c6470552f88788fd3d9567cd89e1da",
+      "targetSha": "c52f725b8c832bc0539d9cabfc6925d654c6470552f88788fd3d9567cd89e1da",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Toast.md",
+      "target": "design-system/docs/components/Toast.md",
+      "sourceSha": "3a6d63680215acf4ec9246f8a9ae92233451f82e656d7e07bf2224faa2f5ff62",
+      "targetSha": "3a6d63680215acf4ec9246f8a9ae92233451f82e656d7e07bf2224faa2f5ff62",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Validity.md",
+      "target": "design-system/docs/components/Validity.md",
+      "sourceSha": "bb87ebdf0f7bba07fb45c9a5312deb558a4e3b7b282205c39466b0f913abfa5a",
+      "targetSha": "bb87ebdf0f7bba07fb45c9a5312deb558a4e3b7b282205c39466b0f913abfa5a",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Vehicles.md",
+      "target": "design-system/docs/components/Vehicles.md",
+      "sourceSha": "64f919e489d350a88a3a4897a0d1d754b00d9bbcfb4739ace01bd7f7ade31fdd",
+      "targetSha": "64f919e489d350a88a3a4897a0d1d754b00d9bbcfb4739ace01bd7f7ade31fdd",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Verdict.md",
+      "target": "design-system/docs/components/Verdict.md",
+      "sourceSha": "5ad29daefd5a2568640573e76791a8ab404c906da8c81391e84ec599f3686928",
+      "targetSha": "5ad29daefd5a2568640573e76791a8ab404c906da8c81391e84ec599f3686928",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/ZoneSelect.md",
+      "target": "design-system/docs/components/ZoneSelect.md",
+      "sourceSha": "1bf691f0f54aee8acabff334dd71324e2b6125c703bf58e79a04788b9ccdc0b3",
+      "targetSha": "1bf691f0f54aee8acabff334dd71324e2b6125c703bf58e79a04788b9ccdc0b3",
+      "adapted": false
+    },
+    {
+      "source": "docs/cover.html",
+      "target": "design-system/docs/cover.html",
+      "sourceSha": "8a01ff5caf05db7e287b154fdb9f6bd67d2b721165b9ae52ef184b61561a869c",
+      "targetSha": "8a01ff5caf05db7e287b154fdb9f6bd67d2b721165b9ae52ef184b61561a869c",
+      "adapted": false
+    },
+    {
+      "source": "docs/lots/UI-001.md",
+      "target": "design-system/docs/lots/UI-001.md",
+      "sourceSha": "9370293ef7549a19001726d964c243c6262bccac4569b2b827afe4e57d4f0883",
+      "targetSha": "9370293ef7549a19001726d964c243c6262bccac4569b2b827afe4e57d4f0883",
+      "adapted": false
+    },
+    {
+      "source": "docs/sections/accessibilite.md",
+      "target": "design-system/docs/sections/accessibilite.md",
+      "sourceSha": "1e7c29fef3b8e3e9454508e7f22146ae80abbbbb44b1bf6f8ee7f76fff2541ed",
+      "targetSha": "1e7c29fef3b8e3e9454508e7f22146ae80abbbbb44b1bf6f8ee7f76fff2541ed",
+      "adapted": false
+    },
+    {
+      "source": "docs/sections/etats-et-arbitrages.md",
+      "target": "design-system/docs/sections/etats-et-arbitrages.md",
+      "sourceSha": "fd113d34e4f08a837d200a5e4b9630d708a9238ac95e11f19e00bf8bfb68c660",
+      "targetSha": "fd113d34e4f08a837d200a5e4b9630d708a9238ac95e11f19e00bf8bfb68c660",
+      "adapted": false
+    },
+    {
+      "source": "docs/sections/fondations.md",
+      "target": "design-system/docs/sections/fondations.md",
+      "sourceSha": "cce03dc33e75bc85430663c69843bb6755fee5b84b2a804c7c0a5fbee287a662",
+      "targetSha": "cce03dc33e75bc85430663c69843bb6755fee5b84b2a804c7c0a5fbee287a662",
+      "adapted": false
+    },
+    {
+      "source": "docs/sections/integration-symfony.md",
+      "target": "design-system/docs/sections/integration-symfony.md",
+      "sourceSha": "e0ae78f74a729b0621c4a0b475b0db78bdb804417d3452ca6183b1fe46771c84",
+      "targetSha": "e0ae78f74a729b0621c4a0b475b0db78bdb804417d3452ca6183b1fe46771c84",
+      "adapted": false
+    },
+    {
+      "source": "docs/sections/interactions.md",
+      "target": "design-system/docs/sections/interactions.md",
+      "sourceSha": "2ea734996e0ffcbc5b44a1098c9de77231777be810de05dda374f109dc360a61",
+      "targetSha": "2ea734996e0ffcbc5b44a1098c9de77231777be810de05dda374f109dc360a61",
+      "adapted": false
+    },
+    {
+      "source": "docs/sections/responsive.md",
+      "target": "design-system/docs/sections/responsive.md",
+      "sourceSha": "fd3d3a098a7dc2f03402d9b6d7cc17223edc2471187ed9a39323bfbe980cbed7",
+      "targetSha": "fd3d3a098a7dc2f03402d9b6d7cc17223edc2471187ed9a39323bfbe980cbed7",
+      "adapted": false
+    }
+  ]
+}

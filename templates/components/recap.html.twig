@@ -1,0 +1,13 @@
+{#
+  Récapitulatif avant confirmation, tenu à jour par cp--recap (sur le <form>). Le rendu serveur fournit l’état initial.
+  @param string title  (défaut « Récapitulatif avant confirmation »)
+  @param array  rows   Liste de { key, value, group (nom des cases), format (gabarit {id}), empty, when (id de case conditionnelle), mono }.
+#}
+<div class="cp-recap" aria-live="polite">
+  <h3 class="cp-recap__title">{{ title|default('Récapitulatif avant confirmation') }}</h3>
+  <ul class="cp-recap__list">
+    {%- for r in rows %}
+    <li class="cp-recap__row"{% if r.group|default('') or r.format|default('') %} data-cp--recap-target="line"{% endif %}{% if r.group|default('') %} data-group="{{ r.group }}"{% endif %}{% if r.format|default('') %} data-format="{{ r.format }}"{% endif %}{% if r.empty|default('') %} data-empty="{{ r.empty }}"{% endif %}{% if r.when|default('') %} data-when="{{ r.when }}"{% endif %}{% if r.sep|default('') %} data-sep="{{ r.sep }}"{% endif %}><span class="cp-recap__key">{{ r.key }}</span><span data-recap-value{% if r.mono|default(false) %} class="cp-mono"{% endif %}>{{ r.value|default('') }}</span></li>
+    {%- endfor %}
+  </ul>
+</div>

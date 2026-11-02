@@ -1,0 +1,7 @@
+<div class="cp-cluster">
+  <button type="button" class="cp-btn cp-btn--secondary" data-modal-open="cp-mobile-menu">{% include 'components/icon.html.twig' with { name: 'menu' } only %}<span>Ouvrir le menu</span></button>
+  <span class="cp-help">Ouvert par l’entrée « Menu » de la barre basse (&lt; 640 px).</span>
+</div>
+{% include 'components/mobile_menu.html.twig' with {
+  items: [ { label: 'Événements', icon: 'flag', href: '#' }, { label: 'Zones', icon: 'map', href: '#' }, { label: 'Utilisateurs', icon: 'users', href: '#' }, { label: 'Paramètres', icon: 'settings', href: '#' } ],
+  commune: { value: 'Le Temple', change_href: '#' }, user: { name: 'Sophie Lambert', role: 'Administratrice communale' } } only %}

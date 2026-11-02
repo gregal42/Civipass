@@ -1,0 +1,5 @@
+{#
+  Barre d’actions fixée au-dessus de la navigation basse (< 640 px). Masquée quand le formulaire inline est ouvert
+  (cible hideWhenOpen de cp--disclosure). Bloc « actions ».
+#}
+<div class="cp-action-bar" data-cp--disclosure-target="hideWhenOpen">{% block actions %}{% endblock %}</div>

@@ -1,0 +1,14 @@
+<div class="cp-cluster" style="align-items: flex-start; justify-content: space-between; min-height: 270px">
+  {% include 'components/action_menu.html.twig' with { id: 'am-1', label: 'Actions sur LP-2026-0156', align: 'start', trigger_label: 'Actions', items: [
+    { label: 'Voir le dossier', icon: 'file', href: '#' },
+    { label: 'Télécharger le PDF', icon: 'download', href: '#' },
+    { label: 'Renvoyer par e-mail', icon: 'mail', href: '#' },
+    { separator: true },
+    { label: 'Révoquer…', icon: 'x', href: '#', danger: true }
+  ] } only %}
+  {% include 'components/action_menu.html.twig' with { id: 'am-2', label: 'Actions sur DEM-2026-0156', items: [
+    { label: 'Ouvrir la fiche', icon: 'right', href: '#' },
+    { label: 'Imprimer le laissez-passer', icon: 'print', disabled: true }
+  ] } only %}
+</div>
+<p class="cp-help">Les actions non permises au rôle ne sont pas listées ; une action temporairement impossible est grisée.</p>

@@ -1,0 +1,8 @@
+<div style="max-width: 720px">
+{% embed 'components/confirm_panel.html.twig' with { id: 'revoke', title: 'Révoquer le laissez-passer pour Le Temple', confirm_label: 'Révoquer définitivement',
+  consequences: [ 'Les droits accordés par Le Temple deviennent inutilisables immédiatement au contrôle en ligne.', 'Les appareils de contrôle hors ligne ne le sauront qu’à leur prochaine synchronisation.', 'La révocation est inscrite à l’historique, avec votre nom et le motif.' ],
+  keeps: [ 'Les droits accordés par Saumos restent actifs.', 'Le QR code ne change pas.' ] } only %}
+  {% block fields %}{% include 'components/field.html.twig' with { id: 'revoke-reason', type: 'textarea', label: 'Motif de la révocation', required: true, help: 'Obligatoire. Visible dans l’historique du dossier.' } only %}{% endblock %}
+{% endembed %}
+</div>
+{% include 'components/dialog.html.twig' %}

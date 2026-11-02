@@ -1,0 +1,4 @@
+<div class="cp-stack">
+  {% include 'components/period.html.twig' with { id: 'validity', value: { start_date: '2026-11-01', start_time: '10:00', end_date: '2026-11-05', end_time: '20:00' } } only %}
+  {% include 'components/period.html.twig' with { id: 'validity_err', value: { start_date: '2026-11-05', start_time: '20:00', end_date: '2026-11-01', end_time: '10:00' }, error: 'La fin de validité doit être postérieure au début.' } only %}
+</div>

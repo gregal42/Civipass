@@ -1,33 +1,23 @@
-{% extends 'base.html.twig' %}
+{% extends 'layouts/auth.html.twig' %}
+{% set page_title = 'Nouveau mot de passe' %}
+{% block meta %}<meta name="referrer" content="no-referrer">{% endblock %}
 
-{% block title %}Nouveau mot de passe — Civipass{% endblock %}
-{% block meta %}<meta name="robots" content="noindex, nofollow"><meta name="referrer" content="no-referrer">{% endblock %}
+{% block content %}
+    {% embed 'components/panel.html.twig' with { id: 'reset-h', title: 'Choisissez un nouveau mot de passe', level: 1, error: error|default('') } only %}
+        {% block body %}
+            <p class="cp-help">12 caractères minimum. Aucune autre règle n’est imposée : préférez une phrase longue.</p>
 
-{% block body %}
-    <div class="page">
-        <main class="card">
-            <h1>Choisissez un nouveau mot de passe</h1>
-            <p class="muted">12 caractères minimum. Aucune autre règle n'est imposée : préférez une phrase longue.</p>
-
-            {% if error is defined and error %}
-                <div class="alert" role="alert" id="form-error">{{ error }}</div>
+            {% if error %}
+                {% include 'components/alert.html.twig' with { variant: 'error', id: 'form-error', text: error } only %}
             {% endif %}
 
-            <form method="post" action="{{ path('app_reset_password') }}" novalidate>
-                <div class="field">
-                    <label for="password">Nouveau mot de passe</label>
-                    <input type="password" id="password" name="password" autocomplete="new-password"
-                           minlength="12" required autofocus
-                           {% if error is defined and error %}aria-invalid="true" aria-describedby="form-error"{% endif %}>
-                </div>
-                <div class="field">
-                    <label for="password_confirm">Confirmez le mot de passe</label>
-                    <input type="password" id="password_confirm" name="password_confirm" autocomplete="new-password"
-                           minlength="12" required>
-                </div>
+            <form method="post" action="{{ path('app_reset_password') }}" novalidate data-controller="cp--submit-state">
+                {% set invalid = error ? ' aria-invalid="true" aria-describedby="form-error"' : '' %}
+                {% include 'components/field.html.twig' with { id: 'password', name: 'password', type: 'password', label: 'Nouveau mot de passe', required: true, autocomplete: 'new-password', attrs: 'minlength="12" autofocus' ~ invalid } only %}
+                {% include 'components/field.html.twig' with { id: 'password_confirm', name: 'password_confirm', type: 'password', label: 'Confirmez le mot de passe', required: true, autocomplete: 'new-password', attrs: 'minlength="12"' } only %}
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('reset_password') }}">
-                <button type="submit" class="button">Enregistrer le mot de passe</button>
+                {% include 'components/button.html.twig' with { label: 'Enregistrer le mot de passe', type: 'submit', size: 'l', block: true, loading_label: 'Enregistrement…' } only %}
             </form>
-        </main>
-    </div>
+        {% endblock %}
+    {% endembed %}
 {% endblock %}

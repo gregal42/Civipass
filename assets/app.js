@@ -1,10 +1,4 @@
+// Point d'entrée JavaScript (AssetMapper) : Stimulus (contrôleurs de assets/controllers, dont cp--* du design system)
+// et Turbo. Les feuilles de style sont chargées par <link> dans les layouts (templates/layouts), pas ici : pas de flash
+// de page non stylée, et les pages d'authentification restent utilisables sans JavaScript.
 import './stimulus_bootstrap.js';
-/*
- * Welcome to your app's main JavaScript file!
- *
- * This file will be included onto the page via the importmap() Twig function,
- * which should already be in your base.html.twig.
- */
-import './styles/app.css';
-
-console.log('This log comes from assets/app.js - welcome to AssetMapper! 🎉');

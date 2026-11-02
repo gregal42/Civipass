@@ -1,0 +1,77 @@
+{#- Parcours complet : décision de la commune → formulaire d’approbation inline (ou de refus) dans la fiche. -#}
+<div class="cp-app" style="min-height: 0">
+<div class="cp-stack" data-controller="cp--disclosure">
+  {% embed 'components/panel.html.twig' with { id: 'dec-h', title: 'Décision de Le Temple', meta: 'Statut : En attente' } only %}
+    {% block body %}
+    <div class="cp-decision-bar cp-decision-bar--desktop">
+      {% include 'components/button.html.twig' with { label: 'Approuver…', variant: 'approve', icon: 'check', size: 'l', attrs: 'data-cp--disclosure-target="trigger" data-action="cp--disclosure#open" data-cp--disclosure-panel-param="approve" aria-expanded="false" aria-controls="approve-panel"' } only %}
+      <span class="cp-decision-bar__spacer"></span>
+      {% include 'components/button.html.twig' with { label: 'Refuser…', variant: 'refuse', icon: 'x', size: 'l', attrs: 'data-cp--disclosure-target="trigger" data-action="cp--disclosure#open" data-cp--disclosure-panel-param="refuse" aria-expanded="false" aria-controls="refuse-panel"' } only %}
+      <p class="cp-decision-bar__hint">L’approbation s’ouvre ici, dans le dossier : vous définissez la période, les zones, les modes et les plaques avant de confirmer.</p>
+    </div>
+    <p class="cp-help cp-decision-bar__mobile-hint">Utilisez les boutons en bas de l’écran pour décider.</p>
+    {% endblock %}
+  {% endembed %}
+
+  <div id="approve-panel" data-cp--disclosure-target="panel" data-panel="approve" hidden>
+  {% embed 'components/decision_form.html.twig' with { kind: 'approve', id: 'approve-form', title: 'Approuver pour Le Temple', intro: 'Définissez les droits accordés. Le laissez-passer est émis dès la confirmation.' } only %}
+    {% block fields %}
+      {% include 'components/period.html.twig' with { id: 'validity', value: { start_date: '2026-11-01', start_time: '10:00', end_date: '2026-11-05', end_time: '20:00' } } only %}
+      <fieldset class="cp-fieldset" id="zones">
+        <legend class="cp-fieldset__legend">Zones accordées à Le Temple</legend>
+        <p class="cp-help">La zone demandée est présélectionnée. Vous pouvez ajouter une zone active non demandée.</p>
+        <div class="cp-choices">
+          {% include 'components/choice.html.twig' with { name: 'zones[]', value: 'ce', id: 'zone-ce', label: 'Commune entière', checked: true, tag: { label: 'Demandée' }, note: 'Demandée' } only %}
+          {% include 'components/choice.html.twig' with { name: 'zones[]', value: 'sfn', id: 'zone-sfn', label: 'Secteur forestier nord', trace_texts: { on: 'Ajout non demandé — sera tracé dans l’historique', off: 'Zone active, non demandée' } } only %}
+          {% include 'components/choice.html.twig' with { name: 'zones[]', value: 'lau', id: 'zone-lau', label: 'Hameau de Lauros', trace_texts: { on: 'Ajout non demandé — sera tracé dans l’historique', off: 'Zone active, non demandée' } } only %}
+          {% include 'components/choice.html.twig' with { name: 'zones[]', value: 'lag', id: 'zone-lag', label: 'Lagune de la Sablière', disabled: true, tag: { label: 'Suspendue', variant: 'off' }, note: 'Zone suspendue — indisponible' } only %}
+        </div>
+      </fieldset>
+      <fieldset class="cp-fieldset" id="modes">
+        <legend class="cp-fieldset__legend">Modes de déplacement autorisés</legend>
+        <div class="cp-choices cp-choices--grid">
+          {% include 'components/choice.html.twig' with { name: 'modes[]', value: 'vehicle', id: 'mode-vehicle', icon: 'car', label: 'Véhicule', recap_label: 'Véhicule', checked: true, tag: { label: 'Demandé' }, trace_texts: { on: '', off: 'Mode demandé non accordé — sera tracé', when: 'unchecked' } } only %}
+          {% include 'components/choice.html.twig' with { name: 'modes[]', value: 'foot', id: 'mode-foot', icon: 'walk', label: 'À pied', recap_label: 'À pied', checked: true, tag: { label: 'Demandé' }, trace_texts: { on: '', off: 'Mode demandé non accordé — sera tracé', when: 'unchecked' } } only %}
+          {% include 'components/choice.html.twig' with { name: 'modes[]', value: 'bike', id: 'mode-bike', icon: 'bike', label: 'À vélo', recap_label: 'À vélo', trace_texts: { on: 'Ajout non demandé — sera tracé', off: 'Non demandé' } } only %}
+        </div>
+      </fieldset>
+      {% include 'components/plates_field.html.twig' with { id: 'plates', name: 'plates[]', vehicle: 'mode-vehicle', hint: 'Format non contrôlé : règle à arbitrer.', plates: [ { number: 'AB-123-CD' }, { number: 'EF-456-GH' } ] } only %}
+      {% include 'components/recap.html.twig' with { rows: [
+        { key: 'Période', format: '{validity_start_date} à {validity_start_time} → {validity_end_date} à {validity_end_time}', value: '01/11/2026 à 10:00 → 05/11/2026 à 20:00' },
+        { key: 'Zones', group: 'zones[]', empty: 'aucune', value: 'Commune entière' },
+        { key: 'Modes', group: 'modes[]', empty: 'aucun', value: 'Véhicule, À pied' },
+        { key: 'Plaques', group: 'plates[]', empty: 'aucune', when: 'mode-vehicle', sep: ' ; ', mono: true, value: 'AB-123-CD ; EF-456-GH' },
+        { key: 'Émission', value: 'Laissez-passer LP-2026-0156, QR stable' }
+      ] } only %}
+    {% endblock %}
+    {% block actions %}
+      {% include 'components/button.html.twig' with { label: 'Confirmer l’approbation', variant: 'approve', icon: 'check', type: 'submit', loading_label: 'Émission en cours…' } only %}
+      {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', attrs: 'data-action="cp--disclosure#close"' } only %}
+    {% endblock %}
+  {% endembed %}
+  </div>
+
+  <div id="refuse-panel" data-cp--disclosure-target="panel" data-panel="refuse" hidden>
+  {% embed 'components/decision_form.html.twig' with { kind: 'refuse', id: 'refuse-form', title: 'Refuser pour Le Temple', intro: 'Le refus ne concerne que le territoire de Le Temple.' } only %}
+    {% block fields %}{% include 'components/field.html.twig' with { id: 'refuse-reason', type: 'textarea', label: 'Motif du refus', optional: true } only %}{% endblock %}
+    {% block actions %}
+      {% include 'components/button.html.twig' with { label: 'Confirmer le refus', variant: 'refuse', icon: 'x', type: 'submit', loading_label: 'Enregistrement…' } only %}
+      {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', attrs: 'data-action="cp--disclosure#close"' } only %}
+    {% endblock %}
+  {% endembed %}
+  </div>
+
+  {% embed 'components/action_bar.html.twig' only %}
+    {% block actions %}
+      {% include 'components/button.html.twig' with { label: 'Refuser', variant: 'refuse', icon: 'x', attrs: 'data-action="cp--disclosure#open" data-cp--disclosure-panel-param="refuse"' } only %}
+      {% include 'components/button.html.twig' with { label: 'Approuver', variant: 'approve', icon: 'check', attrs: 'data-action="cp--disclosure#open" data-cp--disclosure-panel-param="approve"' } only %}
+    {% endblock %}
+  {% endembed %}
+</div>
+</div>
+{% include 'components/dialog.html.twig' %}
+{% include 'components/toasts.html.twig' %}
+<script>
+  /* Démo uniquement : sans serveur, l’envoi est simulé (succès après 1,1 s). */
+  document.addEventListener('submit', function (e) { e.preventDefault(); var f = e.target; setTimeout(function () { f.dispatchEvent(new CustomEvent('turbo:submit-end', { bubbles: true })); delete f.dataset.dirty; window.Civipass && window.Civipass.toast('Démo : décision simulée, aucune donnée envoyée.'); }, 1100); });
+</script>

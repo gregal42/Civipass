@@ -1,0 +1,14 @@
+{#
+  Indicateurs synthétiques (4 en large, 2 × 2 sous 680 px). Une seule tuile « urgent » : ce qui attend une action.
+  @param string label_id  id du titre de section.
+  @param array  tiles     Liste de { label, value, foot, urgent }.
+#}
+<div class="cp-kpis"><div class="cp-kpis__grid">
+  {%- for t in tiles %}
+  <div class="cp-kpi{% if t.urgent|default(false) %} cp-kpi--urgent{% endif %}">
+    <span class="cp-kpi__label">{% if t.urgent|default(false) %}<span class="cp-dot" aria-hidden="true"></span>{% endif %}{{ t.label }}</span>
+    <span class="cp-kpi__value">{{ t.value }}</span>
+    {%- if t.foot|default('') %}<span class="cp-kpi__foot">{{ t.foot }}</span>{% endif %}
+  </div>
+  {%- endfor %}
+</div></div>

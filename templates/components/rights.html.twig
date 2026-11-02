@@ -1,0 +1,17 @@
+{#
+  Droits par commune et zone (contrôle). Toutes les communes sont listées, sans sélection préalable.
+  @param array  rights  Liste de { commune, zone, period, status (valid | invalid | sync), reason (si non valide) }.
+  @param string title   (défaut « Communes et zones autorisées »)
+#}
+<section class="cp-box" aria-labelledby="cp-rights-title">
+  <div class="cp-box__head"><h2 class="cp-box__title" id="cp-rights-title">{{ title|default('Communes et zones autorisées') }}</h2></div>
+  <ul class="cp-rights">
+    {%- for r in rights %}
+    <li class="cp-rights__item{% if r.status == 'invalid' %} cp-rights__item--off{% endif %}">
+      <div><p class="cp-rights__commune">{{ r.commune }}</p><p class="cp-rights__zone">{{ r.zone }}</p></div>
+      {% include 'components/status_pill.html.twig' with { status: r.status } only %}
+      <p class="cp-rights__period">{% include 'components/icon.html.twig' with { name: 'clock', size: 's' } only %} {{ r.status == 'invalid' and r.reason|default('') ? r.reason : r.period }}</p>
+    </li>
+    {%- endfor %}
+  </ul>
+</section>

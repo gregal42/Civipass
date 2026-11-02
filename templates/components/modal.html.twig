@@ -1,0 +1,10 @@
+{#
+  Modale générique (<dialog>, cp--modal) pour consulter un contenu sans quitter la page (justificatif, aide). Bloc « body » et bloc « foot ».
+  Toute action [data-modal-open="{id}"] l’ouvre. Jamais pour une décision d’instruction (formulaire inline).
+  @param string id  @param string title  @param string size  default | wide | sheet (feuille basse : menu mobile)   @param bool has_foot  Affiche le pied (bloc « foot »).
+#}
+<dialog class="cp-modal{% if size|default('default') != 'default' %} cp-modal--{{ size }}{% endif %}" id="{{ id }}" aria-labelledby="{{ id }}-title" data-controller="cp--modal">
+  <div class="cp-modal__head"><h2 class="cp-modal__title" id="{{ id }}-title">{{ title }}</h2>{% include 'components/icon_button.html.twig' with { icon: 'x', label: 'Fermer', attrs: 'data-action="cp--modal#close"' } only %}</div>
+  <div class="cp-modal__body">{% block body %}{% endblock %}</div>
+  {%- if has_foot|default(false) %}<div class="cp-modal__foot">{% block foot %}{% endblock %}</div>{% endif %}
+</dialog>

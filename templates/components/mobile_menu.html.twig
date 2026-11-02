@@ -1,0 +1,18 @@
+{#
+  Menu complémentaire mobile (feuille ouverte par l’entrée « Menu » de la barre basse) : rubriques secondaires autorisées, changement de commune, compte.
+  @param array  items     Rubriques (même forme que la barre latérale) non présentes dans la barre basse.
+  @param object commune   { value, change_href }    @param object user  { name, role }   @param string logout_href
+#}
+{% embed 'components/modal.html.twig' with { id: 'cp-mobile-menu', title: 'Menu', size: 'sheet', items: items, commune: commune|default(null), user: user, logout_href: logout_href|default('#') } only %}
+  {% block body %}
+    <div class="cp-menu__head" style="padding: 0"><b>{{ user.name }}</b><span>{{ user.role }}{% if commune %} · {{ commune.value }}{% endif %}</span></div>
+    <nav aria-label="Rubriques complémentaires"><ul class="cp-sheet-nav">
+      {%- for i in items %}<li><a class="cp-nav__link" href="{{ i.href }}"{% if i.current|default(false) %} aria-current="page"{% endif %}>{% include 'components/icon.html.twig' with { name: i.icon } only %}<span>{{ i.label }}</span></a></li>{% endfor -%}
+    </ul></nav>
+    <div class="cp-menu__sep" role="separator"></div>
+    <ul class="cp-sheet-nav">
+      {%- if commune %}<li><a class="cp-nav__link" href="{{ commune.change_href|default('#') }}">{% include 'components/icon.html.twig' with { name: 'pin' } only %}<span>Changer de commune</span></a></li>{% endif %}
+      <li><form class="cp-menu__form" method="post" action="{{ logout_href|default('#') }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}"><button type="submit" class="cp-nav__link cp-nav__link--button">{% include 'components/icon.html.twig' with { name: 'logout' } only %}<span>Se déconnecter</span></button></form></li>
+    </ul>
+  {% endblock %}
+{% endembed %}

@@ -1,0 +1,6 @@
+<div style="max-width: 720px">
+{% include 'components/authorization.html.twig' with { grants: [
+  { commune: 'Le Temple', mine: true, by: 'Accordé le 01/11/2026 à 10:06 par Sophie Lambert', period: '01/11/2026 à 10:00 → 05/11/2026 à 20:00', zones: 'Commune entière', modes: ['vehicle', 'foot'], plates: ['AB-123-CD', 'EF-456-GH'] },
+  { commune: 'Saumos', by: 'Accordé le 01/11/2026 à 11:20', period: '01/11/2026 à 10:00 → 05/11/2026 à 20:00', zones: 'Zone centre', modes: ['foot'], plates: [] }
+] } only %}
+</div>

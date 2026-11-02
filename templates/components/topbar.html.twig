@@ -1,0 +1,28 @@
+{#
+  Barre supérieure : contexte commune / événement toujours visible, rôle actif, utilisateur.
+  @param object commune  Paramètres de context_selector (id, kicker, value, options, note).
+  @param object event    Idem, ou null sur le tableau de bord communal.
+  @param string role     Rôle exercé dans cet écran (« Instructrice »).
+  @param object user     { name, initials, role }    @param string home    @param string logout_href
+#}
+<header class="cp-topbar">
+  <a class="cp-logo cp-topbar__logo" href="{{ home|default('#') }}" aria-label="Civipass, tableau de bord"><span class="cp-logo__mark" aria-hidden="true">Cp</span><span class="cp-logo__text">Civipass</span></a>
+  <div class="cp-topbar__ctx">
+    {% include 'components/context_selector.html.twig' with commune only %}
+    {%- if event|default(false) %}
+    <span class="cp-topbar__sep" aria-hidden="true">/</span>
+    {% include 'components/context_selector.html.twig' with event|merge({ class: 'cp-topbar__event' }) only %}
+    {%- endif %}
+  </div>
+  <div class="cp-topbar__end">
+    {%- if role|default('') %}<span class="cp-role">{% include 'components/icon.html.twig' with { name: 'shield', size: 's' } only %}<span class="cp-role__text">{{ role }}</span></span>{% endif %}
+    <div class="cp-selector" data-controller="cp--dropdown">
+      <button type="button" class="cp-avatar cp-avatar--btn" data-cp--dropdown-target="button" data-action="cp--dropdown#toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="cp-user-menu" aria-label="Compte : {{ user.name }}">{{ user.initials }}</button>
+      <div class="cp-menu cp-menu--end" id="cp-user-menu" role="menu" aria-label="Compte" data-cp--dropdown-target="menu" hidden>
+        <div class="cp-menu__head" role="presentation"><b>{{ user.name }}</b><span>{{ role|default(user.role|default('')) }}{% if commune.value is defined %} · {{ commune.value }}{% endif %}</span></div>
+        <div class="cp-menu__sep" role="separator"></div>
+        <form class="cp-menu__form" method="post" action="{{ logout_href|default('#') }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}"><button type="submit" class="cp-menu__action" role="menuitem" tabindex="-1">{% include 'components/icon.html.twig' with { name: 'logout', size: 's' } only %}Se déconnecter</button></form>
+      </div>
+    </div>
+  </div>
+</header>

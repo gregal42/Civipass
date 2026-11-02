@@ -1,0 +1,4 @@
+<div class="cp-stack" style="max-width: 420px">
+  {% include 'components/select.html.twig' with { id: 's-status', label: 'Statut', value: 'pending', options: [ { value: '', label: 'Tous les statuts' }, { value: 'pending', label: 'En attente' }, { value: 'approved', label: 'Approuvée' }, { value: 'refused', label: 'Refusée' } ] } only %}
+  {% include 'components/select.html.twig' with { id: 's-motif', label: 'Motif', error: 'Choisissez un motif.', options: [ { value: '', label: 'Choisir…' }, { value: 'rp', label: 'Résidence principale' }, { value: 'rs', label: 'Résidence secondaire' } ] } only %}
+</div>

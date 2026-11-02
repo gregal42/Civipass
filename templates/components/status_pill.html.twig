@@ -1,0 +1,8 @@
+{#
+  Pastille de statut : point + texte, jamais la couleur seule.
+  @param string status  pending | approved | refused | active | draft | suspended | closed | valid | invalid | revoked | concerned | invited | sync | neutral
+  @param string label   Remplace le libellé par défaut (accord : « Suspendue », « Active »…).
+  @param string size    l = plus grand (en-tête de dossier).
+#}
+{%- set labels = { pending: 'En attente', approved: 'Approuvée', refused: 'Refusée', active: 'Actif', draft: 'Brouillon', suspended: 'Suspendu', closed: 'Clôturé', valid: 'Valide', invalid: 'Non valide', revoked: 'Révoqué', concerned: 'Concernée', invited: 'Invitée', sync: 'Selon synchro', neutral: '' } -%}
+<span class="cp-pill cp-pill--{{ status }}{% if size|default('') == 'l' %} cp-pill--l{% endif %}">{{ label|default(labels[status]) }}</span>

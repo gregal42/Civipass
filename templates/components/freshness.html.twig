@@ -1,0 +1,16 @@
+{#
+  Fraîcheur des données hors ligne (PWA contrôleur) : seuils 12 h et 24 h ; au-delà de 24 h, validation bloquée.
+  @param string synced_at  « 02/11/2026 à 08:05 »   @param string age  « 10 h 15 »   @param number hours  Âge en heures (positionne le repère, échelle 0–30 h).
+  @param string level      Texte de vigilance.       @param bool refresh  Affiche le bouton « Actualiser ».
+#}
+{%- set pos = hours / 30 * 100 -%}{% if pos > 98 %}{% set pos = 98 %}{% endif -%}
+<section class="cp-box" aria-labelledby="cp-fresh-title">
+  <div class="cp-box__head"><h2 class="cp-box__title" id="cp-fresh-title">Fraîcheur des données</h2></div>
+  <div class="cp-box__body cp-fresh">
+    <p><b>Dernière synchronisation : {{ synced_at }}</b> (il y a {{ age }})</p>
+    <div class="cp-fresh__bar" role="img" aria-label="Âge des données : {{ age }}. Seuils de vigilance 12 h et 24 h."><i class="cp-fresh__seg"></i><i class="cp-fresh__seg"></i><i class="cp-fresh__seg"></i><span class="cp-fresh__mark" style="left: {{ pos|round(1) }}%"></span></div>
+    <div class="cp-fresh__legend" aria-hidden="true"><span>0 h</span><span>12 h</span><span>24 h ›</span></div>
+    <p class="cp-help">{{ level }} Synchronisation automatique toutes les 15 min dès que le réseau revient.</p>
+    {%- if refresh|default(true) %}{% include 'components/button.html.twig' with { label: 'Actualiser', variant: 'secondary', icon: 'refresh' } only %}{% endif %}
+  </div>
+</section>

@@ -1,0 +1,5 @@
+<button type="button" class="cp-btn cp-btn--secondary" data-modal-open="demo-modal">{% include 'components/icon.html.twig' with { name: 'file' } only %}<span>Consulter attestation-domicile.pdf</span></button>
+{% embed 'components/modal.html.twig' with { id: 'demo-modal', title: 'attestation-domicile.pdf', size: 'wide', has_foot: true } only %}
+  {% block body %}<div class="cp-doc-viewer"><div>{% include 'components/icon.html.twig' with { name: 'file', size: 'xl' } only %}<p>Aperçu du document (rendu par le serveur).</p><p class="cp-help">PDF · 412 Ko · déposé le 01/11/2026 à 09:31</p></div></div>{% endblock %}
+  {% block foot %}{% include 'components/button.html.twig' with { label: 'Ouvrir dans un nouvel onglet', variant: 'secondary', icon: 'external', href: '#' } only %}{% include 'components/button.html.twig' with { label: 'Fermer', attrs: 'data-action="cp--modal#close"' } only %}{% endblock %}
+{% endembed %}

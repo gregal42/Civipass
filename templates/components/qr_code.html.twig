@@ -1,0 +1,9 @@
+{#
+  QR code d’un laissez-passer : jeton opaque, stable (inchangé à la réimpression). L’image est produite par le serveur (SVG).
+  @param string svg  SVG de confiance généré côté serveur (ou)  @param string src  URL de l’image.
+  @param string ref  Référence affichée sous le QR.   @param string size  s (72) | m (120, défaut) | l (200)   @param string caption  (défaut « QR stable »)
+#}
+<figure class="cp-qr{% if size|default('m') != 'm' %} cp-qr--{{ size }}{% endif %}">
+  <div class="cp-qr__img" role="img" aria-label="QR code du laissez-passer {{ ref }}">{% if svg|default('') %}{{ svg|raw }}{% else %}<img src="{{ src }}" alt="">{% endif %}</div>
+  <figcaption class="cp-qr__caption"><span class="cp-mono">{{ ref }}</span><br>{{ caption|default('QR stable') }}</figcaption>
+</figure>

@@ -1,0 +1,12 @@
+{#
+  Bouton icône (action sans libellé visible). Le libellé est obligatoire : il devient le nom accessible et l’infobulle.
+  @param string icon     Nom de l’icône.          @param string label  Action (« Plus d’actions », « Fermer »).
+  @param string variant  default | outline | danger    @param string href  Rend un lien.
+  @param string attrs    Attributs de confiance (data-action, aria-expanded, aria-controls…).
+#}
+{%- set cls = 'cp-icon-btn' ~ (variant|default('default') != 'default' ? ' cp-icon-btn--' ~ variant : '') -%}
+{% if href|default('') -%}
+<a class="{{ cls }}" href="{{ href }}" aria-label="{{ label }}" title="{{ label }}" {{ attrs|default('')|raw }}>{% include 'components/icon.html.twig' with { name: icon } only %}</a>
+{%- else -%}
+<button type="button" class="{{ cls }}" aria-label="{{ label }}" title="{{ label }}" {{ attrs|default('')|raw }}>{% include 'components/icon.html.twig' with { name: icon } only %}</button>
+{%- endif %}

@@ -1,0 +1,12 @@
+<div class="cp-cluster">
+  <button type="button" class="cp-btn cp-btn--secondary" onclick="window.Civipass && window.Civipass.confirm({ title: 'Quitter sans enregistrer ?', message: 'Votre décision n’a pas été confirmée. Les choix saisis dans le formulaire seront perdus.', confirmLabel: 'Quitter sans enregistrer', cancelLabel: 'Rester sur le dossier', onConfirm: function () { window.Civipass.toast('Navigation confirmée.'); } })">Simuler une sortie avec saisie</button>
+</div>
+<div class="cp-dialog" style="position: static; display: block; margin-top: 16px; box-shadow: none">
+  <div class="cp-dialog__inner">
+    <h2 class="cp-dialog__title">Quitter sans enregistrer ?</h2>
+    <p>Votre décision n’a pas été confirmée. Les choix saisis dans le formulaire seront perdus.</p>
+    <div class="cp-dialog__actions"><button type="button" class="cp-btn cp-btn--secondary">Rester sur le dossier</button><button type="button" class="cp-btn cp-btn--primary">Quitter sans enregistrer</button></div>
+  </div>
+</div>
+{% include 'components/dialog.html.twig' %}
+{% include 'components/toasts.html.twig' %}

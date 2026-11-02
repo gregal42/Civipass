@@ -1,0 +1,5 @@
+{#
+  État vide : dit ce qui apparaîtra ici et, si possible, comment le faire apparaître.
+  @param string title  @param string text  @param string icon (défaut info)
+#}
+<div class="cp-empty">{% include 'components/icon.html.twig' with { name: icon|default('info') } only %}<div><b class="cp-empty__title">{{ title }}</b>{{ text }}</div></div>

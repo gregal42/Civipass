@@ -1,0 +1,10 @@
+{#
+  Identité minimale du titulaire au contrôle : nom, référence, événement. Jamais e-mail, téléphone, adresse ni historique des scans.
+  @param string name  @param string ref  @param string event  @param string note (texte discret sous le bloc)
+#}
+<section class="cp-box cp-holder" aria-label="Titulaire">
+  <div class="cp-kv"><span class="cp-kv__key">Titulaire</span><span class="cp-holder__name">{{ name }}</span></div>
+  <div class="cp-kv"><span class="cp-kv__key">Référence</span><span class="cp-kv__value cp-mono">{{ ref }}</span></div>
+  <div class="cp-kv"><span class="cp-kv__key">Événement</span><span class="cp-kv__value">{{ event }}</span></div>
+  {%- if note|default('') %}<p class="cp-help">{{ note }}</p>{% endif %}
+</section>

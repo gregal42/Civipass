@@ -1,0 +1,35 @@
+{#
+  Tableau de données : <table> sémantique en large, cartes en compact (< 640 px de conteneur), tri par en-tête (lien GET ?sort=).
+  @param string caption  Légende (portée, pagination) — affichée sous le tableau.
+  @param array  columns  Liste de { key, label, sortable, sort_href, sort (asc | desc | null), wide (masquée < 880 px), align (num), card (title | status | sub | aside | full | hide) }.
+  @param array  rows     Liste de { cells: { key: { text | html, href, mono, muted } } } ; la cellule « title » peut porter href (ligne entière cliquable).
+  @param string empty    Message si aucune ligne (rendu en état vide).
+#}
+<div class="cp-table-wrap">
+  {%- if rows|length %}
+  <table class="cp-table">
+    {%- if caption|default('') %}<caption>{{ caption }}</caption>{% endif %}
+    <thead><tr>
+      {%- for c in columns %}
+      <th scope="col"{% if c.sort|default(null) %} aria-sort="{{ c.sort == 'asc' ? 'ascending' : 'descending' }}"{% endif %} class="{% if c.wide|default(false) %}cp-table__wide{% endif %}{% if c.align|default('') == 'num' %} cp-table__num{% endif %}">
+        {%- if c.sortable|default(false) %}<a class="cp-table__sort" href="{{ c.sort_href|default('#') }}">{{ c.label }}{% include 'components/icon.html.twig' with { name: c.sort|default('') == 'asc' ? 'up' : (c.sort|default('') == 'desc' ? 'down' : 'sort'), size: 's' } only %}</a>{% else %}{{ c.label }}{% endif -%}
+      </th>
+      {%- endfor %}
+    </tr></thead>
+    <tbody>
+      {%- for r in rows %}
+      <tr>
+        {%- for c in columns %}
+        {%- set cell = attribute(r.cells, c.key)|default({ text: '' }) -%}
+        <td data-label="{{ c.label }}"{% if c.card|default('') %} data-card="{{ c.card }}"{% endif %} class="{% if c.wide|default(false) %}cp-table__wide{% endif %}{% if c.align|default('') == 'num' %} cp-table__num{% endif %}{% if cell.mono|default(false) %} cp-table__mono{% endif %}{% if cell.muted|default(false) %} cp-table__muted{% endif %}{% if c.key == 'actions' %} cp-table__actions{% endif %}">
+          {%- if cell.href|default('') %}<a class="cp-table__link" href="{{ cell.href }}">{{ cell.text }}</a>{% elseif cell.html is defined %}{{ cell.html|raw }}{% else %}{{ cell.text }}{% endif -%}
+        </td>
+        {%- endfor %}
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+  {%- else %}
+  <div style="padding: 16px">{% include 'components/empty_state.html.twig' with { icon: 'search', title: empty|default('Aucun résultat'), text: 'Modifiez la recherche ou retirez des filtres.' } only %}</div>
+  {%- endif %}
+</div>

@@ -1,0 +1,18 @@
+{#
+  Verdict d’un contrôle QR. Vert UNIQUEMENT si au moins un droit est valide EN LIGNE ; hors ligne, jamais vert ; jamais de validation par défaut.
+  @param string state  valid | invalid | uncertain (hors ligne) | blocked (hors ligne > 24 h) | impossible (serveur injoignable, pas de PWA) | loading
+  @param string title  Remplace le titre par défaut.   @param string text  Remplace le texte par défaut.   @param string when  Horodatage du contrôle.
+#}
+{%- set d = {
+  valid: ['check', 'Autorisation en cours de validité', 'Au moins un droit est valide maintenant. Cela ne vaut pas accès partout.'],
+  invalid: ['x', 'Aucun droit valide', 'Ce laissez-passer ne permet actuellement aucun accès. Appliquez la procédure de terrain.'],
+  uncertain: ['alert', 'Vérification incertaine — hors ligne', 'Droits trouvés dans la dernière synchronisation, pas en temps réel. Une révocation ou une modification récente peut manquer.'],
+  blocked: ['lock', 'Validation hors ligne impossible', 'Les données de cet appareil ont plus de 24 h. Aucun résultat ne peut être affiché. Ce n’est pas un refus du titre.'],
+  impossible: ['question', 'Vérification impossible', 'Le serveur ne répond pas et cet appareil n’a pas de mode hors ligne activé. Ce résultat ne vaut ni validation ni refus.'],
+  loading: ['', 'Vérification en cours…', 'Interrogation du serveur Civipass.']
+}[state] -%}
+<section class="cp-verdict cp-verdict--{{ state }}" role="status" aria-live="polite"{% if state == 'loading' %} aria-busy="true"{% endif %}>
+  <span class="cp-verdict__badge">{% if state == 'loading' %}<span class="cp-spinner" aria-hidden="true"></span>{% else %}{% include 'components/icon.html.twig' with { name: d[0], size: 'xl' } only %}{% endif %}</span>
+  <div><h1 class="cp-verdict__title">{{ title|default(d[1]) }}</h1><p class="cp-verdict__text">{{ text|default(d[2]) }}</p></div>
+  {%- if when|default('') %}<p class="cp-verdict__when">{{ when }}</p>{% endif %}
+</section>

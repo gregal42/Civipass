@@ -1,0 +1,12 @@
+{#
+  En-tête de page : sur-titre, titre (h1), sous-titre, actions. Bloc « actions » à surcharger avec {% embed %}.
+  @param string eyebrow  @param string title  @param string sub
+#}
+<div class="cp-page-head">
+  <div>
+    {%- if eyebrow|default('') %}<p class="cp-eyebrow">{{ eyebrow }}</p>{% endif %}
+    <h1 class="cp-page-head__title">{{ title }}</h1>
+    {%- if sub|default('') %}<p class="cp-page-head__sub">{{ sub }}</p>{% endif %}
+  </div>
+  <div class="cp-page-head__actions">{% block actions %}{% endblock %}</div>
+</div>

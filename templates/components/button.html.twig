@@ -1,0 +1,22 @@
+{#
+  Bouton ou lien-bouton.
+  @param string label          Texte visible (verbe d’action : « Approuver… », « Ouvrir l’événement »).
+  @param string variant        primary (défaut) | secondary | ghost | approve | refuse | danger (destructif plein, confirmation) | danger-ghost
+  @param string icon           Icône avant le libellé.     @param string icon_after  Icône après le libellé.
+  @param string href           Rend un <a> (navigation) au lieu d’un <button> (action).
+  @param string type           button (défaut) | submit
+  @param string size           l = 52px (décisions)        @param bool block   Pleine largeur.
+  @param bool   disabled       @param string loading_label  Libellé pendant l’envoi (avec cp--submit-state).
+  @param string attrs          Attributs supplémentaires de confiance (data-action, aria-expanded…), non échappés.
+#}
+{%- set cls = 'cp-btn cp-btn--' ~ variant|default('primary') -%}
+{%- if size|default('') == 'l' %}{% set cls = cls ~ ' cp-btn--l' %}{% endif -%}
+{%- if block|default(false) %}{% set cls = cls ~ ' cp-btn--block' %}{% endif -%}
+{%- set inner -%}
+{% if icon|default('') %}{% include 'components/icon.html.twig' with { name: icon } only %}{% endif %}<span>{{ label }}</span>{% if icon_after|default('') %}{% include 'components/icon.html.twig' with { name: icon_after, size: 's' } only %}{% endif %}
+{%- endset -%}
+{% if href|default('') -%}
+<a class="{{ cls }}" href="{{ href }}" {{ attrs|default('')|raw }}>{{ inner|raw }}</a>
+{%- else -%}
+<button class="{{ cls }}" type="{{ type|default('button') }}"{% if disabled|default(false) %} disabled{% endif %}{% if loading_label|default('') %} data-loading-label="{{ loading_label }}"{% endif %} {{ attrs|default('')|raw }}>{{ inner|raw }}</button>
+{%- endif %}

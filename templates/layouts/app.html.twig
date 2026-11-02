@@ -1,0 +1,46 @@
+{#
+  Gabarit de base de l’espace municipal (PWA agents). Les pages étendent ce gabarit et remplissent « content ».
+  Variables attendues (fournies par le contrôleur Symfony ou une extension Twig) :
+    nav_items      Entrées autorisées pour l’utilisateur dans la commune active ({ label, icon, href, current, count }).
+    bottom_items   Accueil / Demandes / Pass / Menu ({ …, modal: 'cp-mobile-menu' } pour Menu).
+    menu_items     Rubriques autorisées absentes de la barre basse (menu complémentaire mobile).
+    commune        Paramètres de context_selector pour la commune active (options = communes de l’utilisateur, avec leurs rôles).
+    event          Idem pour l’événement actif, ou null.
+    ctx_parts      Bandeau de contexte compact.   role  Rôle exercé dans la commune active.   user  { name, initials, role }.
+    home, logout_href, page_title
+  Blocs : title, stylesheets, javascripts, banner (bannière de page), content, action_bar.
+#}
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}{{ page_title|default('Civipass') }} · Civipass{% endblock %}</title>
+  {% block head_meta %}<meta name="turbo-cache-control" content="no-cache">{% endblock %}
+  {% block stylesheets %}
+  <link rel="stylesheet" href="{{ asset('styles/civipass/tokens.css') }}">
+  <link rel="stylesheet" href="{{ asset('styles/civipass/civipass.css') }}">
+  <link rel="stylesheet" href="{{ asset('styles/civipass-app.css') }}">
+  {% endblock %}
+  {% block javascripts %}{{ importmap('app') }}{% endblock %}
+</head>
+<body class="cp-root">
+  <a class="cp-skip" href="#main">Aller au contenu</a>
+  <div class="cp-app">
+    <div class="cp-shell">
+      {% include 'components/sidebar.html.twig' with { items: nav_items, user: user, home: home|default('/') } only %}
+      <div class="cp-main">
+        {% include 'components/topbar.html.twig' with { commune: commune, event: event|default(null), role: role|default(''), user: user, home: home|default('/'), logout_href: logout_href|default('#') } only %}
+        {% include 'components/ctxstrip.html.twig' with { parts: ctx_parts|default([]), role: role|default('') } only %}
+        {% block banner %}{% endblock %}
+        <main id="main" class="cp-content" tabindex="-1">{% block content %}{% endblock %}</main>
+        {% block action_bar %}{% endblock %}
+        {% include 'components/bottom_nav.html.twig' with { items: bottom_items } only %}
+      </div>
+    </div>
+  </div>
+  {% include 'components/mobile_menu.html.twig' with { items: menu_items|default([]), commune: commune, user: user|merge({ role: role|default('') }), logout_href: logout_href|default('#') } only %}
+  {% include 'components/dialog.html.twig' %}
+  {% include 'components/toasts.html.twig' %}
+</body>
+</html>

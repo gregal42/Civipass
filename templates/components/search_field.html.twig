@@ -1,0 +1,12 @@
+{#
+  Champ de recherche (rôle search) : nom, téléphone, e-mail, plaque, référence. Envoi par bouton ou Entrée (GET).
+  @param string id  @param string name (défaut q)  @param string label  @param string placeholder  @param string value
+  @param bool submit  Affiche le bouton « Rechercher » (défaut true).   @param string attrs
+#}
+<div class="cp-field" role="search">
+  <label class="cp-field__label" for="{{ id }}">{{ label }}</label>
+  <div class="cp-search">
+    <div class="cp-search__box">{% include 'components/icon.html.twig' with { name: 'search' } only %}<input class="cp-input" type="search" id="{{ id }}" name="{{ name|default('q') }}" value="{{ value|default('') }}"{% if placeholder|default('') %} placeholder="{{ placeholder }}"{% endif %} autocomplete="off" spellcheck="false" {{ attrs|default('')|raw }}></div>
+    {%- if submit|default(true) %}{% include 'components/button.html.twig' with { label: 'Rechercher', variant: 'secondary', type: 'submit' } only %}{% endif %}
+  </div>
+</div>

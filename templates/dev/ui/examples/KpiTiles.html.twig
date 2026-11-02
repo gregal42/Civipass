@@ -1,0 +1,6 @@
+{% include 'components/kpi_tiles.html.twig' with { tiles: [
+  { label: 'Demandes en attente', value: 18, foot: 'à instruire par Le Temple', urgent: true },
+  { label: 'Approuvées', value: 126, foot: 'depuis l’activation' },
+  { label: 'Refusées', value: 9, foot: 'depuis l’activation' },
+  { label: 'Laissez-passer valides', value: 103, foot: 'à cet instant' }
+] } only %}

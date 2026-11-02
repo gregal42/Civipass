@@ -1,0 +1,20 @@
+{#
+  Liste déroulante native, stylée. Pour plus de 7 options ou une recherche dans la liste, préférer un champ de recherche.
+  @param string id  @param string name  @param string label  @param array options  Liste de { value, label } (ou de { group, options }).
+  @param string value  Valeur sélectionnée.  @param string help  @param string error  @param bool disabled  @param bool hide_label  Libellé visuellement masqué (barre de filtres).
+  @param string attrs  Attributs de confiance (data-action…).
+#}
+<div class="cp-field">
+  <label class="cp-field__label{% if hide_label|default(false) %} cp-sr-only{% endif %}" for="{{ id }}">{{ label }}</label>
+  <span class="cp-select-wrap">
+    <select class="cp-select" id="{{ id }}" name="{{ name|default(id) }}"{% if disabled|default(false) %} disabled{% endif %}{% if error|default('') %} aria-invalid="true" aria-describedby="{{ id }}-error"{% elseif help|default('') %} aria-describedby="{{ id }}-help"{% endif %} {{ attrs|default('')|raw }}>
+      {%- for o in options %}
+      {%- if o.group is defined %}<optgroup label="{{ o.group }}">{% for g in o.options %}<option value="{{ g.value }}"{% if g.value == value|default('') %} selected{% endif %}>{{ g.label }}</option>{% endfor %}</optgroup>
+      {%- else %}<option value="{{ o.value }}"{% if o.value == value|default('') %} selected{% endif %}>{{ o.label }}</option>{% endif %}
+      {%- endfor %}
+    </select>
+    {%- include 'components/icon.html.twig' with { name: 'down', size: 's' } only -%}
+  </span>
+  {%- if help|default('') %}<p class="cp-help" id="{{ id }}-help">{{ help }}</p>{% endif %}
+  {%- if error|default('') %}<p class="cp-field-error" id="{{ id }}-error">{% include 'components/icon.html.twig' with { name: 'alert', size: 's' } only %}{{ error }}</p>{% endif %}
+</div>

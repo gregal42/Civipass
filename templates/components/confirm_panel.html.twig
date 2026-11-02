@@ -1,0 +1,19 @@
+{#
+  Panneau de confirmation INLINE pour une action irréversible ou lourde (révocation, suspension, clôture) : conséquences avant le bouton.
+  À utiliser avec {% embed %} : bloc « fields » (motif obligatoire…). Contrôleurs : cp--unsaved-guard, cp--submit-state.
+  @param string id  @param string title  @param string action  URL d’envoi
+  @param array consequences  Ce qui va se passer (textes).   @param array keeps  Ce qui ne change pas (textes).
+  @param string confirm_label  @param string loading_label  @param string cancel_attrs  Attributs du bouton Annuler (data-action…).
+#}
+<form class="cp-confirm" id="{{ id }}" action="{{ action|default('') }}" method="post" novalidate aria-labelledby="{{ id }}-title" data-controller="cp--unsaved-guard cp--submit-state">
+  <div class="cp-confirm__head">{% include 'components/icon.html.twig' with { name: 'alert' } only %}<h2 class="cp-confirm__title" id="{{ id }}-title">{{ title }}</h2></div>
+  <div class="cp-confirm__body">
+    {%- if consequences|default([])|length %}<ul class="cp-consequences">{% for c in consequences %}<li>{% include 'components/icon.html.twig' with { name: 'right', size: 's' } only %}<span>{{ c }}</span></li>{% endfor %}</ul>{% endif %}
+    {%- if keeps|default([])|length %}<ul class="cp-consequences cp-consequences--keep">{% for c in keeps %}<li>{% include 'components/icon.html.twig' with { name: 'check', size: 's' } only %}<span>{{ c }}</span></li>{% endfor %}</ul>{% endif %}
+    {% block fields %}{% endblock %}
+    <div class="cp-form-actions">
+      {% include 'components/button.html.twig' with { label: confirm_label, variant: 'danger', type: 'submit', loading_label: loading_label|default('Enregistrement…') } only %}
+      {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', attrs: cancel_attrs|default('') } only %}
+    </div>
+  </div>
+</form>

@@ -1,0 +1,20 @@
+{#
+  Dépôt de justificatifs (glisser-déposer ou parcourir), avec liste des fichiers et refus explicites (cp--file-upload).
+  Règles du référentiel : 5 fichiers maximum, 10 Mo par fichier, PDF / JPG / JPEG / PNG / DOC ; facultatif.
+  @param string id  @param string name (défaut documents[])  @param string label  @param bool optional (défaut true)
+  @param int max (défaut 5)  @param int max_size (octets, défaut 10485760)  @param string accept (défaut pdf,jpg,jpeg,png,doc)  @param string error
+#}
+{%- set acc = accept|default('pdf,jpg,jpeg,png,doc') -%}
+<div class="cp-field cp-upload" data-controller="cp--file-upload" data-cp--file-upload-max-value="{{ max|default(5) }}" data-cp--file-upload-max-size-value="{{ max_size|default(10485760) }}" data-cp--file-upload-accept-value="{{ acc }}">
+  <span class="cp-field__label" id="{{ id }}-label">{{ label|default('Justificatifs') }}{% if optional|default(true) %} <span class="cp-field__opt">(facultatif)</span>{% endif %}</span>
+  <div class="cp-upload__zone" data-cp--file-upload-target="zone" data-action="dragover->cp--file-upload#dragover dragleave->cp--file-upload#dragleave drop->cp--file-upload#drop">
+    {%- include 'components/icon.html.twig' with { name: 'upload', size: 'l' } only %}
+    <input class="cp-upload__input" type="file" id="{{ id }}" name="{{ name|default('documents[]') }}" multiple accept=".{{ acc|split(',')|join(',.') }}" aria-labelledby="{{ id }}-label {{ id }}-hint" data-cp--file-upload-target="input" data-action="change->cp--file-upload#change"{% if error|default('') %} aria-invalid="true"{% endif %}>
+    <p class="cp-upload__label">Glissez vos fichiers ici ou <b>parcourez votre appareil</b></p>
+    <p class="cp-help" id="{{ id }}-hint">{{ max|default(5) }} fichiers maximum · 10 Mo par fichier · {{ acc|upper|split(',')|join(', ') }}</p>
+  </div>
+  <ul class="cp-files" data-cp--file-upload-target="list"></ul>
+  <template data-cp--file-upload-target="template"><li class="cp-file">{% include 'components/icon.html.twig' with { name: 'file' } only %}<div style="min-width: 0"><p class="cp-file__name">__NAME__</p><p class="cp-file__meta">__META__</p></div>{% include 'components/icon_button.html.twig' with { icon: 'trash', label: 'Retirer __NAME__', attrs: 'data-action="cp--file-upload#remove" data-index="__INDEX__"' } only %}</li></template>
+  <p class="cp-sr-only" aria-live="polite" data-cp--file-upload-target="status"></p>
+  {%- if error|default('') %}<p class="cp-field-error">{% include 'components/icon.html.twig' with { name: 'alert', size: 's' } only %}{{ error }}</p>{% endif %}
+</div>

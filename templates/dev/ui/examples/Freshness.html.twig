@@ -1,0 +1,5 @@
+<div class="cp-stack" style="max-width: 520px">
+  {% include 'components/freshness.html.twig' with { synced_at: '02/11/2026 à 08:05', age: '10 h 15', hours: 10.25, level: 'Vigilance : données de moins de 12 h.' } only %}
+  {% include 'components/freshness.html.twig' with { synced_at: '01/11/2026 à 22:40', age: '19 h 40', hours: 19.67, level: 'Vigilance renforcée : données de 12 à 24 h.', refresh: false } only %}
+  {% include 'components/freshness.html.twig' with { synced_at: '01/11/2026 à 16:00', age: '26 h 20', hours: 26.33, level: 'Données de plus de 24 h : validation hors ligne bloquée.', refresh: false } only %}
+</div>

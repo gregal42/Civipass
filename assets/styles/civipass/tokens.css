@@ -1,0 +1,151 @@
+/* Civipass Design System — generated from tokens.json */
+:root, [data-theme="light"] {
+  --paper: #f2f4f7;
+  --surface: #ffffff;
+  --surface-2: #e9edf2;
+  --line: #d2d9e2;
+  --line-strong: #7c889b;
+  --ink: #0f1e36;
+  --ink-2: #36435a;
+  --ink-3: #56637a;
+  --brand: #1d3f73;
+  --brand-hover: #16325c;
+  --on-brand: #ffffff;
+  --brand-soft: #e1e9f5;
+  --signal: #8f4400;
+  --signal-fill: #f2a12e;
+  --signal-soft: #fff0d6;
+  --ok: #15613a;
+  --ok-soft: #e0f1e6;
+  --ok-band: #15613a;
+  --bad: #a0191e;
+  --bad-soft: #fbe5e4;
+  --bad-band: #a0191e;
+  --warn: #8a4500;
+  --warn-soft: #ffe9cc;
+  --warn-band: #8a4500;
+  --neutral-band: #3e4b60;
+  --on-band: #ffffff;
+  --focus: #1663e0;
+  --tape-dark: #1a1f27;
+  --plate-ground: #ffffff;
+  --plate-ink: #0f1e36;
+  --plate-band: #1d3f73;
+  --scrim: rgba(10, 16, 26, 0.55);
+  --shadow-raised: 0 1px 2px rgba(15, 30, 54, 0.06), 0 4px 16px rgba(15, 30, 54, 0.06);
+}
+[data-theme="dark"] {
+  --paper: #0d131c;
+  --surface: #151c27;
+  --surface-2: #1c2532;
+  --line: #2a3546;
+  --line-strong: #5d6b81;
+  --ink: #e9eef5;
+  --ink-2: #bac4d2;
+  --ink-3: #93a0b2;
+  --brand: #8db0ee;
+  --brand-hover: #a9c4f3;
+  --on-brand: #0d131c;
+  --brand-soft: #1b2a42;
+  --signal: #f6b65e;
+  --signal-fill: #f2a12e;
+  --signal-soft: #35270f;
+  --ok: #74d39d;
+  --ok-soft: #11301f;
+  --ok-band: #1c7444;
+  --bad: #ff928c;
+  --bad-soft: #3a1517;
+  --bad-band: #ae2328;
+  --warn: #f7b865;
+  --warn-soft: #3a2810;
+  --warn-band: #9a5108;
+  --neutral-band: #4a586c;
+  --on-band: #ffffff;
+  --focus: #82b1ff;
+  --tape-dark: #1a1f27;
+  --plate-ground: #ffffff;
+  --plate-ink: #0f1e36;
+  --plate-band: #1d3f73;
+  --scrim: rgba(0, 0, 0, 0.65);
+  --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.25);
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0d131c;
+    --surface: #151c27;
+    --surface-2: #1c2532;
+    --line: #2a3546;
+    --line-strong: #5d6b81;
+    --ink: #e9eef5;
+    --ink-2: #bac4d2;
+    --ink-3: #93a0b2;
+    --brand: #8db0ee;
+    --brand-hover: #a9c4f3;
+    --on-brand: #0d131c;
+    --brand-soft: #1b2a42;
+    --signal: #f6b65e;
+    --signal-fill: #f2a12e;
+    --signal-soft: #35270f;
+    --ok: #74d39d;
+    --ok-soft: #11301f;
+    --ok-band: #1c7444;
+    --bad: #ff928c;
+    --bad-soft: #3a1517;
+    --bad-band: #ae2328;
+    --warn: #f7b865;
+    --warn-soft: #3a2810;
+    --warn-band: #9a5108;
+    --neutral-band: #4a586c;
+    --on-band: #ffffff;
+    --focus: #82b1ff;
+    --tape-dark: #1a1f27;
+    --plate-ground: #ffffff;
+    --plate-ink: #0f1e36;
+    --plate-band: #1d3f73;
+    --scrim: rgba(0, 0, 0, 0.65);
+    --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.25);
+    color-scheme: dark;
+  }
+}
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-14: 56px;
+  --radius-s: 6px;
+  --radius-m: 10px;
+  --radius-l: 14px;
+  --radius-pill: 999px;
+  --tap-min: 44px;
+  --tap-comfort: 52px;
+  --sidebar-width: 248px;
+  --rail-width: 84px;
+  --topbar-height: 64px;
+  --bottomnav-height: 58px;
+  --content-max: 1240px;
+  --public-max: 1080px;
+  --measure: 65ch;
+  --font-sans: "Atkinson Hyperlegible Next", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-mono: "Atkinson Hyperlegible Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+.cp-display { font-family: var(--font-sans); font-size: 52px; line-height: 1; font-weight: 800; letter-spacing: -0.03em; }
+.cp-h1 { font-family: var(--font-sans); font-size: 36px; line-height: 1.2; font-weight: 800; letter-spacing: -0.02em; }
+.cp-h2 { font-family: var(--font-sans); font-size: 26px; line-height: 1.2; font-weight: 800; letter-spacing: -0.015em; }
+.cp-h3 { font-family: var(--font-sans); font-size: 20px; line-height: 1.2; font-weight: 800; }
+.cp-body { font-family: var(--font-sans); font-size: 16px; line-height: 1.5; font-weight: 400; }
+.cp-body-strong { font-family: var(--font-sans); font-size: 16px; line-height: 1.5; font-weight: 700; }
+.cp-small { font-family: var(--font-sans); font-size: 15px; line-height: 1.5; font-weight: 400; }
+.cp-caption { font-family: var(--font-sans); font-size: 13px; line-height: 1.4; font-weight: 400; }
+.cp-ref { font-family: var(--font-mono); font-size: 15px; line-height: 1.4; font-weight: 400; letter-spacing: 0.01em; }
+@font-face { font-family: "Atkinson Hyperlegible Next"; src: url("../../fonts/AtkinsonHyperlegibleNext-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Atkinson Hyperlegible Next"; src: url("../../fonts/AtkinsonHyperlegibleNext-Bold.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Atkinson Hyperlegible Next"; src: url("../../fonts/AtkinsonHyperlegibleNext-ExtraBold.woff2") format("woff2"); font-weight: 800; font-style: normal; font-display: swap; }
+@font-face { font-family: "Atkinson Hyperlegible Mono"; src: url("../../fonts/AtkinsonHyperlegibleMono-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Atkinson Hyperlegible Mono"; src: url("../../fonts/AtkinsonHyperlegibleMono-Bold.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }

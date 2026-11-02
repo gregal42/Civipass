@@ -1,0 +1,14 @@
+{#
+  Justificatifs d’une demande (consultation agent). « Consulter » ouvre la modale de visualisation [data-modal-open].
+  @param array docs  Liste de { name, type, size, date, href, modal (id de la modale de visualisation) }.
+#}
+{%- if docs|length %}
+<ul class="cp-docs">
+  {%- for d in docs %}
+  <li class="cp-doc">{% include 'components/icon.html.twig' with { name: 'file' } only %}<p class="cp-doc__name">{{ d.name }}</p><p class="cp-doc__meta">{{ d.type }} · {{ d.size }}{% if d.date|default('') %} · déposé le {{ d.date }}{% endif %}</p>
+    <span class="cp-doc__action">{% include 'components/button.html.twig' with { label: 'Consulter', variant: 'secondary', href: d.href|default('#'), attrs: d.modal|default('') ? 'data-modal-open="' ~ d.modal ~ '"' : '' } only %}</span></li>
+  {%- endfor %}
+</ul>
+{%- else %}
+<p class="cp-facts__plain">Aucun justificatif joint.</p>
+{%- endif %}

@@ -1,0 +1,6 @@
+{#
+  Étiquette d’origine d’une valeur.
+  @param string label    « Demandée », « Ajout agent », « Suspendue »…
+  @param string variant  default | agent (ajout de l’agent, tracé) | off (indisponible)
+#}
+<span class="cp-tag{% if variant|default('default') != 'default' %} cp-tag--{{ variant }}{% endif %}">{{ label }}</span>

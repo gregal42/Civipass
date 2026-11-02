@@ -1,14 +1,11 @@
-{% extends 'base.html.twig' %}
+{% extends 'layouts/auth.html.twig' %}
+{% set page_title = 'Trop de tentatives' %}
 
-{% block title %}Trop de tentatives — Civipass{% endblock %}
-{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
-
-{% block body %}
-    <div class="page">
-        <main class="card">
-            <h1>Trop de tentatives</h1>
-            <p role="alert">Trop de tentatives ont été effectuées depuis votre connexion. Réessayez dans quelques minutes.</p>
-            <p><a href="{{ path('app_login') }}">Retour à la connexion</a></p>
-        </main>
-    </div>
+{% block content %}
+    {% embed 'components/panel.html.twig' with { id: 'many-h', title: 'Trop de tentatives', level: 1 } only %}
+        {% block body %}
+            {% include 'components/alert.html.twig' with { variant: 'warning', role: 'alert', text: 'Trop de tentatives ont été effectuées depuis votre connexion. Réessayez dans quelques minutes.' } only %}
+            <p class="cp-auth__links"><a href="{{ path('app_login') }}">Retour à la connexion</a></p>
+        {% endblock %}
+    {% endembed %}
 {% endblock %}

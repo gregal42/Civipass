@@ -1,0 +1,7 @@
+<div style="max-width: 720px">
+{% include 'components/pass_card.html.twig' with { ref: 'LP-2026-0156', holder: 'Camille Martin', event: 'Incendie — Secteur forestier nord', qr: { svg: qr_svg },
+  validity: { state: 'valid', detail: 'au moins un droit valide · jusqu’au 05/11/2026 à 20:00' },
+  rights: [ { commune: 'Le Temple', zone: 'Commune entière', period: '01/11 10:00 → 05/11 20:00' }, { commune: 'Saumos', zone: 'Zone centre', period: '01/11 10:00 → 05/11 20:00' } ],
+  plates: ['AB-123-CD', 'EF-456-GH'], modes: ['foot'],
+  actions: [ { label: 'Télécharger le PDF', icon: 'download', href: '#' }, { label: 'Voir le dossier', href: '#', variant: 'ghost' } ] } only %}
+</div>
