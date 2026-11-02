@@ -7,18 +7,30 @@ doctrine:
         #server_version: '16'
 
         profiling_collect_backtrace: '%kernel.debug%'
+
+        types:
+            # Stockage et relecture systématiques en UTC (PHP tourne en Europe/Paris).
+            datetime_immutable: App\Shared\Infrastructure\UtcDateTimeImmutableType
     orm:
         validate_xml_mapping: true
         naming_strategy: doctrine.orm.naming_strategy.underscore
-        identity_generation_preferences:
-            Doctrine\DBAL\Platforms\PostgreSQLPlatform: identity
         auto_mapping: true
         mappings:
-            App:
+            Identity:
                 type: attribute
                 is_bundle: false
-                dir: '%kernel.project_dir%/src/Entity'
-                prefix: 'App\Entity'
+                dir: '%kernel.project_dir%/src/Identity/Domain'
+                prefix: 'App\Identity\Domain'
+            Municipality:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Municipality/Domain'
+                prefix: 'App\Municipality\Domain'
+            Shared:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Shared/Domain'
+                prefix: 'App\Shared\Domain'
 
 when@test:
     doctrine:

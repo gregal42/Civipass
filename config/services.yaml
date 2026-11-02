@@ -18,6 +18,25 @@ services:
     # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/'
+        # Entités, objets valeur, enums et interfaces de domaine, ainsi que les DTO, ne sont pas des services
+        # (les interfaces sont reliées à leur implémentation par #[AsAlias]).
+        exclude: &non_services
+            - '../src/Kernel.php'
+            - '../src/*/Domain/'
+            - '../src/Shared/Application/AuditEvent.php'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+when@test:
+    services:
+        # Mêmes classes, mêmes alias (#[AsAlias]) et mêmes dépendances qu'en production : seule la visibilité change,
+        # pour que le conteneur de test puisse lire les services (sinon supprimés car non référencés).
+        _defaults:
+            autowire: true
+            autoconfigure: true
+            public: true
+
+        App\:
+            resource: '../src/'
+            exclude: *non_services

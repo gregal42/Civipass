@@ -6,6 +6,8 @@ export CONFIGURATION_DOCKER_DEV_CLASSIC = docker/env/development.yaml
 export CONFIGURATION_DOCKER_DEV_APPLE_CHIP = docker/env/development_apple_chip.yaml
 export CONFIGURATION_DOCKER_DEV = $(CONFIGURATION_DOCKER_DEV_CLASSIC)
 export DOCKER_PHP_CONTAINER_NAME = saas_civipass_php-fpm
+export DOCKER_MYSQL_CONTAINER_NAME = saas_civipass_mysql
+export TEST_DATABASE_NAME = civipass_test
 export STEP = "\\n\\r**************************************************\\n"
 
 # -----------------------------------------------------------------------------------------------------------
@@ -32,6 +34,7 @@ help:
 	@echo "-- cc: clears and warms up project cache (dev env)";
 	@echo "-- logs: displays real time logs of containers used for this project";
 	@echo "-- get-url: display the url of the project";
+	@echo "-- test-db: provisions the dedicated TEST database (never the development one)";
 	@echo "-- test: runs PHPUnit tests";
 	@echo "-- phpstan: runs PHPStan static analysis";
 	@echo "-- cs-check: checks PHP coding standards";
@@ -125,7 +128,21 @@ get-url:
 # Quality & Tests
 # -----------------------------------------------------------------------------------------------------------
 
-.PHONY: test phpstan cs-check cs-fix quality
+.PHONY: test test-db phpstan cs-check cs-fix quality
+
+# Provisions the dedicated TEST database and applies the migrations to it ONLY (--env=test).
+# - The app user only owns the development database, so database creation/grant goes through the MySQL
+#   container's root account, whose password is read INSIDE the container (never printed, never in Git).
+# - .env.test.local (git-ignored) is derived from .env.local: same server and credentials; doctrine.yaml appends
+#   the "_test" suffix in the test environment, so the development database can never be targeted.
+test-db:
+	@echo "$(STEP) Provisioning test database $(TEST_DATABASE_NAME)... $(STEP)"
+	@if [ ! -f .env.test.local ]; then \
+		grep '^DATABASE_URL=' .env.local > .env.test.local || { echo "Missing DATABASE_URL in .env.local"; exit 1; }; \
+		echo "Created .env.test.local from .env.local (git-ignored)."; \
+	fi
+	@docker exec $(DOCKER_MYSQL_CONTAINER_NAME) sh -c 'mysql -uroot -p"$$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS $(TEST_DATABASE_NAME) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci; GRANT ALL PRIVILEGES ON $(TEST_DATABASE_NAME).* TO \`$$MYSQL_USER\`@\`%\`;"' 2>/dev/null
+	@docker exec $(DOCKER_PHP_CONTAINER_NAME) php bin/console doctrine:migrations:migrate --env=test --no-interaction --allow-no-migration
 
 test:
 	@echo "$(STEP) Running PHPUnit tests... $(STEP)"
