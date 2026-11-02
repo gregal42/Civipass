@@ -46,7 +46,7 @@ services:
         environment:
             TZ: 'Europe/Paris'
             MYSQL_ROOT_PASSWORD: "root"
-            MYSQL_DATABASE: "blog"
+            MYSQL_DATABASE: "civipass"
             MYSQL_USER: "admin"
             MYSQL_PASSWORD: "admin"
         ports:

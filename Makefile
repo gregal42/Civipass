@@ -32,6 +32,11 @@ help:
 	@echo "-- cc: clears and warms up project cache (dev env)";
 	@echo "-- logs: displays real time logs of containers used for this project";
 	@echo "-- get-url: display the url of the project";
+	@echo "-- test: runs PHPUnit tests";
+	@echo "-- phpstan: runs PHPStan static analysis";
+	@echo "-- cs-check: checks PHP coding standards";
+	@echo "-- cs-fix: automatically fixes PHP coding standards";
+	@echo "-- quality: runs all quality checks";
 
 # -----------------------------------------------------------------------------------------------------------
 # Commands
@@ -115,3 +120,28 @@ get-url:
 	$(eval PROJECT_URLS=$(shell cat $(CONFIGURATION_DOCKER_DEV) | sed -n 's/^.*HostRegexp(`\([^`]*\.localhost\)`).*/\1/p'))
 	@echo "$(STEP)Project URL:$(STEP)";
 	@echo $(PROJECT_URLS) | tr ' ' '\n' | sed 's|^|http://|'
+
+# -----------------------------------------------------------------------------------------------------------
+# Quality & Tests
+# -----------------------------------------------------------------------------------------------------------
+
+.PHONY: test phpstan cs-check cs-fix quality
+
+test:
+	@echo "$(STEP) Running PHPUnit tests... $(STEP)"
+	@docker exec $(DOCKER_PHP_CONTAINER_NAME) php bin/phpunit
+
+phpstan:
+	@echo "$(STEP) Running PHPStan... $(STEP)"
+	@docker exec $(DOCKER_PHP_CONTAINER_NAME) vendor/bin/phpstan analyse -c phpstan.dist.neon --no-progress
+
+cs-check:
+	@echo "$(STEP) Checking PHP coding standards... $(STEP)"
+	@docker exec $(DOCKER_PHP_CONTAINER_NAME) vendor/bin/php-cs-fixer fix --dry-run --diff --no-interaction
+
+cs-fix:
+	@echo "$(STEP) Fixing PHP coding standards... $(STEP)"
+	@docker exec $(DOCKER_PHP_CONTAINER_NAME) vendor/bin/php-cs-fixer fix --no-interaction
+
+quality: phpstan cs-check test
+	@echo "$(STEP) All quality checks passed! $(STEP)"

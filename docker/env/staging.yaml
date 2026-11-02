@@ -31,7 +31,7 @@ services:
             file: "common-services.yaml"
             service: "saas_civipass_mysql"
         volumes:
-            - "/srv/cws-studio/cws/blog-skeleton/db/var/lib/mysql:/var/lib/mysql"
+            - "/srv/cws-studio/cws/civipass/db/var/lib/mysql:/var/lib/mysql"
         networks:
             - "cws"
         labels:
