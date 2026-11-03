@@ -32,9 +32,73 @@ final class ParticipantVisibilityTest extends TestCase
         $s = EventScenario::create();
         $policy = $s->policy();
 
-        foreach ([$s->adminA, $s->managerA, $s->instructorA] as $user) {
+        foreach ([$s->adminA, $s->managerA] as $user) {
             self::assertSame(V::Full, $policy->participantListVisibility($user, $s->a, $s->event));
         }
+    }
+
+    // ── U5 : instructeurs ────────────────────────────────────────────────────
+
+    public function testTheInstructorOfTheOrganizerNeverSeesInternalManagementInformation(): void
+    {
+        $s = EventScenario::create();
+        $policy = $s->policy();
+
+        self::assertSame(V::Coordination, $policy->participantListVisibility($s->instructorA, $s->a, $s->event), 'ni motifs, ni invitations en attente d\'autres communes');
+        self::assertFalse($policy->forEvent($s->instructorA, P::ViewParticipationDetails, $s->event)->isAllowed());
+        foreach ([$s->adminA, $s->managerA] as $user) {
+            self::assertTrue($policy->forEvent($user, P::ViewParticipationDetails, $s->event)->isAllowed());
+        }
+        self::assertSame(Why::NoAccess, $policy->forEvent($s->adminB, P::ViewParticipationDetails, $s->event)->reason, 'une participante n\'a jamais le détail de gestion');
+        self::assertSame(Why::NoAccess, $policy->forEvent($s->superAdmin, P::ViewParticipationDetails, $s->event)->reason);
+        // Un utilisateur cumulant instructeur et gestionnaire dans la commune organisatrice obtient le niveau de gestion.
+        $both = UserBuilder::aUser()->build();
+        $s->membershipRepository->add(MembershipBuilder::aMembership($both, $s->a)->withRoles(MunicipalityRole::Instructor, MunicipalityRole::EventManager)->build());
+        self::assertSame(V::Full, $policy->participantListVisibility($both, $s->a, $s->event));
+    }
+
+    // ── U6 : historique après clôture ────────────────────────────────────────
+
+    private static function closeEvent(EventScenario $s): void
+    {
+        $s->event->close(F::now());
+        foreach ([$s->participationA, $s->participationB, $s->participationD] as $participation) {
+            $participation->closeWithEvent(F::now());
+        }
+    }
+
+    public function testAfterClosureCommunesThatActuallyParticipatedSeeTheHistory(): void
+    {
+        $s = EventScenario::create();
+        self::closeEvent($s);
+        $policy = $s->policy();
+
+        self::assertSame(V::History, $policy->participantListVisibility($s->adminB, $s->b, $s->event), 'B avait accepté (activated_at)');
+        self::assertSame(V::History, $policy->participantListVisibility($s->instructorB, $s->b, $s->event));
+        self::assertSame(V::History, $policy->participantListVisibility($s->instructorA, $s->a, $s->event), 'instructeur de l\'organisatrice : historique, pas le détail');
+        self::assertSame(V::Full, $policy->participantListVisibility($s->adminA, $s->a, $s->event), 'l\'organisatrice garde la visibilité complète');
+    }
+
+    public function testAnInvitationNeverAcceptedStaysInvisibleAndSeesOnlyItself(): void
+    {
+        $s = EventScenario::create();
+        self::closeEvent($s);
+        $policy = $s->policy();
+
+        self::assertNull($s->participationD->activatedAt());
+        self::assertSame(V::OwnInvitationOnly, $policy->participantListVisibility($s->adminD, $s->d, $s->event), 'D n\'a jamais accepté : pas d\'historique');
+        self::assertSame(V::None, $policy->participantListVisibility($s->adminC, $s->c, $s->event));
+    }
+
+    public function testClosureFreezesEveryWriteForParticipantsButKeepsTheHistoryReadable(): void
+    {
+        $s = EventScenario::create();
+        self::closeEvent($s);
+        $policy = $s->policy();
+
+        self::assertSame(Why::EventClosed, $policy->forZone($s->adminB, P::ModifyZone, $s->zoneB)->reason);
+        self::assertFalse($policy->forParticipation($s->adminB, P::CreateZone, $s->participationB)->isAllowed());
+        self::assertTrue($policy->forZone($s->adminB, P::ViewZone, $s->zoneA)->isAllowed(), 'zones consultables après clôture (U2)');
     }
 
     public function testAnAcceptedParticipantSeesTheCoordinationListWhateverItsState(): void
@@ -99,7 +163,7 @@ final class ParticipantVisibilityTest extends TestCase
         $s->membershipRepository->add(MembershipBuilder::aMembership($dual, $s->c)->withRoles(MunicipalityRole::Instructor)->build());
         $policy = $s->policy();
 
-        self::assertSame(V::Full, $policy->participantListVisibility($dual, $s->a, $s->event));
+        self::assertSame(V::Coordination, $policy->participantListVisibility($dual, $s->a, $s->event), 'instructeur de l\'organisatrice : liste limitée (U5)');
         self::assertSame(V::Coordination, $policy->participantListVisibility($dual, $s->b, $s->event), 'en tant que B, pas de visibilité de l\'organisatrice');
         self::assertSame(V::None, $policy->participantListVisibility($dual, $s->c, $s->event));
         // Rôles : administrateur de B, il ne gère rien chez A ; instructeur chez A, il ne gère rien non plus.

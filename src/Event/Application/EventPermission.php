@@ -33,6 +33,8 @@ enum EventPermission: string
 
     // Participation
     case ViewParticipation = 'PARTICIPATION_VIEW';
+    /** U5 : informations de gestion des participations (motifs, invitations en attente) : administrateur et gestionnaire de l'organisatrice. */
+    case ViewParticipationDetails = 'PARTICIPATION_VIEW_DETAILS';
     case AcceptInvitation = 'PARTICIPATION_ACCEPT';
     case SuspendParticipation = 'PARTICIPATION_SUSPEND';
     case ReactivateParticipation = 'PARTICIPATION_REACTIVATE';
@@ -52,7 +54,7 @@ enum EventPermission: string
     {
         return match ($this) {
             self::CreateEvent => PermissionSubject::NewEvent,
-            self::ViewEvent, self::UpdateEvent, self::ActivateEvent, self::SuspendEvent, self::ReactivateEvent,
+            self::ViewEvent, self::ViewParticipationDetails, self::UpdateEvent, self::ActivateEvent, self::SuspendEvent, self::ReactivateEvent,
             self::CloseEvent, self::InviteMunicipality => PermissionSubject::Event,
             self::ViewParticipation, self::AcceptInvitation, self::SuspendParticipation, self::ReactivateParticipation,
             self::CloseParticipation, self::CreateZone => PermissionSubject::Participation,
@@ -63,7 +65,7 @@ enum EventPermission: string
 
     public function isRead(): bool
     {
-        return \in_array($this, [self::ViewEvent, self::ViewParticipation, self::ViewZone], true);
+        return \in_array($this, [self::ViewEvent, self::ViewParticipation, self::ViewParticipationDetails, self::ViewZone], true);
     }
 
     /**
@@ -75,6 +77,8 @@ enum EventPermission: string
 
         return match ($this) {
             self::ViewEvent, self::ViewParticipation, self::ViewZone => null,
+            // Lecture réservée aux rôles de gestion (U5) : l'instructeur ne voit pas les informations internes.
+            self::ViewParticipationDetails => $adminOrManager,
             // Gestion des événements de sa commune, invitations, participation de sa commune.
             self::CreateEvent, self::UpdateEvent, self::ActivateEvent, self::SuspendEvent, self::ReactivateEvent,
             self::CloseEvent, self::InviteMunicipality, self::SuspendParticipation, self::ReactivateParticipation,

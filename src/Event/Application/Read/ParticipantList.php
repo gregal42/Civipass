@@ -13,14 +13,16 @@ use App\Event\Application\ParticipantListVisibility;
 final readonly class ParticipantList
 {
     /**
-     * @param list<EventParticipationDetails> $details   visibilité complète (commune organisatrice)
-     * @param list<EventParticipationSummary> $summaries coordination (communes participantes)
+     * @param list<EventParticipationDetails>    $details   visibilité complète (commune organisatrice)
+     * @param list<EventParticipationSummary>    $summaries coordination (communes participantes)
+     * @param list<EventParticipantHistoryEntry> $history   historique après clôture (communes ayant effectivement participé)
      */
     public function __construct(
         public ParticipantListVisibility $visibility,
         public array $details = [],
         public array $summaries = [],
         public ?InvitationView $invitation = null,
+        public array $history = [],
     ) {
     }
 }

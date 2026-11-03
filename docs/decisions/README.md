@@ -8,7 +8,7 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 - Statuts : **Proposée** (recommandation non validée), **Validée**, **Remplacée**, **Abandonnée**.
 - Une fiche indique l'identifiant, le titre, la validation (date), le contexte, la décision, les conséquences, les documents concernés et les décisions remplacées.
 - Les dates de validation ne sont pas connues pour les décisions antérieures à cette mission : elles sont marquées « date de validation non renseignée » et ne sont jamais inventées.
-- Une recommandation d'agent n'est **jamais** une décision validée. Arbitrages **validés** : A1 à A14, R1 à R9, P1 à P6, DT-020, DT-022, DT-023, DT-030, T1 (DM-076), DRAFT → CLOSED (DM-077) et administration des accès commerciaux depuis Sonata (DM-078), `revoked_by` (DM-079), type de zone immuable (DM-080), historique de suspension (DM-081), T2 (DM-082), limite de 3 660 jours (DM-083) : DM-051 à DM-066, DM-068 à DM-083. `DM-067` n'est pas attribué. Points résiduels de détail (T2 à T6) : [`../revisions/CONTRADICTIONS.md`](../revisions/CONTRADICTIONS.md). Les fiches techniques `Proposée` (DT-021, DT-024 à DT-029, DT-031, DT-032) sont des propositions en attente de validation.
+- Une recommandation d'agent n'est **jamais** une décision validée. Arbitrages **validés** : A1 à A14, R1 à R9, P1 à P6, DT-020, DT-022, DT-023, DT-030, T1 (DM-076), DRAFT → CLOSED (DM-077) et administration des accès commerciaux depuis Sonata (DM-078), `revoked_by` (DM-079), type de zone immuable (DM-080), historique de suspension (DM-081), T2 (DM-082), limite de 3 660 jours (DM-083) : DM-051 à DM-066, DM-068 à DM-092 ; DT-024, DT-035 à DT-037. `DM-067` n'est pas attribué. Points résiduels de détail (T2 à T6) : [`../revisions/CONTRADICTIONS.md`](../revisions/CONTRADICTIONS.md). Les fiches techniques `Proposée` (DT-021, DT-025 à DT-029, DT-031) sont des propositions en attente de validation.
 - Une contradiction entre un document et une décision validée est signalée dans la fiche (« Écarts documentaires signalés »), sans modifier silencieusement le document.
 - Les décisions D1–D20 de [`../lot-01-schema.md`](../lot-01-schema.md) et D1–D8 de [`../ux/UX-LOT-UI-02-architecture.md`](../ux/UX-LOT-UI-02-architecture.md) gardent leur numérotation d'origine dans leurs documents (collision connue, écart N4) ; ce registre les reprend sous des identifiants DM/DT.
 
@@ -86,6 +86,14 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DM-082](metier/DM-082-date-de-fin-d-un-evenement-actif-jamais-dans-le-passe-t2-con.md) | Date de fin d'un événement actif : jamais dans le passé (T2 confirmée) | Arbitrage TECH-02.1 (complément) | Validée |
 | [DM-083](metier/DM-083-limite-technique-des-recurrences-3-660-jours.md) | Limite technique des récurrences : 3 660 jours | Arbitrage TECH-02.1 (complément) | Validée |
 | [DM-084](metier/DM-084-visibilite-intercommunale-zones-participations-consultation-.md) | Visibilité intercommunale : zones, participations, consultation par les instructeurs (U2, U3, U4) | Arbitrage TECH-02.1 (complément) | Validée |
+| [DM-085](metier/DM-085-d1-cloture-d-un-evenement-draft-toutes-les-participations-so.md) | D1 — Clôture d'un événement DRAFT : toutes les participations sont clôturées | Arbitrage TECH-02.1 (complément) | Validée |
+| [DM-086](metier/DM-086-d4-designation-des-communes-invitees-par-identifiant-commune.md) | D4 — Désignation des communes invitées par identifiant ; commune non abonnée invitable | Arbitrage TECH-02.1 (complément) | Validée |
+| [DM-087](metier/DM-087-d6-participation-organisatrice-audit-participation-created.md) | D6 — Participation organisatrice : audit `PARTICIPATION_CREATED` | Arbitrage TECH-02.1 (complément) | Validée |
+| [DM-088](metier/DM-088-d7-remplacement-de-creneaux-identique-aucune-ecriture-ni-aud.md) | D7 — Remplacement de créneaux identique : aucune écriture ni audit | Arbitrage TECH-02.1 (complément) | Validée |
+| [DM-089](metier/DM-089-d8-reinvitation-apres-cloture-interdite.md) | D8 — Réinvitation après clôture interdite | Arbitrage TECH-02.1 (complément) | Validée |
+| [DM-090](metier/DM-090-u5-visibilite-des-instructeurs-informations-operationnelles-.md) | U5 — Visibilité des instructeurs : informations opérationnelles seulement | Arbitrage TECH-02.1 (complément) | Validée |
+| [DM-091](metier/DM-091-u6-historique-intercommunal-apres-cloture.md) | U6 — Historique intercommunal après clôture | Arbitrage TECH-02.1 (complément) | Validée |
+| [DM-092](metier/DM-092-cloture-globale-automatique-toutes-les-participations-ouvert.md) | Clôture globale automatique : toutes les participations ouvertes sont clôturées dans la même transaction | Arbitrage TECH-02.1 (complément) | Validée |
 
 ## Décisions techniques
 
@@ -114,7 +122,7 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DT-021](technique/DT-021-resolution-des-changements-d-heure-par-un-service-de-domaine.md) | Résolution des changements d'heure par un service de domaine explicite | Données | Proposée |
 | [DT-022](technique/DT-022-journal-d-audit-actor-id-operator-id-batch-id.md) | Journal d'audit : `actor_id`, `operator_id`, `batch_id` | Audit | Validée |
 | [DT-023](technique/DT-023-initialisation-reproductible-et-idempotente-des-eventtype.md) | Initialisation reproductible et idempotente des `EventType` | Données | Validée |
-| [DT-024](technique/DT-024-verrouillage-et-ordre-des-verrous.md) | Verrouillage et ordre des verrous | Transactions | Proposée |
+| [DT-024](technique/DT-024-verrouillage-et-ordre-des-verrous.md) | Verrouillage et ordre des verrous | Transactions | Validée |
 | [DT-025](technique/DT-025-generation-de-la-reference-publique-d-evenement.md) | Génération de la référence publique d'événement | Données | Proposée |
 | [DT-026](technique/DT-026-liste-blanche-de-fuseaux-iana-eventtimezone.md) | Liste blanche de fuseaux IANA (`EventTimezone`) | Données | Proposée |
 | [DT-027](technique/DT-027-port-municipalityentitlementprovider.md) | Port `MunicipalityEntitlementProvider` | Plateforme | Proposée |
@@ -125,6 +133,9 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DT-032](technique/DT-032-audit-operator-id-et-batch-id-mappes-avec-la-migration-de-l-.md) | Audit : `operator_id` et `batch_id` mappés avec la migration de l'étape 3 | Audit | Remplacée |
 | [DT-033](technique/DT-033-migration-du-module-event-et-validation-mysql.md) | Migration du module Event et validation MySQL | Données | Validée |
 | [DT-034](technique/DT-034-politique-d-acces-du-module-event-matrice-unique-commune-ded.md) | Politique d'accès du module Event : matrice unique, commune déduite de la ressource | Sécurité | Proposée |
+| [DT-035](technique/DT-035-architecture-transactionnelle-du-module-event-sous-etape-5-1.md) | Architecture transactionnelle du module Event (sous-étape 5.1) | Transactions | Validée |
+| [DT-036](technique/DT-036-d3-isolation-repeatable-read-conservee-delai-de-verrou-de-5-.md) | D3 — Isolation REPEATABLE READ conservée, délai de verrou de 5 secondes | Transactions | Validée |
+| [DT-037](technique/DT-037-d5-audit-metier-structure-sans-texte-libre-ni-donnee-personn.md) | D5 — Audit métier structuré, sans texte libre ni donnée personnelle | Audit | Validée |
 
 ## Modèle de fiche
 

@@ -183,7 +183,7 @@ final class EventReadingIntegrationTest extends EventSchemaTestCase
     {
         $s = $this->s;
 
-        foreach ([$s->adminA, $s->instructorA] as $user) {
+        foreach ([$s->adminA, $s->managerA] as $user) {
             $list = $this->participants()->forEvent($user, self::id($s->a), self::id($s->event));
 
             self::assertSame(V::Full, $list->visibility);
@@ -305,10 +305,53 @@ final class EventReadingIntegrationTest extends EventSchemaTestCase
         $dual = UserBuilder::aUser()->build();
         $this->save($dual, MembershipBuilder::aMembership($dual, $s->a)->withRoles(MunicipalityRole::Instructor)->build(), MembershipBuilder::aMembership($dual, $s->b)->withRoles(MunicipalityRole::MunicipalityAdmin)->build());
 
-        self::assertSame(V::Full, $this->participants()->forEvent($dual, self::id($s->a), self::id($s->event))->visibility);
+        self::assertSame(V::Coordination, $this->participants()->forEvent($dual, self::id($s->a), self::id($s->event))->visibility, 'instructeur de l\'organisatrice : liste limitée');
         self::assertSame(V::Coordination, $this->participants()->forEvent($dual, self::id($s->b), self::id($s->event))->visibility, 'en tant que B, jamais le niveau de A');
         self::assertCount(1, $this->lists()->forMunicipality($dual, self::id($s->a)));
         self::assertCount(1, $this->lists()->forMunicipality($dual, self::id($s->b)));
+    }
+
+    // ── U5 et U6 ─────────────────────────────────────────────────────────────
+
+    public function testTheInstructorOfTheOrganizerGetsTheLimitedListWithoutInternalData(): void
+    {
+        $s = $this->s;
+
+        $list = $this->participants()->forEvent($s->instructorA, self::id($s->a), self::id($s->event));
+
+        self::assertSame(V::Coordination, $list->visibility);
+        self::assertSame([], $list->details);
+        self::assertSame([$s->a->name(), $s->b->name()], array_map(static fn ($x): string => $x->municipalityName, $list->summaries), 'D (invitation en attente) invisible');
+        self::assertStringNotContainsString('Motif interne', serialize($list));
+    }
+
+    public function testAfterClosureTheHistoryListsOnlyCommunesThatActuallyParticipated(): void
+    {
+        $s = $this->s;
+        $s->participationB->reactivate(F::now());
+        $s->event->close(F::now());
+        foreach ([$s->participationA, $s->participationB, $s->participationD] as $participation) {
+            $participation->closeWithEvent(F::now());
+        }
+        $this->em->flush();
+        $names = static fn ($list): array => array_map(static fn ($x): string => $x->municipalityName, $list->history);
+
+        $forB = $this->participants()->forEvent($s->adminB, self::id($s->b), self::id($s->event));
+        self::assertSame(V::History, $forB->visibility);
+        self::assertSame([$s->a->name(), $s->b->name()], $names($forB), 'D n\'a jamais accepté : absente de l\'historique');
+        self::assertSame([true, false], array_map(static fn ($x): bool => $x->organizer, $forB->history));
+        foreach ($forB->history as $entry) {
+            self::assertSame(['municipalityId', 'municipalityName', 'organizer'], array_keys(get_object_vars($entry)));
+        }
+        self::assertStringNotContainsString('Motif interne', serialize($forB));
+
+        self::assertSame(V::History, $this->participants()->forEvent($s->instructorA, self::id($s->a), self::id($s->event))->visibility);
+        self::assertSame(V::Full, $this->participants()->forEvent($s->adminA, self::id($s->a), self::id($s->event))->visibility);
+
+        $forD = $this->participants()->forEvent($s->adminD, self::id($s->d), self::id($s->event));
+        self::assertSame(V::OwnInvitationOnly, $forD->visibility, 'invitation jamais acceptée');
+        self::assertSame([], $forD->history);
+        self::assertSame(S::Closed, $forD->invitation?->status);
     }
 
     public function testNoParticipationRowOfAnEventTheMunicipalityDoesNotKnowIsEverReturned(): void

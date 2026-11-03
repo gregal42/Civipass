@@ -27,3 +27,5 @@ Un événement en préparation (`DRAFT`) peut être clôturé sans avoir été a
 ## Écarts documentaires signalés
 
 - Point levé (transition non définie).
+- Précisé par DM-085 (D1) : toutes les participations d'un brouillon sont clôturées, y compris celles déjà acceptées.
+- Voir DM-092 : clôture globale automatique de toutes les participations ouvertes.

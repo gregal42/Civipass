@@ -31,3 +31,4 @@ Une fonction exceptionnelle de clôture forcée est conservée, depuis Sonata, r
 
 - Écart N1 / S1 résolu.
 - Point P4 levé : lot Administration CWS ; habilitation par permission dédiée (DM-074).
+- La clôture normale clôt désormais aussi toutes les participations ouvertes (DM-092) ; la clôture forcée CWS (lot dédié) se distingue par l'opérateur, la justification et la permission, non par ce comportement.

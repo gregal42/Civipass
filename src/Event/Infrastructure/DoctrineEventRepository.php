@@ -59,12 +59,12 @@ final readonly class DoctrineEventRepository implements EventRepository
 
     public function lock(Uuid $id): ?Event
     {
-        $locked = $this->entityManager->find(Event::class, $id, LockMode::PESSIMISTIC_WRITE);
-        if (null !== $locked) {
-            $this->entityManager->refresh($locked);
-        }
+        return $this->entityManager->find(Event::class, $id, LockMode::PESSIMISTIC_WRITE);
+    }
 
-        return $locked;
+    public function lockShared(Uuid $id): ?Event
+    {
+        return $this->entityManager->find(Event::class, $id, LockMode::PESSIMISTIC_READ);
     }
 
     private function accessibleQuery(Uuid $municipalityId): \Doctrine\ORM\QueryBuilder

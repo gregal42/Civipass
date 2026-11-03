@@ -31,6 +31,7 @@ final class EventPermissionMatrixTest extends TestCase
             'EVENT_CLOSE' => $both,
             'EVENT_INVITE' => $both,
             'PARTICIPATION_VIEW' => $anyMember,
+            'PARTICIPATION_VIEW_DETAILS' => $both,
             'PARTICIPATION_ACCEPT' => $admin,
             'PARTICIPATION_SUSPEND' => $both,
             'PARTICIPATION_REACTIVATE' => $both,
@@ -61,8 +62,13 @@ final class EventPermissionMatrixTest extends TestCase
     public function testOnlyReadsAreOpenToEveryMember(): void
     {
         foreach (EventPermission::cases() as $permission) {
+            if (EventPermission::ViewParticipationDetails === $permission) {
+                continue; // U5 : lecture réservée aux rôles de gestion de l'organisatrice
+            }
             self::assertSame($permission->isRead(), null === $permission->roles(), $permission->value);
         }
+        self::assertTrue(EventPermission::ViewParticipationDetails->isRead());
+        self::assertNotContains(Role::Instructor, EventPermission::ViewParticipationDetails->roles() ?? [], 'U5 : l\'instructeur ne voit pas les informations internes');
     }
 
     public function testInstructorHasNoManagementPermission(): void

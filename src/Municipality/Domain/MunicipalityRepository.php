@@ -15,7 +15,7 @@ interface MunicipalityRepository
     public function findByInseeCode(InseeCode $code): ?Municipality;
 
     /**
-     * Verrou d'écriture sur la commune puis rafraîchissement : sérialise les modifications concurrentes de ses memberships.
+     * Verrou d'écriture sur la commune (relecture sous verrou) : sérialise les modifications concurrentes de ses memberships.
      * À appeler dans une transaction.
      */
     public function lock(Uuid $id): ?Municipality;

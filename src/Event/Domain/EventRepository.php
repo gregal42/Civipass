@@ -28,7 +28,17 @@ interface EventRepository
     public function listForMunicipality(Uuid $municipalityId, int $limit = 100): array;
 
     /**
-     * Verrou d'écriture puis rafraîchissement : sérialise activation, suspension et clôture. À appeler dans une transaction.
+     * Verrou d'écriture (`FOR UPDATE`) : sérialise modification, activation, suspension, clôture et invitation. À appeler
+     * dans une transaction, AVANT toute lecture métier sensible à la concurrence.
+     *
+     * `EntityManager::find()` avec un mode de verrou pessimiste relit déjà l'entité sous ce verrou (lecture « courante »,
+     * jamais l'instantané REPEATABLE READ) ; aucun `refresh()` simple ne doit suivre : il relirait un état périmé.
      */
     public function lock(Uuid $id): ?Event;
+
+    /**
+     * Verrou partagé (`FOR SHARE`) : compatible avec d'autres verrous partagés, incompatible avec un verrou d'écriture.
+     * Pour les opérations qui ne modifient pas l'événement mais ne doivent pas coexister avec son activation ou sa clôture.
+     */
+    public function lockShared(Uuid $id): ?Event;
 }

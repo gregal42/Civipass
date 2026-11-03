@@ -112,6 +112,28 @@ final class EventModuleArchitectureTest extends TestCase
         }
     }
 
+    public function testServicesAreTransactionalOnlyThroughEventTransactionsAndNeverFlushOrNestOthers(): void
+    {
+        $services = self::phpFiles('src/Event/Application/Service');
+        self::assertNotEmpty($services);
+        foreach ($services as $file) {
+            $content = (string) file_get_contents($file);
+            self::assertStringNotContainsString('TransactionRunner', $content, $file.' : transaction via EventTransactions seulement');
+            self::assertStringNotContainsString('->flush(', $content, $file.' : le flush appartient au runner');
+            self::assertStringNotContainsString('EntityManager', $content, $file);
+            self::assertDoesNotMatchRegularExpression('/private [A-Za-z]*Service \$/', $content, $file.' : un service n\'en appelle jamais un autre (pas d\'imbrication)');
+        }
+    }
+
+    public function testLocksAreOnlyTakenThroughTheOrderedLocker(): void
+    {
+        foreach (self::phpFiles('src/Event/Application/Service') as $file) {
+            $content = (string) file_get_contents($file);
+            self::assertStringNotContainsString('->lock(', $content, $file);
+            self::assertStringNotContainsString('->lockShared(', $content, $file);
+        }
+    }
+
     public function testNothingGrantsMunicipalRightsToSuperAdmins(): void
     {
         foreach (self::phpFiles('src/Event') as $file) {

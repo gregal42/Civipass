@@ -36,11 +36,7 @@ final readonly class DoctrineMunicipalityRepository implements MunicipalityRepos
 
     public function lock(Uuid $id): ?Municipality
     {
-        $locked = $this->entityManager->find(Municipality::class, $id, LockMode::PESSIMISTIC_WRITE);
-        if (null !== $locked) {
-            $this->entityManager->refresh($locked);
-        }
-
-        return $locked;
+        // find() relit déjà l'entité sous verrou ; un refresh() simple relirait l'instantané REPEATABLE READ (état périmé).
+        return $this->entityManager->find(Municipality::class, $id, LockMode::PESSIMISTIC_WRITE);
     }
 }

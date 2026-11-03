@@ -19,6 +19,7 @@ DM-007 (zones des autres communes en lecture seule), SFD §2.1 et SCR-014 ; DM-0
 - Projections `EventParticipationSummary` (coordination), `EventParticipationDetails` (organisatrice), `InvitationView` (invitée), `EventListItem` ; `EventReadModel` (SQL borné) ; `EventListReader` et `EventParticipantReader`.
 - Contexte municipal vérifié par `MunicipalityContext` (membership effectif, statut administratif) ; aucun cumul de privilèges entre communes.
 - Les consultations restent ouvertes à tout rôle d'une commune concernée.
+- Évolué par DM-090 (U5 : lecture différenciée par rôle pour l'organisatrice) et DM-091 (U6 : historique après clôture).
 
 ## Documents concernés
 

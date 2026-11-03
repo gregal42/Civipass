@@ -42,6 +42,7 @@ final readonly class EventParticipantReader
         return match ($visibility) {
             ParticipantListVisibility::Full => new ParticipantList($visibility, details: $this->read->participationsOf($event->id())),
             ParticipantListVisibility::Coordination => new ParticipantList($visibility, summaries: $this->read->coordinationOf($event->id())),
+            ParticipantListVisibility::History => new ParticipantList($visibility, history: $this->read->historyOf($event->id())),
             ParticipantListVisibility::OwnInvitationOnly => new ParticipantList($visibility, invitation: $this->read->invitationOf($event->id(), $viewer->id())),
             ParticipantListVisibility::None => throw new OperationNotAllowed('Ressource inaccessible.'),
         };

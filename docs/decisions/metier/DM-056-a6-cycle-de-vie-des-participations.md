@@ -4,7 +4,7 @@
 - **Thème** : Arbitrage TECH-02.1
 - **Statut** : Validée
 - **Validation** : Arbitrage validé par le commanditaire (message « Consolidation documentaire et technique du LOT 02 ») ; date de validation non renseignée
-- **Décisions remplacées** : Aucune.
+- **Décisions remplacées** : Exigence « les autres participations ACTIVE/SUSPENDED clôturées au préalable » (A6.3) **remplacée par DM-092** (clôture globale automatique) ; le reste (A6.1, A6.2, organisatrice clôturée avec l'événement) est conservé.
 
 ## Contexte
 
@@ -37,3 +37,4 @@ A6.1, option A : une participation `INVITED` ne bloque pas la clôture globale ;
 ## Écarts documentaires signalés
 
 - Écart N1 : le SFD donne la clôture globale normale à l'organisatrice (retenu) ; le CDC §4.1 et l'ancien SF-08 la réservent à CWS. Résolu : clôture normale = organisatrice (A6.3), clôture exceptionnelle forcée = CWS depuis Sonata (DM-065). CDC §4.1 à corriger dans la révision.
+- **Remplacé par DM-092** : la condition préalable de clôture des autres participations n'existe plus ; l'historique de la décision est conservé.

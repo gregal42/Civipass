@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Event\Application;
 
 use App\Event\Application\Read\EventListItem;
+use App\Event\Application\Read\EventParticipantHistoryEntry;
 use App\Event\Application\Read\EventParticipationDetails;
 use App\Event\Application\Read\EventParticipationSummary;
 use App\Event\Application\Read\InvitationView;
@@ -31,6 +32,14 @@ interface EventReadModel
      * @return list<EventParticipationSummary>
      */
     public function coordinationOf(Uuid $eventId): array;
+
+    /**
+     * Historique (U6) : communes dont la participation a été effectivement acceptée (`activated_at` renseigné),
+     * organisatrice comprise. Jamais les invitations jamais acceptées.
+     *
+     * @return list<EventParticipantHistoryEntry>
+     */
+    public function historyOf(Uuid $eventId): array;
 
     /**
      * Toutes les participations de l'événement, avec leurs informations de gestion (organisatrice uniquement).

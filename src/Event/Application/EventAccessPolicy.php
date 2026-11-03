@@ -62,6 +62,11 @@ final readonly class EventAccessPolicy
         if (EventPermission::ViewEvent === $permission) {
             return $this->canViewEvent($user, $event) ? AccessDecision::allow() : AccessDecision::deny(AccessDenialReason::NoAccess);
         }
+        if (EventPermission::ViewParticipationDetails === $permission) {
+            return $this->mayViewParticipationDetails($user, $event->organizerMunicipality())
+                ? AccessDecision::allow()
+                : AccessDecision::deny(AccessDenialReason::NoAccess);
+        }
         $denied = $this->requireMembership($user, $event->organizerMunicipality(), $permission);
         if (null !== $denied) {
             return $denied;
@@ -85,25 +90,53 @@ final readonly class EventAccessPolicy
      * Visibilité d'une commune AGISSANTE sur les participations d'un événement (DM-084). La commune est celle du
      * contexte municipal de l'utilisateur ; elle n'est jamais prise sur parole : un membership effectif (lecture) y est
      * exigé, et les privilèges ne s'additionnent pas entre communes.
-     * - organisatrice : Full ; participante acceptée (ACTIVE, SUSPENDED, CLOSED) : Coordination ;
+     * - organisatrice : Full pour les rôles de gestion (administrateur, gestionnaire), Coordination pour l'instructeur
+     *   (U5 : ni motifs internes, ni invitations en attente d'autres communes) ;
+     * - participante acceptée (ACTIVE, SUSPENDED, CLOSED) : Coordination ;
+     * - après clôture de l'événement (U6) : History pour la commune ayant effectivement participé (`activated_at`
+     *   renseigné), l'invitation jamais acceptée ne voit que la sienne ;
      * - simplement invitée : OwnInvitationOnly ; étrangère ou sans membership effectif : None.
      */
     public function participantListVisibility(User $user, Municipality $viewer, Event $event): ParticipantListVisibility
     {
-        if (null === $this->memberships->effectiveMembership($user, $viewer, write: false)) {
+        $membership = $this->memberships->effectiveMembership($user, $viewer, write: false);
+        if (null === $membership) {
             return ParticipantListVisibility::None;
         }
+        $closed = $event->status()->isClosed();
         if ($event->isOrganizedBy($viewer)) {
-            return ParticipantListVisibility::Full;
+            foreach (EventPermission::ViewParticipationDetails->roles() ?? [] as $role) {
+                if ($membership->hasRole($role)) {
+                    return ParticipantListVisibility::Full;
+                }
+            }
+
+            return $closed ? ParticipantListVisibility::History : ParticipantListVisibility::Coordination;
         }
         $own = $this->participations->findByEventAndMunicipality($event->id(), $viewer->id());
         if (null === $own) {
             return ParticipantListVisibility::None;
         }
+        if (ParticipationStatus::Invited === $own->status()) {
+            return ParticipantListVisibility::OwnInvitationOnly;
+        }
+        if ($closed) {
+            return null !== $own->activatedAt() ? ParticipantListVisibility::History : ParticipantListVisibility::OwnInvitationOnly;
+        }
 
-        return ParticipationStatus::Invited === $own->status()
-            ? ParticipantListVisibility::OwnInvitationOnly
-            : ParticipantListVisibility::Coordination;
+        return ParticipantListVisibility::Coordination;
+    }
+
+    private function mayViewParticipationDetails(User $user, Municipality $organizer): bool
+    {
+        $membership = $this->memberships->effectiveMembership($user, $organizer, write: false);
+        foreach (EventPermission::ViewParticipationDetails->roles() ?? [] as $role) {
+            if (null !== $membership && $membership->hasRole($role)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function forParticipation(User $user, EventPermission $permission, EventParticipation $participation): AccessDecision

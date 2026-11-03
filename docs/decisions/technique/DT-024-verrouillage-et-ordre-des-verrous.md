@@ -2,9 +2,9 @@
 
 - **Identifiant** : DT-024
 - **Thème** : Transactions
-- **Statut** : Proposée
-- **Validation** : Recommandation de l'agent — NON validée par le commanditaire
-- **Décisions remplacées** : Aucune.
+- **Statut** : Validée
+- **Validation** : Arbitrages D1 à D8, U5 et U6 validés par le commanditaire (message « Sous-étape 5.2 — création des événements et invitations intercommunales ») ; date de validation non renseignée
+- **Décisions remplacées** : Révise l'ordre initial de la proposition DT-024 (compteur en tête).
 
 ## Contexte
 
@@ -12,11 +12,12 @@ Cohérence des gardes d'activation et de clôture sous concurrence.
 
 ## Décision
 
-Verrou pessimiste : ligne du compteur de référence (création), ligne d'événement (activer, suspendre, clôturer), ligne de participation (accepter, opérations sur zones et validités). Ordre : compteur → événement → participations → zones. Un seul `TransactionRunner` par cas d'usage.
+Ordre des verrous validé (D2) : **événement → participations (identifiant croissant) → zones (ordre déterministe) → compteur global de références, uniquement lors de la création, aussi tard que possible, après validation des préconditions**. Lors de la création, l'événement n'existe pas encore : aucun verrou d'événement n'est simulé ; le seul verrou est la ligne du compteur, prise après validation complète ; le verrou de ligne de l'événement créé est implicite à son insertion. Modes : exclusif sur l'événement pour modification, activation, suspension, clôture, invitation ; partagé pour les participations et les zones ; exclusif sur la participation.
 
 ## Conséquences fonctionnelles ou techniques
 
-- Tests de concurrence.
+- Remplace l'ordre initial « compteur → événement → participations → zones ».
+- Implémenté par `EventLocker` : verrouiller une participation exige l'événement déjà verrouillé (signature), vérifie l'appartenance, mode toujours explicite.
 
 ## Documents concernés
 

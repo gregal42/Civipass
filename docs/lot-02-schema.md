@@ -198,7 +198,7 @@ Les invariants 1 à 18 de la révision 1 sont conservés ; ceux dont le texte ch
 8. Créneaux : continu = début et fin complets, fin strictement après début ; ponctuel = une date, début strictement avant fin (même jour) ; récurrent = dates de début et de fin obligatoires, `startDate ≤ endDate`, jours 1–127, heures différentes, minuit autorisé ; pour chaque date de série concernée : refus si heure inexistante, choix explicite si ambiguë.
 9. Une seule « Commune entière » **non supprimée** par participation ; la proposition automatique est créée une fois et n'est pas recréée (DM-068).
 10. Activation `DRAFT → ACTIVE` : au moins une zone confirmée, active, non supprimée, configurée (au moins un créneau non supprimé si `SPECIFIC_PERIODS`), de participation `ACTIVE` ; période future admise (DM-059).
-11. Clôture normale : participations `ACTIVE`/`SUSPENDED` des autres communes déjà `CLOSED` ; `INVITED` et organisatrice → `CLOSED` avec l'événement, même transaction, audité (DM-056). **Un événement `DRAFT` peut être clôturé sans prérequis de participation active : participation organisatrice et invitations → `CLOSED` dans la même transaction, audit obligatoire (DM-077).** La clôture forcée est reportée (DM-065, DM-074).
+11. Clôture normale : ~~participations `ACTIVE`/`SUSPENDED` des autres communes déjà `CLOSED`~~ (**remplacé par DM-092** : toutes les participations ouvertes sont clôturées automatiquement, sans prérequis) ; `INVITED` et organisatrice → `CLOSED` avec l'événement, même transaction, audité (DM-056). **Un événement `DRAFT` peut être clôturé sans prérequis de participation active : participation organisatrice et invitations → `CLOSED` dans la même transaction, audit obligatoire (DM-077).** La clôture forcée est reportée (DM-065, DM-074).
 12. Participation `CLOSED` et événement `CLOSED` définitifs et en lecture seule : aucune réactivation, y compris pour un événement clôturé depuis `DRAFT`.
 13. Suspension (événement ou participation) : motif obligatoire.
 14. Réactivation d'une participation : tant que l'événement n'est pas `CLOSED` ; ses zones ne sont opérationnelles que si l'événement est `ACTIVE`.
@@ -244,7 +244,7 @@ Implémentation prévue avec `symfony/workflow` (configuration vide aujourd'hui)
 | Activer | garde + statut + audit | événement |
 | Modifier un événement actif (nom, consignes, fin) | champs autorisés + audit avant/après | événement |
 | Suspendre / réactiver (événement ou participation) | statut, motif, audit | événement / participation |
-| Clôturer (normal, depuis `ACTIVE`/`SUSPENDED`) | vérifications ; `INVITED` et organisatrice → `CLOSED` ; événement → `CLOSED` ; audit | événement puis participations |
+| Clôturer (normal, depuis `ACTIVE`/`SUSPENDED`) | ~~vérifications~~ DM-092 : aucun prérequis ; `INVITED` et organisatrice → `CLOSED` ; événement → `CLOSED` ; audit | événement puis participations |
 | Clôturer un événement `DRAFT` | participation organisatrice et invitations → `CLOSED` ; événement → `CLOSED` ; audit | événement puis participations |
 | Clôture forcée | **reportée** (lot Administration CWS) | — |
 | Zone : créer, confirmer, suspendre, supprimer | zone + audit | participation |
@@ -387,3 +387,14 @@ La projection de coordination n'a aucun champ de motif, d'audit, d'invitation, d
 
 ### 17.5 Divergences et points à arbitrer
 Voir `docs/revisions/CONTRADICTIONS.md` §G (U5).
+
+## 18. Sous-étape 5.2 — services de création et d'invitation
+
+Code : `src/Event/Application/{Service,Support,Command,Result}`. Aucune migration.
+- **Création** (`EventCreationService`) : pré-autorisation (contexte municipal vérifié, rôle, commune `ACTIVE`, droit d'utilisation), validation à blanc, transaction : ré-autorisation, référence globale (compteur verrouillé **en dernier**, D2), événement `DRAFT`, participation organisatrice `ACTIVE`, zone « Commune entière — [nom] » proposée non confirmée (DM-058), trois lignes d'audit (`EVENT_CREATED`, `PARTICIPATION_CREATED`, `ZONE_CREATED`) avec un `batch_id`. Fuseau : fourni, sinon proposé d'après la commune ; non déterminable (Polynésie) : exigé.
+- **Invitation** (`EventParticipationService::invite`) : événement verrouillé en **exclusif** en première instruction, politique rappelée sous verrou, doublon relu sous verrou (filet : `UNIQUE`), participation `INVITED` + zone proposée, audit ; commune non abonnée invitable (D4) ; participation clôturée : réinvitation refusée (D8).
+- **Réexpédition** : événement puis participation verrouillés ; refus si l'invitation n'est plus en attente ; audit des dates ; **enregistre une demande de réexpédition (`lastInvitationSentAt`), sans garantie qu'une notification ait été envoyée** (aucun système de notification) ; une invitation sans expiration est acceptée en V1 mais jamais acceptable après la clôture.
+- **Clôture** : voir DM-092 — la clôture normale clôt automatiquement toutes les participations ouvertes ; le prérequis « autres participations clôturées » (A6.3) est remplacé.
+- **Verrous** (`EventLocker`) : `exclusiveEvent`, `sharedEvent`, `participation(id, événement verrouillé)` ; dépôts `lock()` corrigés (relecture sous verrou, sans `refresh()` simple), `lockShared()` ajouté.
+- **Transactions** (`EventTransactions`) : délai de session de 5 s restauré, `OperationConflict` pour délai de verrou, interblocage et unicités déclarées ; rien d'autre n'est traduit ; aucun retry.
+- **Lectures** (U5, U6) : `ViewParticipationDetails`, niveaux `Coordination` pour l'instructeur de l'organisatrice et `History` après clôture.

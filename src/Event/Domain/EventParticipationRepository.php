@@ -26,7 +26,7 @@ interface EventParticipationRepository
     public function findByEvent(Uuid $eventId): array;
 
     /**
-     * Verrou d'écriture puis rafraîchissement : sérialise les opérations sur les zones et validités. À appeler dans une transaction.
+     * Verrou d'écriture (relecture sous verrou, sans `refresh()` simple) : sérialise les opérations sur les zones et validités. À appeler dans une transaction.
      */
     public function lock(Uuid $id): ?EventParticipation;
 }

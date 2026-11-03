@@ -28,6 +28,11 @@ services:
             - '../src/Shared/Application/AuditEvent.php'
             - '../src/Event/Application/AccessDecision.php'
             - '../src/Event/Application/Read/'
+            - '../src/Event/Application/Command/'
+            - '../src/Event/Application/Result/'
+
+    # Objet de domaine sans dépendance obligatoire (le référentiel communal des fuseaux est fourni plus tard).
+    App\Event\Domain\Time\TerritoryTimezoneResolver: ~
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

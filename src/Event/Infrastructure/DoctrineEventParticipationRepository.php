@@ -71,11 +71,7 @@ final readonly class DoctrineEventParticipationRepository implements EventPartic
 
     public function lock(Uuid $id): ?EventParticipation
     {
-        $locked = $this->entityManager->find(EventParticipation::class, $id, LockMode::PESSIMISTIC_WRITE);
-        if (null !== $locked) {
-            $this->entityManager->refresh($locked);
-        }
-
-        return $locked;
+        // find() relit déjà l'entité sous verrou ; pas de refresh() simple (voir EventRepository::lock).
+        return $this->entityManager->find(EventParticipation::class, $id, LockMode::PESSIMISTIC_WRITE);
     }
 }

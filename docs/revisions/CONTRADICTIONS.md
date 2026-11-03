@@ -97,7 +97,12 @@ Conséquences d'un alignement : ajouter `PENDING` à l'enum ne coûte pas de mig
 
 Correspondance établie à la lecture des intitulés : à valider avant toute renumérotation du SFD.
 
-## G. Points résiduels (révision 5)
+## G. Points résiduels (révision 6)
+
+**DM-092** (clôture globale automatique) remplace le prérequis de clôture préalable des participations (A6.3 de DM-056, plan 5.1) ; R3 et R4 documentés (DM-086, DT-036).
+
+Résolus en 5.2 : **D1 à D8, U5, U6** (DM-085 à DM-091, DT-024, DT-036, DT-037) ; **U5 et U6** remplacent les points U5/U6 de l'étape 4.
+
 
 Résolus à l'étape 4 : **U1** (DM-057 conservé), **U2**, **U3**, **U4** (DM-084).
 
@@ -118,5 +123,7 @@ Les points P1 à P6, DT-020 et DT-022 sont **validés** (DM-062, DM-070, DM-071,
 | — | Résolution fuseau des communes de Polynésie française | aucune hypothèse ; liste officielle à fournir | Avant production |
 | — | MFA absent | prérequis du lot Administration CWS | Non |
 | — | Écarts UI-02 (47) non réévalués après P1–P6 | à corriger côté design | Avant intégration UI |
-| **U5** | Instructeur de la commune **organisatrice** : visibilité complète (suspension, invitations en attente) comme les autres rôles de l'organisatrice, par lecture littérale de U3 ; à restreindre si ces informations de gestion ne doivent pas lui être ouvertes | à confirmer | Non |
-| **U6** | Après la clôture de l'événement toutes les participations sont CLOSED : une commune participante ne voit plus que l'organisatrice dans la liste de coordination (U3 : ACTIVE/SUSPENDED seulement) | à confirmer | Non |
+| **R1** | `EventAccessPolicy::forParticipation(ViewParticipation)` reste une décision sur l'entité (tous rôles) ; une future vue de détail d'une participation devra utiliser une projection tenant compte du rôle (U5) | à traiter avec la lecture de détail | Non |
+| **R2** | Invitation en attente sans expiration ni relance automatique (D4) : une commune sans administrateur la conserve indéfiniment | mécanisme d'habilitation futur | Non |
+| **R3** | `resendInvitation` enregistre la demande, jamais un envoi effectif (aucune notification dans le périmètre) | lot Notifications | Non |
+| **R4** | La traduction des unicités repose sur le nom d'index dans le message MySQL ; l'interblocage réel n'est pas forçable de façon déterministe (conversion DBAL testée) | à surveiller | Non |

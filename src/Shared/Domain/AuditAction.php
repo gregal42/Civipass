@@ -23,6 +23,7 @@ enum AuditAction: string
     case EventSuspended = 'EVENT_SUSPENDED';
     case EventReactivated = 'EVENT_REACTIVATED';
     case EventClosed = 'EVENT_CLOSED';
+    case ParticipationCreated = 'PARTICIPATION_CREATED';
     case ParticipationInvited = 'PARTICIPATION_INVITED';
     case ParticipationInvitationResent = 'PARTICIPATION_INVITATION_RESENT';
     case ParticipationAccepted = 'PARTICIPATION_ACCEPTED';

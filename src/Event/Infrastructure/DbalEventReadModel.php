@@ -6,6 +6,7 @@ namespace App\Event\Infrastructure;
 
 use App\Event\Application\EventReadModel;
 use App\Event\Application\Read\EventListItem;
+use App\Event\Application\Read\EventParticipantHistoryEntry;
 use App\Event\Application\Read\EventParticipationDetails;
 use App\Event\Application\Read\EventParticipationSummary;
 use App\Event\Application\Read\InvitationView;
@@ -75,6 +76,25 @@ final readonly class DbalEventReadModel implements EventReadModel
             self::uuid($r['municipality_id']),
             (string) $r['municipality_name'],
             ParticipationStatus::from((string) $r['status']),
+            (bool) $r['organizer'],
+        ), $rows);
+    }
+
+    public function historyOf(Uuid $eventId): array
+    {
+        $rows = $this->connection->fetchAllAssociative(
+            'SELECT m.id AS municipality_id, m.name AS municipality_name, (p.municipality_id = e.organizer_municipality_id) AS organizer'
+            .' FROM event_participation p'
+            .' JOIN event_event e ON e.id = p.event_id'
+            .' JOIN municipality m ON m.id = p.municipality_id'
+            .' WHERE p.event_id = :event AND p.activated_at IS NOT NULL'
+            .' ORDER BY organizer DESC, m.name, m.id',
+            ['event' => $eventId->toBinary()],
+        );
+
+        return array_map(static fn (array $r): EventParticipantHistoryEntry => new EventParticipantHistoryEntry(
+            self::uuid($r['municipality_id']),
+            (string) $r['municipality_name'],
             (bool) $r['organizer'],
         ), $rows);
     }
