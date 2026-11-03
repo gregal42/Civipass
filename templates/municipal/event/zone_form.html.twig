@@ -1,0 +1,54 @@
+{% extends 'layouts/app.html.twig' %}
+
+{#
+  Création et modification d'une zone. Aucun champ « État » : une zone créée ici est confirmée dès sa création (DM-051) et ses statuts changent par
+  actions dédiées. Le type n'est pas modifiable (DM-080).
+  Variables : mode (new|edit), heading, data, errors, summary, alert, type_options, action_url, cancel_url, csrf_id, zone.
+#}
+{% set status_key = detail.status.value|lower %}
+{% set rel = detail.relation.value %}
+{% set tz = detail.timezone %}
+{% set life = detail.lifecycle %}
+
+{% block content %}
+  {% set is_new = mode == 'new' %}
+  {% include 'components/breadcrumb.html.twig' with {
+    items: [{ label: 'Événements', href: list_url }, { label: detail.name, href: event_url }, { label: 'Zones', href: zones_url }, { label: is_new ? 'Ajouter une zone' : 'Modifier' }],
+    back: { label: 'Zones', href: zones_url },
+  } only %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: heading, sub: detail.name } only %}
+
+  {% if summary|length %}{% include 'components/error_summary.html.twig' with { errors: summary } only %}{% endif %}
+  {% if alert %}{% include 'components/alert.html.twig' with { variant: 'warning', title: 'Rien n’a été enregistré', text: alert, focus: true } only %}{% endif %}
+
+  <form id="zone-form" class="cp-stack" style="gap: var(--space-5)" method="post" action="{{ action_url }}" novalidate data-controller="cp--unsaved-guard cp--submit-state" aria-label="{{ heading }}" tabindex="-1">
+    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+    <p class="app-note">Les champs marqués d’un astérisque sont obligatoires.</p>
+
+    {% include 'components/field.html.twig' with { id: 'z-label', name: 'label', label: 'Nom de la zone *', value: data.label, required: true, error: errors.label|default(''), help: 'Exemple : « Quartier du port ».' } only %}
+
+    {% if is_new %}
+      {% include 'components/select.html.twig' with {
+        id: 'z-type', name: 'type', label: 'Type de zone *', value: data.type,
+        options: [{ value: '', label: 'Choisir un type…' }]|merge(type_options), error: errors.type|default(''), attrs: 'required',
+        help: 'Le type ne pourra plus être modifié après la création.',
+      } only %}
+    {% else %}
+      {% include 'components/field.html.twig' with { id: 'z-type-info', name: 'type_display', label: 'Type de zone', value: cp_zone_type(zone.type), readonly: true, help: 'Le type d’une zone ne peut pas être modifié.' } only %}
+    {% endif %}
+
+    {% include 'components/field.html.twig' with { id: 'z-desc', name: 'description', type: 'textarea', label: 'Description', value: data.description, optional: true, error: errors.description|default(''), help: 'Précise le périmètre de la zone (rues, repères). Facultatif.' } only %}
+
+    {% if is_new %}
+      {% include 'components/check.html.twig' with { id: 'z-whole', name: 'whole_confirmed', value: '1', label: 'Je confirme que cette zone couvre toute la commune (obligatoire pour une zone « Commune entière »)', checked: data.wholeConfirmed } only %}
+      {% if errors.whole_confirmed|default('') %}<p class="cp-field-error">{% include 'components/icon.html.twig' with { name: 'alert', size: 's' } only %}{{ errors.whole_confirmed }}</p>{% endif %}
+      {% include 'components/alert.html.twig' with { variant: 'info', title: 'La zone est confirmée dès sa création', text: 'Sa validité (créneaux) se configure ensuite : tant qu’elle n’est pas configurée, la zone ne compte pas pour l’activation de l’événement.' } only %}
+    {% endif %}
+
+    <div class="cp-form-actions">
+      {% include 'components/button.html.twig' with { label: is_new ? 'Créer la zone' : 'Enregistrer les modifications', type: 'submit', loading_label: 'Enregistrement…' } only %}
+      {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', href: cancel_url } only %}
+    </div>
+  </form>
+{% endblock %}

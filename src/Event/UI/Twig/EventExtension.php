@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Event\UI\Twig;
 
 use App\Event\Application\AccessDenialReason;
+use App\Event\Domain\ZoneType;
 use Twig\Attribute\AsTwigFilter;
 use Twig\Attribute\AsTwigFunction;
 
@@ -28,6 +29,19 @@ final class EventExtension
             'flood' => 'wave',
             'accident' => 'car',
             default => 'flag',
+        };
+    }
+
+    /** Libellé d'un type de zone (référentiel textuel de la V1 : aucune cartographie). */
+    #[AsTwigFunction('cp_zone_type')]
+    public function zoneType(ZoneType $type): string
+    {
+        return match ($type) {
+            ZoneType::WholeMunicipality => 'Commune entière',
+            ZoneType::District => 'Quartier',
+            ZoneType::Street => 'Rue',
+            ZoneType::Locality => 'Lieu-dit',
+            ZoneType::Custom => 'Personnalisée',
         };
     }
 

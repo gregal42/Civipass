@@ -105,6 +105,11 @@ for (const f of list('templates/components', '.twig')) {
     t = adapt('A9', target, t, "what: 'Définitif · plus aucune demande ni droit'", "what: 'Définitif · aucune réactivation'", 1, why);
     adapted = true;
   }
+  if (f === 'zone_card.html.twig') {
+    // DM-051 : aucun statut « À confirmer » ; la zone non confirmée est un libellé calculé depuis `confirmedAt`.
+    t = adapt('A10', 'templates/components/zone_card.html.twig', t, "unconfirmed: { status: 'pending', label: 'À confirmer' }", "unconfirmed: { status: 'pending', label: 'Non confirmée' }", 1, 'Libellé « Non confirmée » (calculé depuis confirmedAt) à la place de « À confirmer » : DM-051 n’introduit aucun statut « À confirmer ».');
+    adapted = true;
+  }
   put(`templates/components/${f}`, t, { source: `templates/components/${f}`, adapted });
 }
 for (const f of list('templates/layouts', '.twig')) {

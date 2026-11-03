@@ -18,4 +18,10 @@ enum EventAction: string
     case SuspendParticipation = 'suspend_participation';
     case ReactivateParticipation = 'reactivate_participation';
     case CloseParticipation = 'close_participation';
+    case CreateZone = 'create_zone';
+    case UpdateZone = 'update_zone';
+    case ConfirmZone = 'confirm_zone';
+    case SuspendZone = 'suspend_zone';
+    case ReactivateZone = 'reactivate_zone';
+    case DeleteZone = 'delete_zone';
 }

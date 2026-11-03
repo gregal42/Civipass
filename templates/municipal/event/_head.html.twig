@@ -1,6 +1,6 @@
 {#
   En-tête commun des pages d'un événement (fiche, communes) : confirmation, erreur, fil d'Ariane, statut de la commune, en-tête, rubriques,
-  états. Variable : current (fiche | communes). Inclus SANS `only` : il lit le contexte de la page.
+  états. Variables : current (fiche | communes | zones), zone (ZoneView, fiche ou formulaire d'une zone : dernier maillon du fil d'Ariane). Inclus SANS `only` : il lit le contexte de la page.
 #}
 {% import 'municipal/event/_actions.html.twig' as act %}
   {% for message in app.flashes('success') %}
@@ -8,7 +8,21 @@
   {% endfor %}
   {% if alert %}{% include 'components/alert.html.twig' with { variant: 'warning', title: 'Rien n’a été enregistré', text: alert, focus: true } only %}{% endif %}
   {% if problem|default('') and not open_panel %}{% include 'components/alert.html.twig' with { variant: 'error', title: 'Action impossible', text: problem, focus: true } only %}{% endif %}
-  {% include 'components/breadcrumb.html.twig' with { items: current == 'fiche' ? [{ label: 'Événements', href: list_url }, { label: detail.name }] : [{ label: 'Événements', href: list_url }, { label: detail.name, href: event_url }, { label: 'Communes' }], back: { label: current == 'fiche' ? 'Événements' : detail.name, href: current == 'fiche' ? list_url : event_url } } only %}
+  {% set crumbs = [{ label: 'Événements', href: list_url }] %}
+  {% if current == 'fiche' %}
+    {% set crumbs = crumbs|merge([{ label: detail.name }]) %}
+    {% set back = { label: 'Événements', href: list_url } %}
+  {% elseif current == 'communes' %}
+    {% set crumbs = crumbs|merge([{ label: detail.name, href: event_url }, { label: 'Communes' }]) %}
+    {% set back = { label: detail.name, href: event_url } %}
+  {% elseif zone|default(null) %}
+    {% set crumbs = crumbs|merge([{ label: detail.name, href: event_url }, { label: 'Zones', href: zones_url }, { label: zone.label }]) %}
+    {% set back = { label: 'Zones', href: zones_url } %}
+  {% else %}
+    {% set crumbs = crumbs|merge([{ label: detail.name, href: event_url }, { label: 'Zones' }]) %}
+    {% set back = { label: detail.name, href: event_url } %}
+  {% endif %}
+  {% include 'components/breadcrumb.html.twig' with { items: crumbs, back: back } only %}
   {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% elseif detail.freeParticipation %}{% include 'components/commune_status.html.twig' with { state: 'free', commune: active_municipality_name } only %}{% endif %}
 
   {# Relation de la commune active à l'événement et, le cas échéant, raison de la consultation seule. #}
@@ -31,11 +45,11 @@
     {% block actions %}
       {% import 'municipal/event/_actions.html.twig' as act %}
       {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Update')), 'Modifier', 'settings', 'secondary', edit_url) }}
-      {% if current != 'communes' %}{{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Invite')), 'Inviter une commune', 'mail', 'secondary', invite_url) }}{% endif %}
+      {% if current == 'fiche' %}{{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Invite')), 'Inviter une commune', 'mail', 'secondary', invite_url) }}{% endif %}
     {% endblock %}
   {% endembed %}
 
-  {% include 'components/subnav.html.twig' with { label: 'Rubriques de l’événement', items: [{ label: 'Fiche', href: event_url, current: current == 'fiche' }, { label: 'Communes', href: communes_url, current: current == 'communes' }] } only %}
+  {% include 'components/subnav.html.twig' with { label: 'Rubriques de l’événement', items: [{ label: 'Fiche', href: event_url, current: current == 'fiche' }, { label: 'Communes', href: communes_url, current: current == 'communes' }, { label: 'Zones', href: zones_url, current: current == 'zones' }] } only %}
 
   {% if status_key == 'suspended' %}
     {% include 'components/alert.html.twig' with { variant: 'warning', title: 'Événement suspendu', text: life and life.suspendedAt ? 'Suspendu le ' ~ life.suspendedAt|cp_datetime(tz) ~ '.' : 'Cet événement est suspendu.' } only %}

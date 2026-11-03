@@ -1,0 +1,68 @@
+{% extends 'layouts/app.html.twig' %}
+
+{#
+  Zones d'un événement (maquette UI-02 « zones »). Les zones de la commune active, avec leurs actions ; celles des autres communes
+  visibles, en lecture seule. « Non confirmée » est calculé depuis confirmedAt (DM-051), ce n'est pas un statut. Aucune carte en V1.
+  Variables : board (ZoneBoard). Aucune règle métier ici : les actions affichées viennent de la politique d'accès.
+#}
+{% set status_key = detail.status.value|lower %}
+{% set rel = detail.relation.value %}
+{% set tz = detail.timezone %}
+{% set life = detail.lifecycle %}
+
+{% block content %}
+  {% import 'municipal/event/_actions.html.twig' as act %}
+  {% include 'municipal/event/_head.html.twig' with { current: 'zones' } %}
+
+  {% set create = board.create %}
+  {% set can_create = create and create.allowed and board.ownParticipationId %}
+  <section class="cp-section" aria-labelledby="zones-h">
+    <div class="cp-cluster" style="justify-content: space-between; align-items: center">
+      {% include 'components/section_head.html.twig' with { id: 'zones-h', title: 'Zones d’accès', meta: board.total ~ ' zone(s)' } only %}
+      {% if can_create %}{% include 'components/button.html.twig' with { id: 'act-create-zone', label: 'Ajouter une zone', icon: 'plus', variant: 'primary', href: path('app_municipal_event_zone_new', { municipalityId: active_municipality_id, eventId: detail.eventId }) } only %}{% endif %}
+    </div>
+
+    {% if board.groups|length == 0 %}
+      {% include 'components/empty_state.html.twig' with {
+        icon: 'lock',
+        title: rel == 'invited' ? 'Zones non disponibles' : 'Aucune zone',
+        text: rel == 'invited' ? 'Vous voyez les zones une fois votre participation acceptée.' : (can_create ? 'Ajoutez les zones d’accès de votre commune : une zone est utilisable une fois confirmée et sa validité configurée.' : 'Aucune zone n’est visible pour votre commune.'),
+      } only %}
+    {% endif %}
+
+    {% for group in board.groups %}
+      <section class="cp-section" aria-labelledby="zg-{{ loop.index }}">
+        {% include 'components/section_head.html.twig' with { id: 'zg-' ~ loop.index, title: group.own ? 'Zones de ' ~ group.municipalityName ~ ' (votre commune)' : 'Zones de ' ~ group.municipalityName, meta: group.zones|length ~ ' zone(s)' ~ (group.organizer ? ' · organisatrice' : '') } only %}
+        {% if group.zones|length == 0 %}
+          {% include 'components/empty_state.html.twig' with { icon: 'info', title: 'Aucune zone', text: group.own ? 'Votre commune n’a pas encore de zone sur cet événement.' : 'Cette commune n’a pas encore de zone.' } only %}
+        {% endif %}
+        <div class="cp-stack" style="gap: var(--space-3)">
+          {% for z in group.zones %}
+            {% set confirm = z.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::ConfirmZone')) %}
+            {% set primary %}
+              {% if z.own and confirm and confirm.allowed %}
+                <form method="post" action="{{ path('app_municipal_event_zone_action', { municipalityId: active_municipality_id, eventId: detail.eventId, zoneId: z.zoneId, action: 'confirmer' }) }}" novalidate data-controller="cp--submit-state">
+                  <input type="hidden" name="_token" value="{{ csrf_token('zone_confirmer_' ~ z.zoneId) }}">
+                  {% include 'components/button.html.twig' with { label: 'Confirmer cette zone', type: 'submit', size: 's', loading_label: 'Confirmation…' } only %}
+                </form>
+              {% endif %}
+            {% endset %}
+            {% set items = [{ label: 'Voir la zone', icon: 'right', href: path('app_municipal_event_zone', { municipalityId: active_municipality_id, eventId: detail.eventId, zoneId: z.zoneId }) }] %}
+            {% set upd = z.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::UpdateZone')) %}
+            {% if z.own and upd and upd.allowed %}{% set items = items|merge([{ label: 'Modifier', icon: 'settings', href: path('app_municipal_event_zone_edit', { municipalityId: active_municipality_id, eventId: detail.eventId, zoneId: z.zoneId }) }]) %}{% endif %}
+            {% include 'components/zone_card.html.twig' with {
+              id: 'zone-' ~ z.zoneId, name: z.label, type: cp_zone_type(z.type), commune: group.municipalityName,
+              status: z.status.value == 'SUSPENDED' ? 'suspended' : (z.isConfirmed ? 'active' : 'unconfirmed'),
+              description: z.description ?? '',
+              validity_scope: z.validityMode.value == 'EVENT_DURATION' ? 'event' : (z.validityMode.value == 'SPECIFIC_PERIODS' ? 'periods' : ''),
+              validity: [], validity_empty: z.own ? 'La validité se configure dans un prochain temps.' : '',
+              href: path('app_municipal_event_zone', { municipalityId: active_municipality_id, eventId: detail.eventId, zoneId: z.zoneId }),
+              readonly: z.own ? '' : 'Zone gérée par ' ~ group.municipalityName,
+              actions: items|length > 1 ? items : [], primary: primary|trim,
+            } only %}
+          {% endfor %}
+        </div>
+      </section>
+    {% endfor %}
+  </section>
+{% endblock %}

@@ -38,6 +38,7 @@ final readonly class EventViewFactory
             'edit_url' => $this->urls->generate('app_municipal_event_edit', $route),
             'invite_url' => $this->urls->generate('app_municipal_event_invite', $route),
             'communes_url' => $this->urls->generate('app_municipal_event_communes', $route),
+            'zones_url' => $this->urls->generate('app_municipal_event_zones', $route),
             'alert' => $alert,
             'open_panel' => null,
             'suspend_reason' => '',

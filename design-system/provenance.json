@@ -176,6 +176,12 @@
       "occurrences": 1
     },
     {
+      "id": "A10",
+      "target": "templates/components/zone_card.html.twig",
+      "description": "Libellé « Non confirmée » (calculé depuis confirmedAt) à la place de « À confirmer » : DM-051 n’introduit aucun statut « À confirmer ».",
+      "occurrences": 1
+    },
+    {
       "id": "A7",
       "target": "templates/layouts/app.html.twig",
       "description": "Feuilles de style chargées par <link> (pas par import JavaScript : pas de flash de page non stylée, fonctionne sans JS) et meta Turbo no-cache (pages à données personnelles).",
@@ -1077,8 +1083,8 @@
       "source": "templates/components/zone_card.html.twig",
       "target": "templates/components/zone_card.html.twig",
       "sourceSha": "a68850bbb7a09794fc57b35efd48b85f1137be8b5908f87d84acee64aeee1e04",
-      "targetSha": "a68850bbb7a09794fc57b35efd48b85f1137be8b5908f87d84acee64aeee1e04",
-      "adapted": false
+      "targetSha": "5dd5bc9628a1ed1af90b6d528189bc6d6d322a6ee4be59b85b6803ca45efe852",
+      "adapted": true
     },
     {
       "source": "templates/components/zone_map.html.twig",

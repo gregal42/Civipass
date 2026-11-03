@@ -1,0 +1,84 @@
+{% extends 'layouts/app.html.twig' %}
+
+{#
+  Fiche d'une zone. Actions (confirmer, suspendre, réactiver, supprimer) : uniquement celles que la politique d'accès propose
+  pour la commune active, sur SES zones. Variables : zone (ZoneView), group (ZoneGroup), board, problem, open_panel.
+#}
+{% set status_key = detail.status.value|lower %}
+{% set rel = detail.relation.value %}
+{% set tz = detail.timezone %}
+{% set life = detail.lifecycle %}
+
+{% block content %}
+  {% include 'municipal/event/_head.html.twig' with { current: 'zones' } %}
+  {% set A = 'App\\Event\\Application\\Read\\EventAction::' %}
+  {% set confirm = zone.visibleAction(constant(A ~ 'ConfirmZone')) %}
+  {% set suspend = zone.visibleAction(constant(A ~ 'SuspendZone')) %}
+  {% set reactivate = zone.visibleAction(constant(A ~ 'ReactivateZone')) %}
+  {% set update = zone.visibleAction(constant(A ~ 'UpdateZone')) %}
+  {% set delete = zone.visibleAction(constant(A ~ 'DeleteZone')) %}
+  {% set route = { municipalityId: active_municipality_id, eventId: detail.eventId, zoneId: zone.zoneId } %}
+  {% set status = zone.status.value == 'SUSPENDED' ? 'suspended' : (zone.isConfirmed ? 'active' : 'unconfirmed') %}
+
+  <section class="cp-section" aria-labelledby="zone-h" data-controller="cp--disclosure">
+    <div class="cp-cluster" style="justify-content: space-between; align-items: center">
+      {% include 'components/section_head.html.twig' with { id: 'zone-h', title: zone.label, meta: cp_zone_type(zone.type) ~ ' · ' ~ group.municipalityName } only %}
+      <div class="cp-cluster">
+        {% if zone.own and update and update.allowed %}{% include 'components/button.html.twig' with { label: 'Modifier', icon: 'settings', variant: 'secondary', href: edit_url } only %}{% endif %}
+      </div>
+    </div>
+    {% include 'components/zone_card.html.twig' with {
+      id: 'zone-card', name: zone.label, type: cp_zone_type(zone.type), commune: group.municipalityName, status: status, description: zone.description ?? '',
+      validity_scope: zone.validityMode.value == 'EVENT_DURATION' ? 'event' : (zone.validityMode.value == 'SPECIFIC_PERIODS' ? 'periods' : ''),
+      validity: [], validity_empty: zone.own ? 'La validité se configure dans un prochain temps.' : '',
+      readonly: zone.own ? '' : 'Zone gérée par ' ~ group.municipalityName,
+    } only %}
+    {% if not zone.isConfirmed %}<p class="app-note">Cette zone n’est pas encore confirmée : elle ne sera utilisable qu’après confirmation par la commune.</p>{% endif %}
+
+    {% if zone.own %}
+      <div class="cp-cluster" style="gap: var(--space-4); align-items: flex-start">
+        {% if confirm and confirm.allowed %}
+          <form method="post" action="{{ path('app_municipal_event_zone_action', route|merge({ action: 'confirmer' })) }}" novalidate data-controller="cp--submit-state">
+            <input type="hidden" name="_token" value="{{ csrf_token('zone_confirmer_' ~ zone.zoneId) }}">
+            {% include 'components/button.html.twig' with { label: 'Confirmer la zone', type: 'submit', loading_label: 'Confirmation…' } only %}
+          </form>
+        {% endif %}
+        {% if suspend and suspend.allowed %}{% include 'components/button.html.twig' with { label: 'Suspendre la zone', variant: 'secondary', attrs: 'data-action="cp--disclosure#open" data-cp--disclosure-panel-param="zsuspend" data-cp--disclosure-target="trigger" aria-expanded="false"' } only %}{% endif %}
+        {% if reactivate and reactivate.allowed %}
+          <form method="post" action="{{ path('app_municipal_event_zone_action', route|merge({ action: 'reactiver' })) }}" novalidate data-controller="cp--submit-state">
+            <input type="hidden" name="_token" value="{{ csrf_token('zone_reactiver_' ~ zone.zoneId) }}">
+            {% include 'components/button.html.twig' with { label: 'Réactiver la zone', type: 'submit', variant: 'secondary', loading_label: 'Réactivation…' } only %}
+          </form>
+        {% endif %}
+        {% if delete and delete.allowed %}{% include 'components/button.html.twig' with { label: 'Supprimer la zone', variant: 'danger-ghost', attrs: 'data-action="cp--disclosure#open" data-cp--disclosure-panel-param="zdelete" data-cp--disclosure-target="trigger" aria-expanded="false"' } only %}{% endif %}
+      </div>
+
+      {% if suspend and suspend.allowed %}
+        <div data-cp--disclosure-target="panel" data-panel="zsuspend"{{ open_panel == 'zsuspend' ? '' : ' hidden' }}>
+          {% embed 'components/confirm_panel.html.twig' with {
+            id: 'zsuspend', title: 'Suspendre la zone', confirm_label: 'Suspendre la zone', loading_label: 'Suspension…',
+            action: path('app_municipal_event_zone_action', route|merge({ action: 'suspendre' })),
+            consequences: ['La zone n’est plus utilisable tant qu’elle est suspendue.'],
+            keeps: ['La zone et son historique sont conservés.', 'Vous pourrez la réactiver.'],
+            cancel_attrs: 'data-action="cp--disclosure#close"', token: csrf_token('zone_suspendre_' ~ zone.zoneId), problem: problem|default(''),
+          } only %}
+            {% block fields %}<input type="hidden" name="_token" value="{{ token }}">{% if problem %}{% include 'components/alert.html.twig' with { variant: 'error', title: 'Action impossible', text: problem } only %}{% endif %}{% endblock %}
+          {% endembed %}
+        </div>
+      {% endif %}
+      {% if delete and delete.allowed %}
+        <div data-cp--disclosure-target="panel" data-panel="zdelete"{{ open_panel == 'zdelete' ? '' : ' hidden' }}>
+          {% embed 'components/confirm_panel.html.twig' with {
+            id: 'zdelete', title: 'Supprimer la zone', confirm_label: 'Supprimer la zone', loading_label: 'Suppression…',
+            action: path('app_municipal_event_zone_action', route|merge({ action: 'supprimer' })),
+            consequences: ['La zone n’apparaîtra plus dans la liste des zones de l’événement.'],
+            keeps: ['La suppression est tracée : la décision et son historique restent conservés.'],
+            cancel_attrs: 'data-action="cp--disclosure#close"', token: csrf_token('zone_supprimer_' ~ zone.zoneId), problem: problem|default(''),
+          } only %}
+            {% block fields %}<input type="hidden" name="_token" value="{{ token }}">{% if problem %}{% include 'components/alert.html.twig' with { variant: 'error', title: 'Action impossible', text: problem } only %}{% endif %}{% endblock %}
+          {% endembed %}
+        </div>
+      {% endif %}
+    {% endif %}
+  </section>
+{% endblock %}

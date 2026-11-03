@@ -13,7 +13,7 @@
   @param array  actions      Actions permises : liste d’items ActionMenu ({ label, icon, href, attrs, danger }).
   @param string primary      HTML de confiance : action principale visible (ex. « Confirmer cette zone »).
 #}
-{%- set pills = { active: { status: 'active', label: 'Active' }, suspended: { status: 'suspended', label: 'Suspendue' }, unconfirmed: { status: 'pending', label: 'À confirmer' } } -%}
+{%- set pills = { active: { status: 'active', label: 'Active' }, suspended: { status: 'suspended', label: 'Suspendue' }, unconfirmed: { status: 'pending', label: 'Non confirmée' } } -%}
 <article class="cp-zone cp-zone--{{ status|default('active') }}" aria-labelledby="{{ id }}-title">
   <div class="cp-zone__head">
     {%- if select|default(false) %}<input class="cp-zone__check" type="checkbox" name="{{ select.name }}" value="{{ select.value }}" id="{{ id }}-sel" aria-label="{{ select.label|default('Sélectionner la zone ' ~ name) }}" data-cp--bulk-target="item" data-label="{{ name }}"{% if select.configured|default(false) %} data-configured="true"{% endif %} data-action="cp--bulk#update"{% if select.form|default('') %} form="{{ select.form }}"{% endif %}>{% endif %}
