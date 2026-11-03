@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Event\Application;
 
 use App\Event\Application\Read\EventListItem;
+use App\Event\Application\Read\EventListPage;
+use App\Event\Application\Read\EventListQuery;
 use App\Event\Application\Read\EventParticipantHistoryEntry;
 use App\Event\Application\Read\EventParticipationDetails;
 use App\Event\Application\Read\EventParticipationSummary;
+use App\Event\Application\Read\EventTypeOption;
 use App\Event\Application\Read\InvitationView;
 use Symfony\Component\Uid\Uuid;
 
@@ -24,6 +27,19 @@ interface EventReadModel
      * @return list<EventListItem>
      */
     public function eventsOf(Uuid $municipalityId, int $limit): array;
+
+    /**
+     * Une page des événements de la commune (mêmes événements que `eventsOf`), filtrée par recherche, statut et type,
+     * triée par date de début. Le filtrage, le tri et la pagination se font en SQL : jamais « tout charger puis filtrer ».
+     */
+    public function searchEventsOf(Uuid $municipalityId, EventListQuery $query): EventListPage;
+
+    /**
+     * Types d'événement (actifs ou non) pour le filtre de la liste, dans l'ordre d'affichage.
+     *
+     * @return list<EventTypeOption>
+     */
+    public function eventTypes(): array;
 
     /**
      * Coordination : l'organisatrice et les communes dont la participation est ACTIVE ou SUSPENDED. Jamais les

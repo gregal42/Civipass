@@ -6,9 +6,12 @@ namespace App\Event\Infrastructure;
 
 use App\Event\Application\EventReadModel;
 use App\Event\Application\Read\EventListItem;
+use App\Event\Application\Read\EventListPage;
+use App\Event\Application\Read\EventListQuery;
 use App\Event\Application\Read\EventParticipantHistoryEntry;
 use App\Event\Application\Read\EventParticipationDetails;
 use App\Event\Application\Read\EventParticipationSummary;
+use App\Event\Application\Read\EventTypeOption;
 use App\Event\Application\Read\InvitationView;
 use App\Event\Domain\EventStatus;
 use App\Event\Domain\ParticipationStatus;
@@ -31,7 +34,7 @@ final readonly class DbalEventReadModel implements EventReadModel
     public function eventsOf(Uuid $municipalityId, int $limit): array
     {
         $rows = $this->connection->fetchAllAssociative(
-            'SELECT e.id AS event_id, e.public_reference, e.name, e.status, e.starts_at, e.ends_at,'
+            'SELECT e.id AS event_id, e.public_reference, e.name, e.status, e.starts_at, e.ends_at, e.timezone,'
             .' t.code AS type_code, t.label AS type_label, o.id AS organizer_id, o.name AS organizer_name, p.status AS my_status'
             .' FROM event_event e'
             .' JOIN event_type t ON t.id = e.type_id'
@@ -56,7 +59,76 @@ final readonly class DbalEventReadModel implements EventReadModel
             (string) $r['organizer_name'],
             // L'organisatrice n'est pas « invitée » : son statut de participation n'est pas un choix de la liste.
             self::uuid($r['organizer_id']) === $municipalityId->toRfc4122() || null === $r['my_status'] ? null : ParticipationStatus::from((string) $r['my_status']),
+            (string) $r['timezone'],
         ), $rows);
+    }
+
+    public function searchEventsOf(Uuid $municipalityId, EventListQuery $query): EventListPage
+    {
+        $from = ' FROM event_event e'
+            .' JOIN event_type t ON t.id = e.type_id'
+            .' JOIN municipality o ON o.id = e.organizer_municipality_id'
+            .' LEFT JOIN event_participation p ON p.event_id = e.id AND p.municipality_id = :municipality';
+        $where = ' WHERE (e.organizer_municipality_id = :municipality OR p.id IS NOT NULL)';
+        $parameters = ['municipality' => $municipalityId->toBinary()];
+        if (null !== $query->search) {
+            // Les jokers saisis par l'utilisateur sont neutralisés : la recherche est littérale.
+            $where .= " AND (e.name LIKE :search ESCAPE '!' OR e.public_reference LIKE :search ESCAPE '!')";
+            $parameters['search'] = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $query->search).'%';
+        }
+        if (null !== $query->status) {
+            $where .= ' AND e.status = :status';
+            $parameters['status'] = $query->status->value;
+        }
+        if (null !== $query->typeCode) {
+            $where .= ' AND t.code = :type';
+            $parameters['type'] = $query->typeCode;
+        }
+
+        $total = (int) $this->connection->fetchOne('SELECT COUNT(*)'.$from.$where, $parameters);
+        $page = new EventListPage([], $total, $query->page, $query->perPage); // borne la page demandée à la dernière page
+        $direction = 'asc' === $query->direction ? 'ASC' : 'DESC'; // liste blanche : jamais la saisie dans le SQL
+        $rows = 0 === $total ? [] : $this->connection->fetchAllAssociative(
+            'SELECT e.id AS event_id, e.public_reference, e.name, e.status, e.starts_at, e.ends_at, e.timezone,'
+            .' t.code AS type_code, t.label AS type_label, o.id AS organizer_id, o.name AS organizer_name, p.status AS my_status'
+            .$from.$where
+            .' ORDER BY e.starts_at '.$direction.', e.id '.$direction.' LIMIT :limit OFFSET :offset',
+            $parameters + ['limit' => $query->perPage, 'offset' => ($page->page - 1) * $query->perPage],
+            ['limit' => ParameterType::INTEGER, 'offset' => ParameterType::INTEGER],
+        );
+
+        return new EventListPage(array_map(fn (array $r): EventListItem => $this->listItem($r, $municipalityId), $rows), $total, $query->page, $query->perPage);
+    }
+
+    public function eventTypes(): array
+    {
+        return array_map(
+            static fn (array $r): EventTypeOption => new EventTypeOption((string) $r['code'], (string) $r['label']),
+            $this->connection->fetchAllAssociative('SELECT code, label FROM event_type ORDER BY sort_order, code'),
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $r
+     */
+    private function listItem(array $r, Uuid $municipalityId): EventListItem
+    {
+        $organizerId = self::uuid($r['organizer_id']);
+
+        return new EventListItem(
+            self::uuid($r['event_id']),
+            (string) $r['public_reference'],
+            (string) $r['name'],
+            EventStatus::from((string) $r['status']),
+            self::date($r['starts_at']),
+            null === $r['ends_at'] ? null : self::date($r['ends_at']),
+            (string) $r['type_code'],
+            (string) $r['type_label'],
+            $organizerId,
+            (string) $r['organizer_name'],
+            $organizerId === $municipalityId->toRfc4122() || null === $r['my_status'] ? null : ParticipationStatus::from((string) $r['my_status']),
+            (string) $r['timezone'],
+        );
     }
 
     public function coordinationOf(Uuid $eventId): array

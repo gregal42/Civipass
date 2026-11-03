@@ -25,6 +25,8 @@ final readonly class EventListItem
         public string $organizerMunicipalityId,
         public string $organizerMunicipalityName,
         public ?ParticipationStatus $myParticipationStatus,
+        /** Fuseau IANA de l'événement : les dates se lisent dans ce fuseau (DM-062). */
+        public string $timezone,
     ) {
     }
 }

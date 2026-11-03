@@ -20,6 +20,7 @@ Petits lots, schéma revu avant migrations, tests automatisés et `make quality`
 - EventType, Event, EventParticipation, EventZone, EventZoneValidity et compteur de référence (sans bibliothèque de zones ni snapshots).
 - Commune organisatrice disposant d'un droit d'utilisation valide, invitation de communes sans droit, zones et validités pendant l'événement actif.
 - Tests d'isolation, transitions, invalidation par sortie/clôture.
+- **UI-02 — incrément 1 (3 novembre 2026)** : espace municipal `/communes/{municipalityId}/evenements[/{eventId}]` (liste paginée et filtrée, fiche, actions décidées par la politique d'accès, non branchées donc indisponibles), design system UI-02 importé. Incréments suivants : création, coordination, zones, créneaux, cycle de vie ; opérations groupées **non exposées** tant que le volume cumulé n'est pas plafonné (plan TECH-02.1 §23).
 - **État (TECH-02.1)** : backend des événements, invitations, participations, cycle de vie, zones, validités et opérations groupées implémenté (étapes 1 à 5.5), **TECH-02.1 validée et terminée** ; aucun écran, contrôleur ni API. Avant l'exposition HTTP : plafond cumulé des opérations groupées et services de lecture des zones (plan 5.1 §23). Détail : `docs/lots/tech-02.1/plan-implementation.md`.
 
 ## LOT 03 — Dépôt citoyen

@@ -1,16 +1,17 @@
 {
   "name": "civipass-design-system",
   "version": "1.0.0",
+  "screensSource": "UI-01",
   "tokensVersion": 1,
   "tokensSource": "Prototype UI Civipass V1 (direction « Signalétique civique »), validé le 01/11/2026",
-  "importedAt": "2026-11-02",
+  "importedAt": "2026-11-03",
   "tool": "design-system/tools/import.mjs",
   "counts": {
-    "componentTemplates": 64,
+    "componentTemplates": 75,
     "layouts": 2,
-    "examples": 56,
-    "controllers": 15,
-    "files": 219
+    "examples": 66,
+    "controllers": 17,
+    "files": 256
   },
   "components": [
     "action_bar",
@@ -20,11 +21,13 @@
     "banner",
     "bottom_nav",
     "breadcrumb",
+    "bulk_bar",
     "button",
     "check",
     "checklist",
     "choice",
     "commune_decisions",
+    "commune_status",
     "confirm_panel",
     "connection",
     "contact",
@@ -37,6 +40,7 @@
     "empty_state",
     "error_summary",
     "event_card",
+    "event_header",
     "facts",
     "field",
     "file_upload",
@@ -45,7 +49,9 @@
     "holder",
     "icon",
     "icon_button",
+    "invitation_card",
     "kpi_tiles",
+    "lifecycle",
     "mobile_menu",
     "modal",
     "mode_chip",
@@ -68,14 +74,20 @@
     "sidebar",
     "skeleton",
     "status_pill",
+    "stepper",
+    "subnav",
     "tabs",
     "tag",
     "timeline",
     "toasts",
     "topbar",
     "validity",
+    "validity_form",
+    "validity_slot",
     "vehicles",
     "verdict",
+    "zone_card",
+    "zone_map",
     "zone_select"
   ],
   "adaptations": [
@@ -113,6 +125,30 @@
       "id": "A4",
       "target": "assets/controllers/cp/unsaved_guard_controller.js",
       "description": "Import relatif « ./events » → « ./events.js » (le navigateur et AssetMapper exigent l’extension).",
+      "occurrences": 1
+    },
+    {
+      "id": "A9",
+      "target": "templates/components/lifecycle.html.twig",
+      "description": "Formulations neutres : le composant présentait comme opérationnelles des fonctions (formulaire public, demandes, droits) qui ne sont pas encore développées.",
+      "occurrences": 1
+    },
+    {
+      "id": "A9",
+      "target": "templates/components/lifecycle.html.twig",
+      "description": "Formulations neutres : le composant présentait comme opérationnelles des fonctions (formulaire public, demandes, droits) qui ne sont pas encore développées.",
+      "occurrences": 1
+    },
+    {
+      "id": "A9",
+      "target": "templates/components/lifecycle.html.twig",
+      "description": "Formulations neutres : le composant présentait comme opérationnelles des fonctions (formulaire public, demandes, droits) qui ne sont pas encore développées.",
+      "occurrences": 1
+    },
+    {
+      "id": "A9",
+      "target": "templates/components/lifecycle.html.twig",
+      "description": "Formulations neutres : le composant présentait comme opérationnelles des fonctions (formulaire public, demandes, droits) qui ne sont pas encore développées.",
       "occurrences": 1
     },
     {
@@ -361,8 +397,8 @@
     {
       "source": "dist/civipass.css",
       "target": "assets/styles/civipass/civipass.css",
-      "sourceSha": "8d101798a15a7f1192353c8869379f861b5cc73e03120ae634398ee531528d1b",
-      "targetSha": "8d101798a15a7f1192353c8869379f861b5cc73e03120ae634398ee531528d1b",
+      "sourceSha": "3672ecf51dbb79aadad5897f4157baeedbf579e4cfdc3aa6e6416338a9c7fcb8",
+      "targetSha": "3672ecf51dbb79aadad5897f4157baeedbf579e4cfdc3aa6e6416338a9c7fcb8",
       "adapted": false
     },
     {
@@ -412,6 +448,13 @@
       "target": "assets/controllers/cp/autofocus_controller.js",
       "sourceSha": "a5f82a07da7883beb42c2e5258ebe3e28b4f5002ee64d36fdd1bd7becb79aea5",
       "targetSha": "2719c829a16d7fea5d3a0dbc83783e21f502dccf557bac092e2dd151ea5a6d8c",
+      "adapted": true
+    },
+    {
+      "source": "src/controllers/cp/bulk_controller.ts",
+      "target": "assets/controllers/cp/bulk_controller.js",
+      "sourceSha": "f31b85792a19f46c2e96414ccba35300b81377ba7f5a4191eb15b74f8edb65d7",
+      "targetSha": "3b5bfc5ba170263bc3eb2d3ce9f560ba289676b54e5146cb767625a139a79ca4",
       "adapted": true
     },
     {
@@ -508,8 +551,15 @@
     {
       "source": "src/controllers/cp/unsaved_guard_controller.ts",
       "target": "assets/controllers/cp/unsaved_guard_controller.js",
-      "sourceSha": "be0cdb8a757c5e1cc912ef7220b21ba42cf7f7d92e55a1c6686151ae42e89305",
-      "targetSha": "367f1c03edba66a0dd9b1588d4d30a3bbf268c4fc6bca75b27f373549472730b",
+      "sourceSha": "19361b7be1636b10943273725de7760b6322f2075dc85431299c1b4a0cffe704",
+      "targetSha": "c19095451cc902a94834600ead543a6f754a5ad37c89452ff6efe9b038a4dbfc",
+      "adapted": true
+    },
+    {
+      "source": "src/controllers/cp/validity_controller.ts",
+      "target": "assets/controllers/cp/validity_controller.js",
+      "sourceSha": "5e7c0e22f661fef3459774f9eee9c477919d8cedebb80d281a356154a6127fe3",
+      "targetSha": "1722c1103a6aecc9a6094e7521c6ad36c02ed906155cd0da4deb1ccca67f64d0",
       "adapted": true
     },
     {
@@ -569,10 +619,17 @@
       "adapted": false
     },
     {
+      "source": "templates/components/bulk_bar.html.twig",
+      "target": "templates/components/bulk_bar.html.twig",
+      "sourceSha": "f7d804597349be797c98a5b48721e7d243ccf921abb2ec149659992db574849a",
+      "targetSha": "f7d804597349be797c98a5b48721e7d243ccf921abb2ec149659992db574849a",
+      "adapted": false
+    },
+    {
       "source": "templates/components/button.html.twig",
       "target": "templates/components/button.html.twig",
-      "sourceSha": "06ca729ca5f14abb54283c3ed1217a89fe504a1a79c06fc0d95c9665372af44f",
-      "targetSha": "06ca729ca5f14abb54283c3ed1217a89fe504a1a79c06fc0d95c9665372af44f",
+      "sourceSha": "9cbdef27adb8da1dc919d66154a1b73f243f3b906c165ac269e8364898c3e974",
+      "targetSha": "9cbdef27adb8da1dc919d66154a1b73f243f3b906c165ac269e8364898c3e974",
       "adapted": false
     },
     {
@@ -601,6 +658,13 @@
       "target": "templates/components/commune_decisions.html.twig",
       "sourceSha": "ca454eee562443c53e52b71e45c7a2b7c4c46a9d15d14827957a19dbfce9d5d2",
       "targetSha": "ca454eee562443c53e52b71e45c7a2b7c4c46a9d15d14827957a19dbfce9d5d2",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/commune_status.html.twig",
+      "target": "templates/components/commune_status.html.twig",
+      "sourceSha": "b3eed54a97b227af7dabd1f935fbb3e539caaf72a11c29fc6c25feacab143079",
+      "targetSha": "b3eed54a97b227af7dabd1f935fbb3e539caaf72a11c29fc6c25feacab143079",
       "adapted": false
     },
     {
@@ -688,6 +752,13 @@
       "adapted": false
     },
     {
+      "source": "templates/components/event_header.html.twig",
+      "target": "templates/components/event_header.html.twig",
+      "sourceSha": "762be023e858b67f18662d449747e1a5842b8882e203fa02a167d1aaaac75d77",
+      "targetSha": "762be023e858b67f18662d449747e1a5842b8882e203fa02a167d1aaaac75d77",
+      "adapted": false
+    },
+    {
       "source": "templates/components/facts.html.twig",
       "target": "templates/components/facts.html.twig",
       "sourceSha": "38e918e419964ee3f6c7f9978cfca2e087429236a93b0b0364fa6ffe3925e62f",
@@ -744,11 +815,25 @@
       "adapted": false
     },
     {
+      "source": "templates/components/invitation_card.html.twig",
+      "target": "templates/components/invitation_card.html.twig",
+      "sourceSha": "5159e08810d2e583fd513c1e3df274ec77acdfcb6e9bfa2021dc4e6b55af7118",
+      "targetSha": "5159e08810d2e583fd513c1e3df274ec77acdfcb6e9bfa2021dc4e6b55af7118",
+      "adapted": false
+    },
+    {
       "source": "templates/components/kpi_tiles.html.twig",
       "target": "templates/components/kpi_tiles.html.twig",
       "sourceSha": "2bf3c5f956eb14dd993beff6a69d627e3b5529fb0f0736d208f2dfeb6c6ad829",
       "targetSha": "2bf3c5f956eb14dd993beff6a69d627e3b5529fb0f0736d208f2dfeb6c6ad829",
       "adapted": false
+    },
+    {
+      "source": "templates/components/lifecycle.html.twig",
+      "target": "templates/components/lifecycle.html.twig",
+      "sourceSha": "6cc6802546e321e2ccb0b445d428cdeaeec26d4d74370c0addaf709a5e67c326",
+      "targetSha": "f801f046f7daa8f66fba852d8aec522b6fc9cccace2407d3904fcfa0f19c796a",
+      "adapted": true
     },
     {
       "source": "templates/components/mobile_menu.html.twig",
@@ -905,6 +990,20 @@
       "adapted": false
     },
     {
+      "source": "templates/components/stepper.html.twig",
+      "target": "templates/components/stepper.html.twig",
+      "sourceSha": "4a7fd1e74c4b88831f6e40c579132f9600e8459145971c9369bb52d11bf5b577",
+      "targetSha": "4a7fd1e74c4b88831f6e40c579132f9600e8459145971c9369bb52d11bf5b577",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/subnav.html.twig",
+      "target": "templates/components/subnav.html.twig",
+      "sourceSha": "bf9cb3852306270e694a5c532041864c8a863c8a71e5e80e7d9005e13031c3f5",
+      "targetSha": "bf9cb3852306270e694a5c532041864c8a863c8a71e5e80e7d9005e13031c3f5",
+      "adapted": false
+    },
+    {
       "source": "templates/components/tabs.html.twig",
       "target": "templates/components/tabs.html.twig",
       "sourceSha": "ffbdba7d7a366e398108f3fd0e36516308b85f7ec0145e3154f70e3d7047a8fe",
@@ -921,8 +1020,8 @@
     {
       "source": "templates/components/timeline.html.twig",
       "target": "templates/components/timeline.html.twig",
-      "sourceSha": "4c1c2c3f23d106e0e744e9c48e09875272b02d44426ec5038156cbd4c8ec9853",
-      "targetSha": "4c1c2c3f23d106e0e744e9c48e09875272b02d44426ec5038156cbd4c8ec9853",
+      "sourceSha": "346df46c57602515c2fe3d5e83594be126be1150121821f6245a8ad157c448a7",
+      "targetSha": "346df46c57602515c2fe3d5e83594be126be1150121821f6245a8ad157c448a7",
       "adapted": false
     },
     {
@@ -947,6 +1046,20 @@
       "adapted": false
     },
     {
+      "source": "templates/components/validity_form.html.twig",
+      "target": "templates/components/validity_form.html.twig",
+      "sourceSha": "0be51d771ed797fbedd55121174ed8c2dd0db95ef75a6fce0bc4426d36fdf0ef",
+      "targetSha": "0be51d771ed797fbedd55121174ed8c2dd0db95ef75a6fce0bc4426d36fdf0ef",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/validity_slot.html.twig",
+      "target": "templates/components/validity_slot.html.twig",
+      "sourceSha": "15c5d9445290b408b55fa108debad392724fca27c3b36cf8db06b6186c16c4c1",
+      "targetSha": "15c5d9445290b408b55fa108debad392724fca27c3b36cf8db06b6186c16c4c1",
+      "adapted": false
+    },
+    {
       "source": "templates/components/vehicles.html.twig",
       "target": "templates/components/vehicles.html.twig",
       "sourceSha": "0cc03f39b81151c9ca68ec1a6a7087f3d3219c427b7dd76cb79d63244f6879a6",
@@ -958,6 +1071,20 @@
       "target": "templates/components/verdict.html.twig",
       "sourceSha": "4bd55980ff59e8b6d8bfbf68d4caa48ee1e33263cec149be3e257a3096ab6631",
       "targetSha": "4bd55980ff59e8b6d8bfbf68d4caa48ee1e33263cec149be3e257a3096ab6631",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/zone_card.html.twig",
+      "target": "templates/components/zone_card.html.twig",
+      "sourceSha": "a68850bbb7a09794fc57b35efd48b85f1137be8b5908f87d84acee64aeee1e04",
+      "targetSha": "a68850bbb7a09794fc57b35efd48b85f1137be8b5908f87d84acee64aeee1e04",
+      "adapted": false
+    },
+    {
+      "source": "templates/components/zone_map.html.twig",
+      "target": "templates/components/zone_map.html.twig",
+      "sourceSha": "b80b92077dad0f7c27b2965ef3a9faeb7012c2f827a7e8806890270d9fb044b1",
+      "targetSha": "b80b92077dad0f7c27b2965ef3a9faeb7012c2f827a7e8806890270d9fb044b1",
       "adapted": false
     },
     {
@@ -1024,10 +1151,17 @@
       "adapted": false
     },
     {
+      "source": "examples/BulkBar.html.twig",
+      "target": "templates/dev/ui/examples/BulkBar.html.twig",
+      "sourceSha": "5e483c9f401b7270760f491911a5f313ad70c65f0be49503189af8aa589c33c8",
+      "targetSha": "5e483c9f401b7270760f491911a5f313ad70c65f0be49503189af8aa589c33c8",
+      "adapted": false
+    },
+    {
       "source": "examples/Button.html.twig",
       "target": "templates/dev/ui/examples/Button.html.twig",
-      "sourceSha": "c676693aa1f7634b60fe0ff174173ca9ac44e3444cd3c5981ed243fe008971df",
-      "targetSha": "c676693aa1f7634b60fe0ff174173ca9ac44e3444cd3c5981ed243fe008971df",
+      "sourceSha": "b7c5d2097d6c6b6c985944323dad42c04768baacc58cc417f7f750215e6b7afc",
+      "targetSha": "b7c5d2097d6c6b6c985944323dad42c04768baacc58cc417f7f750215e6b7afc",
       "adapted": false
     },
     {
@@ -1056,6 +1190,13 @@
       "target": "templates/dev/ui/examples/CommuneDecisions.html.twig",
       "sourceSha": "986e5cd77eb6b4c1466a27fe26e026c82e2ad2c5eec1678b62f9d756ec725339",
       "targetSha": "986e5cd77eb6b4c1466a27fe26e026c82e2ad2c5eec1678b62f9d756ec725339",
+      "adapted": false
+    },
+    {
+      "source": "examples/CommuneStatus.html.twig",
+      "target": "templates/dev/ui/examples/CommuneStatus.html.twig",
+      "sourceSha": "954b3e0b7b29367e4649296bea6f63d9e3ee76d770f7740cd3f09ac24898edf8",
+      "targetSha": "954b3e0b7b29367e4649296bea6f63d9e3ee76d770f7740cd3f09ac24898edf8",
       "adapted": false
     },
     {
@@ -1122,6 +1263,13 @@
       "adapted": false
     },
     {
+      "source": "examples/EventHeader.html.twig",
+      "target": "templates/dev/ui/examples/EventHeader.html.twig",
+      "sourceSha": "90b0f5652f09f8ab52770de8fe6b7f2ce5a6f56e71bd89bf1bd058c09b959f48",
+      "targetSha": "90b0f5652f09f8ab52770de8fe6b7f2ce5a6f56e71bd89bf1bd058c09b959f48",
+      "adapted": false
+    },
+    {
       "source": "examples/Facts.html.twig",
       "target": "templates/dev/ui/examples/Facts.html.twig",
       "sourceSha": "cf22e5518a72ab9e2e73f3eb291309bf7ff5922e02237a01a4b2969f4de6e343",
@@ -1178,10 +1326,24 @@
       "adapted": false
     },
     {
+      "source": "examples/InvitationCard.html.twig",
+      "target": "templates/dev/ui/examples/InvitationCard.html.twig",
+      "sourceSha": "6e3071308a523efc6c37a8b2e468348a22544407554ea7fbbd2eb2f192134d97",
+      "targetSha": "6e3071308a523efc6c37a8b2e468348a22544407554ea7fbbd2eb2f192134d97",
+      "adapted": false
+    },
+    {
       "source": "examples/KpiTiles.html.twig",
       "target": "templates/dev/ui/examples/KpiTiles.html.twig",
       "sourceSha": "5835797535ecde61b2be143bd3323ea11d95314c308d27089fd18ab3c2e21db0",
       "targetSha": "5835797535ecde61b2be143bd3323ea11d95314c308d27089fd18ab3c2e21db0",
+      "adapted": false
+    },
+    {
+      "source": "examples/Lifecycle.html.twig",
+      "target": "templates/dev/ui/examples/Lifecycle.html.twig",
+      "sourceSha": "543543336d85597bbd7ba1b1afa1e77eb63b601a2d0795caf166af4708a14a47",
+      "targetSha": "543543336d85597bbd7ba1b1afa1e77eb63b601a2d0795caf166af4708a14a47",
       "adapted": false
     },
     {
@@ -1318,6 +1480,20 @@
       "adapted": false
     },
     {
+      "source": "examples/Stepper.html.twig",
+      "target": "templates/dev/ui/examples/Stepper.html.twig",
+      "sourceSha": "f6f541edc7285129c57849c86804f2e314ddfede31990a25d0153008cad6497e",
+      "targetSha": "f6f541edc7285129c57849c86804f2e314ddfede31990a25d0153008cad6497e",
+      "adapted": false
+    },
+    {
+      "source": "examples/SubNav.html.twig",
+      "target": "templates/dev/ui/examples/SubNav.html.twig",
+      "sourceSha": "595611940602a7b22d500717646a3970d77639085488b93625d4b8c6ff241bc5",
+      "targetSha": "595611940602a7b22d500717646a3970d77639085488b93625d4b8c6ff241bc5",
+      "adapted": false
+    },
+    {
       "source": "examples/Tabs.html.twig",
       "target": "templates/dev/ui/examples/Tabs.html.twig",
       "sourceSha": "c4f4cc10054d6bcb42507551d12b3a4f95b8c2a4e6c93af0acc9cc6dfc1b37fe",
@@ -1334,8 +1510,8 @@
     {
       "source": "examples/Timeline.html.twig",
       "target": "templates/dev/ui/examples/Timeline.html.twig",
-      "sourceSha": "1de555928c96a66f6602b250c45fada0f4386c0089e02e1c87f8caa909222459",
-      "targetSha": "1de555928c96a66f6602b250c45fada0f4386c0089e02e1c87f8caa909222459",
+      "sourceSha": "4bd2b379b051e1fcca02c1ac23c7b2fd709d2bd871e5a5e203bb3394481d6c52",
+      "targetSha": "4bd2b379b051e1fcca02c1ac23c7b2fd709d2bd871e5a5e203bb3394481d6c52",
       "adapted": false
     },
     {
@@ -1353,6 +1529,13 @@
       "adapted": false
     },
     {
+      "source": "examples/ValiditySlot.html.twig",
+      "target": "templates/dev/ui/examples/ValiditySlot.html.twig",
+      "sourceSha": "b2b7179f4b8c1b88415dea9d7cf845540703fc9a50a180917559ebaa95a4874e",
+      "targetSha": "b2b7179f4b8c1b88415dea9d7cf845540703fc9a50a180917559ebaa95a4874e",
+      "adapted": false
+    },
+    {
       "source": "examples/Vehicles.html.twig",
       "target": "templates/dev/ui/examples/Vehicles.html.twig",
       "sourceSha": "8d61a2d4b8b165e380b4c3aaedfc9fb9ed847e7101be8150adac0fe8751863c1",
@@ -1364,6 +1547,20 @@
       "target": "templates/dev/ui/examples/Verdict.html.twig",
       "sourceSha": "eef350d9a9cb4b120ac9a556ee0fff1ff39d9b6b867c957a73bea0e51b0300fe",
       "targetSha": "eef350d9a9cb4b120ac9a556ee0fff1ff39d9b6b867c957a73bea0e51b0300fe",
+      "adapted": false
+    },
+    {
+      "source": "examples/ZoneCard.html.twig",
+      "target": "templates/dev/ui/examples/ZoneCard.html.twig",
+      "sourceSha": "1a605c5b6c2071aea87481dddc6fa7b82972f9a8bea2f2c07f1d7ad9db8bbe63",
+      "targetSha": "1a605c5b6c2071aea87481dddc6fa7b82972f9a8bea2f2c07f1d7ad9db8bbe63",
+      "adapted": false
+    },
+    {
+      "source": "examples/ZoneMap.html.twig",
+      "target": "templates/dev/ui/examples/ZoneMap.html.twig",
+      "sourceSha": "4acc52b348d4fe0ae2d5fc62468dd43b7b387aeb234092d7c1fd0ce0d83ae356",
+      "targetSha": "4acc52b348d4fe0ae2d5fc62468dd43b7b387aeb234092d7c1fd0ce0d83ae356",
       "adapted": false
     },
     {
@@ -1411,8 +1608,8 @@
     {
       "source": "scripts/catalog.mjs",
       "target": "src/Shared/UI/DevUi/Resources/catalog.json",
-      "sourceSha": "cd11a17492d989f5fd8908d404173e4d1bc293c611f7bff0da12640af54acc7c",
-      "targetSha": "a65891546bb8d776b8f983750bc21f7dadae30f0d58e724d95b2e09e56f99383",
+      "sourceSha": "5374104bebd9335a24637ddc5c490c1bb49bfbae758e10f4611bf92562e62283",
+      "targetSha": "d396bd28a43aceb5a10e36f8b79714aa50975d7bb02fc39fced573e5498b1140",
       "adapted": true
     },
     {
@@ -1479,10 +1676,17 @@
       "adapted": false
     },
     {
+      "source": "docs/components/BulkBar.md",
+      "target": "design-system/docs/components/BulkBar.md",
+      "sourceSha": "f0b7bfb1ad860cf525561842e3eac0371143c60d29e2513ce6f25316c2628a18",
+      "targetSha": "f0b7bfb1ad860cf525561842e3eac0371143c60d29e2513ce6f25316c2628a18",
+      "adapted": false
+    },
+    {
       "source": "docs/components/Button.md",
       "target": "design-system/docs/components/Button.md",
-      "sourceSha": "7e851f924a2b01ed823010b4c5118b414e04ae5ced65eab37e3cf1ddbad28bb0",
-      "targetSha": "7e851f924a2b01ed823010b4c5118b414e04ae5ced65eab37e3cf1ddbad28bb0",
+      "sourceSha": "1698325bf4e6177310e03d3aefd77e37fe4519b789570542c61a5e86fad619eb",
+      "targetSha": "1698325bf4e6177310e03d3aefd77e37fe4519b789570542c61a5e86fad619eb",
       "adapted": false
     },
     {
@@ -1511,6 +1715,13 @@
       "target": "design-system/docs/components/CommuneDecisions.md",
       "sourceSha": "3c59bf519807e807e38890fecf0a77fe1a8a500a186093b2fd3be33dc2b6e8b7",
       "targetSha": "3c59bf519807e807e38890fecf0a77fe1a8a500a186093b2fd3be33dc2b6e8b7",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/CommuneStatus.md",
+      "target": "design-system/docs/components/CommuneStatus.md",
+      "sourceSha": "b4ccc7d6518ff6be2ca24f311167c558876a6b4956b23842464c162541cdda00",
+      "targetSha": "b4ccc7d6518ff6be2ca24f311167c558876a6b4956b23842464c162541cdda00",
       "adapted": false
     },
     {
@@ -1577,6 +1788,13 @@
       "adapted": false
     },
     {
+      "source": "docs/components/EventHeader.md",
+      "target": "design-system/docs/components/EventHeader.md",
+      "sourceSha": "683f7f8c423a418eb6710d58a23b8575d72c377222ee45a40a1639d0e4992e21",
+      "targetSha": "683f7f8c423a418eb6710d58a23b8575d72c377222ee45a40a1639d0e4992e21",
+      "adapted": false
+    },
+    {
       "source": "docs/components/Facts.md",
       "target": "design-system/docs/components/Facts.md",
       "sourceSha": "45e17e1b33f295f910c1e87d384aad7b66c46fa59b1f3357647aa06e0403a1ae",
@@ -1633,10 +1851,24 @@
       "adapted": false
     },
     {
+      "source": "docs/components/InvitationCard.md",
+      "target": "design-system/docs/components/InvitationCard.md",
+      "sourceSha": "6e9eeffd928bab41282ec827b69aa1aba66237688418764e3bb4b4ea3d56c11c",
+      "targetSha": "6e9eeffd928bab41282ec827b69aa1aba66237688418764e3bb4b4ea3d56c11c",
+      "adapted": false
+    },
+    {
       "source": "docs/components/KpiTiles.md",
       "target": "design-system/docs/components/KpiTiles.md",
       "sourceSha": "ae2507dbcf824d5fda84c21433975fccdd4ad569a4dbf6de46e81ea9b1f5b30f",
       "targetSha": "ae2507dbcf824d5fda84c21433975fccdd4ad569a4dbf6de46e81ea9b1f5b30f",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Lifecycle.md",
+      "target": "design-system/docs/components/Lifecycle.md",
+      "sourceSha": "411f459fc727e2503af38dce04f1a3d166544243e2bb00bfa076e23d1fafd565",
+      "targetSha": "411f459fc727e2503af38dce04f1a3d166544243e2bb00bfa076e23d1fafd565",
       "adapted": false
     },
     {
@@ -1773,6 +2005,20 @@
       "adapted": false
     },
     {
+      "source": "docs/components/Stepper.md",
+      "target": "design-system/docs/components/Stepper.md",
+      "sourceSha": "7fff24fe15adf6c2b1a07cbfc53c23109c9309819dd7137684f333675cdb2564",
+      "targetSha": "7fff24fe15adf6c2b1a07cbfc53c23109c9309819dd7137684f333675cdb2564",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/SubNav.md",
+      "target": "design-system/docs/components/SubNav.md",
+      "sourceSha": "537c75b4f42eca7c9d42ed9f172ccdc03fb63c9d72d9246a1b021e16b909e127",
+      "targetSha": "537c75b4f42eca7c9d42ed9f172ccdc03fb63c9d72d9246a1b021e16b909e127",
+      "adapted": false
+    },
+    {
       "source": "docs/components/Tabs.md",
       "target": "design-system/docs/components/Tabs.md",
       "sourceSha": "3f09e19759d622b1f149227dc021de5890dae3464e7b7f02a93521a93bd154a4",
@@ -1789,8 +2035,8 @@
     {
       "source": "docs/components/Timeline.md",
       "target": "design-system/docs/components/Timeline.md",
-      "sourceSha": "c52f725b8c832bc0539d9cabfc6925d654c6470552f88788fd3d9567cd89e1da",
-      "targetSha": "c52f725b8c832bc0539d9cabfc6925d654c6470552f88788fd3d9567cd89e1da",
+      "sourceSha": "aff0890073bb76a34c6b0f25cbd204141b76f99436a952eb96df1b04a0667a25",
+      "targetSha": "aff0890073bb76a34c6b0f25cbd204141b76f99436a952eb96df1b04a0667a25",
       "adapted": false
     },
     {
@@ -1808,6 +2054,13 @@
       "adapted": false
     },
     {
+      "source": "docs/components/ValiditySlot.md",
+      "target": "design-system/docs/components/ValiditySlot.md",
+      "sourceSha": "683b70c66a6facef90d18a67b4549b3eec3b2718f92c35a93766487798bc4911",
+      "targetSha": "683b70c66a6facef90d18a67b4549b3eec3b2718f92c35a93766487798bc4911",
+      "adapted": false
+    },
+    {
       "source": "docs/components/Vehicles.md",
       "target": "design-system/docs/components/Vehicles.md",
       "sourceSha": "64f919e489d350a88a3a4897a0d1d754b00d9bbcfb4739ace01bd7f7ade31fdd",
@@ -1819,6 +2072,20 @@
       "target": "design-system/docs/components/Verdict.md",
       "sourceSha": "5ad29daefd5a2568640573e76791a8ab404c906da8c81391e84ec599f3686928",
       "targetSha": "5ad29daefd5a2568640573e76791a8ab404c906da8c81391e84ec599f3686928",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/ZoneCard.md",
+      "target": "design-system/docs/components/ZoneCard.md",
+      "sourceSha": "0b5c175b62a4be4cbfd00ed86b4b8a82a57c3e903c41f2ad68e7578f507c66f6",
+      "targetSha": "0b5c175b62a4be4cbfd00ed86b4b8a82a57c3e903c41f2ad68e7578f507c66f6",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/ZoneMap.md",
+      "target": "design-system/docs/components/ZoneMap.md",
+      "sourceSha": "9b8fce6916f8f9b5f4457b4ef415dcf0cdc1d9a3495b93146431da0104d42745",
+      "targetSha": "9b8fce6916f8f9b5f4457b4ef415dcf0cdc1d9a3495b93146431da0104d42745",
       "adapted": false
     },
     {
@@ -1836,10 +2103,38 @@
       "adapted": false
     },
     {
+      "source": "docs/lots/LOT-UI-02-architecture.md",
+      "target": "design-system/docs/lots/LOT-UI-02-architecture.md",
+      "sourceSha": "56504ced69d2a761e9460526b606bcb488c8d2b98d91221dc39965278a260a3e",
+      "targetSha": "56504ced69d2a761e9460526b606bcb488c8d2b98d91221dc39965278a260a3e",
+      "adapted": false
+    },
+    {
+      "source": "docs/lots/LOT-UI-02-modifications-SFD-STD.md",
+      "target": "design-system/docs/lots/LOT-UI-02-modifications-SFD-STD.md",
+      "sourceSha": "1618e7b3feed23fbc0c3361869e9b15eecab6142776b0e1764f9e277e4a4d5dc",
+      "targetSha": "1618e7b3feed23fbc0c3361869e9b15eecab6142776b0e1764f9e277e4a4d5dc",
+      "adapted": false
+    },
+    {
+      "source": "docs/lots/LOT-UI-02.md",
+      "target": "design-system/docs/lots/LOT-UI-02.md",
+      "sourceSha": "cc88f31c8c501a72c863c4b7cd4735f734e35ac177ee325e8a723bbd9acfbf9e",
+      "targetSha": "cc88f31c8c501a72c863c4b7cd4735f734e35ac177ee325e8a723bbd9acfbf9e",
+      "adapted": false
+    },
+    {
       "source": "docs/lots/UI-001.md",
       "target": "design-system/docs/lots/UI-001.md",
       "sourceSha": "9370293ef7549a19001726d964c243c6262bccac4569b2b827afe4e57d4f0883",
       "targetSha": "9370293ef7549a19001726d964c243c6262bccac4569b2b827afe4e57d4f0883",
+      "adapted": false
+    },
+    {
+      "source": "docs/lots/UI-002.md",
+      "target": "design-system/docs/lots/UI-002.md",
+      "sourceSha": "677dd253741d9254b65ee8ca562a7aba229157f37427be4921291b711701fe90",
+      "targetSha": "677dd253741d9254b65ee8ca562a7aba229157f37427be4921291b711701fe90",
       "adapted": false
     },
     {
@@ -1852,8 +2147,8 @@
     {
       "source": "docs/sections/etats-et-arbitrages.md",
       "target": "design-system/docs/sections/etats-et-arbitrages.md",
-      "sourceSha": "fd113d34e4f08a837d200a5e4b9630d708a9238ac95e11f19e00bf8bfb68c660",
-      "targetSha": "fd113d34e4f08a837d200a5e4b9630d708a9238ac95e11f19e00bf8bfb68c660",
+      "sourceSha": "fb62f2d387c8d680b8f8135db6d1baa3fd2adfe841c31facf50874b5c7b880df",
+      "targetSha": "fb62f2d387c8d680b8f8135db6d1baa3fd2adfe841c31facf50874b5c7b880df",
       "adapted": false
     },
     {
@@ -1866,22 +2161,22 @@
     {
       "source": "docs/sections/integration-symfony.md",
       "target": "design-system/docs/sections/integration-symfony.md",
-      "sourceSha": "e0ae78f74a729b0621c4a0b475b0db78bdb804417d3452ca6183b1fe46771c84",
-      "targetSha": "e0ae78f74a729b0621c4a0b475b0db78bdb804417d3452ca6183b1fe46771c84",
+      "sourceSha": "d13a04c7eeffeb527fbf4c0c17ac291890aa5e815b7fbd8b4dc4ec5ee0a6a15c",
+      "targetSha": "d13a04c7eeffeb527fbf4c0c17ac291890aa5e815b7fbd8b4dc4ec5ee0a6a15c",
       "adapted": false
     },
     {
       "source": "docs/sections/interactions.md",
       "target": "design-system/docs/sections/interactions.md",
-      "sourceSha": "2ea734996e0ffcbc5b44a1098c9de77231777be810de05dda374f109dc360a61",
-      "targetSha": "2ea734996e0ffcbc5b44a1098c9de77231777be810de05dda374f109dc360a61",
+      "sourceSha": "956a9c4acc54d7d7e0449f6f73d95c64b8340c5c993271bc8270fa8d1d55de83",
+      "targetSha": "956a9c4acc54d7d7e0449f6f73d95c64b8340c5c993271bc8270fa8d1d55de83",
       "adapted": false
     },
     {
       "source": "docs/sections/responsive.md",
       "target": "design-system/docs/sections/responsive.md",
-      "sourceSha": "fd3d3a098a7dc2f03402d9b6d7cc17223edc2471187ed9a39323bfbe980cbed7",
-      "targetSha": "fd3d3a098a7dc2f03402d9b6d7cc17223edc2471187ed9a39323bfbe980cbed7",
+      "sourceSha": "5458f8530d8c4c055945caa71f40a41258632fe706aa801cdbe78ecd9523fec6",
+      "targetSha": "5458f8530d8c4c055945caa71f40a41258632fe706aa801cdbe78ecd9523fec6",
       "adapted": false
     }
   ]

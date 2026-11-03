@@ -1,0 +1,32 @@
+{#
+  Cycle de vie d’un événement : Brouillon → Actif ⇄ Suspendu → Clôturé. Proposition UI-002. Affichage seul : les transitions sont des actions de la page, autorisées côté serveur.
+  @param string state  draft | active | suspended | closed
+  @param object dates  { draft, active, suspended, closed } : textes datés (« 31/10/2026 à 22:15 »).
+  @param string note   Phrase sous la frise (ce que l’état implique).
+#}
+{%- set d = dates|default({}) -%}
+{%- set order = { draft: 0, active: 1, suspended: 2, closed: 3 } -%}
+{%- set cur = order[state] -%}
+{%- set items = [
+  { key: 'draft', label: 'Brouillon', what: 'Préparation de l’événement' },
+  { key: 'active', label: 'Actif', what: 'Événement en cours' },
+  { key: 'suspended', label: 'Suspendu', what: 'Facultatif · réactivable' },
+  { key: 'closed', label: 'Clôturé', what: 'Définitif · aucune réactivation' } ] -%}
+<div class="cp-lifecycle">
+  <ol class="cp-lifecycle__list">
+    {%- for i in items %}
+    {%- set k = order[i.key] -%}
+    {%- if i.key == state %}{% set st = 'current' %}
+    {%- elseif i.key == 'suspended' %}{% set st = attribute(d, 'suspended')|default('') ? 'past' : (state == 'closed' ? 'skipped' : 'option') %}
+    {%- elseif k < cur %}{% set st = 'past' %}
+    {%- else %}{% set st = 'next' %}{% endif -%}
+    {%- set sr = { current: 'état actuel', past: 'passé', next: 'à venir', option: 'possible', skipped: 'non utilisé' } -%}
+    <li class="cp-lifecycle__item cp-lifecycle__item--{{ st }}{% if i.key == 'suspended' %} cp-lifecycle__item--branch{% endif %}"{% if st == 'current' %} aria-current="step"{% endif %}>
+      <span class="cp-lifecycle__dot" aria-hidden="true"></span>
+      <span class="cp-lifecycle__label">{{ i.label }}<span class="cp-sr-only"> ({{ sr[st] }})</span></span>
+      <span class="cp-lifecycle__when">{% if attribute(d, i.key)|default('') %}{{ attribute(d, i.key) }}{% else %}{{ i.what }}{% endif %}</span>
+    </li>
+    {%- endfor %}
+  </ol>
+  {%- if note|default('') %}<p class="cp-lifecycle__note">{{ note }}</p>{% endif %}
+</div>

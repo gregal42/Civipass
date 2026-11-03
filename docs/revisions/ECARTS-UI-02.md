@@ -108,3 +108,12 @@ Les lignes de P citées « ~ » sont approximatives (±3 lignes) : fichier scrip
 7. Clôture forcée super-admin Sonata absente, STD proposant de réaligner CDC §4.1 (E38).
 8. Commune non abonnée : pas d'accès Demandes/Laissez-passer dans la démo (E31).
 9. Parcours principal de 8+ étapes avec fuseau/récurrence au lieu du parcours en 5 étapes (E44).
+
+## État au 3 novembre 2026 (audit d'intégration, incrément 1)
+
+La livraison UI-02 n'a pas changé depuis le constat ci-dessus (fichiers du 2 novembre). Réexaminés à la source de l'état actuel du dépôt :
+
+- **Logique simulée du prototype** (`proto.js`, `scripts/prototype.mjs` : activation « zone non non-confirmée », participation organisatrice `draft`, clôture bloquée par les participations, « À confirmer » comme statut, correction silencieuse des heures) : **non importée** ; ce sont les services TECH-02.1 (DM-051, DM-053, DM-059, DM-092, DM-055, DM-063, DM-064) qui font foi. Écarts E01 à E14 : sans effet sur l'intégration tant que ces comportements ne sont pas repris.
+- **Écarts qui touchent les gabarits ou contrôleurs importés** (à corriger par adaptation dans `import.mjs`, jamais à la main) : `zone_card` (statut `unconfirmed`, libellé « À confirmer » : afficher « Non confirmée » calculé depuis `confirmedAt`), `validity_form` (« heure de Paris » codé en dur, aucun champ de choix première/seconde occurrence), `cp--validity` (`clockIssues` annonce « l'heure retenue sera 03:00 » / « la première occurrence » : faux), formulaire de zone (champ « État » inexistant côté serveur ; case de confirmation de « Commune entière » absente), formulaire d'événement (fuseau, champs verrouillés après activation, référence `EVT-…`), formulaire d'invitation (champ « Contact » absent du modèle). **Aucun n'est utilisé par l'incrément 1.**
+- **E27 (agent instructeur)** : obsolète. DM-084 ouvre la consultation à tout rôle ; la politique d'accès refuse seulement les actions de gestion.
+- Texte du composant `lifecycle` : mentionnait le formulaire public, les demandes et les droits (autres lots) : **corrigé** par l'adaptation A9 de l'import (recette visuelle du 3 novembre 2026).

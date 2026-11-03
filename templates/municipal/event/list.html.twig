@@ -1,0 +1,90 @@
+{% extends 'layouts/app.html.twig' %}
+
+{# Libellés de présentation : le serveur ne transmet que des valeurs d'énumération. #}
+{% set status_options = [
+    { value: '', label: 'Tous les statuts' },
+    { value: 'draft', label: 'Brouillon' },
+    { value: 'active', label: 'Actif' },
+    { value: 'suspended', label: 'Suspendu' },
+    { value: 'closed', label: 'Clôturé' },
+] %}
+{% set status_labels = { draft: 'Brouillon', active: 'Actif', suspended: 'Suspendu', closed: 'Clôturé' } %}
+
+{% block content %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+
+  {% set total_text = page.total ~ (page.total > 1 ? ' événements' : ' événement') %}
+  {% set create = page.create %}
+  {% embed 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Événements', sub: total_text ~ (query.hasFilters ? ' correspondant à votre recherche' : ''), create: create } only %}
+    {% block actions %}
+      {# La création est un incrément ultérieur : proposée seulement si la politique l'autorise, jamais simulée. #}
+      {% if create and create.allowed %}
+        {% include 'components/button.html.twig' with { id: 'create-u', label: 'Créer un événement', icon: 'plus', unavailable_reason: 'Disponible prochainement.' } only %}
+      {% elseif create and create.reason and create.reason.value == 'NO_USAGE_RIGHT' %}
+        {% include 'components/button.html.twig' with { id: 'create-u', label: 'Créer un événement', icon: 'plus', unavailable_reason: cp_denial_message(create.reason) } only %}
+      {% endif %}
+    {% endblock %}
+  {% endembed %}
+
+  {# Filtres actifs sous forme de puces (la tri n'en est pas un). #}
+  {% set chips = [] %}
+  {% if query.search %}{% set chips = chips|merge([{ label: 'Recherche : ' ~ query.search, remove_href: chip_urls.q }]) %}{% endif %}
+  {% if query.status %}{% set chips = chips|merge([{ label: 'Statut : ' ~ status_labels[query.status.value|lower], remove_href: chip_urls.statut }]) %}{% endif %}
+  {% if query.typeCode %}
+    {% for t in type_options %}{% if t.code == query.typeCode %}{% set chips = chips|merge([{ label: 'Type : ' ~ t.label, remove_href: chip_urls.type }]) %}{% endif %}{% endfor %}
+  {% endif %}
+
+  {% embed 'components/filter_bar.html.twig' with {
+      id: 'filters', action: list_url,
+      search: { id: 'q', label: 'Rechercher un événement', placeholder: 'Nom ou référence', value: query.search ?? '' },
+      count_label: total_text, chips: chips, active_count: chips|length, reset_href: reset_url,
+      status_options: status_options, status_value: query.status ? query.status.value|lower : '',
+      type_options: [{ value: '', label: 'Tous les types' }]|merge(type_options|map(t => { value: t.code, label: t.label })), type_value: query.typeCode ?? '',
+      sort_options: [{ value: 'desc', label: 'Début : plus récent d’abord' }, { value: 'asc', label: 'Début : plus ancien d’abord' }], sort_value: query.direction,
+    } only %}
+    {% block filters %}
+      {% include 'components/select.html.twig' with { id: 'f-statut', name: 'statut', label: 'Statut', options: status_options, value: status_value } only %}
+      {% include 'components/select.html.twig' with { id: 'f-type', name: 'type', label: 'Type', options: type_options, value: type_value } only %}
+      {% include 'components/select.html.twig' with { id: 'f-tri', name: 'tri', label: 'Trier par', options: sort_options, value: sort_value } only %}
+    {% endblock %}
+  {% endembed %}
+
+  {% if page.total == 0 %}
+    {% if query.hasFilters %}
+      {% include 'components/empty_state.html.twig' with { icon: 'search', title: 'Aucun événement ne correspond', text: 'Modifiez la recherche ou retirez des filtres.' } only %}
+    {% else %}
+      {% include 'components/empty_state.html.twig' with { icon: 'flag', title: 'Aucun événement', text: 'Les événements organisés par votre commune, ou auxquels elle participe, apparaîtront ici.' } only %}
+    {% endif %}
+  {% else %}
+    {% set rows = [] %}
+    {% for e in page.items %}
+      {% set pill %}{% include 'components/status_pill.html.twig' with { status: e.status.value|lower } only %}{% endset %}
+      {% set relation = e.organizerMunicipalityId == active_municipality_id ? 'Organisatrice' : (e.myParticipationStatus and e.myParticipationStatus.value == 'INVITED' ? 'Invitée' : 'Participante') %}
+      {% set rows = rows|merge([{ cells: {
+          name: { text: e.name, href: list_url ~ '/' ~ e.eventId },
+          status: { html: pill },
+          type: { text: e.typeLabel },
+          start: { text: e.startsAt|cp_datetime(e.timezone) },
+          end: { text: e.endsAt ? e.endsAt|cp_datetime(e.timezone) : '—' },
+          org: { text: e.organizerMunicipalityName ~ ' · ' ~ relation },
+          ref: { text: e.publicReference, mono: true },
+      } }]) %}
+    {% endfor %}
+    {% include 'components/data_table.html.twig' with {
+      caption: 'Événements de ' ~ active_municipality_name ~ ' et participations',
+      columns: [
+        { key: 'name', label: 'Événement', card: 'title' },
+        { key: 'status', label: 'Statut', card: 'status' },
+        { key: 'type', label: 'Type', card: 'sub' },
+        { key: 'start', label: 'Début', card: 'aside', sortable: true, sort: query.direction, sort_href: sort_url },
+        { key: 'end', label: 'Fin', wide: true, card: 'hide' },
+        { key: 'org', label: 'Organisatrice', card: 'full' },
+        { key: 'ref', label: 'Référence', wide: true, card: 'hide' },
+      ],
+      rows: rows,
+    } only %}
+    {% if page.pages > 1 %}
+      {% include 'components/pagination.html.twig' with { from: page.from, to: page.to, total: page.total, noun: 'événements', page: page.page, pages: page.pages, href_pattern: page_pattern } only %}
+    {% endif %}
+  {% endif %}
+{% endblock %}

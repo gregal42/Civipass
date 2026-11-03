@@ -1,0 +1,38 @@
+{#
+  Zone d’un événement, en carte textuelle (aucune carte géographique en V1). LOT UI-02.
+  @param string id           Identifiant (titre : {id}-title).
+  @param string name         Libellé.        @param string type  Type : Commune entière | Quartier | Rue | Lieu-dit | Personnalisée
+  @param string status       active | suspended | unconfirmed (« À confirmer » : Commune entière proposée, non confirmée — hypothèse Q6).
+  @param string commune      Commune qui gère la zone.   @param string description  (facultative)
+  @param string validity_scope  event (pendant toute la durée de l’événement) | periods (périodes spécifiques) | vide = « Validité à configurer » (pas un statut métier).
+  @param array  validity     Résumés des créneaux (mode periods).
+  @param string validity_empty  Texte affiché sous « Validité à configurer ».
+  @param object select       { name, value, label, configured, form } : case de sélection multiple (zones de la commune de l’utilisateur seulement).
+  @param string href         Lien vers la fiche zone.
+  @param string readonly     Raison de la lecture seule (« Zone gérée par Saumos »).
+  @param array  actions      Actions permises : liste d’items ActionMenu ({ label, icon, href, attrs, danger }).
+  @param string primary      HTML de confiance : action principale visible (ex. « Confirmer cette zone »).
+#}
+{%- set pills = { active: { status: 'active', label: 'Active' }, suspended: { status: 'suspended', label: 'Suspendue' }, unconfirmed: { status: 'pending', label: 'À confirmer' } } -%}
+<article class="cp-zone cp-zone--{{ status|default('active') }}" aria-labelledby="{{ id }}-title">
+  <div class="cp-zone__head">
+    {%- if select|default(false) %}<input class="cp-zone__check" type="checkbox" name="{{ select.name }}" value="{{ select.value }}" id="{{ id }}-sel" aria-label="{{ select.label|default('Sélectionner la zone ' ~ name) }}" data-cp--bulk-target="item" data-label="{{ name }}"{% if select.configured|default(false) %} data-configured="true"{% endif %} data-action="cp--bulk#update"{% if select.form|default('') %} form="{{ select.form }}"{% endif %}>{% endif %}
+    <h3 class="cp-zone__name" id="{{ id }}-title">{% if href|default('') %}<a href="{{ href }}">{{ name }}</a>{% else %}{{ name }}{% endif %}</h3>
+    {% include 'components/status_pill.html.twig' with pills[status|default('active')] only %}
+    {%- if actions|default([])|length %}{% include 'components/action_menu.html.twig' with { id: id ~ '-menu', label: 'Actions sur la zone ' ~ name, items: actions } only %}{% endif %}
+  </div>
+  <p class="cp-zone__meta"><span>{{ type }}</span><span aria-hidden="true">·</span><span>{{ commune }}</span></p>
+  {%- if description|default('') %}<p class="cp-zone__desc">{{ description }}</p>{% endif %}
+  <div class="cp-zone__validity">
+    {% include 'components/icon.html.twig' with { name: 'clock', size: 's' } only %}
+    {%- if validity_scope|default('') == 'event' %}<p>Pendant toute la durée de l’événement.</p>
+    {%- elseif validity_scope|default('') == 'periods' and validity|default([])|length %}<ul>{% for v in validity %}<li>{{ v }}</li>{% endfor %}</ul>
+    {%- else %}<p><b class="cp-zone__todo">Validité à configurer.</b>{% if validity_empty|default('') %} {{ validity_empty }}{% endif %}</p>{% endif %}
+  </div>
+  {%- if readonly|default('') or primary|default('') %}
+  <div class="cp-zone__foot">
+    {%- if readonly|default('') %}<p class="cp-zone__ro">{% include 'components/icon.html.twig' with { name: 'lock', size: 's' } only %}<span>{{ readonly }}</span></p>{% endif %}
+    {{ primary|default('')|raw }}
+  </div>
+  {%- endif %}
+</article>

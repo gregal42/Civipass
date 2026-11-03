@@ -1,0 +1,18 @@
+{#
+  Invitation reçue par la commune active à rejoindre un événement. LOT UI-02. Aucune expiration, pas de refus en V1 (SFD SCR-014).
+  @param string id  @param string title  Nom de l’événement.  @param string type  @param string icon
+  @param string organizer   Commune organisatrice.   @param string invited_on  « 01/11/2026 à 08:02 ».   @param string message  Message de l’organisatrice (facultatif).
+  @param string href        Lien vers l’invitation.  @param string action_label  (« Consulter l’invitation »).
+  @param string blocked     Raison pour laquelle la commune ne peut pas accepter (commune suspendue…). L’action d’acceptation n’est alors pas proposée.
+#}
+<article class="cp-invite" aria-labelledby="{{ id }}-title"><div class="cp-invite__in">
+  {% include 'components/icon.html.twig' with { name: 'mail', size: 'l' } only %}
+  <div class="cp-invite__body">
+    <p class="cp-eyebrow">Invitation · {{ type }}</p>
+    <h3 class="cp-invite__title" id="{{ id }}-title">{{ title }}</h3>
+    <p class="cp-invite__meta">Organisé par {{ organizer }} · invitation reçue le {{ invited_on }}</p>
+    {%- if message|default('') %}<blockquote class="cp-invite__msg">« {{ message }} »</blockquote>{% endif %}
+    {%- if blocked|default('') %}<p class="cp-invite__blocked">{% include 'components/icon.html.twig' with { name: 'lock', size: 's' } only %}<span>{{ blocked }}</span></p>{% endif %}
+  </div>
+  <div class="cp-invite__action">{% include 'components/button.html.twig' with { label: action_label|default('Consulter l’invitation'), variant: 'secondary', href: href, icon_after: 'right' } only %}</div>
+</div></article>

@@ -20,6 +20,13 @@ Les références de conception sont 1440 px (desktop), 768 px (tablette) et 375 
 | `.cp-filters` | < 640 px | Filtres repliés derrière « Filtres (n) », recherche toujours visible |
 | `.cp-pass` | < 460 px | QR au-dessus des informations, actions pleine largeur |
 | `.cp-decisions`, `.cp-docs` | < 420 px | Statut et action passent sous le texte |
+| `.cp-stepper` | < 560 px | « Étape n sur N » + intitulé, barre segmentée |
+| `.cp-lifecycle` | < 480 px | Frise verticale |
+| `.cp-subnav` | — | Défilement horizontal dans son conteneur quand les rubriques ne tiennent pas |
+| `.cp-evhead` | < 720 px | En-tête d’événement : informations sur 2 colonnes, actions pleine largeur |
+| `.cp-vform` | < 600 px | Choix de validité et types de créneau empilés ; date seule sur sa ligne |
+| `.cp-bulk` | < 600 px | Actions groupées pleine largeur ; barre non collée sous 640 px d’application |
+| `.cp-invite` | < 560 px | Action de l’invitation pleine largeur, sous le texte |
 | `.cp-public` | < 720 px | Contrôle QR sur une colonne (verdict, liste à vérifier, titulaire, droits, véhicules) |
 
 Une variable CSS ne peut pas servir dans une `@container` : les seuils sont écrits en dur dans `civipass.css` et documentés ici.

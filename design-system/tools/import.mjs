@@ -1,6 +1,10 @@
 // Import versionné du Design System Civipass dans le projet Symfony.
 //
-//   node design-system/tools/import.mjs "<chemin de l’archive du design system>"
+//   node design-system/tools/import.mjs "<chemin de l’archive du design system>" ["<archive des écrans de prévisualisation>"]
+//
+// Le second argument (facultatif, défaut : la même archive) désigne l'archive dont proviennent les ÉCRANS et les données fictives
+// de la galerie de développement (/dev/ui, section 5 et 6). Il permet de mettre à jour les composants sans réimporter des écrans
+// de prévisualisation dont le contrat de variables a changé (UI-02 : dashboard, forbidden).
 //
 // Outil de DÉVELOPPEMENT, exécuté sur le poste (pas dans le conteneur PHP, pas en production) :
 //  - il n'écrit rien dans l'archive (lecture seule) ;
@@ -21,7 +25,9 @@ if (!process.argv[2] || !fs.existsSync(path.join(archive, 'tokens/tokens.json'))
   console.error('Usage : node design-system/tools/import.mjs "<archive du design system>"'); process.exit(1);
 }
 const project = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
+const screensArchive = process.argv[3] ? path.resolve(process.argv[3]) : archive;
 const src = (...p) => path.join(archive, ...p);
+const srcScreens = (...p) => path.join(screensArchive, ...p);
 const dst = (...p) => path.join(project, ...p);
 const sha = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
 const esbuild = createRequire(src('package.json'))('esbuild');
@@ -30,11 +36,11 @@ const tokens = JSON.parse(fs.readFileSync(src('tokens/tokens.json'), 'utf8'));
 
 const files = [];        // { source, target, sourceSha, targetSha, adapted }
 const adaptations = [];  // { id, target, description, occurrences }
-function put(target, content, { source = null, adapted = false } = {}) {
+function put(target, content, { source = null, adapted = false, screens = false } = {}) {
   fs.mkdirSync(path.dirname(dst(target)), { recursive: true });
   fs.writeFileSync(dst(target), content);
   const buf = Buffer.isBuffer(content) ? content : Buffer.from(content);
-  files.push({ source, target, sourceSha: source ? sha(fs.readFileSync(src(source))) : null, targetSha: sha(buf), adapted });
+  files.push({ source, target, sourceSha: source ? sha(fs.readFileSync((screens ? srcScreens : src)(source))) : null, targetSha: sha(buf), adapted });
 }
 // Substitution explicite avec nombre d'occurrences attendu.
 function adapt(id, target, text, from, to, expected, description) {
@@ -51,6 +57,7 @@ function adaptRe(id, target, text, re, to, expected, description) {
   return text.replace(re, to);
 }
 const read = (p) => fs.readFileSync(src(p), 'utf8');
+const readScreens = (p) => fs.readFileSync(srcScreens(p), 'utf8');
 const list = (d, ext) => fs.readdirSync(src(d)).filter((f) => f.endsWith(ext) && !f.startsWith('.')).sort();
 
 /* ── 1. Styles ───────────────────────────────────────────────────────────── */
@@ -89,6 +96,15 @@ for (const f of list('templates/components', '.twig')) {
     t = adapt('A6', 'templates/components/mobile_menu.html.twig', t, '<span>Se déconnecter</span></a>', '<span>Se déconnecter</span></button></form>', 1, 'Fermeture du formulaire de déconnexion du menu mobile.');
     adapted = true;
   }
+  if (f === 'lifecycle.html.twig') {
+    // Le composant décrit des fonctions des lots Demandes et Laissez-passer, pas encore développées : formulations neutres.
+    const target = 'templates/components/lifecycle.html.twig'; const why = 'Formulations neutres : le composant présentait comme opérationnelles des fonctions (formulaire public, demandes, droits) qui ne sont pas encore développées.';
+    t = adapt('A9', target, t, "what: 'Préparation, aucun droit émis'", "what: 'Préparation de l’événement'", 1, why);
+    t = adapt('A9', target, t, "what: 'Formulaire public ouvert, demandes instruites'", "what: 'Événement en cours'", 1, why);
+    t = adapt('A9', target, t, "what: 'Facultatif · droits inutilisables, réactivable'", "what: 'Facultatif · réactivable'", 1, why);
+    t = adapt('A9', target, t, "what: 'Définitif · plus aucune demande ni droit'", "what: 'Définitif · aucune réactivation'", 1, why);
+    adapted = true;
+  }
   put(`templates/components/${f}`, t, { source: `templates/components/${f}`, adapted });
 }
 for (const f of list('templates/layouts', '.twig')) {
@@ -105,7 +121,7 @@ for (const f of list('examples', '.twig')) put(`templates/dev/ui/examples/${f}`,
 const SCREEN = { 'dashboard.html.twig': 'dashboard', 'requests.html.twig': 'requests', 'request.html.twig': 'request', 'forbidden.html.twig': 'forbidden' };
 for (const [f, name] of Object.entries(SCREEN)) {
   const target = `templates/dev/ui/screens/${name}.html.twig`;
-  let t = read(`prototype/templates/${f}`);
+  let t = readScreens(`prototype/templates/${f}`);
   t = adapt('P1', target, t, "{% extends 'pages/_base.html.twig' %}", "{% extends 'dev/ui/screens/_screen.html.twig' %}", 1, 'Layout de prévisualisation Civipass (layouts/app + bandeau « données fictives ») à la place du layout statique du prototype.');
   t = t.replaceAll("href: '../tableau-de-bord.html'", 'href: links.dashboard').replaceAll("href: 'tableau-de-bord.html'", 'href: links.dashboard').replaceAll('href="tableau-de-bord.html"', 'href="{{ links.dashboard }}"')
     .replaceAll("href: 'demandes.html?statut=pending'", 'href: links.requests_pending').replaceAll("action: 'demandes.html'", 'action: links.requests').replaceAll('action="demandes.html"', 'action="{{ links.requests }}"');
@@ -138,14 +154,14 @@ for (const [f, name] of Object.entries(SCREEN)) {
     t = t.replace(/\n\{# Gabarits utilisés par la simulation[\s\S]*$/, '\n{% endblock %}\n');
     t = adapt('P6', target, t, '<div aria-live="polite"></div>', '<div aria-live="polite">{% if flash|default(false) %}{% include \'components/alert.html.twig\' with { variant: \'info\', focus: true, title: \'Prévisualisation : aucune décision n’a été enregistrée\', text: \'Ce formulaire n’écrit rien : les écrans de décision réels arrivent avec le lot Instruction.\' } only %}{% endif %}</div>', 1, 'Zone de message : alerte de prévisualisation après envoi d’un formulaire (simulation du serveur retirée).');
   }
-  put(target, t, { source: `prototype/templates/${f}`, adapted: true });
+  put(target, t, { source: `prototype/templates/${f}`, adapted: true, screens: true });
 }
 
 /* ── 6. Données fictives du prototype (JSON) ─────────────────────────────── */
 {
-  const data = await import(pathToFileURL(src('prototype/data.mjs')).href);
+  const data = await import(pathToFileURL(srcScreens('prototype/data.mjs')).href);
   const json = JSON.stringify({ requests: data.buildRequests(), communes: data.COMMUNES, zones: data.ZONES, user: data.USER, event: data.EVENT, draft: data.DRAFT });
-  put('src/Shared/UI/DevUi/Resources/prototype.json', json, { source: 'prototype/data.mjs', adapted: true });
+  put('src/Shared/UI/DevUi/Resources/prototype.json', json, { source: 'prototype/data.mjs', adapted: true, screens: true });
   adaptations.push({ id: 'P7', target: 'src/Shared/UI/DevUi/Resources/prototype.json', description: 'Données fictives du prototype (aucune personne réelle) exportées en JSON depuis data.mjs, sans modification.', occurrences: null });
 }
 
@@ -171,7 +187,7 @@ for (const f of walk('docs')) put(`design-system/${f}`, fs.readFileSync(src(f)),
 /* ── 8. Provenance ───────────────────────────────────────────────────────── */
 const components = list('templates/components', '.twig').map((f) => f.replace('.html.twig', ''));
 const provenance = {
-  name: pkg.name, version: pkg.version, tokensVersion: tokens.version, tokensSource: tokens.meta?.source ?? null,
+  name: pkg.name, version: pkg.version, screensSource: path.basename(screensArchive), tokensVersion: tokens.version, tokensSource: tokens.meta?.source ?? null,
   importedAt: new Date().toISOString().slice(0, 10), tool: 'design-system/tools/import.mjs',
   counts: { componentTemplates: components.length, layouts: list('templates/layouts', '.twig').length, examples: list('examples', '.twig').length, controllers: list('src/controllers/cp', '.ts').length - 1, files: files.length },
   components, adaptations, files,
@@ -188,6 +204,7 @@ const md = `# Provenance du design system Civipass
 | | |
 |---|---|
 | Source | archive « ${path.basename(archive)} » (dépôt du design system, \`package.json\` : \`${pkg.name}\` ${pkg.version}) |
+| Écrans et données de la galerie dev | archive « ${path.basename(screensArchive)} » |
 | Référentiel de tokens | version ${tokens.version} — ${tokens.meta?.source ?? ''} |
 | Date d'import | ${provenance.importedAt} |
 | Contenu importé | ${provenance.counts.componentTemplates} gabarits de composants, ${provenance.counts.layouts} layouts du design system, ${provenance.counts.examples} exemples, ${provenance.counts.controllers} contrôleurs Stimulus, 2 feuilles de style, ${list('fonts', '.woff2').length} polices, ${files.length} fichiers au total dont ${adapted} adaptés |

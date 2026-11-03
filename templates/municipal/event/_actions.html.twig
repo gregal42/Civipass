@@ -1,0 +1,14 @@
+{#
+  Bouton d'une action de la fiche événement, selon sa disponibilité calculée par le serveur (politique d'accès) :
+  - refusée pour le RÔLE ou le statut de la COMMUNE : l'action est absente (design system : « on n'affiche jamais un bouton que
+    l'utilisateur ne peut pas utiliser ») ; l'en-tête explique la consultation seule ;
+  - refusée pour un autre motif : le bouton est indisponible avec la phrase sûre du motif ;
+  - permise : l'action n'est pas encore branchée en HTTP (incréments suivants) → indisponible, JAMAIS simulée.
+  Paramètres : action (ActionAvailability|null), label, icon, variant.
+#}
+{% macro button(action, label, icon, variant) %}
+  {%- if action and (action.allowed or action.reason.value not in ['ROLE_NOT_ALLOWED', 'MUNICIPALITY_NOT_WRITABLE']) -%}
+    {%- set reason = action.allowed ? 'Disponible prochainement.' : cp_denial_message(action.reason) -%}
+    {% include 'components/button.html.twig' with { id: 'act-' ~ action.action.value, label: label, icon: icon, variant: variant|default('secondary'), unavailable_reason: reason } only %}
+  {%- endif -%}
+{% endmacro %}

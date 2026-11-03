@@ -76,7 +76,7 @@ final class DesignSystemTwigTest extends KernelTestCase
         sort($examples);
 
         self::assertSame($names, $examples);
-        self::assertCount(56, $names);
+        self::assertCount(66, $names); // 56 (UI-01) + 10 composants du LOT UI-02
     }
 
     public function testComponentsDoNotInheritPageVariables(): void

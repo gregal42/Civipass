@@ -1,0 +1,18 @@
+{#
+  Barre d’actions groupées sur une sélection (zones d’un événement). LOT UI-02. Contrôleur cp--bulk, posé sur l’élément qui contient la barre et les cases.
+  Les cases à cocher (data-cp--bulk-target="item") ne sont proposées que pour les objets que l’utilisateur peut modifier.
+  @param string id       Préfixe.        @param string noun  Nom au singulier (« zone »).   @param string scope_label  « mes zones » (texte de « Tout sélectionner »).
+  @param array  actions  Liste de { label, icon, variant, attrs } : actions qui exigent au moins un élément sélectionné.
+  Cible facultative data-cp--bulk-target="summary" ailleurs dans le contrôleur : reçoit la liste des éléments sélectionnés.
+  @param string all_label  Libellé de l’action de raccourci (« Appliquer à toutes mes zones »).   @param string all_attrs  Attributs de cette action.
+#}
+<div class="cp-bulk" id="{{ id }}" role="region" aria-label="Actions groupées">
+  <div class="cp-bulk__select">
+    <label class="cp-check" for="{{ id }}-all"><input type="checkbox" id="{{ id }}-all" data-cp--bulk-target="all" data-action="cp--bulk#toggleAll"><span>Tout sélectionner ({{ scope_label|default('mes ' ~ noun ~ 's') }})</span></label>
+    <p class="cp-bulk__count" data-cp--bulk-target="count" role="status" aria-live="polite" data-noun="{{ noun }}">Aucune {{ noun }} sélectionnée</p>
+  </div>
+  <div class="cp-bulk__actions">
+    {%- for a in actions %}{% include 'components/button.html.twig' with { label: a.label, icon: a.icon|default(''), variant: a.variant|default('secondary'), disabled: true, attrs: 'data-cp--bulk-target="action" ' ~ a.attrs|default('') } only %}{% endfor %}
+    {%- if all_label|default('') %}{% include 'components/button.html.twig' with { label: all_label, variant: 'ghost', attrs: all_attrs|default('') } only %}{% endif %}
+  </div>
+</div>

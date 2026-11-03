@@ -66,6 +66,10 @@ security:
         # passe). Même règle pour les futures opérations sensibles (#[IsGranted('IS_AUTHENTICATED_FULLY')]).
         # allow_if et non roles : une liste de rôles se combine en OU.
         - { path: ^/admin(?:/|$), allow_if: "is_granted('IS_AUTHENTICATED_FULLY') and is_granted('ROLE_SUPER_ADMIN')" }
+        # Espace municipal : utilisateur authentifié (y compris « se souvenir de moi » pour la consultation). L'accès aux données
+        # relève du contexte municipal (membership effectif) et des politiques, jamais de cette règle ; les futures écritures
+        # exigeront IS_AUTHENTICATED_FULLY.
+        - { path: ^/communes(?:/|$), roles: IS_AUTHENTICATED_REMEMBERED }
 
 when@test:
     security:

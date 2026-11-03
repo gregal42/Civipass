@@ -1,0 +1,18 @@
+{#
+  Créneau de validité d’une zone, en lecture (SFD SCR-018). LOT UI-02.
+  @param string mode     continuous (plage continue) | single (accès ponctuel) | recurring (récurrence)
+  @param string summary  Phrase complète calculée par le serveur (« Tous les jours, de 07:00 à 19:00, du 01/11/2026 au 05/11/2026 »).
+  @param string note     Note complémentaire (passage de minuit, changement d’heure).
+  @param int    index    Numéro du créneau (1, 2…).
+  @param array  actions  Actions permises : items ActionMenu (Modifier, Supprimer…). Vide = lecture seule.
+#}
+{%- set labels = { continuous: 'Plage continue', single: 'Accès ponctuel', recurring: 'Récurrence' } -%}
+<li class="cp-slot">
+  <span class="cp-slot__num" aria-hidden="true">{{ index }}</span>
+  <div class="cp-slot__body">
+    <p class="cp-slot__mode"><span class="cp-sr-only">Créneau {{ index }} : </span>{{ labels[mode] }}</p>
+    <p class="cp-slot__summary">{{ summary }}</p>
+    {%- if note|default('') %}<p class="cp-slot__note">{% include 'components/icon.html.twig' with { name: 'info', size: 's' } only %}<span>{{ note }}</span></p>{% endif %}
+  </div>
+  {%- if actions|default([])|length %}<div class="cp-slot__actions">{% include 'components/action_menu.html.twig' with { id: 'slot-menu-' ~ index, label: 'Actions sur le créneau ' ~ index, items: actions } only %}</div>{% endif %}
+</li>

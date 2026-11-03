@@ -40,10 +40,10 @@ class stdin_default extends Controller {
     e.preventDefault();
     const url = e.detail.url;
     confirmAction({
-      title: "Quitter sans enregistrer ?",
-      message: "Votre d\xE9cision n\u2019a pas \xE9t\xE9 confirm\xE9e. Les choix saisis dans le formulaire seront perdus.",
-      confirmLabel: "Quitter sans enregistrer",
-      cancelLabel: "Rester sur le dossier",
+      title: this.titleValue,
+      message: this.messageValue,
+      confirmLabel: this.confirmValue,
+      cancelLabel: this.cancelValue,
       onConfirm: () => {
         this.bypass = true;
         this.clear();
@@ -52,6 +52,12 @@ class stdin_default extends Controller {
     });
   }
 }
+stdin_default.values = {
+  title: { type: String, default: "Quitter sans enregistrer ?" },
+  message: { type: String, default: "Votre d\xE9cision n\u2019a pas \xE9t\xE9 confirm\xE9e. Les choix saisis dans le formulaire seront perdus." },
+  confirm: { type: String, default: "Quitter sans enregistrer" },
+  cancel: { type: String, default: "Rester sur le dossier" }
+};
 export {
   stdin_default as default
 };

@@ -32,3 +32,26 @@ button.cp-nav__link { width: 100%; border: 0; background: none; font: inherit; t
 .dev-ui__grid a { display: block; padding: var(--space-2) var(--space-3); border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--surface); text-decoration: none; }
 .dev-ui__grid a:hover, .dev-ui__grid a:focus-visible { background: var(--brand-soft); }
 .dev-ui__frame { border: 1px dashed var(--line-strong); border-radius: var(--radius-m); background: var(--paper); padding: var(--space-4); margin-inline: auto; max-width: 100%; }
+
+/* Espace municipal (Civipass, hors design system) : mise en page des fiches, reprise de prototype/proto.css (UI-02). */
+.app-split { container: app-split / inline-size; display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); gap: var(--space-6); align-items: start; }
+.app-split > * { min-width: 0; }
+@container cp-app (max-width: 1023px) { .app-split { grid-template-columns: minmax(0, 1fr); } }
+.app-item { display: grid; gap: 4px; padding: var(--space-3) var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-m); background: var(--surface); }
+.app-item__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.app-item__name { font-weight: 700; }
+.app-item__note { color: var(--ink-2); font-size: var(--cp-fs-small); }
+.app-list { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.app-lead { color: var(--ink-2); max-width: var(--measure); margin: 0; }
+.app-note { color: var(--ink-3); font-size: var(--cp-fs-caption); margin: 0; }
+.app-checklist { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.app-checklist li { display: flex; align-items: flex-start; gap: var(--space-2); }
+.app-checklist li > .cp-icon { margin-top: 3px; }
+.app-checklist .is-ok > .cp-icon { color: var(--ok); }
+.app-checklist .is-todo > .cp-icon { color: var(--warn); }
+.app-stack { display: grid; gap: var(--space-7); }
+
+/* Recette visuelle de l'incrément 1 : libellés longs sans débordement ; actions de l'en-tête d'événement pleine largeur en compact. */
+.cp-auth > * { min-width: 0; }
+.app-list .cp-btn { white-space: normal; height: auto; min-height: 2.75rem; padding-block: var(--space-2); text-align: left; justify-content: space-between; }
+@container cp-app (max-width: 719px) { .cp-evhead__actions .cp-unavailable .cp-btn { width: 100%; justify-content: center; } }

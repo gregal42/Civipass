@@ -1,0 +1,12 @@
+{% extends 'layouts/auth.html.twig' %}
+{% set page_title = 'Page introuvable' %}
+
+{% block content %}
+    {# Réponse identique pour une ressource inexistante, étrangère ou interdite : aucune information sur le motif. #}
+    {% embed 'components/panel.html.twig' with { id: 'err-h', title: 'Page introuvable', level: 1 } only %}
+        {% block body %}
+            <p>Cette page n’existe pas ou vous n’y avez pas accès.</p>
+            {% include 'components/button.html.twig' with { label: 'Retour à mon espace', href: path('app_municipal_select'), variant: 'secondary', icon: 'back' } only %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

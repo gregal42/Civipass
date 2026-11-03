@@ -913,3 +913,221 @@ textarea.cp-input { min-height: 96px; resize: vertical; }
   .cp-doc__action { grid-row: auto; grid-column: 1 / -1; }
   .cp-doc__action .cp-btn { width: 100%; }
 }
+
+/* ── src/css/components/events.css ── */
+/* Civipass — composants du lot UI-002 (événements et administration municipale).
+   Stepper, SubNav, ZoneMap, Lifecycle (nouveaux) ; propositions additives : Button « unavailable_reason », Timeline « detail ». */
+
+/* ───────── Action indisponible (proposition Button) ───────── */
+.cp-unavailable { display: inline-grid; gap: 6px; justify-items: start; max-width: 100%; vertical-align: top; }
+.cp-unavailable__why { display: flex; align-items: flex-start; gap: 6px; max-width: 46ch; color: var(--ink-2); font-size: var(--cp-fs-small); line-height: 1.4; }
+.cp-unavailable__why > .cp-icon { margin-top: 2px; color: var(--ink-3); }
+.cp-unavailable > .cp-btn { cursor: not-allowed; }
+
+/* ───────── Historique : valeurs avant / après (proposition Timeline) ───────── */
+.cp-timeline__detail { display: grid; gap: 4px; margin-top: 6px; padding: var(--space-2) var(--space-3); border-left: 3px solid var(--line); background: var(--surface-2); border-radius: 0 var(--radius-s) var(--radius-s) 0; font-size: var(--cp-fs-small); }
+.cp-timeline__detail > div { display: grid; gap: 0; }
+.cp-timeline__detail dt { color: var(--ink-3); font-size: var(--cp-fs-caption); }
+.cp-timeline__detail dd { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin: 0; min-width: 0; }
+.cp-timeline__detail .cp-icon { color: var(--ink-3); }
+.cp-timeline__before { color: var(--ink-2); text-decoration: line-through; text-decoration-color: var(--ink-3); }
+.cp-timeline__after { font-weight: 700; }
+
+/* ───────── Stepper ───────── */
+.cp-stepper { container: cp-stepper / inline-size; }
+.cp-stepper__compact { display: none; }
+.cp-stepper__list { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: var(--space-2); counter-reset: none; }
+.cp-stepper__item { min-width: 0; }
+.cp-stepper__link { display: flex; align-items: center; gap: 10px; min-height: var(--tap-min); padding: 8px 12px 8px 8px; border: 1px solid var(--line); border-radius: var(--radius-m); background: var(--surface); color: var(--ink-2); text-decoration: none; font-size: var(--cp-fs-small); }
+a.cp-stepper__link:hover { border-color: var(--line-strong); color: var(--ink); text-decoration: underline; }
+.cp-stepper__num { display: grid; place-items: center; flex: none; width: 28px; height: 28px; border: 2px solid var(--line-strong); border-radius: 50%; background: var(--surface); color: var(--ink-2); font-weight: 800; font-variant-numeric: tabular-nums; }
+.cp-stepper__label { min-width: 0; overflow-wrap: anywhere; }
+.cp-stepper__item--done .cp-stepper__num { border-color: var(--ok); background: var(--ok); color: var(--on-band); }
+.cp-stepper__item--current .cp-stepper__link { border-color: var(--brand); box-shadow: inset 0 -3px 0 var(--brand); color: var(--ink); font-weight: 700; }
+.cp-stepper__item--current .cp-stepper__num { border-color: var(--brand); background: var(--brand); color: var(--on-brand); }
+.cp-stepper__item--error .cp-stepper__link { border-color: var(--bad); box-shadow: inset 0 -3px 0 var(--bad); color: var(--ink); font-weight: 700; }
+.cp-stepper__item--error .cp-stepper__num { border-color: var(--bad); background: var(--bad-soft); color: var(--bad); }
+@container cp-stepper (max-width: 559px) {
+  .cp-stepper__compact { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; margin-bottom: var(--space-2); }
+  .cp-stepper__count { color: var(--ink-3); font-size: var(--cp-fs-small); font-variant-numeric: tabular-nums; }
+  .cp-stepper__list { gap: 4px; }
+  .cp-stepper__link { min-height: 0; height: 6px; padding: 0; border: 0; border-radius: var(--radius-pill); background: var(--line); box-shadow: none !important; overflow: clip; }
+  .cp-stepper__link > * { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .cp-stepper__item--done .cp-stepper__link { background: var(--ok); }
+  .cp-stepper__item--current .cp-stepper__link { background: var(--brand); }
+  .cp-stepper__item--error .cp-stepper__link { background: var(--bad); }
+  .cp-stepper__list { align-items: center; }
+  .cp-stepper__item--done a.cp-stepper__link { height: var(--tap-min); background: none; position: relative; }
+  a.cp-stepper__link::before { content: ""; position: absolute; inset: calc(50% - 3px) 0 auto; height: 6px; border-radius: var(--radius-pill); background: var(--ok); }
+}
+
+/* ───────── Navigation secondaire ───────── */
+.cp-subnav { min-width: 0; border-bottom: 1px solid var(--line); }
+.cp-subnav__list { display: flex; gap: var(--space-1); overflow-x: auto; scrollbar-width: thin; }
+.cp-subnav__link { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--tap-min); padding: 10px 14px; border-bottom: 3px solid transparent; color: var(--ink-2); font-size: var(--cp-fs-small); text-decoration: none; white-space: nowrap; }
+.cp-subnav__link:hover { color: var(--ink); text-decoration: underline; }
+.cp-subnav__link[aria-current="page"] { border-bottom-color: var(--brand); color: var(--ink); font-weight: 700; }
+
+/* ───────── Aperçu de zone ───────── */
+.cp-zone-map { display: grid; gap: var(--space-2); margin: 0; min-width: 0; }
+.cp-zone-map__svg { display: block; width: 100%; height: auto; max-height: 320px; border: 1px solid var(--line); border-radius: var(--radius-m); background: var(--surface-2); }
+.cp-zone-map__shape--commune { fill: var(--surface); stroke: var(--ink-2); stroke-width: 2; stroke-dasharray: 7 5; }
+.cp-zone-map__shape--other { fill: none; stroke: var(--line-strong); stroke-width: 1.5; }
+.cp-zone-map__shape--zone { stroke: var(--brand); stroke-width: 2.5; }
+.cp-zone-map__hatch-bg { fill: var(--brand-soft); }
+.cp-zone-map__hatch { stroke: var(--brand); stroke-width: 1.5; opacity: .55; }
+.cp-zone-map__label { font-family: var(--font-sans); font-size: 13px; font-weight: 700; fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+.cp-zone-map__label--commune, .cp-zone-map__label--other { font-weight: 400; fill: var(--ink-2); }
+.cp-zone-map__legend { display: flex; flex-wrap: wrap; gap: 4px var(--space-4); color: var(--ink-2); font-size: var(--cp-fs-caption); }
+.cp-zone-map__key { display: inline-flex; align-items: center; gap: 6px; }
+.cp-zone-map__swatch { width: 18px; height: 12px; border-radius: 2px; }
+.cp-zone-map__swatch--zone { border: 2px solid var(--brand); background: repeating-linear-gradient(45deg, var(--brand-soft) 0 3px, color-mix(in srgb, var(--brand) 50%, var(--brand-soft)) 3px 4px); }
+.cp-zone-map__swatch--commune { border: 2px dashed var(--ink-2); background: var(--surface); }
+.cp-zone-map__caption { flex-basis: 100%; color: var(--ink-3); }
+
+/* ───────── Cycle de vie ───────── */
+.cp-lifecycle { container: cp-lifecycle / inline-size; display: grid; gap: var(--space-3); }
+.cp-lifecycle__list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.cp-lifecycle__item { position: relative; display: grid; grid-template-rows: auto auto auto; justify-items: start; gap: 4px; padding-right: var(--space-2); min-width: 0; }
+.cp-lifecycle__item::before { content: ""; position: absolute; left: 14px; right: 0; top: 7px; height: 2px; background: var(--line-strong); }
+.cp-lifecycle__item:last-child::before { display: none; }
+.cp-lifecycle__item--branch::before { background: repeating-linear-gradient(90deg, var(--line-strong) 0 5px, transparent 5px 9px); }
+.cp-lifecycle__dot { position: relative; z-index: 1; width: 16px; height: 16px; border: 2px solid var(--line-strong); border-radius: 50%; background: var(--surface); }
+.cp-lifecycle__item--past .cp-lifecycle__dot { border-color: var(--ink-2); background: var(--ink-2); }
+.cp-lifecycle__item--current .cp-lifecycle__dot { border: 5px solid var(--brand); background: var(--surface); box-shadow: 0 0 0 3px var(--brand-soft); }
+.cp-lifecycle__item--option .cp-lifecycle__dot, .cp-lifecycle__item--skipped .cp-lifecycle__dot { border-style: dashed; }
+.cp-lifecycle__label { font-weight: 700; font-size: var(--cp-fs-small); }
+.cp-lifecycle__item--current .cp-lifecycle__label { color: var(--brand); }
+.cp-lifecycle__item--next .cp-lifecycle__label, .cp-lifecycle__item--option .cp-lifecycle__label, .cp-lifecycle__item--skipped .cp-lifecycle__label { color: var(--ink-2); font-weight: 400; }
+.cp-lifecycle__item--skipped .cp-lifecycle__label { text-decoration: line-through; }
+.cp-lifecycle__when { color: var(--ink-3); font-size: var(--cp-fs-caption); line-height: 1.35; }
+.cp-lifecycle__note { color: var(--ink-2); font-size: var(--cp-fs-small); }
+@container cp-lifecycle (max-width: 479px) {
+  .cp-lifecycle__list { grid-template-columns: minmax(0, 1fr); }
+  .cp-lifecycle__item { grid-template-columns: 16px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: var(--space-3); row-gap: 0; padding: 0 0 var(--space-3); }
+  .cp-lifecycle__dot { grid-row: 1 / span 2; margin-top: 2px; justify-self: center; }
+  .cp-lifecycle__item::before { left: 7px; right: auto; top: 18px; bottom: 0; width: 2px; height: auto; }
+  .cp-lifecycle__item--branch::before { background: repeating-linear-gradient(180deg, var(--line-strong) 0 5px, transparent 5px 9px); }
+}
+
+/* ── src/css/components/zones.css ── */
+/* Civipass — composants du lot UI-02 (événements, zones textuelles, validité, participation).
+   EventHeader, ZoneCard, ValiditySlot, ValidityForm, InvitationCard, CommuneStatus. Aucune cartographie. */
+
+/* ───────── En-tête d’événement ───────── */
+.cp-evhead { container: cp-evhead / inline-size; }
+.cp-evhead__in { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-4) var(--space-6); align-items: start; }
+.cp-evhead__main { display: grid; gap: var(--space-2); min-width: 0; }
+.cp-evhead__kicker { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); color: var(--ink-3); font-size: var(--cp-fs-caption); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.cp-evhead__kicker .cp-pill { letter-spacing: normal; text-transform: none; }
+.cp-evhead__title { font-size: var(--cp-fs-h1); font-weight: 800; line-height: 1.15; overflow-wrap: anywhere; }
+.cp-evhead__meta { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); margin: 0; }
+.cp-evhead__meta > div { display: grid; gap: 0; }
+.cp-evhead__meta dt { color: var(--ink-3); font-size: var(--cp-fs-caption); }
+.cp-evhead__meta dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cp-evhead__relation { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); color: var(--ink-2); font-size: var(--cp-fs-small); }
+.cp-evhead__readonly { display: flex; align-items: flex-start; gap: 6px; padding: var(--space-2) var(--space-3); border: 1px solid var(--line); border-radius: var(--radius-m); background: var(--surface-2); color: var(--ink-2); font-size: var(--cp-fs-small); max-width: 70ch; }
+.cp-evhead__readonly > .cp-icon { margin-top: 3px; color: var(--ink-3); }
+.cp-evhead__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
+.cp-evhead__actions:empty { display: none; }
+@container cp-evhead (max-width: 719px) {
+  .cp-evhead__in { grid-template-columns: minmax(0, 1fr); }
+  .cp-evhead__title { font-size: var(--cp-fs-h2); }
+  .cp-evhead__meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2) var(--space-4); }
+  .cp-evhead__actions { justify-content: stretch; }
+  .cp-evhead__actions > .cp-btn, .cp-evhead__actions > .cp-unavailable, .cp-evhead__actions > .cp-selector { flex: 1 1 100%; }
+  .cp-evhead__actions > .cp-btn { justify-content: center; }
+}
+
+/* ───────── Carte de zone ───────── */
+.cp-zones { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: var(--space-3); }
+.cp-zone { display: grid; gap: var(--space-2); align-content: start; min-width: 0; padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-l); background: var(--surface); }
+.cp-zone--unconfirmed { border-style: dashed; border-color: var(--line-strong); }
+.cp-zone--suspended { background: var(--surface-2); }
+.cp-zone__head { display: flex; align-items: center; gap: var(--space-2); }
+.cp-zone__head > .cp-zone__name { flex: 1 1 auto; min-width: 0; }
+.cp-zone__check { flex: none; width: 22px; height: 22px; margin: 0; accent-color: var(--brand); cursor: pointer; }
+.cp-zone:has(.cp-zone__check:checked) { border-color: var(--brand); box-shadow: inset 0 0 0 1px var(--brand); }
+.cp-zone__todo { color: var(--warn); }
+.cp-zone__name { font-size: var(--cp-fs-body); font-weight: 800; overflow-wrap: anywhere; }
+.cp-zone__name a { color: var(--ink); }
+.cp-zone__meta { display: flex; flex-wrap: wrap; gap: 4px 6px; color: var(--ink-3); font-size: var(--cp-fs-caption); }
+.cp-zone__desc { color: var(--ink-2); font-size: var(--cp-fs-small); }
+.cp-zone__validity { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-2); align-items: start; padding-top: var(--space-2); border-top: 1px solid var(--line); font-size: var(--cp-fs-small); }
+.cp-zone__validity > .cp-icon { margin-top: 3px; color: var(--ink-3); }
+.cp-zone__validity ul { display: grid; gap: 2px; }
+.cp-zone__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.cp-zone__ro { display: flex; align-items: center; gap: 6px; color: var(--ink-3); font-size: var(--cp-fs-caption); }
+
+/* ───────── Créneaux de validité ───────── */
+.cp-slots { display: grid; gap: var(--space-2); }
+.cp-slot { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-3); align-items: start; padding: var(--space-3) var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-m); background: var(--surface); }
+.cp-slot__num { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); font-weight: 800; font-size: var(--cp-fs-small); }
+.cp-slot__body { display: grid; gap: 2px; min-width: 0; }
+.cp-slot__mode { color: var(--ink-3); font-size: var(--cp-fs-caption); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.cp-slot__summary { font-weight: 700; overflow-wrap: anywhere; }
+.cp-slot__note { display: flex; gap: 6px; align-items: flex-start; color: var(--ink-2); font-size: var(--cp-fs-small); }
+.cp-slot__note > .cp-icon { margin-top: 2px; color: var(--ink-3); }
+
+/* ───────── Saisie d’un créneau ───────── */
+.cp-vform { container: cp-vform / inline-size; display: grid; gap: var(--space-4); min-width: 0; }
+.cp-vform__modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cp-vform__group { display: grid; gap: var(--space-4); min-width: 0; }
+.cp-vform__row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
+.cp-vform__row > * { min-width: 0; }
+.cp-vform__days { gap: var(--space-2); margin-top: var(--space-2); }
+.cp-vform__day { min-height: var(--tap-min); padding: 0 var(--space-3); border: 1px solid var(--line-strong); border-radius: var(--radius-pill); background: var(--surface); }
+.cp-vform__day:has(input:checked) { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); font-weight: 700; }
+.cp-vform__summary { display: grid; gap: 4px; padding: var(--space-3) var(--space-4); border-left: 4px solid var(--brand); border-radius: 0 var(--radius-m) var(--radius-m) 0; background: var(--brand-soft); }
+.cp-vform__summary-label { color: var(--ink-3); font-size: var(--cp-fs-caption); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.cp-vform__summary-text { font-weight: 700; }
+.cp-vform__dst { color: var(--ink-2); font-size: var(--cp-fs-small); }
+@container cp-vform (max-width: 599px) {
+  .cp-vform__modes { grid-template-columns: minmax(0, 1fr); }
+  .cp-vform__row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cp-vform__row > .cp-field:first-child:nth-last-child(3) { grid-column: 1 / -1; }
+}
+
+/* ───────── Invitation ───────── */
+.cp-invite { container: cp-invite / inline-size; border: 1px solid color-mix(in srgb, var(--brand) 35%, var(--line)); border-left: 4px solid var(--brand); border-radius: var(--radius-l); background: var(--surface); }
+.cp-invite__in { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-2) var(--space-4); align-items: start; padding: var(--space-4); }
+.cp-invite__in > .cp-icon { color: var(--brand); }
+.cp-invite__body { display: grid; gap: 4px; min-width: 0; }
+.cp-invite__title { font-size: var(--cp-fs-h3); font-weight: 800; overflow-wrap: anywhere; }
+.cp-invite__meta { color: var(--ink-2); font-size: var(--cp-fs-small); }
+.cp-invite__msg { margin: var(--space-2) 0 0; padding-left: var(--space-3); border-left: 2px solid var(--line-strong); color: var(--ink-2); font-size: var(--cp-fs-small); }
+.cp-invite__blocked { display: flex; gap: 6px; align-items: flex-start; margin-top: var(--space-2); color: var(--ink-2); font-size: var(--cp-fs-small); }
+.cp-invite__blocked > .cp-icon { margin-top: 2px; }
+@container cp-invite (max-width: 559px) {
+  .cp-invite__in { grid-template-columns: auto minmax(0, 1fr); }
+  .cp-invite__action { grid-column: 1 / -1; }
+  .cp-invite__action .cp-btn { width: 100%; justify-content: center; }
+}
+
+/* ───────── Statut de la commune ───────── */
+.cp-cstatus { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); padding: 14px var(--space-4); border: 1px solid; border-radius: var(--radius-m); }
+.cp-cstatus > div { display: grid; gap: 4px; }
+.cp-cstatus__title { font-weight: 800; }
+.cp-cstatus__contact { color: var(--ink-2); font-size: var(--cp-fs-small); }
+.cp-cstatus--free { background: var(--brand-soft); border-color: color-mix(in srgb, var(--brand) 35%, transparent); }
+.cp-cstatus--free > .cp-icon { color: var(--brand); }
+.cp-cstatus--suspended { background: var(--bad-soft); border-color: color-mix(in srgb, var(--bad) 40%, transparent); }
+.cp-cstatus--suspended > .cp-icon { color: var(--bad); }
+.cp-cstatus--planned { background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
+.cp-cstatus--planned > .cp-icon { color: var(--warn); }
+
+/* ───────── Actions groupées (sélection multiple) ───────── */
+.cp-bulk { container: cp-bulk / inline-size; position: sticky; top: calc(var(--topbar-height) + var(--space-2)); z-index: 5; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-4); padding: var(--space-3) var(--space-4); border: 1px solid var(--line-strong); border-radius: var(--radius-l); background: var(--surface); box-shadow: var(--shadow-raised); }
+.cp-bulk__select { display: flex; flex-wrap: wrap; align-items: center; gap: 4px var(--space-4); }
+.cp-bulk__count { color: var(--ink-2); font-size: var(--cp-fs-small); font-weight: 700; }
+.cp-bulk__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+@container cp-bulk (max-width: 599px) {
+  .cp-bulk__actions { width: 100%; }
+  .cp-bulk__actions > .cp-btn { flex: 1 1 100%; justify-content: center; }
+}
+@container cp-app (max-width: 639px) { .cp-bulk { top: auto; position: static; } }
+
+/* ───────── Choix du mode de validité ───────── */
+.cp-vform__scope { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cp-vform__periods { display: grid; gap: var(--space-4); min-width: 0; }
+@container cp-vform (max-width: 599px) { .cp-vform__scope { grid-template-columns: minmax(0, 1fr); } }

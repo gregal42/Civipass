@@ -4,10 +4,11 @@
 
 | | |
 |---|---|
-| Source | archive « civipass-design-system 2 » (dépôt du design system, `package.json` : `civipass-design-system` 1.0.0) |
+| Source | archive « UI-02 » (dépôt du design system, `package.json` : `civipass-design-system` 1.0.0) |
+| Écrans et données de la galerie dev | archive « UI-01 » |
 | Référentiel de tokens | version 1 — Prototype UI Civipass V1 (direction « Signalétique civique »), validé le 01/11/2026 |
-| Date d'import | 2026-11-02 |
-| Contenu importé | 64 gabarits de composants, 2 layouts du design system, 56 exemples, 15 contrôleurs Stimulus, 2 feuilles de style, 5 polices, 219 fichiers au total dont 28 adaptés |
+| Date d'import | 2026-11-03 |
+| Contenu importé | 75 gabarits de composants, 2 layouts du design system, 66 exemples, 17 contrôleurs Stimulus, 2 feuilles de style, 5 polices, 256 fichiers au total dont 31 adaptés |
 
 ## Où se trouve chaque chose
 
@@ -26,7 +27,7 @@
 
 **Non importés** : `node_modules/`, `dist/` (sauf les deux CSS ci-dessus), `scripts/` de construction, `prototype/proto.js`, `proto.css`, `viewer.html` (simulation du serveur par le prototype), `package*.json`, `tsconfig.json`. **Créés par Civipass, hors design system** : `assets/styles/civipass-app.css`, `templates/layouts/auth.html.twig`, les pages d'authentification recomposées, `templates/dev/ui/*` (galerie), `src/Shared/UI/DevUi/*`.
 
-## Adaptations appliquées (45 substitutions, vérifiées une à une à chaque import)
+## Adaptations appliquées (49 substitutions, vérifiées une à une à chaque import)
 
 | Id | Fichier(s) | Description |
 |---|---|---|
@@ -34,6 +35,7 @@
 | A2 | `assets/styles/civipass/tokens.css` | Classes typographiques préfixées cp- (écart à signaler à la source : tokens.css devrait les générer préfixées). |
 | A3 | `assets/styles/civipass/tokens.css` | Classes .eyebrow, .plate, .plate-lg retirées : doublons des composants .cp-eyebrow et .cp-plate, avec risque de collision. |
 | A4 | `assets/controllers/cp/disclosure_controller.js`, `assets/controllers/cp/plate_list_controller.js`, `assets/controllers/cp/unsaved_guard_controller.js` | Import relatif « ./events » → « ./events.js » (le navigateur et AssetMapper exigent l’extension). |
+| A9 | `templates/components/lifecycle.html.twig` | Formulations neutres : le composant présentait comme opérationnelles des fonctions (formulaire public, demandes, droits) qui ne sont pas encore développées. |
 | A6 | `templates/components/mobile_menu.html.twig` | Déconnexion du menu mobile : formulaire POST avec jeton CSRF. |
 | A5 | `templates/components/topbar.html.twig` | Déconnexion : lien GET remplacé par un formulaire POST avec jeton CSRF « logout » (la déconnexion Civipass est POST uniquement). |
 | A7 | `templates/layouts/app.html.twig`, `templates/layouts/public.html.twig` | Feuilles de style chargées par <link> (pas par import JavaScript : pas de flash de page non stylée, fonctionne sans JS) et meta Turbo no-cache (pages à données personnelles). |

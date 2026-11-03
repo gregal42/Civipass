@@ -1,0 +1,6 @@
+<div class="cp-stack" style="gap: 32px">
+{% embed 'components/event_header.html.twig' with { title: 'Incendie du massif forestier', type: 'Incendie', icon: 'fire', status: 'active', status_label: 'Actif', dates: { start: '31/10/2026 à 22:15', end: '05/11/2026 à 20:00' }, organizer: 'Le Temple', communes: 4, relation: { label: 'Organisatrice', text: 'Votre commune, Le Temple, organise cet événement.' } } only %}
+  {% block actions %}{% include 'components/button.html.twig' with { label: 'Modifier les informations', variant: 'secondary', icon: 'settings' } only %}{% include 'components/button.html.twig' with { label: 'Suspendre…', variant: 'danger-ghost' } only %}{% endblock %}
+{% endembed %}
+{% include 'components/event_header.html.twig' with { title: 'Crue exceptionnelle', type: 'Inondation', icon: 'wave', status: 'active', status_label: 'Actif', dates: { start: '01/11/2026 à 06:00', end: '' }, organizer: 'Saumos', communes: 2, relation: { label: 'Participante', text: 'Saumos organise ; votre commune participe.' }, readonly: 'Votre rôle dans Saumos (Instructrice) ne permet pas de modifier l’événement.' } only %}
+</div>

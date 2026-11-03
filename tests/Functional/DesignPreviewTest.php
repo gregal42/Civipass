@@ -142,7 +142,7 @@ final class DesignPreviewTest extends WebTestCase
         /** @var list<array{name: string}> $catalog */
         $catalog = json_decode((string) file_get_contents(__DIR__.'/../../src/Shared/UI/DevUi/Resources/catalog.json'), true, 512, \JSON_THROW_ON_ERROR);
 
-        self::assertCount(56, $catalog);
+        self::assertCount(66, $catalog); // 56 (UI-01) + 10 composants du LOT UI-02
         foreach ($catalog as $component) {
             self::assertSame(200, $this->dev($kernel, '/dev/ui/components/'.$component['name'])->getStatusCode(), $component['name']);
         }

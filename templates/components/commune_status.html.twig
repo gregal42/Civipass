@@ -1,0 +1,17 @@
+{#
+  Statut de la commune active, quand il limite ce qu’elle peut faire. LOT UI-02.
+  Ne pas confondre : une commune suspendue (statut du compte, SFD SCR-047) et une commune non abonnée invitée (accès gratuit limité à l’événement, SFD §8).
+  @param string state    free (non abonnée, participation gratuite) | suspended (commune suspendue) | planned (suspension planifiée)
+  @param string commune  Nom de la commune.
+  @param string text     Remplace le texte par défaut (ex. nom de l’événement concerné).
+  @param string contact  Texte de contact (« Contactez CWS… »), facultatif.
+#}
+{%- set t = {
+  free: { icon: 'shield', title: commune ~ ' n’a pas d’abonnement Civipass', text: 'Votre commune participe gratuitement aux événements auxquels elle a été invitée. Cette participation est limitée à ces événements : elle ne permet pas de créer un événement et ne vaut pas abonnement.' },
+  suspended: { icon: 'lock', title: commune ~ ' : commune suspendue', text: 'Elle ne peut ni créer un événement ni rejoindre un événement. Les informations restent consultables selon vos droits.' },
+  planned: { icon: 'clock', title: 'Suspension planifiée pour ' ~ commune, text: 'La suspension prendra effet à la fin des participations en cours.' } } -%}
+{%- set s = attribute(t, state) -%}
+<div class="cp-cstatus cp-cstatus--{{ state }}" role="note">
+  {% include 'components/icon.html.twig' with { name: s.icon } only %}
+  <div><b class="cp-cstatus__title">{{ s.title }}</b><p>{{ text|default(s.text) }}</p>{% if contact|default('') %}<p class="cp-cstatus__contact">{{ contact }}</p>{% endif %}</div>
+</div>

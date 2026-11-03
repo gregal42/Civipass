@@ -54,3 +54,18 @@ Chrome, Edge, Firefox et Safari modernes (2023 et après), avec attention à Saf
 ## Mettre à jour
 
 Voir « Mettre à jour le design system » dans `design-system/PROVENANCE.md`. Principe : **ne jamais corriger un fichier importé à la main** ; le test `IntegrityTest` compare les empreintes de `design-system/provenance.json`. Corriger l'outil d'import (adaptation) ou, mieux, la source du design system.
+
+## LOT UI-02 (importé le 3 novembre 2026)
+
+L'archive `DesignImport/UI-02/` (v1.0.0, tokens inchangés) a été importée avec :
+
+```bash
+node design-system/tools/import.mjs DesignImport/UI-02 DesignImport/UI-01
+```
+
+- **Deuxième argument** (facultatif) : archive d'où viennent les **écrans et données fictives de la galerie `/dev/ui`**. Il reste sur UI-01 : le contrat de variables de `dashboard` et `forbidden` a changé dans UI-02 et ces écrans de prévisualisation ne sont pas ceux de l'application. Les composants, le CSS, les contrôleurs et les exemples viennent d'UI-02.
+- UI-02 n'embarque pas `node_modules` : lier celui d'UI-01 (`ln -s ../UI-01/node_modules DesignImport/UI-02/node_modules`) ou lancer `npm install` dans l'archive.
+- Ajoutés : `event_header`, `zone_card`, `validity_slot`, `validity_form`, `bulk_bar`, `invitation_card`, `commune_status`, `subnav`, `lifecycle`, `stepper` et `zone_map` (obsolètes, non utilisés), contrôleurs `cp--validity` et `cp--bulk`, CSS des zones et des événements. Rétrocompatibles : `Button` (`unavailable_reason`), `Timeline`, `cp--unsaved-guard`.
+- **Utilisés par l'incrément 1** (espace municipal, `/communes/…`) : `event_header`, `subnav`, `lifecycle`, `commune_status`. Les autres attendent leurs écrans (zones, créneaux, invitations, groupé).
+- **Écarts connus à traiter avant les incréments concernés** : voir `docs/revisions/ECARTS-UI-02.md` §« État au 3 novembre 2026 ». En particulier `validity_form` / `cp--validity` (heure de Paris codée en dur, messages d'heure inexistante ou ambiguë contraires au moteur) avant l'incrément Créneaux.
+- **Adaptation A9** (recette visuelle de l'incrément 1) : le composant `lifecycle` présentait comme opérationnelles des fonctions des lots Demandes et Laissez-passer (« formulaire public ouvert, demandes instruites », « droits inutilisables », « plus aucune demande ni droit »). Ses quatre sous-titres sont remplacés par des formulations neutres dans `import.mjs`, jamais à la main.

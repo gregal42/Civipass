@@ -1,0 +1,156 @@
+{% extends 'layouts/app.html.twig' %}
+{% set participation_labels = { INVITED: 'Invitée', ACTIVE: 'Active', SUSPENDED: 'Suspendue', CLOSED: 'Clôturée' } %}
+{% set participation_pills = { INVITED: 'invited', ACTIVE: 'active', SUSPENDED: 'suspended', CLOSED: 'closed' } %}
+{% set status_key = detail.status.value|lower %}
+{% set rel = detail.relation.value %}
+{% set tz = detail.timezone %}
+{% set life = detail.lifecycle %}
+
+{% block content %}
+  {% import 'municipal/event/_actions.html.twig' as act %}
+  {% include 'components/breadcrumb.html.twig' with { items: [{ label: 'Événements', href: list_url }, { label: detail.name }], back: { label: 'Événements', href: list_url } } only %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+
+  {# Relation de la commune active à l'événement et, le cas échéant, raison de la consultation seule. #}
+  {% set readonly = detail.readOnlyReason %}
+  {% if rel == 'organizer' %}
+    {% set relation = { label: 'Organisatrice', variant: 'default', text: 'Votre commune, ' ~ active_municipality_name ~ ', organise cet événement.' } %}
+  {% elseif rel == 'participant' %}
+    {% set relation = { label: 'Participante', variant: 'default', text: 'Votre commune participe à cet événement organisé par ' ~ detail.organizerMunicipalityName ~ '.' } %}
+  {% else %}
+    {% set relation = { label: 'Invitée', variant: 'default', text: 'Votre commune est invitée à cet événement par ' ~ detail.organizerMunicipalityName ~ '.' } %}
+  {% endif %}
+  {% set readonly_text = readonly ? (readonly.value == 'MUNICIPALITY_NOT_WRITABLE' ? 'Votre commune est suspendue : les informations restent consultables.' : 'Votre rôle dans ' ~ active_municipality_name ~ ' ne permet pas de modifier cet événement.') : '' %}
+
+  {% embed 'components/event_header.html.twig' with {
+      title: detail.name, type: detail.typeLabel, icon: cp_event_icon(detail.typeCode), status: status_key,
+      dates: { start: detail.startsAt|cp_datetime(tz), end: detail.endsAt ? detail.endsAt|cp_datetime(tz) : '' },
+      organizer: detail.organizerMunicipalityName, communes: detail.participants.participatingCount, relation: relation, readonly: readonly_text,
+      detail: detail,
+    } only %}
+    {% block actions %}
+      {% import 'municipal/event/_actions.html.twig' as act %}
+      {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Update')), 'Modifier', 'settings', 'secondary') }}
+      {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Invite')), 'Inviter une commune', 'mail', 'secondary') }}
+    {% endblock %}
+  {% endembed %}
+
+  {% include 'components/subnav.html.twig' with { label: 'Rubriques de l’événement', items: [{ label: 'Fiche', href: '#', current: true }, { label: 'Communes', href: '#communes' }] } only %}
+
+  {% if status_key == 'suspended' %}
+    {% include 'components/alert.html.twig' with { variant: 'warning', title: 'Événement suspendu', text: life and life.suspendedAt ? 'Suspendu le ' ~ life.suspendedAt|cp_datetime(tz) ~ '.' : 'Cet événement est suspendu.' } only %}
+  {% elseif status_key == 'closed' %}
+    {% include 'components/alert.html.twig' with { variant: 'info', title: 'Événement clôturé', text: life and life.closedAt ? 'Clôturé le ' ~ life.closedAt|cp_datetime(tz) ~ '. Consultation seule.' : 'Cet événement est clôturé. Consultation seule.' } only %}
+  {% endif %}
+
+  <div class="app-split">
+    <div class="app-stack">
+
+      {% if rel == 'invited' %}
+        {% set invitation = detail.participants.invitation %}
+        <section class="cp-section" aria-labelledby="inv-h">
+          {% include 'components/section_head.html.twig' with { id: 'inv-h', title: 'Invitation de ' ~ detail.organizerMunicipalityName, meta: invitation and invitation.invitedAt ? 'Reçue le ' ~ invitation.invitedAt|cp_datetime(tz) : '' } only %}
+          {% if invitation and invitation.invitationMessage %}<blockquote class="cp-invite__msg" style="margin: 0">« {{ invitation.invitationMessage }} »</blockquote>{% endif %}
+          <div class="cp-form-actions">{{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::AcceptInvitation')), 'Accepter l’invitation', 'check', 'primary') }}</div>
+          {% set accept = detail.action(constant('App\\Event\\Application\\Read\\EventAction::AcceptInvitation')) %}
+          {% if accept and not accept.allowed and accept.reason.value == 'ROLE_NOT_ALLOWED' %}<p class="app-note">Seul un administrateur communal peut accepter cette invitation.</p>{% endif %}
+          <p class="app-note">L’invitation n’expire pas. Le refus d’une invitation n’est pas prévu en V1.</p>
+        </section>
+      {% else %}
+        <section class="cp-section" aria-labelledby="desc-h">
+          {% include 'components/section_head.html.twig' with { id: 'desc-h', title: 'Description' } only %}
+          <p class="app-lead">{{ detail.description ?: 'Aucune description.' }}</p>
+        </section>
+      {% endif %}
+
+      {% set visibility = detail.participants.visibility.value %}
+      {% if visibility in ['FULL', 'COORDINATION', 'HISTORY'] or detail.participants.details|length or detail.participants.summaries|length or detail.participants.history|length %}
+        <section class="cp-section" id="communes" aria-labelledby="communes-h">
+          {% include 'components/section_head.html.twig' with { id: 'communes-h', title: 'Communes', meta: detail.participants.participatingCount is not null ? detail.participants.participatingCount ~ ' participante(s)' : '' } only %}
+          {% set rows = [] %}
+          {% for d in detail.participants.details %}
+            {% set pill %}{% include 'components/status_pill.html.twig' with { status: participation_pills[d.status.value], label: participation_labels[d.status.value] } only %}{% endset %}
+            {% set rows = rows|merge([{ cells: { name: { text: d.municipalityName ~ (d.organizer ? ' · organisatrice' : '') }, status: { html: pill } } }]) %}
+          {% endfor %}
+          {% for s in detail.participants.summaries %}
+            {% set pill %}{% include 'components/status_pill.html.twig' with { status: participation_pills[s.status.value], label: participation_labels[s.status.value] } only %}{% endset %}
+            {% set rows = rows|merge([{ cells: { name: { text: s.municipalityName ~ (s.organizer ? ' · organisatrice' : '') }, status: { html: pill } } }]) %}
+          {% endfor %}
+          {% for h in detail.participants.history %}
+            {% set rows = rows|merge([{ cells: { name: { text: h.municipalityName ~ (h.organizer ? ' · organisatrice' : '') }, status: { text: 'A participé' } } }]) %}
+          {% endfor %}
+          {% include 'components/data_table.html.twig' with {
+            caption: 'Communes liées à cet événement',
+            columns: [{ key: 'name', label: 'Commune', card: 'title' }, { key: 'status', label: 'Participation', card: 'status' }],
+            rows: rows, empty: 'Aucune commune',
+          } only %}
+        </section>
+      {% endif %}
+
+      {% if rel == 'participant' and detail.myParticipationStatus %}
+        <section class="cp-section" aria-labelledby="mine-h">
+          {% include 'components/section_head.html.twig' with { id: 'mine-h', title: 'Votre participation', meta: active_municipality_name } only %}
+          <div class="app-item">
+            <div class="app-item__head"><span class="app-item__name">{{ active_municipality_name }}</span>{% include 'components/status_pill.html.twig' with { status: participation_pills[detail.myParticipationStatus.value], label: participation_labels[detail.myParticipationStatus.value] } only %}</div>
+          </div>
+          <div class="cp-cluster" style="gap: var(--space-4); align-items: flex-start">
+            {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::SuspendParticipation')), 'Suspendre ma participation', '', 'secondary') }}
+            {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::ReactivateParticipation')), 'Réactiver ma participation', '', 'secondary') }}
+            {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::CloseParticipation')), 'Clôturer ma participation', '', 'danger-ghost') }}
+          </div>
+        </section>
+      {% endif %}
+
+      {% if rel == 'organizer' and detail.activationReady is not null and detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Activate')) %}
+        <section class="cp-section" aria-labelledby="act-h">
+          {% include 'components/section_head.html.twig' with { id: 'act-h', title: 'Activation' } only %}
+          <ul class="app-checklist">
+            <li class="{{ detail.activationReady ? 'is-ok' : 'is-todo' }}">
+              {% include 'components/icon.html.twig' with { name: detail.activationReady ? 'check' : 'alert', size: 's' } only %}
+              <span>{{ detail.activationReady ? 'Au moins une zone confirmée, active et configurée : l’événement peut être activé.' : 'Aucune zone n’est prête : confirmez au moins une zone active et configurez sa validité.' }}</span>
+            </li>
+          </ul>
+          <div class="cp-cluster" style="gap: var(--space-4); align-items: flex-start">{{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Activate')), 'Activer l’événement', 'zap', 'primary') }}</div>
+        </section>
+      {% endif %}
+
+      {% if rel == 'organizer' and (detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Suspend')) or detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Reactivate')) or detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Close'))) %}
+        <section class="cp-section" aria-labelledby="life-h">
+          {% include 'components/section_head.html.twig' with { id: 'life-h', title: 'Suspension et clôture', meta: 'Commune organisatrice' } only %}
+          <div class="cp-cluster" style="gap: var(--space-4); align-items: flex-start">
+            {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Suspend')), 'Suspendre l’événement', '', 'secondary') }}
+            {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Reactivate')), 'Réactiver l’événement', '', 'secondary') }}
+            {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Close')), 'Clôturer l’événement', '', 'danger-ghost') }}
+          </div>
+          <p class="app-note">La clôture est définitive : elle clôture aussi toutes les participations.</p>
+        </section>
+      {% endif %}
+    </div>
+
+    <aside class="cp-stack" aria-label="Synthèse de l’événement">
+      {% if life %}
+        {% embed 'components/panel.html.twig' with { id: 'life-p', title: 'Cycle de vie', status: status_key, life: life, tz: tz } only %}
+          {% block body %}
+            {% include 'components/lifecycle.html.twig' with { state: status, dates: {
+              draft: 'Créé le ' ~ life.createdAt|cp_datetime(tz),
+              active: life.activatedAt ? 'Depuis le ' ~ life.activatedAt|cp_datetime(tz) : '',
+              suspended: life.suspendedAt ? 'Suspendu le ' ~ life.suspendedAt|cp_datetime(tz) : '',
+              closed: life.closedAt ? 'Clôturé le ' ~ life.closedAt|cp_datetime(tz) : '',
+            } } only %}
+          {% endblock %}
+        {% endembed %}
+      {% endif %}
+      {% set facts = [
+        { label: 'Référence', value: detail.publicReference },
+        { label: 'Type', value: detail.typeLabel },
+        { label: 'Début', value: detail.startsAt|cp_datetime(tz) },
+        { label: 'Fin', value: detail.endsAt ? detail.endsAt|cp_datetime(tz) : 'Non renseignée' },
+        { label: 'Fuseau horaire', value: tz },
+        { label: 'Organisatrice', value: detail.organizerMunicipalityName },
+      ] %}
+      {% embed 'components/panel.html.twig' with { id: 'brief-h', title: 'En bref', facts: facts } only %}
+        {% block body %}{% include 'components/facts.html.twig' with { items: facts } only %}{% endblock %}
+      {% endembed %}
+    </aside>
+  </div>
+{% endblock %}

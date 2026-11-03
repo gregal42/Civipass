@@ -1,0 +1,7 @@
+<div class="cp-stack" style="max-width: 760px">
+  <ol class="cp-slots">
+    {% include 'components/validity_slot.html.twig' with { index: 1, mode: 'single', summary: 'Le 02/11/2026, de 08:00 à 12:00.', actions: [ { label: 'Modifier', icon: 'settings' }, { label: 'Supprimer…', icon: 'trash', danger: true } ] } only %}
+    {% include 'components/validity_slot.html.twig' with { index: 2, mode: 'recurring', summary: 'Les lundis, mercredis et vendredis, de 22:00 à 06:00 (le lendemain), du 02/11/2026 au 30/11/2026.', note: 'Créneau de nuit : il commence le jour coché et se termine le lendemain matin.' } only %}
+  </ol>
+  {% include 'components/validity_form.html.twig' with { id: 'vf', title: 'Validité de la zone', with_scope: true, scope: 'periods', event_range: 'du 31/10/2026 à 22:15 au 05/11/2026 à 20:00', value: { mode: 'recurring', every: 'days', days: [1, 3, 5], from_time: '22:00', to_time: '06:00', rec_from: '2027-03-22', rec_to: '2027-04-02' } } only %}
+</div>

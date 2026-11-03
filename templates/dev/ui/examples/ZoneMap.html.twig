@@ -1,0 +1,9 @@
+<div class="cp-stack" style="max-width: 560px">
+  {% include 'components/zone_map.html.twig' with { id: 'demo-map', title: 'Secteur forestier nord, dans la commune du Temple',
+    shapes: [
+      { kind: 'commune', d: 'M30 40 L190 18 L330 36 L372 118 L344 214 L210 244 L70 226 L22 140 Z', label: 'Le Temple', lx: 286, ly: 74 },
+      { kind: 'other', d: 'M232 150 L300 140 L318 196 L246 206 Z', label: 'Lauros', lx: 254, ly: 180 },
+      { kind: 'zone', d: 'M58 52 L188 34 L250 50 L262 120 L160 136 L72 118 Z', label: 'Secteur forestier nord', lx: 92, ly: 90 } ],
+    caption: 'Tracé fictif de démonstration · aperçu en lecture seule' } only %}
+  {% include 'components/zone_map.html.twig' with { id: 'demo-nomap', title: 'Zone centre', shapes: [] } only %}
+</div>

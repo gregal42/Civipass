@@ -1,0 +1,23 @@
+{#
+  Étapes d’un assistant (création d’événement). Proposition UI-002. Chaque étape est une page ou un formulaire serveur ; le composant ne fait qu’afficher la progression.
+  @param string label  Nom accessible (« Étapes de la création »).
+  @param array  steps  Liste de { label, href (étape déjà franchie, pour y revenir), state: done | current | todo | error }.
+  En compact (< 560 px de conteneur) : « Étape 2 sur 3 » + intitulé + barre segmentée.
+#}
+{%- set total = steps|length -%}
+{%- set cur = 0 -%}
+{%- for s in steps %}{% if cur == 0 and s.state|default('todo') in ['current', 'error'] %}{% set cur = loop.index %}{% endif %}{% endfor -%}
+{%- if cur == 0 %}{% set cur = total %}{% endif -%}
+{%- set sr = { done: 'terminée', current: 'en cours', todo: 'à venir', error: 'à corriger' } -%}
+<nav class="cp-stepper" aria-label="{{ label|default('Étapes') }}">
+  <p class="cp-stepper__compact" aria-hidden="true"><span class="cp-stepper__count">Étape {{ cur }} sur {{ total }}</span> <b>{{ steps[cur - 1].label }}</b></p>
+  <ol class="cp-stepper__list">
+    {%- for s in steps %}
+    {%- set st = s.state|default('todo') -%}
+    <li class="cp-stepper__item cp-stepper__item--{{ st }}"{% if st in ['current', 'error'] %} aria-current="step"{% endif %}>
+      {%- set inner -%}<span class="cp-stepper__num" aria-hidden="true">{% if st == 'done' %}{% include 'components/icon.html.twig' with { name: 'check', size: 's' } only %}{% elseif st == 'error' %}!{% else %}{{ loop.index }}{% endif %}</span><span class="cp-stepper__label">{{ s.label }}<span class="cp-sr-only"> — étape {{ loop.index }} sur {{ total }}, {{ sr[st] }}</span></span>{%- endset -%}
+      {%- if st == 'done' and s.href|default('') %}<a class="cp-stepper__link" href="{{ s.href }}">{{ inner|raw }}</a>{% else %}<span class="cp-stepper__link">{{ inner|raw }}</span>{% endif -%}
+    </li>
+    {%- endfor %}
+  </ol>
+</nav>

@@ -1,0 +1,13 @@
+{#
+  Navigation secondaire d’un objet (sous-rubriques d’un événement). Proposition UI-002. Liens de page (aria-current="page"), pas des onglets.
+  @param string label  Nom accessible (« Rubriques de l’événement »).
+  @param array  items  Liste de { label, href, current, count, icon }.
+  En compact, la liste défile horizontalement dans son propre conteneur.
+#}
+<nav class="cp-subnav" aria-label="{{ label }}">
+  <ul class="cp-subnav__list">
+    {%- for i in items %}
+    <li><a class="cp-subnav__link" href="{{ i.href }}"{% if i.current|default(false) %} aria-current="page"{% endif %}>{% if i.icon|default('') %}{% include 'components/icon.html.twig' with { name: i.icon, size: 's' } only %}{% endif %}<span>{{ i.label }}</span>{% if i.count is defined %}<span class="cp-tabs__count">{{ i.count }}</span>{% endif %}</a></li>
+    {%- endfor %}
+  </ul>
+</nav>

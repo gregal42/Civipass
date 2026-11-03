@@ -1,0 +1,23 @@
+{% extends 'layouts/auth.html.twig' %}
+{% set page_title = 'Votre espace municipal' %}
+
+{% block content %}
+    {% embed 'components/panel.html.twig' with { id: 'select-h', title: 'Votre espace municipal', level: 1, communes: communes } only %}
+        {% block body %}
+            {% if communes|length %}
+                <p class="cp-help">Choisissez la commune pour laquelle vous agissez.</p>
+                <ul class="app-list">
+                    {% for c in communes %}
+                        <li>{% include 'components/button.html.twig' with { label: c.name ~ ' · ' ~ c.role, href: path('app_municipal_events', { municipalityId: c.id }), variant: 'secondary', block: true, icon_after: 'right' } only %}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                {% include 'components/empty_state.html.twig' with { icon: 'pin', title: 'Aucune commune', text: 'Votre compte n’est rattaché à aucune commune. Demandez à un administrateur communal de vous y rattacher.' } only %}
+            {% endif %}
+            <form method="post" action="{{ path('app_logout') }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}">
+                {% include 'components/button.html.twig' with { label: 'Se déconnecter', type: 'submit', variant: 'ghost', icon: 'logout' } only %}
+            </form>
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

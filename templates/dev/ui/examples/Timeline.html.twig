@@ -7,5 +7,11 @@
     { time: '01/11/2026 · 10:06', text: 'Zone ajoutée par l’agent : Secteur forestier nord.', kind: 'agent' },
     { time: '01/11/2026 · 10:06', text: 'Laissez-passer LP-2026-0156 émis (QR stable).', kind: 'ok' }
   ] } only %}
+  <p class="cp-eyebrow" style="margin-top: 12px">Proposition UI-002 — modification tracée avec valeurs avant / après</p>
+  {% include 'components/timeline.html.twig' with { items: [
+    { time: '01/11/2026 · 08:20', text: 'Informations de l’événement modifiées par Sophie Lambert.', kind: 'agent', detail: [
+      { label: 'Nom', before: 'Incendie — Forêt nord', after: 'Incendie — Secteur forestier nord' },
+      { label: 'Fin prévue', before: '04/11/2026 à 20:00', after: '05/11/2026 à 20:00' } ] }
+  ] } only %}
   {% endblock %}
 {% endembed %}

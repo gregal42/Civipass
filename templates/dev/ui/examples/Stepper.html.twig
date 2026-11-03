@@ -1,0 +1,8 @@
+<div class="cp-stack">
+  {% include 'components/stepper.html.twig' with { label: 'Étapes de la création de l’événement', steps: [
+    { label: 'Informations générales', state: 'done', href: '#' }, { label: 'Périmètre', state: 'current' }, { label: 'Récapitulatif et activation' } ] } only %}
+  {% include 'components/stepper.html.twig' with { label: 'Étapes (étape à corriger)', steps: [
+    { label: 'Informations générales', state: 'done', href: '#' }, { label: 'Périmètre', state: 'error' }, { label: 'Récapitulatif et activation' } ] } only %}
+  <div style="max-width: 360px">{% include 'components/stepper.html.twig' with { label: 'Étapes (compact)', steps: [
+    { label: 'Informations générales', state: 'done', href: '#' }, { label: 'Périmètre', state: 'current' }, { label: 'Récapitulatif et activation' } ] } only %}</div>
+</div>

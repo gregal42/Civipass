@@ -1,0 +1,5 @@
+<div class="cp-stack">
+  {% include 'components/lifecycle.html.twig' with { state: 'active', dates: { draft: 'Créé le 31/10/2026 à 21:50', active: 'Depuis le 31/10/2026 à 22:15' }, note: 'Le formulaire public est ouvert. Les demandes sont instruites par chaque commune participante.' } only %}
+  {% include 'components/lifecycle.html.twig' with { state: 'suspended', dates: { draft: 'Créé le 29/10/2026', active: 'Activé le 29/10/2026 à 07:30', suspended: 'Depuis le 30/10/2026 à 18:40' } } only %}
+  <div style="max-width: 360px">{% include 'components/lifecycle.html.twig' with { state: 'closed', dates: { draft: 'Créé le 12/10/2026', active: 'Activé le 12/10/2026 à 14:00', closed: 'Le 20/10/2026 à 18:00' } } only %}</div>
+</div>

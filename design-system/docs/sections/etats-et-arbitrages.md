@@ -50,3 +50,26 @@
 20. **Changement de commune** : rechargement complet et bannière de confirmation. Faut-il mémoriser la dernière commune utilisée à la connexion ?
 21. **Menu du compte** : seul « Se déconnecter » est proposé ; aucun écran de profil n’est prévu en V1.
 22. **Actions rapides du tableau de bord** : reprises du CDC §10.1 (rechercher, instruire, créer un laissez-passer, gérer les zones). La création directe d’un laissez-passer au guichet relève d’un lot ultérieur.
+
+## LOT UI-02 (remplace les points 23 à 41 du lot UI-002)
+
+Décisions du commanditaire (2 novembre 2026), appliquées :
+
+- **Zones** : pas de bibliothèque communale ; elles sont créées dans l’événement et rattachées à la participation (E1). Seul l’administrateur communal les gère, pour sa commune (E5). La clôture normale de l’événement relève de l’organisatrice (E4).
+- **Validité** : pour chaque zone, « Pendant toute la durée de l’événement » ou « Sur des périodes spécifiques ». Sans configuration : « Validité à configurer », qui n’est pas un statut et n’ouvre aucun droit.
+- **Accès ponctuel** : une date, une heure de début et une heure de fin.
+- **Récurrence** :
+  - deux dates, des jours, une heure de début et une heure de fin ;
+  - passage de minuit possible ; le jour coché est le jour de début ;
+  - début identique à la fin refusé.
+- **Chevauchements** : autorisés, union des créneaux, avertissement non bloquant.
+- **Heure** : Europe/Paris, calculs en UTC, heures inexistantes ou ambiguës signalées, aucun réglage de fuseau.
+- **Configuration en masse** : sélection, « Configurer les zones sélectionnées », « Appliquer à toutes mes zones », activation ou suspension groupée, confirmation avant remplacement. Pas de modèles de configuration.
+
+Questions encore ouvertes :
+
+23. **Libellé « À confirmer »** pour « Commune entière » non confirmée (hypothèse Q6).
+24. **Rubrique « Zones »** de la navigation principale, sans bibliothèque : elle ouvre les zones de l’événement en cours de la commune (Q7).
+25. **Règle des heures inexistantes ou ambiguës** : proposition « instant valide suivant » et « première occurrence » (Q8, STD).
+26. **Activation d’un événement** dont toutes les zones confirmées ont « Validité à configurer » : faut-il un avertissement non bloquant (Q9) ?
+27. **Panneau de configuration en masse** : une seule validité (durée de l’événement ou un créneau) ; d’autres créneaux s’ajoutent zone par zone. À confirmer à l’usage.

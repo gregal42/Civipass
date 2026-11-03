@@ -21,3 +21,19 @@ Bouton d’action ou lien-bouton, en six variantes selon le rôle de l’action.
 - Ne pas désactiver un bouton sans dire pourquoi à côté.
 
 Variables : en-tête du gabarit (`@param`) et `index.d.ts`.
+
+## Proposition UI-002 : action indisponible (`unavailable_reason`)
+
+> **Évolution additive, à valider.** Sans ce paramètre, le rendu du bouton est strictement inchangé.
+
+Le lot UI-002 demande de ne jamais masquer une action sensible par une simple désactivation visuelle. Avec `unavailable_reason`, le bouton :
+
+- reste focalisable (`aria-disabled="true"`, pas d’attribut `disabled`), sans lien ni action ;
+- affiche la raison dessous, avec une icône cadenas, reliée par `aria-describedby`.
+
+```twig
+{% include 'components/button.html.twig' with { id: 'close-event', label: 'Clôturer l’événement…', variant: 'danger-ghost',
+  unavailable_reason: 'Impossible pour l’instant : 2 communes n’ont pas clôturé leur participation (Le Temple, Saumos).' } only %}
+```
+
+Le serveur décide si l’action est possible et rédige la raison. Une action non permise au rôle n’est toujours pas affichée.

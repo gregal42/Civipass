@@ -1,0 +1,27 @@
+{#
+  En-tête de synthèse d’un événement (fiche événement et ses onglets). LOT UI-02. Remplace PageHead sur les pages d’un événement (porte le h1).
+  @param string title        Nom de l’événement.      @param string type  Type (référentiel)   @param string icon  fire | wave | car | flag
+  @param string status       Clé de StatusPill : draft | active | suspended | closed.   @param string status_label  (« Brouillon », « Actif »…)
+  @param object dates        { start, end } : textes (« 31/10/2026 à 22:15 ») ; end vide = « Non renseignée ».
+  @param string organizer    Commune organisatrice.   @param int communes  Nombre de communes participantes (facultatif).
+  @param object relation     { label, text, variant } : lien de la commune active à l’événement (« Organisatrice », « Participante », « Invitée »).
+  @param string readonly     Si renseigné : consultation seule, avec la raison (« Votre rôle dans Saumos ne permet pas de modifier… »).
+  Bloc « actions » : actions permises (à surcharger avec {% embed %}).
+#}
+<header class="cp-evhead" aria-labelledby="cp-evhead-title"><div class="cp-evhead__in">
+  <div class="cp-evhead__main">
+    <p class="cp-evhead__kicker">{% include 'components/icon.html.twig' with { name: icon|default('flag'), size: 's' } only %}<span>{{ type }}</span>{% include 'components/status_pill.html.twig' with { status: status, label: status_label|default(null) } only %}</p>
+    <h1 class="cp-evhead__title" id="cp-evhead-title">{{ title }}</h1>
+    <dl class="cp-evhead__meta">
+      <div><dt>Début</dt><dd>{{ dates.start|default('—') }}</dd></div>
+      <div><dt>Fin</dt><dd>{{ dates.end|default('Non renseignée') }}</dd></div>
+      <div><dt>Organisatrice</dt><dd>{{ organizer }}</dd></div>
+      {%- if communes is defined and communes is not null %}<div><dt>Communes</dt><dd>{{ communes }}</dd></div>{% endif %}
+    </dl>
+    {%- if relation|default(false) %}
+    <p class="cp-evhead__relation">{% include 'components/tag.html.twig' with { label: relation.label, variant: relation.variant|default('default') } only %}<span>{{ relation.text }}</span></p>
+    {%- endif %}
+    {%- if readonly|default('') %}<p class="cp-evhead__readonly">{% include 'components/icon.html.twig' with { name: 'lock', size: 's' } only %}<span><b>Consultation seule.</b> {{ readonly }}</span></p>{% endif %}
+  </div>
+  <div class="cp-evhead__actions">{% block actions %}{% endblock %}</div>
+</div></header>

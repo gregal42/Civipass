@@ -1,9 +1,11 @@
 {#
   Historique audité d’un dossier, du plus ancien au plus récent.
   @param array items  Liste de { time, text, kind } ; kind = ok (approbation, émission) | bad (refus, révocation) | agent (action ou modification de l’agent) | vide.
+  PROPOSITION UI-002 (additive) : item.detail = liste de { label, before, after } — valeurs avant / après d’une modification tracée
+  (nom, dates, périmètre…). Sans « detail », le rendu est inchangé.
 #}
 <ol class="cp-timeline">
   {%- for i in items %}
-  <li class="cp-timeline__item{% if i.kind|default('') %} cp-timeline__item--{{ i.kind }}{% endif %}"><div><p class="cp-timeline__time"><time>{{ i.time }}</time></p><p class="cp-timeline__text">{{ i.text }}</p></div></li>
+  <li class="cp-timeline__item{% if i.kind|default('') %} cp-timeline__item--{{ i.kind }}{% endif %}"><div><p class="cp-timeline__time"><time>{{ i.time }}</time></p><p class="cp-timeline__text">{{ i.text }}</p>{% if i.detail|default([])|length %}<dl class="cp-timeline__detail">{% for c in i.detail %}<div><dt>{{ c.label }}</dt><dd><span class="cp-timeline__before"><span class="cp-sr-only">Avant : </span>{{ c.before|default('—') }}</span>{% include 'components/icon.html.twig' with { name: 'right', size: 's' } only %}<span class="cp-timeline__after"><span class="cp-sr-only">Après : </span>{{ c.after|default('—') }}</span></dd></div>{% endfor %}</dl>{% endif %}</div></li>
   {%- endfor %}
 </ol>

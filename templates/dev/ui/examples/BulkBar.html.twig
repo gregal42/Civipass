@@ -1,0 +1,10 @@
+<div data-controller="cp--bulk" class="cp-stack">
+  {% include 'components/bulk_bar.html.twig' with { id: 'demo-bulk', noun: 'zone', scope_label: 'les 3 zones de Le Temple', all_label: 'Appliquer à toutes mes zones', all_attrs: 'data-action="cp--bulk#selectAll"',
+    actions: [ { label: 'Configurer les zones sélectionnées', icon: 'clock', variant: 'primary' }, { label: 'Activer', icon: 'check' }, { label: 'Suspendre', icon: 'x' } ] } only %}
+  <p class="cp-help" data-cp--bulk-target="summary">Aucune sélection.</p>
+  <div class="cp-zones">
+    {% include 'components/zone_card.html.twig' with { id: 'b1', name: 'Secteur nord', type: 'Quartier', status: 'active', commune: 'Le Temple', validity_scope: 'event', select: { name: 'zones[]', value: 'b1', configured: true } } only %}
+    {% include 'components/zone_card.html.twig' with { id: 'b2', name: 'Lotissement des Cigales', type: 'Quartier', status: 'active', commune: 'Le Temple', select: { name: 'zones[]', value: 'b2' }, validity_empty: 'Elle n’ouvre aucun droit d’accès tant que sa validité n’est pas configurée.' } only %}
+    {% include 'components/zone_card.html.twig' with { id: 'b3', name: 'Chemin du lac', type: 'Rue', status: 'active', commune: 'Le Temple', select: { name: 'zones[]', value: 'b3' } } only %}
+  </div>
+</div>

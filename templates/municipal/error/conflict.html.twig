@@ -1,0 +1,11 @@
+{% extends 'layouts/auth.html.twig' %}
+{% set page_title = 'Opération en conflit' %}
+
+{% block content %}
+    {% embed 'components/panel.html.twig' with { id: 'err-h', title: 'Un autre traitement est en cours', level: 1 } only %}
+        {% block body %}
+            <p>Votre demande est entrée en conflit avec une autre opération. Rien n’a été enregistré : réessayez dans un instant.</p>
+            {% include 'components/button.html.twig' with { label: 'Retour à mon espace', href: path('app_municipal_select'), variant: 'secondary', icon: 'back' } only %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

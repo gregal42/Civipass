@@ -71,3 +71,11 @@ Le prototype illustre ces règles : Le Temple (administratrice + responsable d�
 | B — Liste | Initial ; chargement ; aucun résultat (état vide de recherche) ; erreur de chargement avec « Réessayer » ; filtres actifs |
 | C — Fiche | En attente, approuvée, refusée ; formulaire ouvert ; erreurs de saisie ; envoi en cours ; erreur réseau ; succès ; sans justificatif ; plusieurs communes |
 | Transverse | Accès refusé (403) |
+
+## LOT UI-02
+
+Les écrans d’événements, de zones (avec leur validité) et de participation, leurs états et leurs interactions sont décrits dans `docs/lots/LOT-UI-02.md`. Règles ajoutées :
+
+- une action permise mais impossible maintenant reste visible et focalisable, avec sa raison (Button `unavailable_reason`) ;
+- une action non permise au rôle, ou interdite par le statut de la commune (non abonnée, suspendue), n’est pas affichée ;
+- les actions groupées ne portent que sur les éléments de la commune de l’utilisateur ; elles demandent une confirmation nominative avant tout remplacement.

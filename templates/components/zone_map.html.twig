@@ -1,0 +1,28 @@
+{#
+  OBSOLÈTE (LOT UI-02 : aucune cartographie en V1). Aperçu cartographique d’une zone (lecture seule). Ne pas utiliser. Affiché seulement si un tracé existe ; sinon, état « aucun tracé ».
+  La carte ne porte jamais l’information seule : la liste des zones et leur nom sont toujours écrits à côté (bloc légende).
+  @param string id       Préfixe d’identifiants.     @param string title  Nom accessible de la carte (« Secteur forestier nord dans Le Temple »).
+  @param string viewbox  viewBox SVG (défaut « 0 0 400 260 »).
+  @param array  shapes   Liste de { d (chemin SVG), kind: commune | zone | other, label, lx, ly (position de l’étiquette) }.
+  @param string caption  Légende sous la carte (source et date du tracé).
+  @param string empty    Texte de l’état sans tracé (si shapes est vide).
+#}
+{%- if shapes|default([])|length -%}
+<figure class="cp-zone-map">
+  <svg class="cp-zone-map__svg" viewBox="{{ viewbox|default('0 0 400 260') }}" role="img" aria-labelledby="{{ id }}-t" preserveAspectRatio="xMidYMid meet">
+    <title id="{{ id }}-t">{{ title }}</title>
+    <defs><pattern id="{{ id }}-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" class="cp-zone-map__hatch-bg"/><line x1="0" y1="0" x2="0" y2="8" class="cp-zone-map__hatch"/></pattern></defs>
+    {%- for s in shapes %}
+    <path d="{{ s.d }}" class="cp-zone-map__shape cp-zone-map__shape--{{ s.kind|default('zone') }}"{% if s.kind|default('zone') == 'zone' %} fill="url(#{{ id }}-hatch)"{% endif %}/>
+    {%- endfor %}
+    {%- for s in shapes %}{% if s.label|default('') %}<text x="{{ s.lx }}" y="{{ s.ly }}" class="cp-zone-map__label cp-zone-map__label--{{ s.kind|default('zone') }}">{{ s.label }}</text>{% endif %}{% endfor %}
+  </svg>
+  <figcaption class="cp-zone-map__legend">
+    <span class="cp-zone-map__key"><span class="cp-zone-map__swatch cp-zone-map__swatch--zone" aria-hidden="true"></span>Zone (hachurée)</span>
+    <span class="cp-zone-map__key"><span class="cp-zone-map__swatch cp-zone-map__swatch--commune" aria-hidden="true"></span>Limite communale (tirets)</span>
+    {%- if caption|default('') %}<span class="cp-zone-map__caption">{{ caption }}</span>{% endif %}
+  </figcaption>
+</figure>
+{%- else -%}
+{% include 'components/empty_state.html.twig' with { icon: 'map', title: 'Aucun tracé pour cette zone', text: empty|default('La zone est définie par son nom et sa description. Aucun aperçu cartographique n’est affiché.') } only %}
+{%- endif %}

@@ -14,3 +14,7 @@
     {% include 'components/button.html.twig' with { label: 'Indisponible', variant: 'secondary', disabled: true } only %}
   </div>
 </div>
+<div class="cp-stack" style="margin-top: 16px">
+  <p class="cp-eyebrow">Proposition UI-002 — action indisponible, avec sa raison</p>
+  {% include 'components/button.html.twig' with { id: 'demo-close', label: 'Clôturer l’événement…', variant: 'danger-ghost', unavailable_reason: 'Impossible pour l’instant : 2 communes n’ont pas clôturé leur participation (Le Temple, Saumos).' } only %}
+</div>

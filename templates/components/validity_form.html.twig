@@ -1,0 +1,81 @@
+{#
+  Saisie d’un créneau de validité (SFD SCR-018, CDC §5.2). LOT UI-02. Contrôleur cp--validity : affiche les champs du mode choisi et rédige un résumé en direct.
+  Règles arbitrées (2 novembre 2026) : accès ponctuel = une date + heure de début et de fin ; récurrence = dates de début et de fin, jours, heures,
+  passage de minuit possible, le jour coché est le jour de début, début = fin refusé ; heure de Paris, heures inexistantes ou ambiguës signalées.
+  La validation fait foi côté serveur (calculs en instants UTC).
+  @param string id      Préfixe d’identifiants (champs {id}_…).    @param string title  Titre (« Ajouter un créneau »).
+  @param object value   { mode, start_date, start_time, end_date, end_time, date, from_time, to_time, days[] (1 = lundi … 7 = dimanche), every ('day' | 'days'), rec_from, rec_to }
+  @param object errors  { champ: message } (champs : mode, start, end, date, times, days, rec_range).
+  @param bool   with_scope  Affiche d’abord le choix « Pendant toute la durée de l’événement » / « Sur des périodes spécifiques » (arbitrage du 2 novembre 2026).
+  @param string scope       event | periods (valeur du choix).   @param string event_range  « du 31/10/2026 à 22:15 au 05/11/2026 à 20:00 » (rappel).
+  @param string submit_label  @param string cancel_attrs  Attributs du bouton Annuler.
+#}
+{%- set v = value|default({}) -%}{%- set e = errors|default({}) -%}{%- set mode = v.mode|default('continuous') -%}
+<fieldset class="cp-fieldset cp-vform" id="{{ id }}" data-controller="cp--validity"{% if event_range|default('') %} data-cp--validity-event-value="{{ event_range }}"{% endif %}>
+  <legend class="cp-fieldset__legend">{{ title|default('Créneau de validité') }} <span class="cp-fieldset__legend-note">· heure de Paris</span></legend>
+  {%- if with_scope|default(false) %}
+  <fieldset class="cp-fieldset" id="{{ id }}_scope">
+    <legend class="cp-field__label">Validité</legend>
+    <div class="cp-choices cp-vform__scope">
+      {% include 'components/choice.html.twig' with { type: 'radio', name: id ~ '[scope]', value: 'event', id: id ~ '_scope_event', label: 'Pendant toute la durée de l’événement', note: event_range|default('') ? 'Soit ' ~ event_range ~ '.' : '', checked: scope|default('periods') == 'event' } only %}
+      {% include 'components/choice.html.twig' with { type: 'radio', name: id ~ '[scope]', value: 'periods', id: id ~ '_scope_periods', label: 'Sur des périodes spécifiques', note: 'Un ou plusieurs créneaux.', checked: scope|default('periods') == 'periods' } only %}
+    </div>
+  </fieldset>
+  {%- endif %}
+  <div class="cp-vform__periods" data-cp--validity-target="periods">
+  <fieldset class="cp-fieldset" id="{{ id }}_mode"{% if attribute(e, 'mode') is defined %} aria-describedby="{{ id }}_mode-error"{% endif %}>
+    <legend class="cp-field__label">Type de créneau</legend>
+    <div class="cp-choices cp-vform__modes">
+      {%- for m in [['continuous', 'Plage continue', 'D’une date et heure à une autre'], ['single', 'Accès ponctuel', 'Une date, de telle heure à telle heure'], ['recurring', 'Récurrence', 'Certains jours, aux mêmes horaires, entre deux dates']] %}
+      {% include 'components/choice.html.twig' with { type: 'radio', name: id ~ '[mode]', value: m[0], id: id ~ '_mode_' ~ m[0], label: m[1], note: m[2], checked: mode == m[0] } only %}
+      {%- endfor %}
+    </div>
+    {%- if attribute(e, 'mode') is defined %}<p class="cp-field-error" id="{{ id }}_mode-error">{{ attribute(e, 'mode') }}</p>{% endif %}
+  </fieldset>
+
+  <div class="cp-vform__group" data-cp--validity-target="group" data-mode="continuous"{% if mode != 'continuous' %} hidden{% endif %}>
+    {% include 'components/period.html.twig' with { id: id ~ '_c', legend: 'Plage continue', note: 'du début à la fin, sans interruption', value: { start_date: v.start_date|default(''), start_time: v.start_time|default(''), end_date: v.end_date|default(''), end_time: v.end_time|default('') }, error: attribute(e, 'end')|default('') } only %}
+  </div>
+
+  <div class="cp-vform__group" data-cp--validity-target="group" data-mode="single"{% if mode != 'single' %} hidden{% endif %}>
+    <div class="cp-vform__row">
+      {% include 'components/field.html.twig' with { id: id ~ '_s_date', name: id ~ '[date]', type: 'date', label: 'Date', value: v.date|default(''), error: attribute(e, 'date')|default('') } only %}
+      {% include 'components/field.html.twig' with { id: id ~ '_s_from', name: id ~ '[from_time]', type: 'time', label: 'De', value: v.from_time|default('') } only %}
+      {% include 'components/field.html.twig' with { id: id ~ '_s_to', name: id ~ '[to_time]', type: 'time', label: 'À', value: v.to_time|default(''), error: attribute(e, 'times')|default('') } only %}
+    </div>
+  </div>
+
+  <div class="cp-vform__group" data-cp--validity-target="group" data-mode="recurring"{% if mode != 'recurring' %} hidden{% endif %}>
+    <fieldset class="cp-fieldset">
+      <legend class="cp-field__label">Jours</legend>
+      <div class="cp-checks">
+        {% include 'components/check.html.twig' with { type: 'radio', id: id ~ '_every_day', name: id ~ '[every]', value: 'day', label: 'Tous les jours', checked: v.every|default('day') == 'day' } only %}
+        {% include 'components/check.html.twig' with { type: 'radio', id: id ~ '_every_days', name: id ~ '[every]', value: 'days', label: 'Certains jours de la semaine', checked: v.every|default('day') == 'days' } only %}
+      </div>
+      <div class="cp-checks cp-vform__days" data-cp--validity-target="days" id="{{ id }}_days"{% if v.every|default('day') != 'days' %} hidden{% endif %}{% if attribute(e, 'days') is defined %} aria-describedby="{{ id }}_days-error"{% endif %}>
+        {%- for d in [[1, 'Lun.', 'lundi'], [2, 'Mar.', 'mardi'], [3, 'Mer.', 'mercredi'], [4, 'Jeu.', 'jeudi'], [5, 'Ven.', 'vendredi'], [6, 'Sam.', 'samedi'], [7, 'Dim.', 'dimanche']] %}
+        <label class="cp-check cp-vform__day" for="{{ id }}_d{{ d[0] }}"><input type="checkbox" id="{{ id }}_d{{ d[0] }}" name="{{ id }}[days][]" value="{{ d[0] }}" data-day="{{ d[2] }}"{% if d[0] in v.days|default([]) %} checked{% endif %}><span><span aria-hidden="true">{{ d[1] }}</span><span class="cp-sr-only">{{ d[2] }}</span></span></label>
+        {%- endfor %}
+      </div>
+      {%- if attribute(e, 'days') is defined %}<p class="cp-field-error" id="{{ id }}_days-error">{{ attribute(e, 'days') }}</p>{% endif %}
+    </fieldset>
+    <div class="cp-vform__row">
+      {% include 'components/field.html.twig' with { id: id ~ '_r_from', name: id ~ '[rec_from_time]', type: 'time', label: 'De', value: v.from_time|default('') } only %}
+      {% include 'components/field.html.twig' with { id: id ~ '_r_to', name: id ~ '[rec_to_time]', type: 'time', label: 'À', value: v.to_time|default(''), error: attribute(e, 'times')|default('') } only %}
+    </div>
+    <p class="cp-help">Une heure de fin plus tôt que l’heure de début signifie « le lendemain » : le créneau passe minuit.</p>
+    <div class="cp-vform__row">
+      {% include 'components/field.html.twig' with { id: id ~ '_r_start', name: id ~ '[rec_from]', type: 'date', label: 'Du', value: v.rec_from|default('') } only %}
+      {% include 'components/field.html.twig' with { id: id ~ '_r_end', name: id ~ '[rec_to]', type: 'date', label: 'Au', value: v.rec_to|default(''), error: attribute(e, 'rec_range')|default('') } only %}
+    </div>
+    <p class="cp-help">Le jour coché est le jour où le créneau commence. L’heure de fin doit être différente de l’heure de début.</p>
+  </div>
+  </div>
+
+  <div class="cp-vform__summary" aria-live="polite">
+    <p class="cp-vform__summary-label">Résumé</p>
+    <p class="cp-vform__summary-text" data-cp--validity-target="summary">Complétez le créneau pour voir son résumé.</p>
+    <p class="cp-vform__dst" data-cp--validity-target="dst" hidden></p>
+    <p class="cp-vform__dst" data-cp--validity-target="clock" hidden></p>
+  </div>
+</fieldset>
