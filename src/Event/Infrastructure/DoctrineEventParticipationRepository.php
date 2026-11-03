@@ -8,6 +8,7 @@ use App\Event\Domain\EventParticipation;
 use App\Event\Domain\EventParticipationRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Query;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\DependencyInjection\Attribute\AsAlias;
 use Symfony\Component\Uid\Uuid;
@@ -67,6 +68,23 @@ final readonly class DoctrineEventParticipationRepository implements EventPartic
             ->addOrderBy('p.id', 'ASC')
             ->getQuery()
             ->getResult();
+    }
+
+    public function lockByEvent(Uuid $eventId): array
+    {
+        $query = $this->entityManager->createQueryBuilder()
+            ->select('p')
+            ->from(EventParticipation::class, 'p')
+            ->where('IDENTITY(p.event) = :event')
+            ->setParameter('event', $eventId, UuidType::NAME)
+            ->orderBy('p.id', 'ASC')
+            ->getQuery();
+        // Lecture verrouillante (FOR UPDATE) et rafraîchissement des entités déjà gérées : état courant, jamais l'instantané.
+        $query->setLockMode(LockMode::PESSIMISTIC_WRITE);
+        $query->setHint(Query::HINT_REFRESH, true);
+
+        /* @var list<EventParticipation> */
+        return $query->getResult();
     }
 
     public function lock(Uuid $id): ?EventParticipation

@@ -29,4 +29,13 @@ interface EventParticipationRepository
      * Verrou d'écriture (relecture sous verrou, sans `refresh()` simple) : sérialise les opérations sur les zones et validités. À appeler dans une transaction.
      */
     public function lock(Uuid $id): ?EventParticipation;
+
+    /**
+     * Verrou d'écriture de TOUTES les participations d'un événement, dans l'ordre croissant de l'identifiant (ordre
+     * déterministe, DT-024) ; les entités déjà gérées sont relues sous verrou. À appeler dans une transaction, après le
+     * verrou exclusif de l'événement.
+     *
+     * @return list<EventParticipation>
+     */
+    public function lockByEvent(Uuid $eventId): array;
 }

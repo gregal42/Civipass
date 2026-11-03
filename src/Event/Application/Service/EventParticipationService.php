@@ -9,6 +9,7 @@ use App\Event\Application\EventAccessPolicy;
 use App\Event\Application\EventPermission;
 use App\Event\Application\EventResourceResolver;
 use App\Event\Application\Result\InvitationResult;
+use App\Event\Application\Result\ParticipationStatusResult;
 use App\Event\Application\Support\EventAuditRecorder;
 use App\Event\Application\Support\EventLocker;
 use App\Event\Application\Support\EventTransactions;
@@ -133,6 +134,75 @@ final readonly class EventParticipationService
             );
 
             return new InvitationResult($participation->id()->toRfc4122(), $participation->municipality()->id()->toRfc4122(), $participation->status(), $now);
+        });
+    }
+
+    /**
+     * Accepte une invitation. Réservée à l'administrateur de la commune invitée (R2) ; AUCUN abonnement, TRIAL ni accès
+     * commercial n'est exigé (accès gratuit limité à l'événement, D4) et rien de commercial n'est créé. Jamais après la
+     * clôture : l'état de l'événement est relu sous verrou partagé.
+     *
+     * @throws OperationNotAllowed droit insuffisant, ressource inaccessible, événement clôturé, pas en attente
+     * @throws OperationConflict   verrou non obtenu à temps
+     */
+    public function accept(User $actor, string $participationId): ParticipationStatusResult
+    {
+        return $this->transition($actor, $participationId, EventPermission::AcceptInvitation, AuditAction::ParticipationAccepted, static function (EventParticipation $p, \DateTimeImmutable $now): void {
+            $p->accept($now);
+        });
+    }
+
+    /** ACTIVE → SUSPENDED, motif obligatoire ; la participation organisatrice peut aussi être suspendue (jamais clôturée seule). */
+    public function suspend(User $actor, string $participationId, string $reason): ParticipationStatusResult
+    {
+        return $this->transition($actor, $participationId, EventPermission::SuspendParticipation, AuditAction::ParticipationSuspended, static function (EventParticipation $p, \DateTimeImmutable $now) use ($reason): void {
+            $p->suspend($reason, $now);
+        }, ['reasonProvided' => true]);
+    }
+
+    /** SUSPENDED → ACTIVE tant que l'événement n'est pas clôturé ; la dernière suspension (motif, date) est conservée (DM-081). */
+    public function reactivate(User $actor, string $participationId): ParticipationStatusResult
+    {
+        return $this->transition($actor, $participationId, EventPermission::ReactivateParticipation, AuditAction::ParticipationReactivated, static function (EventParticipation $p, \DateTimeImmutable $now): void {
+            $p->reactivate($now);
+        });
+    }
+
+    /**
+     * Clôture de SA participation (ACTIVE ou SUSPENDED), définitive : jamais réactivée ni réinvitée. Refusée pour la
+     * participation organisatrice (clôturée avec l'événement) et pour une invitation en attente.
+     */
+    public function close(User $actor, string $participationId): ParticipationStatusResult
+    {
+        return $this->transition($actor, $participationId, EventPermission::CloseParticipation, AuditAction::ParticipationClosed, static function (EventParticipation $p, \DateTimeImmutable $now): void {
+            $p->close($now);
+        }, ['cause' => 'PARTICIPANT']);
+    }
+
+    /**
+     * Transition d'une participation : verrou PARTAGÉ de l'événement (il ne doit pas être clôturé, activé ou modifié en
+     * même temps, sans que deux communes ne s'excluent) puis verrou exclusif de la participation — ordre événement →
+     * participation, jamais d'upgrade implicite.
+     *
+     * @param \Closure(EventParticipation, \DateTimeImmutable): void $mutate
+     * @param array<string, mixed>                                   $extra
+     */
+    private function transition(User $actor, string $participationId, EventPermission $permission, AuditAction $action, \Closure $mutate, array $extra = []): ParticipationStatusResult
+    {
+        $now = $this->clock->now();
+        $known = $this->resolver->participation($actor, $participationId, $permission);
+
+        return $this->transactions->run(function () use ($actor, $known, $permission, $action, $mutate, $extra, $now): ParticipationStatusResult {
+            $event = $this->locker->sharedEvent($known->event()->id());
+            $participation = $this->locker->participation($known->id(), $event);
+            $this->policy->forParticipation($actor, $permission, $participation)->orThrow();
+
+            $previous = EventAuditRecorder::participationState($participation);
+            $mutate($participation, $now);
+
+            $this->audit->record($action, AuditSubjectType::EventParticipation, $participation->id(), $participation->municipality()->id(), $actor, $now, $previous, [...EventAuditRecorder::participationState($participation), ...$extra]);
+
+            return new ParticipationStatusResult($participation->id()->toRfc4122(), $participation->municipality()->id()->toRfc4122(), $participation->status());
         });
     }
 

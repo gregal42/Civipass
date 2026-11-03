@@ -43,7 +43,8 @@ final class ArchitectureTest extends TestCase
         yield 'Membership::changeRoles' => ['changeRoles', ['Municipality/Application/MembershipManager.php']];
         // Activation/désactivation de comptes et de memberships : audit + protections des derniers administrateurs.
         yield 'deactivate()' => ['deactivate', ['Identity/Application/UserManager.php', 'Municipality/Application/MembershipManager.php']];
-        yield 'activate()' => ['activate', ['Identity/Application/UserManager.php', 'Municipality/Application/MembershipManager.php']];
+        // Event::activate() (cycle de vie des événements, 5.3) porte le même nom : seul EventLifecycleService l'appelle.
+        yield 'activate()' => ['activate', ['Identity/Application/UserManager.php', 'Municipality/Application/MembershipManager.php', 'Event/Application/Service/EventLifecycleService.php']];
     }
 
     public function testNoPublicSetterOnAuditLog(): void

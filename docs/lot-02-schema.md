@@ -398,3 +398,7 @@ Code : `src/Event/Application/{Service,Support,Command,Result}`. Aucune migratio
 - **Verrous** (`EventLocker`) : `exclusiveEvent`, `sharedEvent`, `participation(id, événement verrouillé)` ; dépôts `lock()` corrigés (relecture sous verrou, sans `refresh()` simple), `lockShared()` ajouté.
 - **Transactions** (`EventTransactions`) : délai de session de 5 s restauré, `OperationConflict` pour délai de verrou, interblocage et unicités déclarées ; rien d'autre n'est traduit ; aucun retry.
 - **Lectures** (U5, U6) : `ViewParticipationDetails`, niveaux `Coordination` pour l'instructeur de l'organisatrice et `History` après clôture.
+
+## 19. Sous-étape 5.3 — cycle de vie (aucun changement de schéma)
+
+La 5.3 n'ajoute ni table, ni colonne, ni index, ni migration. Elle s'appuie sur `event_event.suspended_at` (migration déjà livrée) et sur les index existants ; le verrouillage de toutes les participations d'un événement utilise l'index sur `event_id`. Détail : `docs/lots/tech-02.1/step-5-transactional-services-plan.md` §18.

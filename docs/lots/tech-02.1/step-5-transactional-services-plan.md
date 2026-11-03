@@ -347,3 +347,43 @@ Tests d'intégration **MySQL sur `civipass_test`** (jamais SQLite), comme à l'�
 **Remplacement** : la clôture normale d'un événement n'exige plus que les autres communes aient clôturé leur participation ; **toutes les participations ouvertes (`INVITED`, `ACTIVE`, `SUSPENDED`) sont clôturées automatiquement dans la même transaction**, pour tout état de clôture autorisé (`DRAFT`, `ACTIVE`, `SUSPENDED`). Cette décision (DM-092) remplace A6.3 / DM-056 (prérequis de clôture préalable) et généralise D1 (DM-085). Les passages barrés des §3, §5 et §11 sont conservés pour la traçabilité.
 
 **Vigilances de la 5.2 documentées** : (a) `resendInvitation` enregistre une demande, sans garantie d'envoi ; (b) la traduction des unicités dépend du nom d'index dans le message MySQL (DT-036) ; (c) invitation sans expiration acceptée pour la V1, mais jamais acceptable après la clôture de l'événement (test en 5.3).
+
+## 18. Sous-étape 5.3 — réalisée (non committée, en attente de validation)
+
+Services : `EventLifecycleService` (`update`, `activate`, `suspend`, `reactivate`, `close`) et `EventParticipationService` (`accept`, `suspend`, `reactivate`, `close`, en plus de `invite` et `resendInvitation`). Les invariants restent dans `Event` et `EventParticipation` ; les services orchestrent (pré-autorisation, verrou, politique rappelée sous verrou, validation avant mutation, audit dans la même transaction).
+
+| Opération | Verrous (ordre) | Audit |
+|---|---|---|
+| `update` | événement X | `EVENT_UPDATED` (un seul, absent si rien ne change) ; validation à blanc sur une copie avant la première écriture |
+| `activate` | événement X ; garde `existsActivationReadyZone` relue sous verrou (DM-059, R7) | `EVENT_ACTIVATED` |
+| `suspend` / `reactivate` (événement) | événement X | `EVENT_SUSPENDED` / `EVENT_REACTIVATED` ; la réactivation conserve motif et date (DM-081) |
+| `close` (événement) | événement X, puis toutes les participations X par identifiant croissant (`lockByEvent`) | `EVENT_CLOSED` + un `PARTICIPATION_CLOSED` par participation effectivement clôturée, `batch_id` commun (DM-092) ; rollback intégral |
+| `accept`, `suspend`, `reactivate`, `close` (participation) | événement S, puis participation X | `PARTICIPATION_ACCEPTED` / `_SUSPENDED` / `_REACTIVATED` / `_CLOSED` |
+
+Précisions :
+- Aucun verrou sur le compteur global ; aucun upgrade de verrou partagé vers exclusif ; délai de verrou 5 s, aucun retry.
+- La suspension d'un événement ne suspend pas ses participations (aucune décision ne le prévoit) ; la clôture globale clôture aussi les participations suspendues et les invitations en attente. L'historique est conservé (U6).
+- `accept` n'exige aucun abonnement ni accès commercial (D4) et ne crée rien de commercial ; il est refusé après la clôture (vigilance 3.3 de la 5.2 testée).
+- `EventParticipationRepository::lockByEvent` utilise `PESSIMISTIC_WRITE` avec `HINT_REFRESH` : sous REPEATABLE READ, une entité déjà gérée doit être relue sous verrou.
+- `tests/Unit/ArchitectureTest` : `Event/Application/Service/EventLifecycleService.php` ajouté aux appelants autorisés de `activate()` (méthode homonyme de `Event`).
+- Tests : `EventLifecycleServiceTest` (12) et `EventLifecycleConcurrencyTest` (7 : C3 à C7, C11, C12, deux clôtures simultanées) sur MySQL de test, processus parallèles via `tests/Support/event-action.php`.
+- Aucune migration, aucune modification de schéma, aucune nouvelle décision.
+
+### 18.1 Matrice de couverture de la 5.3
+
+Fichiers : **S** = `EventLifecycleServiceTest`, **K** = `EventLifecycleConcurrencyTest`, **C** = `EventLifecycleCoverageTest`, **L** = `EventParticipationLockTest`. Tous sur MySQL de test.
+
+| Opération | Nominal | Transition interdite | Permission | Isolation | Concurrence | Rollback | Audit |
+|---|---|---|---|---|---|---|---|
+| event.update | S | S (clôturé), C | S, C | S, C | C6 indirecte (K, C) | S (validation atomique), C (audit défaillant) | S (un audit, aucun si no-op) |
+| event.activate | S | C | C | C | C (via clôture) | S (garde zone : état inchangé) | S |
+| event.suspend | S | S, C | C | C | K C5, C6, C12 | C (audit défaillant) | S, K |
+| event.reactivate | S | S, C | C | C | C (deux réactivations, clôture) | S | S |
+| event.close | S | S, C | C | C | K C3, C4, C5 ; C | S (audit défaillant, tout annulé) | S, K (batch commun) |
+| participation.accept | S | C | S, C | C (identifiants forgés) | K C3, C11 ; C (3 acceptations) | C (audit défaillant) | C |
+| participation.suspend | S | C | S, C | S, C | K C7, C11, C12 | — | C |
+| participation.reactivate | S | S, C | C | C | — | — | C |
+| participation.close | S | S, C (organisatrice, invitation) | C | C | K C7 | — | C |
+| lockByEvent | L | — | — | L (plusieurs communes) | L (délai, commit, rollback) | L | — |
+
+Limites assumées : pas de test de rollback dédié pour `suspend`, `reactivate` et `close` de participation (même gabarit que `accept`, couvert) ; pas de test de concurrence dédié `activate` contre `update`.

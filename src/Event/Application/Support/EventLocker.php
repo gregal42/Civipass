@@ -59,6 +59,18 @@ final readonly class EventLocker
         return $participation;
     }
 
+    /**
+     * Verrou exclusif de TOUTES les participations de l'événement déjà verrouillé, par identifiant croissant (clôture).
+     *
+     * @return list<EventParticipation>
+     */
+    public function allParticipations(Event $lockedEvent): array
+    {
+        $this->assertInTransaction();
+
+        return $this->participations->lockByEvent($lockedEvent->id());
+    }
+
     private function assertInTransaction(): void
     {
         if (!$this->connection->isTransactionActive()) {

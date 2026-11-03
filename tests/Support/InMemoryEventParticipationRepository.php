@@ -52,6 +52,14 @@ final class InMemoryEventParticipationRepository implements EventParticipationRe
         return array_values(array_filter($this->participations, static fn (EventParticipation $p): bool => $p->event()->id()->equals($eventId)));
     }
 
+    public function lockByEvent(Uuid $eventId): array
+    {
+        $participations = $this->findByEvent($eventId);
+        usort($participations, static fn (EventParticipation $a, EventParticipation $b): int => strcmp($a->id()->toBinary(), $b->id()->toBinary()));
+
+        return $participations;
+    }
+
     public function lock(Uuid $id): ?EventParticipation
     {
         return $this->find($id);
