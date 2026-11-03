@@ -1,5 +1,7 @@
 # Civipass — Modèle de données V1 (base de conception)
 
+> **Révision LOT 02 (TECH-02.1) — traçabilité** : les passages sur la bibliothèque de zones et les instantanés (`Zone`, `EventZone` avec source/instantané, « snapshots ») sont **remplacés** par [`lot-02-schema.md`](lot-02-schema.md) (décisions DM-008, DM-051, DM-052, DM-029). Le texte d'origine ci-dessous est conservé tel quel pour mémoire ; il n'est plus la référence pour les zones, événements et participations.
+
 **Statut : modèle logique consolidé, pas encore schéma Doctrine final.** Les cardinalités détaillées, index, suppressions et types exacts seront figés lot par lot avant migration.
 
 ## Identité / communes (5)

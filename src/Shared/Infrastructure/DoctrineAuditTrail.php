@@ -29,6 +29,8 @@ final readonly class DoctrineAuditTrail implements AuditTrail
             $event->actor->origin,
             $event->previousValue,
             $event->newValue,
+            $event->actor->operatorId,
+            $event->batchId,
         ));
     }
 }

@@ -1,0 +1,110 @@
+# Écarts entre la livraison UI-02 (Claude Design) et les règles validées
+
+> **Statut : constat, aucune intégration.** UI-02 (`DesignImport/UI-02/`, dossier ignoré par Git) est la référence UX/UI du LOT 02 ; ces écarts doivent être corrigés **côté design** avant intégration, ou arbitrés. Rapport produit par un sous-agent (lecture seule) ; les écarts bloquants 2 et 3 ont été revérifiés à la source (`scripts/prototype.mjs` ~l.322, `prototype/data.mjs` ~l.180). L'agent signale lui-même que E05, E21, E31 et E35 sont moins nets. Les numéros de ligne précédés de « ~ » sont approximatifs.
+> Règles de référence : [`../lot-02-schema.md`](../lot-02-schema.md), [registre](../decisions/README.md).
+
+## Synthèse des écarts bloquants
+
+1. **Statut « À confirmer »** traité comme 3ᵉ statut de zone (DM-051 l'interdit) ; formulaire de zone manuelle sans confirmation explicite ; l'activation groupée « confirme aussi » les zones non confirmées.
+2. **Activation de l'événement** : teste seulement « zone non non-confirmée » ; n'exige ni zone active, ni validité configurée, ni participation `ACTIVE` (DM-059) ; autorise une zone sans validité.
+3. **Participation de l'organisatrice** créée en `draft` (« En préparation ») au lieu de `ACTIVE` (DM-053) ; la clôture normale exige d'abord sa clôture alors qu'elle se clôture avec l'événement (DM-056).
+4. **Fuseau** `Europe/Paris` codé en dur ; aucun IANA, aucun outre-mer (DM-062).
+5. **Heures** : l'heure inexistante est corrigée silencieusement en 03:00 (DM-055 : refus) ; l'heure ambiguë prend la 1ʳᵉ occurrence sans choix ; une récurrence avec heure inexistante n'est pas refusée (DM-063, DM-064).
+6. **Participation `SUSPENDED`** : zones verrouillées, alors qu'elles restent modifiables mais non opérationnelles (DM-066).
+7. **Événement `ACTIVE`** : type modifiable ; champs verrouillés non signalés ; référence publique `EVT-YYYY-NNNNNN` absente (DM-071, DM-072).
+8. **Clôture forcée CWS** absente (DM-065) — **non bloquant pour l'écran communal** : elle relève de Sonata.
+9. **Commune non abonnée** : la démo n'a ni Demandes ni Laissez-passer (peut relever d'un autre lot).
+10. **Parcours** : au moins 8 étapes, pas de parcours simple en 5 étapes (DM-060).
+
+Écarts « à corriger » : suppression logique conditionnelle (« si utilisée ») au lieu de toujours logique (DM-052) ; « Commune entière » auto supprimable/non recréée non traitée (DM-068) ; aucun cas de gestionnaire seul sans rôle administrateur (DM-057) ; agent instructeur avec consultation des événements ; commune suspendue : gestion des zones coupée même pour une participation en cours (voir P1) ; expiration d'abonnement non traitée (DM-070) ; invitations non acceptées → `CLOSED` non décrit ; panneau groupé qui écrase tous les créneaux par un seul ; libellé « Sur des périodes spécifiques » au lieu de « Périodes spécifiques ».
+
+## Rapport détaillé
+
+### Écarts UI-02 vs règles validées (lecture seule)
+
+Racine : /Users/gregorydriot/Sites/SaaS/DesignImport/UI-02/. Abréviations : D = docs/, P = scripts/prototype.mjs (génère les écrans), T = prototype/templates/, V = src/controllers/cp/validity_controller.ts, DM = prototype/data.mjs.
+Remarque : les rendus HTML des écrans sont produits par P + T ; le code des écrans est donc cité dans P.
+
+| Id | Écran/composant | Constat | Règle | Gravité |
+|---|---|---|---|---|
+| E01 | Zone, statut `unconfirmed` / « À confirmer » | Statut de zone à 3 valeurs : P:387 `unconfirmed: {label:'À confirmer'}`, composant ZoneCard (D/components/ZoneCard.md:18), pill `cp-pill--pending` « À confirmer » (dist/prototype/le-temple/evenements/accident-rd5/zones.html:230), compteurs « N à confirmer » (P:~340 `brief`), tableau de bord « 1 zone à confirmer ». Q6/Q23 le présentent comme hypothèse ouverte. | Aucun statut « À confirmer » ; statuts = Active / Suspendue ; confirmedAt distinct | bloquant |
+| E02 | Modèle (STD) | D/lots/LOT-UI-02-modifications-SFD-STD.md:166 : `confirmed_at` « Null tant que Commune entière n'est pas confirmée » ; :169 « À confirmer » libellé calculé. confirmedAt n'est défini que pour « Commune entière ». | confirmedAt distinct du statut, valable pour toute zone (manuelle confirmée à la création) | bloquant |
+| E03 | Zone manuelle (formulaire création) | T/zone_form.html.twig:13-16 : champ « État » Active/Suspendue seulement, aucune case de confirmation explicite pour le type « Commune entière » (T:8 aide seule : « couvre tout le territoire »). La création n'établit pas confirmedAt. | « Commune entière » manuelle : confirmation explicite dans le formulaire ; zone manuelle confirmée à la création | bloquant |
+| E04 | Zone manuelle non confirmée possible | P:~410 (`state_actions`) et P:~391 proposent « Confirmer cette zone » pour toute zone `unconfirmed` ; la confirmation est un second geste post-création (ConfirmDialog P:~373 « Elle n'est jamais activée sans cette confirmation »). Les zones créées à la main (DM:140-142, 145) n'ont aucun `confirmed`. | Zone manuelle confirmée dès la création | à corriger |
+| E05 | « Commune entière » proposée (DM:136,146,181 ; P:324) | Proposée automatiquement non confirmée : conforme sur le principe, mais DM:136 la montre `active` + `confirmed` avec validité `event` et l'activation est présentée comme « confirme aussi les zones À confirmer » (P:~> bulk-activees ; proto.js:325 : « Les zones « À confirmer » sont confirmées »). Activation groupée = confirmation de zones. | Confirmation explicite ; l'activation/suspension groupée ne doit pas confirmer implicitement (règle 9 : activation/suspension seulement) | à corriger |
+| E06 | API bulk | D/lots/LOT-UI-02-modifications-SFD-STD.md:205 « activate confirme aussi les zones non confirmées » ; D/lots/LOT-UI-02-architecture.md:78 idem | Confirmation explicite de la « Commune entière » auto ; non-droit tant que non confirmée | bloquant |
+| E07 | Zone suspendue (suppression) | Suppression : message conforme à une suppression logique (P:~373 « conservée pour l'historique ») mais conditionnelle : « Si elle est déjà utilisée… » ; STD:168 `deleted_at` « Suppression logique si la zone est utilisée » → suppression physique sinon. | Suppression de zone toujours logique | à corriger |
+| E08 | Suppression « Commune entière » auto | Aucune règle/écran : pas de message « non recréée automatiquement, recréable manuellement » ; le formulaire propose toujours le type « Commune entière » mais ne dit pas qu'il faut une confirmation. Aucun écran de zone « Commune entière » supprimée. | Règle 2 | à corriger |
+| E09 | Zone sans validité, activation événement | P:322-325 : `confirmedZones = zones.status !== 'unconfirmed'` (inclut les zones suspendues ; pas de test sur validité configurée ni sur la participation ACTIVE ni sur zone non supprimée). D/lots/LOT-UI-02-architecture.md:117 (Q9) et D/sections/etats-et-arbitrages.md:281 : activation possible avec toutes les zones « Validité à configurer ». | Activation : ≥1 zone confirmée, active, non supprimée, configurée, d'une participation ACTIVE | bloquant |
+| E10 | Fiche événement, checklist d'activation | P:324 coche « N zone(s) confirmée(s) » ; P:325 « confirmez au moins une zone (SFD SCR-015) » ; P:312 « Confirmez au moins une zone, puis activez-le ». Aucune mention de « zone configurée/active ». | idem | bloquant |
+| E11 | Participation de l'organisatrice à la création | DM:180 `participations: [{commune:'le-temple', status:'draft'}]` ; P:34 `PART_PILL.draft` « En préparation » ; P:320 `ctx.mine` masqué pour un brouillon (`e.status !== 'draft'`) ; DM:136 « Commune entière » unconfirmed seulement quand brouillon. Statut de participation `draft` inexistant. | Participation organisatrice ACTIVE à la création ; statuts INVITED/ACTIVE/SUSPENDED/CLOSED | bloquant |
+| E12 | Événement ACTIVE, champs verrouillés | T/event_form.html.twig:8 : le type reste modifiable (`<select>` éditable) en modification (P:~474 `ev.type`) ; seul l'organisatrice est en lecture seule (T:20). P:219 `canEdit` ouvre le formulaire complet aux statuts draft/active/suspended. Aucune mention « type / fuseau / référence verrouillés ». | Événement ACTIVE : organisatrice, type, fuseau, référence publique verrouillés | bloquant |
+| E13 | Référence publique | Aucune occurrence de `EVT-` ni de « référence » d'événement (EventHeader D/components/EventHeader.md, T/event.html.twig, DM). Seules des références DEM-/LP- (demandes/laissez-passer). | EVT-YYYY-NNNNNN affichée | bloquant |
+| E14 | Fuseau de l'événement | Europe/Paris codé en dur : D/lots/LOT-UI-02-architecture.md:37 (V6, « Aucun réglage de fuseau »), D/lots/LOT-UI-02-modifications-SFD-STD.md:114,137,178,191 ; V:3 `PARIS = Intl.DateTimeFormat('Europe/Paris')` ; T/event_form.html.twig:11 « · heure de Paris » ; P:46,69-76,88 ; ValiditySlot.md:35. Aucun champ fuseau (IANA) dans le formulaire événement ; aucune donnée outre-mer. | Fuseau de l'événement (IANA, outre-mer V1) ; heures saisies et affichées dans ce fuseau | bloquant |
+| E15 | Heure inexistante | V:`clockIssues` : « n'existe pas… : l'heure retenue sera 03:00 » + « Règle proposée, à confirmer dans les STD » ; P:69 « l'instant valide suivant » ; STD:191 ; D/lots/LOT-UI-02-architecture.md:116 (Q8). Correction silencieuse côté serveur, jamais de refus. | Heure inexistante refusée avec explication, aucune correction silencieuse | bloquant |
+| E16 | Heure ambiguë | V:`clockIssues` : « la première occurrence, en heure d'été, sera retenue » ; STD:192. Pas de choix utilisateur (1re/2e occurrence), pas de champ ni de contrôle de sélection. | Choix explicite 1re/2e occurrence ; pas de choix implicite | bloquant |
+| E17 | Détection limitée | V:`clockIssues` ne teste que 02:00-02:59, valable uniquement pour Europe/Paris (heure d'été à 02:00 -> 03:00). Faux/absent pour les fuseaux outre-mer ou d'autres IANA ; le contrôle ne s'applique pas à l'événement (début/fin, T/event_form) ni au créneau continu des dates d'événement. | Règle 4 pour tout fuseau IANA | à corriger |
+| E18 | Récurrence + heure inexistante | V:`clockIssues` l'applique à la récurrence mais avertit (« sera 03:00 ») sans refuser ni identifier la date problématique ; proto.js:validityErrors ne bloque pas. | Récurrence avec heure inexistante refusée (date problématique identifiée) | bloquant |
+| E19 | Créneau continu | proto.js `validityErrors` : fin strictement > début : conforme. Date+heure début ET fin : conformes. | — | conforme |
+| E20 | Créneau ponctuel | proto.js : `t <= f` refusé : conforme (début strictement avant fin, pas de passage de minuit). Mais V:describe/ValiditySlot.md:28 « Fin après le début, le même jour » : message seulement « L'heure de fin doit être postérieure », sans mention de minuit. | Règle 3 (ponctuel) | mineur |
+| E21 | Créneau récurrent : dates obligatoires | V:describe et proto.js : dates début/fin requises, heures égales refusées, minuit autorisé : conformes. Mais ValiditySlot.md:29 et STD:177-179 : `weekdays` « Null = tous les jours » : choix « Tous les jours » implicite acceptable ? (voir question Q-A) | Règle 3 (récurrent : jours de semaine) | mineur |
+| E22 | Modes de validité | Libellés : « Pendant toute la durée de l'événement » conforme ; second mode nommé « Sur des périodes spécifiques » (T/zone_form.html.twig:24 ; T/zone_validity.html.twig:16 ; D/lots/LOT-UI-02-architecture.md:32). | Libellé validé : « Périodes spécifiques » | mineur |
+| E23 | Chevauchements | Autorisés avec avertissement : conforme (T/zone_validity.html.twig:31 ; P:91). | — | conforme |
+| E24 | Zone sans configuration | « Validité à configurer », aucun droit : conforme (T/zone_validity.html.twig:8). Texte dit « avertissement » à la création (T/zone_form.html.twig:26) : OK. | — | conforme |
+| E25 | Rôles : zones | P:243, DM:22-25 (permission `manage_zones`) et D/lots/LOT-UI-02-architecture.md:56 : zones réservées à l'administrateur communal : conforme. Mais D/lots/LOT-UI-02-architecture.md:55 « Gérer sa participation : Gestionnaire événement » et P:456 : conforme. | — | conforme |
+| E26 | Rôles : acceptation | P:317-318 `can_accept = has(slug,'accept_invitation')` ; message « Seul un administrateur communal … peut accepter » : conforme à la règle ; aucune démo « gestionnaire seul » (tous les comptes de démo cumulent admin + gestionnaire, DM:22-25) donc le cas gestionnaire seul n'est jamais montré. | Règle 7 (manager sans admin) | à corriger |
+| E27 | Rôles : agent instructeur | DM:23 Saumos « Agent instructeur » a la permission `events` et voit la liste, fiche, zones, communes ; D/lots/LOT-UI-02.md:21-22 « consultation seule, y compris de son propre événement ». Rôle montrait des droits événements/zones en lecture. | Agent instructeur : aucun droit événements/zones | à corriger (voir Q-B) |
+| E28 | Rôles : gestionnaire et événements | P:219 `canEdit = org && manager`; P:305-336 actions `manager`; création `can('create_event')` : conforme. Le gestionnaire ne gère pas les zones : conforme (P:243). | — | conforme |
+| E29 | Abonnement : création | P:130 `create = status==='subscribed' && can('create_event')` ; P:131 message : conforme. Seule `status === 'subscribed'` testée, pas « administrativement active » séparée (suspended exclue de fait). | — | conforme |
+| E30 | Abonnement : expiration | Aucun écran/état « abonnement expiré ». Seul `free` (jamais abonnée) vs `suspended`. L'expiration pendant événements actifs n'est ni décrite ni montrée ; D/components/CommuneStatus.md:15 : `free` « Participation gratuite limitée aux événements concernés ». | Expiration n'interrompt pas les événements actifs | à corriger |
+| E31 | Commune non abonnée | D/components/CommuneStatus.md:15 « Participation gratuite limitée… » ; P:131 ; T : participante peut gérer zones (P:243 `manage_zones` dans Pinsac) : conforme. DM:24 Pinsac n'a pas la permission `create_event` : cohérent. « pas de laissez-passer » : DM:24 `requests:false`, Pinsac sans `requests/passes/decide` : la commune non abonnée n'a ni Demandes ni Laissez-passer. | Non abonnée délivre des laissez-passer dans sa participation | bloquant |
+| E32 | Commune suspendue : zones | P:244 `if (c.status==='suspended') return {ok:false,'est suspendue'}` : retire toute gestion de zones y compris pour une participation existante ; P:456 retire aussi les actions de participation. DM:25 Arbousiers sans `manage_zones`. Règle : la suspendue « ne rejoint pas de nouvel événement » (ne dit rien sur les participations en cours). Extension non validée. | Règle 8 | à corriger (voir Q-C) |
+| E33 | Participation SUSPENDED : zones | P:247 : « La participation de X est suspendue : réactivez-la pour modifier les zones » -> zones non modifiables. Écran zones (P:379) affiche cette raison. | SUSPENDED : zones modifiables/configurables/confirmables/activables mais jamais opérationnelles | bloquant |
+| E34 | Participation INVITED | P:241 `participating(rel)` faux pour invitée : aucune modification de zones : conforme. | — | conforme |
+| E35 | Invitation non déclinable | InvitationCard.md:13, D/lots/LOT-UI-02-architecture.md:24 : conforme. Mais P:~ OK_* contient « refusée par rôle » (D/lots/LOT-UI-02.md:46 « refusée par rôle » = accès refusé, pas un refus d'invitation : intitulé ambigu). | — | mineur |
+| E36 | Clôture normale : organisatrice | P:305 `blocking` inclut l'organisatrice : « Impossible : N participation(s) non clôturée(s) (Le Temple, …) » ; DM:196-202 : participation de l'organisatrice clôturée séparément avant l'événement ; P:459 « Clôturer ma participation… » proposé à l'organisatrice ; P:456-... texte « Quand toutes les participations seront clôturées, vous pourrez clôturer l'événement » (organisatrice incluse). | Organisatrice clôturée avec l'événement ; autres participations ACTIVE/SUSPENDED clôturées d'abord | bloquant |
+| E37 | Clôture normale : invitations | P:305 `blocking` filtre `['active','suspended']` : les invitations INVITED ne bloquent pas, mais aucun écran ne dit qu'elles passent à CLOSED à la clôture (T/event.html.twig, P:336 consequences). DM:160 (Crue) : invitations en attente affichées sans conséquence de clôture. | Invitations non acceptées → CLOSED à la clôture | à corriger |
+| E38 | Clôture forcée super-admin | Aucune mention (grep « forc », « super-admin » : D/lots/LOT-UI-02-modifications-SFD-STD.md:109 S3 : « CDC §4.1 (réservée au super-administrateur) est à aligner » : propose de retirer la réservation super-admin). | Clôture forcée exceptionnelle réservée au super-admin CWS depuis Sonata | bloquant |
+| E39 | Message de clôture | P:257 « Consultation en lecture seule pendant 30 jours par défaut » (SFD §9.2) : règle non fournie dans la liste validée. | — | mineur |
+| E40 | Opérations groupées : périmètre | BulkBar.md:19, D/lots/LOT-UI-02-architecture.md:73-81 : zones de sa commune seulement ; serveur refait les vérifications : conforme. Cases masquées pour autres communes (P:~370). | — | conforme |
+| E41 | Opérations groupées : écrasement | proto.js:291-297 confirmation nominative avant remplacement : conforme. Mais le panneau groupé n'applique qu'un seul créneau (D/lots/LOT-UI-02-architecture.md:81 ; Q27) : remplace tous les créneaux existants. | Règle 9 | à corriger |
+| E42 | Opérations groupées : héritage | « Appliquer à toutes mes zones » (BulkBar.md:11, P:…) : copie ponctuelle ; aucun texte ne précise « pas d'héritage permanent » ; une zone créée ensuite n'hérite de rien : non dit. | Pas d'héritage permanent | mineur |
+| E43 | Opérations groupées : activation | Activation groupée confirme les zones (E05/E06) ; suspension : conforme. Suspension groupée de zone « neutralise même au titre de Commune entière » (proto.js:326) : règle non listée. | Règle 9 (activation/suspension seulement) | à corriger |
+| E44 | Parcours simple en 5 étapes | Parcours principal D/lots/LOT-UI-02-architecture.md:85 : Tableau de bord → Événements → Créer → Fiche → Zones → confirmer/créer → validité (masse ou par zone) → Communes → Inviter → Activer : ≥ 8 étapes, 3 écrans (fiche, zones, zone/validité), invitations avant activation, sans parcours guidé. Ajoute créneaux, récurrence, chevauchements, fuseau/changement d'heure, `cp--validity`, sélection multiple. Stepper déclaré « obsolète » (:106). | Parcours simple : infos, Commune entière proposée, confirmation explicite, « Pendant toute la durée de l'événement », activation ; sans complexité fuseau/récurrence | bloquant |
+| E45 | Cartographie | ZoneCard.md:1 « Aucune cartographie » ; ZoneMap marqué obsolète : conforme. | — | conforme |
+| E46 | Zone d'événement via `event_zone` | STD B1 E1 : la table `zone` retirée, zones copiées par événement ; pas d'écart avec les règles validées. | — | conforme |
+| E47 | Tableau de bord brouillon | P:~543 « N zone à confirmer · non visible du public » (compteur de statut « à confirmer ») | Aucun statut « À confirmer » | à corriger |
+
+Les lignes de P citées « ~ » sont approximatives (±3 lignes) : fichier scripts/prototype.mjs.
+
+## Conforme (court)
+- Statut événement draft/active/suspended/closed (EventHeader.md:17) ; motif obligatoire à la suspension.
+- Statuts de participation INVITED/ACTIVE/SUSPENDED/CLOSED (hors `draft`, voir E11).
+- Zone : types, « Validité à configurer » non statut, aucun droit sans validité (T/zone_validity:8).
+- Créneau continu et ponctuel (validations proto.js), récurrence (dates, jours, minuit, heures égales refusées), chevauchements autorisés avec avertissement.
+- Invitation non déclinable ; acceptation par l'administrateur communal seul (P:317-318).
+- Gestion des zones réservée à l'administrateur (P:243) ; création d'événement réservée aux communes abonnées et non suspendues (P:130).
+- Commune non abonnée peut accepter, participer, gérer ses zones.
+- Opérations groupées limitées à la commune, confirmation avant écrasement, aucun laissez-passer délivré.
+- Pas de cartographie.
+
+## Questions d'ambiguïté
+- Q-A : récurrence « tous les jours » (jours = null) équivaut-il à des jours de semaine cochés ? La règle exige « jours de semaine ».
+- Q-B : « agent instructeur : aucun droit événements/zones » interdit-il aussi la consultation (liste, fiche) ? L'UI-02 donne la consultation à l'instructeur (DM:23).
+- Q-C : une commune suspendue administrativement qui participe déjà à un événement peut-elle encore gérer ses zones / sa participation ? La règle 8 ne parle que de « ne rejoint pas de nouvel événement ».
+- Q-D : une commune non abonnée « délivre des laissez-passer » : où l'écran de délivrance/instruction se situe-t-il dans UI-02 (hors lot) ? Les rubriques Demandes/Laissez-passer sont retirées pour `requests:false`.
+- Q-E : la suppression d'une zone « Commune entière » auto sur un événement ACTIVE qui n'a plus aucune autre zone confirmée suspend-t-elle l'activation ?
+- Q-F : la « confirmation explicite dans le formulaire » d'une « Commune entière » manuelle est-elle une case à cocher dédiée ou la saisie du type ?
+- Q-G : à l'activation, une zone dont les créneaux sont tous passés est-elle « configurée » ? (règle : « créneau futur admis »).
+- Q-H : l'écran 05 doit-il proposer « Recréer Commune entière » après suppression (règle 2) ?
+
+## Écarts bloquants (résumé)
+1. Statut « À confirmer » (E01, E06) et confirmedAt limité à « Commune entière » (E02), pas de confirmation explicite à la création (E03).
+2. Activation d'événement ne vérifie ni zone active, ni validité configurée, ni participation ACTIVE (E09, E10) ; Q9 la déclare autorisée sans validité.
+3. Participation organisatrice créée « draft » au lieu d'ACTIVE (E11) ; clôture normale exige la clôture préalable de l'organisatrice (E36).
+4. Fuseau Europe/Paris codé en dur, aucun fuseau IANA outre-mer (E14) ; heure inexistante corrigée en 03:00 (E15) et ambiguë résolue en 1re occurrence (E16) ; récurrence non refusée (E18).
+5. Zones non modifiables en participation SUSPENDED (E33).
+6. Type d'événement modifiable en ACTIVE (E12) ; référence EVT-YYYY-NNNNNN absente (E13).
+7. Clôture forcée super-admin Sonata absente, STD proposant de réaligner CDC §4.1 (E38).
+8. Commune non abonnée : pas d'accès Demandes/Laissez-passer dans la démo (E31).
+9. Parcours principal de 8+ étapes avec fuseau/récurrence au lieu du parcours en 5 étapes (E44).

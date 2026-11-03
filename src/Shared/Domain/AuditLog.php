@@ -18,6 +18,8 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Index(name: 'idx_audit_subject', columns: ['subject_type', 'subject_id', 'occurred_at'])]
 #[ORM\Index(name: 'idx_audit_municipality', columns: ['municipality_id', 'occurred_at'])]
 #[ORM\Index(name: 'idx_audit_actor', columns: ['actor_id'])]
+#[ORM\Index(name: 'idx_audit_operator', columns: ['operator_id'])]
+#[ORM\Index(name: 'idx_audit_batch', columns: ['batch_id'])]
 class AuditLog
 {
     #[ORM\Id]
@@ -47,6 +49,12 @@ class AuditLog
         private ?array $previousValue,
         #[ORM\Column(type: Types::JSON)]
         private array $newValue,
+        /** Opérateur CWS réellement connecté, lorsqu'il diffère de l'utilisateur métier (actor_id) : DT-022. */
+        #[ORM\Column(type: UuidType::NAME, nullable: true)]
+        private ?Uuid $operatorId = null,
+        /** Regroupe les écritures d'une même opération (opérations groupées, clôtures) : DT-022. */
+        #[ORM\Column(type: UuidType::NAME, nullable: true)]
+        private ?Uuid $batchId = null,
     ) {
         $this->id = Uuid::v7();
     }
@@ -84,6 +92,16 @@ class AuditLog
     public function actorId(): ?Uuid
     {
         return $this->actorId;
+    }
+
+    public function operatorId(): ?Uuid
+    {
+        return $this->operatorId;
+    }
+
+    public function batchId(): ?Uuid
+    {
+        return $this->batchId;
     }
 
     public function origin(): AuditOrigin

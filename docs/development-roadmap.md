@@ -1,5 +1,7 @@
 # Civipass — Roadmap de développement V1
 
+> **Révision LOT 02 (TECH-02.1) — traçabilité** : les passages sur la bibliothèque de zones et les instantanés (`Zone`, `EventZone` avec source/instantané, « snapshots ») sont **remplacés** par [`lot-02-schema.md`](lot-02-schema.md) (décisions DM-008, DM-051, DM-052, DM-029). Le texte d'origine ci-dessous est conservé tel quel pour mémoire ; il n'est plus la référence pour les zones, événements et participations.
+
 ## Principes de livraison
 Petits lots, schéma revu avant migrations, tests automatisés et `make quality` à chaque livraison. Claude Code ne doit pas construire toute l'application d'un seul coup. Les maquettes Claude UI sont intégrées progressivement en Twig/Stimulus/Turbo, sans changer la direction graphique retenue.
 
@@ -12,11 +14,11 @@ Petits lots, schéma revu avant migrations, tests automatisés et `make quality`
 - Revue des attributs/cardinalités/index ; validation des migrations.
 - User, Municipality, Membership à rôles cumulables, Invitation, Subscription.
 - Authentification, contexte communal, Voters, protections Sonata.
-- Tests de droits multi-communes, création événement conditionnée à abonnement actif (service testable même si Event vient ensuite).
+- Tests de droits multi-communes, création d'événement conditionnée à un droit d'utilisation valide (abonnement, TRIAL ou accès commercial CWS ; service testable même si Event vient ensuite).
 
 ## LOT 02 — Événements et zones
-- Event, EventParticipation, Zone, EventZone et snapshots.
-- Commune organisatrice abonnée, invitation de communes non abonnées, zones pendant événement actif.
+- EventType, Event, EventParticipation, EventZone, EventZoneValidity et compteur de référence (sans bibliothèque de zones ni snapshots).
+- Commune organisatrice disposant d'un droit d'utilisation valide, invitation de communes sans droit, zones et validités pendant l'événement actif.
 - Tests d'isolation, transitions, invalidation par sortie/clôture.
 
 ## LOT 03 — Dépôt citoyen

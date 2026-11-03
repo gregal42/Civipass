@@ -23,5 +23,21 @@ Symfony 8.1 / PHP 8.4 / Doctrine ORM / MySQL 8.4, Twig, AssetMapper, Stimulus, U
 ## Architecture cible
 Monolithe modulaire `src/Identity`, `src/Municipality`, `src/Event`, `src/Request` (demandes citoyennes), `src/Instruction`, `src/Permit`, `src/Control`, `src/Shared`, `src/Admin`. Couches légères `Domain`, `Application`, `Infrastructure`, `UI` selon besoin, sans dossiers vides artificiels. Éviter `src/Application/Application`.
 
-## Priorité immédiate
-LOT 00 = documentation, conventions, vérification de l'existant et plan d'exécution ; **aucune migration**. LOT 01 = identités, communes, rôles cumulables, invitations et sécurisation Sonata, après revue de schéma.
+## Priorité immédiate (historique)
+LOT 00 = documentation, conventions, vérification de l'existant et plan d'exécution ; **aucune migration**. LOT 01 = identités, communes, rôles cumulables, invitations et sécurisation Sonata, après revue de schéma. *(LOT 00 et LOT 01 sont livrés. Prochain lot : TECH-02.1, audit seul tant que les arbitrages A1–A9 ne sont pas validés.)*
+
+## Documents de référence
+Point d'entrée : `docs/README.md`. Originaux dans `docs/references/` (manifeste SHA-256), décisions dans `docs/decisions/` (`DM-` métier, `DT-` technique), audits et lots dans `docs/lots/`, UX dans `docs/ux/`. Vérification : `docs/tools/verify-docs.sh`.
+Hiérarchie en cas de contradiction métier : 1. décisions validées ; 2. SFD V1.0 détaillé (référence fonctionnelle principale) ; 3. CDC V1 ; 4. STD v1.1 ; 5. documents UX.
+
+## Règles documentaires
+- **Consulter `docs/decisions/` avant tout développement métier.** Une fiche « Proposée » n'est pas une décision validée.
+- **Signaler toute contradiction documentaire** à l'utilisateur ; ne jamais modifier silencieusement CDC, SFD ou STD.
+- **Ne pas inventer de règle métier** ; en cas de doute, poser la question ou proposer un arbitrage.
+- Permissions serveur et isolation inter-communes obligatoires, testées avec des identifiants forgés. Aucun droit communal implicite pour CWS.
+- **Pas de cartographie en V1** (ni géométrie, ni bibliothèque de zones).
+- Ne pas committer sans accord de l'utilisateur.
+
+## Conventions techniques
+Symfony 8.1, PHP 8.4, Doctrine ORM. UUID v7 en `BINARY(16)`, dates en UTC (type `datetime_immutable` surchargé), `TransactionRunner` pour les opérations transactionnelles, audit via `AuditTrail` dans la même transaction, Sonata en lecture seule, design system importé par copie versionnée (`design-system/`).
+Qualité : `make quality` (CS-Fixer, PHPStan niveau 6, PHPUnit) ; `make test-db` provisionne la base `*_test`. Ne jamais lancer de migration sur la base de développement sans accord.

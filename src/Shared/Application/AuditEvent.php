@@ -24,6 +24,8 @@ final readonly class AuditEvent
         public AuditActor $actor,
         public ?array $previousValue,
         public array $newValue,
+        /** Regroupe les écritures d'une même opération (opérations groupées, clôtures) : DT-022. */
+        public ?Uuid $batchId = null,
     ) {
     }
 }

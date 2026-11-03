@@ -10,12 +10,14 @@ Base MySQL partagée ; isolation **applicative obligatoire** par commune et év�
 | Action | Superadmin | Admin commune | Gestionnaire événement | Instructeur | Contrôleur sans compte |
 |---|---|---|---|---|---|
 | Paramétrer une commune | Oui | Oui, sa commune | Non | Non | Non |
-| Créer un événement | Supervision | Selon permission explicite | Oui, si abonnement actif | Non | Non |
-| Inviter une commune | Supervision | Selon permission | Oui, si organisatrice | Non | Non |
+| Créer un événement | Non (aucun droit communal implicite) | Oui (rôle administrateur) | Oui, si commune active avec droit d'utilisation valide | Non | Non |
+| Inviter une commune | Non | Oui | Oui, si organisatrice | Non | Non |
 | Instruire et autoriser | Supervision exceptionnelle et auditée | Selon permission explicite | Non par défaut | Oui, sa commune | Non |
-| Activer appareils PWA | Supervision | Selon permission | Oui, organisatrice | Non | Non |
+| Activer appareils PWA | Non (hors lot ; à redéfinir au lot PWA) | Selon permission | Oui, organisatrice | Non | Non |
 | Scanner un QR public | Oui | Oui | Oui | Oui | Oui |
 | Synchroniser hors ligne | Si appareil activé | Si appareil activé | Si appareil activé | Si appareil activé | Si appareil activé |
+
+> **Révision LOT 02 (N5)** : les mentions « Supervision » de CWS sur la création d'événement, l'invitation et l'activation d'appareils sont **retirées** (décision DM-005 : aucun droit communal implicite). Matrice d'origine : commit `0a8b5fb`. Les rôles « Admin commune » et « Gestionnaire événement » suivent DM-057 ; l'accès CWS passe par trois mécanismes distincts (administration technique, impersonation auditée DM-061, clôture forcée DM-065). Voir [`revisions/CONTRADICTIONS.md`](revisions/CONTRADICTIONS.md).
 
 Cette matrice est un point de départ technique ; toute délégation fine devra être explicitée dans les tickets.
 
@@ -35,7 +37,7 @@ Stockage privé hors racine web, validation MIME/taille/extension, contrôle d'a
 1. Agent commune A ne lit ni ne modifie notes/justificatifs locaux de B.
 2. Agent A ne décide pas pour B, même en forgeant des IDs.
 3. Organisatrice ne modifie pas les autorisations des invitées.
-4. Commune sans abonnement actif ne crée pas d'événement.
+4. Commune sans droit d'utilisation valide (abonnement, TRIAL ou accès commercial CWS) ne crée pas d'événement.
 5. Sortie d'une commune invalide seulement ses droits.
 6. Clôture événement invalide tous les droits.
 7. QR ne change pas après prolongation, changement de zones/véhicules.

@@ -21,6 +21,11 @@ doctrine:
                 is_bundle: false
                 dir: '%kernel.project_dir%/src/Identity/Domain'
                 prefix: 'App\Identity\Domain'
+            Event:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Event/Domain'
+                prefix: 'App\Event\Domain'
             Municipality:
                 type: attribute
                 is_bundle: false
