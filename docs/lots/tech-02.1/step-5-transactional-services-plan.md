@@ -387,3 +387,118 @@ Fichiers : **S** = `EventLifecycleServiceTest`, **K** = `EventLifecycleConcurren
 | lockByEvent | L | — | — | L (plusieurs communes) | L (délai, commit, rollback) | L | — |
 
 Limites assumées : pas de test de rollback dédié pour `suspend`, `reactivate` et `close` de participation (même gabarit que `accept`, couvert) ; pas de test de concurrence dédié `activate` contre `update`.
+
+## 19. Plan d'exécution des sous-étapes 5.4 et 5.5 (phase A — analyse et conception)
+
+Base : 5.1 à 5.3 committées (`4f8bc24`). Rien de l'architecture 5.1 n'est refait. Sources : DM-006/007/009 (zones d'une participation, administrateur seul), DM-011 (mode de validité), DM-022 à DM-028 (opérations groupées), DM-051/052 (confirmation, suppression logique), DM-057, DM-058/059 (activation), DM-066, DM-068, DM-069, DM-075, DM-080, DM-088.
+
+### 19.1 Contrats — 5.4 `EventZoneService`
+
+| Méthode | Permission (sujet) | Préconditions relues sous verrou | Audit |
+|---|---|---|---|
+| `create(actor, participationId, CreateZoneCommand)` | `CreateZone` (participation) | participation ACTIVE/SUSPENDED, événement ouvert ; « Commune entière » confirmée explicitement et unique parmi les zones non supprimées (invariant 9, DM-068) | `ZONE_CREATED` (`origin: MANUAL`) |
+| `update(actor, zoneId, UpdateZoneCommand)` | `ModifyZone` | zone non supprimée ; type immuable (DM-080) ; sans changement réel : rien | `ZONE_UPDATED` (champs modifiés, jamais le texte) |
+| `confirm` | `ModifyZone` | idempotent : déjà confirmée ⇒ rien, aucun audit | `ZONE_CONFIRMED` |
+| `suspend` / `reactivate` | `ModifyZone` | transitions du domaine (déjà suspendue / déjà active : refus) | `ZONE_SUSPENDED` / `ZONE_REACTIVATED` |
+| `delete` | `DeleteZone` | zone non supprimée ; logique, sans retour (DM-052) ; créneaux conservés (non propagée) | `ZONE_DELETED` |
+| `configureValidity(actor, zoneId, ZoneValidityCommand)` | `ConfigureZoneValidity` | mode `EVENT_DURATION` (sans créneau) ou `SPECIFIC_PERIODS` (au moins un créneau) ; chaque créneau inspecté dans le fuseau de l'événement relu sous verrou ; remplacement identique : rien (DM-088) | `ZONE_VALIDITY_MODE_CHANGED` (si le mode change), `ZONE_VALIDITY_SLOT_DELETED` ×n, `ZONE_VALIDITY_SLOT_CREATED` ×n, `batch_id` commun |
+
+Résultats immuables : `ZoneResult`, `ZoneValidityResult`. Commandes : `CreateZoneCommand`, `UpdateZoneCommand`, `ZoneValidityCommand` avec `ValiditySlotInput` (données brutes : le service construit les objets du domaine temporel, aucun nouveau moteur de dates).
+
+Aucune règle nouvelle. Précisions d'interprétation, **formalisées ensuite en DM-093, DM-094 et DM-095** (§22) :
+- la confirmation n'a **aucune précondition temporelle** : DM-051/DM-059 placent la validité dans l'activation (une zone confirmée non configurée n'ouvre aucun droit) ;
+- le mode `UNCONFIGURED` n'est pas une cible de `configureValidity` (état initial seulement) ;
+- DM-025 (confirmation avant écrasement) ne s'applique qu'aux opérations **groupées** (son thème) ; le remplacement individuel n'exige pas de confirmation.
+
+### 19.2 Contrats — 5.5 `EventZoneBulkService::apply`
+
+Périmètre limité à ce que les décisions prévoient : **suspension** et **réactivation** groupées (DM-024) et **application d'une même configuration de validité** (DM-022, DM-023, DM-025, DM-026). **Non implémentés** : suppression groupée et modification groupée de propriétés — aucune décision ne les prévoit (« ne pas ajouter une opération parce qu'elle est possible »).
+
+- Entrée : `BulkZoneCommand(operation, zoneIds[], ?ZoneValidityCommand, confirmOverwrite)` ; sélection = zones d'**une** participation (DM-028). Doublon, liste vide ou UUID invalide : refus ; zone étrangère, inexistante ou supprimée : refus en bloc uniforme (« Ressource inaccessible. »).
+- Autorisation : garde de participation (`CreateZone`, même matrice : administrateur seul, état éditable) puis **politique de zone par zone** (`ModifyZone` ou `ConfigureZoneValidity`) : un service groupé n'ajoute aucun droit.
+- Validation de **toutes** les zones avant la première modification (transitions du domaine, créneaux inspectés, confirmation d'écrasement : si une zone possède déjà une configuration différente, `confirmOverwrite` est exigé) ; une configuration identique n'est jamais un écrasement ni une modification (DM-088).
+- Chaque zone reçoit ses propres créneaux (copie, DM-026/027).
+- Audit : un par objet modifié, un `batch_id` pour tout le lot, plus une ligne `ZONE_BULK_OPERATION` (sujet : la participation) seulement si quelque chose a changé.
+- Résultat : `BulkZoneResult(operation, participationId, requestedZoneIds, modifiedZoneIds, changed, batchId|null)`.
+
+### 19.3 Verrouillage
+
+Ordre unique : événement **S** → participation **X** → zones **X** (identifiant croissant). Nouveautés : `EventZoneRepository::lock` et `lockByIdsInParticipation` (`PESSIMISTIC_WRITE` + `HINT_REFRESH`, relecture sous verrou, `ORDER BY id`), `EventLocker::zone` et `::zones` (exigent la participation déjà verrouillée et vérifient l'appartenance). Délai 5 s, aucun retry, aucun upgrade S→X, jamais le compteur.
+- L'activation et la clôture (événement X) ne coexistent donc jamais avec une opération de zone (événement S) : l'activation lit un état entièrement validé avant ou après (C6).
+- Deux communes ne se bloquent pas (participations distinctes, événement S compatible) : C10.
+- Deux opérations sur la même participation sont sérialisées : C8, C9.
+
+### 19.4 Dépendances 5.4 → 5.5
+
+Le configurateur de validité (`ZoneValidityConfigurator` : lecture des créneaux saisis, inspection, comparaison à l'existant, remplacement) est écrit en 5.4 et réutilisé tel quel par le service groupé ; les audits de zone sont ceux de la matrice §10.
+
+### 19.5 Tests
+
+5.4 : nominaux, permissions et isolation, temporalité (heure d'été/d'hiver, inexistante, ambiguë, choix, récurrence 3 660 jours), rollback (création, modification, confirmation, suppression, validité, audit défaillant), concurrence (activation × modification/suspension/confirmation/suppression/créneaux dans les deux ordres, clôture × zone, deux modifications). 5.5 : nominal, zone étrangère/supprimée, transition interdite, doublon, sans changement, `batch_id`, rollbacks, deux lots simultanés, lot × clôture, lot × activation, lot × opération individuelle, absence de contournement des politiques.
+
+### 19.6 Contradictions et conditions d'arrêt
+
+Aucune contradiction détectée entre code, décisions et plan ; aucun changement de schéma (`event_zone`, `event_zone_validity` et leurs index suffisent, `AuditAction` contient déjà les actions) ; aucune permission nouvelle. Les trois interprétations du §19.1 sont des précisions, pas des règles nouvelles.
+
+## 20. Sous-étape 5.4 — bilan (réalisée, non committée)
+
+`EventZoneService` : `create`, `update`, `confirm`, `suspend`, `reactivate`, `delete`, `configureValidity`, conformes au §19.1. Composants : `ZoneValidityConfigurator` (+ `ParsedValidity`, `ZoneValidityPlan`, partagés avec la 5.5), `EventLocker::zone` / `::zones`, `EventZoneRepository::lock` / `::lockByIdsInParticipation`, commandes (`CreateZoneCommand`, `UpdateZoneCommand`, `ValiditySlotInput`, `ZoneValidityCommand`) et résultats (`ZoneResult`, `ZoneValidityResult`) immuables.
+
+- **Permissions** : administrateur communal seul ; gestionnaire, instructeur, commune participante (sur les zones d'autrui), commune étrangère, super-administrateur CWS et identifiants forgés refusés (« Ressource inaccessible. ») ; commune non abonnée mais participante autorisée.
+- **Temporalité** : aucun nouveau moteur ; `SlotInspector` dans le fuseau de l'événement relu sous verrou ; heure inexistante refusée (date et heure citées), heure ambiguë : choix explicite exigé et stocké, choix obsolète refusé, récurrence : 3 660 jours acceptés, au-delà refusé ; le fuseau décide (Paris et Miquelon). Heures LOCALES stockées, jamais UTC.
+- **Remplacement** : global (suppression logique + création, DM-075) ; identique (ordre indifférent) : ni écriture, ni audit, `updated_at` inchangé (DM-088) ; changement de mode : modification réelle ; historique conservé ; un `batch_id` par remplacement.
+- **Tests** : `EventZoneServiceTest` (39 : nominal, permissions, temporalité, validations, 7 rollbacks par audit défaillant, y compris au 2e et 3e audit d'un remplacement) et `EventZoneConcurrencyTest` (15 : activation × suspension/suppression/confirmation/configuration, dans les deux ordres ; activation × modification/suppression/suspension/configuration ; clôture × modification, dans les deux ordres ; deux modifications ; commune A × commune B non bloquantes C10).
+- **Technique** : `tests/Support/zone-action.php`, `SleepingAuditTrail` (l'opération tenante signale par fichier qu'elle tient ses verrous, puis attend avant le commit), `ParallelPhp::start/isRunning/finish`, `ZoneServiceTestCase`, `ZoneConcurrencyTestCase` ; `config/services.yaml` : deux objets de valeur exclus de l'autowiring.
+
+## 21. Sous-étape 5.5 et consolidation — bilan (réalisées, non committées)
+
+### 21.1 `EventZoneBulkService::apply`
+Suspension et réactivation groupées (DM-024) et application d'une même configuration (DM-022, DM-023, DM-025, DM-026) conformes au §19.2. Garde de participation (`CreateZone`, même matrice administrateur seul) puis **politique de zone par zone** : aucun droit ajouté. Validation de toutes les zones avant la première écriture ; une zone étrangère, supprimée ou inconnue refuse le lot (refus uniforme) ; doublon, sélection vide, identifiant invalide, transition interdite, créneau invalide, écrasement non confirmé : refus en bloc. Sans changement réel : aucun audit, `batchId` nul. Avec changements : un audit par zone modifiée + `ZONE_BULK_OPERATION` (sujet : la participation), un `batch_id` commun.
+
+Tests : `EventZoneBulkServiceTest` (19 : nominal, copies indépendantes, écrasement, identique, partiel, zone étrangère, sélections invalides, transition interdite, créneau invalide, aucun contournement par rôle/commune/événement clôturé, 6 rollbacks) et `EventZoneBulkConcurrencyTest` (10 : deux lots sur la même participation, deux lots identiques, ordres de sélection opposés sans interblocage sur trois rondes, lot × clôture, lot × activation dans les deux ordres, individuel × lot, lot × configuration individuelle, deux communes non bloquantes).
+
+### 21.2 Parcours métier (`EventModuleJourneysTest`)
+| Parcours | Test |
+|---|---|
+| A — événement simple | `testJourneyASimpleEvent` |
+| B — intercommunal | `testJourneyBInterMunicipalEvent` |
+| C — événement suspendu | `testJourneyCSuspendedEvent` |
+| D — modification en cours d'événement | `testJourneyDChangesDuringAnActiveEvent` |
+| E — opérations groupées | `testJourneyEBulkOperationsKeepTheAuditConsistent` |
+
+Complétés par les permissions par statut : commune suspendue, inactive, compte administrateur désactivé (tout refusé, y compris le groupé).
+
+### 21.3 Cohérence transversale
+- **Permissions** : administrateur seul sur les zones (le gestionnaire gère événement et invitations, jamais les zones) ; l'organisatrice ne touche pas aux zones des participantes ; commune invitée non acceptée, suspendue ou inactive : refus ; super-administrateur CWS : aucun droit communal implicite ; le service groupé n'ajoute aucun droit.
+- **Transactions** : ordre unique événement → participation(s) → zones (identifiant croissant) ; événement partagé pour les zones et participations, exclusif pour activation, clôture, modification, invitation ; aucun upgrade, aucun retry, délai 5 s, pas de transaction imbriquée (le runner la refuse), audit dans la même transaction, jamais de verrou sur le compteur hors création. Aucun interblocage observé (lots en ordres de sélection opposés, trois rondes).
+- **Temporalité** : fuseau de l'événement, heures locales stockées, DST (inexistante, ambiguë, choix), récurrence 3 660 jours, créneaux remplacés conservés, zones supprimées exclues de l'activation.
+- **Audit** : aucun texte libre (DT-037) ; les remplacements et lots partagent un `batch_id` ; un échec d'audit annule tout (rollbacks testés à chaque position pertinente).
+
+### 21.4 Risques résiduels et points de vigilance
+1. ~~**Horodatage d'audit** pris au début de l'opération~~ : **résolu par DT-038** (§22) ; l'horodatage est pris après l'acquisition des verrous.
+2. ~~**Taille des remplacements** sans limite~~ : **résolu par DM-096** (§22) ; 100 zones × 500 créneaux dans un même lot restent possibles et lourds.
+3. **Timeout** : un lot très long peut dépasser 5 s de verrou pour les opérations concurrentes (traduit en `OperationConflict`, pas de retry).
+4. ~~**Interprétations** du §19.1~~ : **formalisées** par DM-093, DM-094, DM-095 (§22).
+5. **Lectures** : aucun service de lecture des zones et des créneaux n'est livré en 5.4/5.5 (hors périmètre) ; les écrans devront s'appuyer sur `EventZoneRepository` / `EventZoneValidityRepository` et la politique `ViewZone`.
+6. Tests de concurrence : ils reposent sur des temporisations (attente de 2,5 s, vérification d'attente de 0,6 s) ; relancés plusieurs fois sans instabilité, mais sensibles à une machine très chargée.
+
+## 22. Passe de finalisation avant validation de TECH-02.1
+
+Décisions formalisées (validées par le commanditaire) :
+- **DT-038** — l'horodatage d'une opération (mutations et audits) est lu **après l'acquisition des verrous** ; l'identifiant d'audit (UUID v7) reste la référence d'ordonnancement. Création d'événement : lu après l'attribution de la référence (seul verrou). Test : l'horodatage d'une opération qui a attendu un verrou ≥ 2 s est postérieur à l'attente (le test échoue si l'on rétablit la lecture avant le verrou) ; variante pour la clôture et les audits de participations.
+- **DM-093** — une zone peut être confirmée sans configuration temporelle ; confirmation métier et disponibilité opérationnelle restent distinctes ; conditions d'activation inchangées.
+- **DM-094** — `UNCONFIGURED` est un état initial, jamais cible de `configureValidity` ; aucune réinitialisation implicite.
+- **DM-095** — la confirmation avant écrasement (DM-025) s'applique aux opérations groupées ; l'individuel est une sauvegarde explicite. Vérification faite : la phrase de décision de DM-025 ne nomme pas explicitement les opérations groupées, mais son thème, son contexte et le plan 5.1 les visent ; **aucune contradiction**, DM-025 n'est pas modifiée.
+- **DM-096** — plafonds : 500 créneaux par configuration, 100 zones par opération groupée ; configurables (`EVENT_MAX_SLOTS_PER_VALIDITY`, `EVENT_MAX_ZONES_PER_BULK_OPERATION`), appliqués côté backend avant toute lecture ou écriture ; valeur limite acceptée, dépassement refusé (`DomainRuleViolation`). Aucun changement de schéma.
+
+## 23. Validation finale de TECH-02.1
+
+**TECH-02.1 est validée et terminée.** Le commanditaire a validé les sous-étapes 5.4 et 5.5 et leur consolidation, ainsi que DT-038 et DM-093 à DM-096 (message « VALIDATION FINALE TECH-02.1 »). Aucune interface, contrôleur HTTP ni API n'est livré.
+
+### Point bloquant avant toute exposition HTTP des opérations groupées
+Le volume cumulé n'est pas plafonné : 100 zones × 500 créneaux dans une même opération restent possibles (jusqu'à 50 000 créneaux et autant d'audits dans une transaction, avec un risque de dépasser le délai de verrou de 5 s pour les opérations concurrentes). Risque **accepté temporairement** ; un plafond cumulé (ou une autre garde) doit être décidé et implémenté **avant** d'exposer `EventZoneBulkService` par HTTP (DM-096).
+
+### Risques résiduels documentés
+1. **Volume cumulé** des créneaux dans les opérations groupées (point bloquant ci-dessus).
+2. **Tests de concurrence reposant sur des temporisations** (attente de 2,5 s, vérification d'attente de 0,6 s) : stables sur plusieurs relances, mais sensibles à une machine très chargée.
+3. **Services de lecture** des zones et des créneaux : à développer avant les interfaces (les écrans s'appuieront sur `EventZoneRepository`, `EventZoneValidityRepository` et la politique `ViewZone`, avec des indicateurs de droits par ligne).

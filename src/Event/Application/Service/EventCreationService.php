@@ -63,7 +63,7 @@ final readonly class EventCreationService
      */
     public function create(User $actor, string $municipalityId, CreateEventCommand $command): CreatedEvent
     {
-        $now = $this->clock->now();
+        $now = $this->clock->now(); // pré-autorisation et validation à blanc uniquement
         // Contexte municipal non fiable : membership effectif exigé ; refus uniforme sinon.
         $municipality = $this->context->requireMembership($actor, $municipalityId)->municipality();
         $this->policy->forNewEvent($actor, $municipality, $now)->orThrow();
@@ -73,11 +73,14 @@ final readonly class EventCreationService
         // Validation à blanc (nom, dates, type actif) AVANT de toucher au compteur : le verrou n'est pris qu'ensuite.
         $this->newEvent(PublicReference::fromCounter(1, $now), $municipality, $command, $timezone, $actor, $now, $type);
 
-        return $this->transactions->run(function () use ($actor, $municipality, $command, $timezone, $type, $now): CreatedEvent {
+        return $this->transactions->run(function () use ($actor, $municipality, $command, $timezone, $type): CreatedEvent {
             // Droits et statut relus au moment de l'écriture (ils ont pu changer depuis la pré-autorisation).
-            $this->policy->forNewEvent($actor, $municipality, $now)->orThrow();
+            $this->policy->forNewEvent($actor, $municipality, $this->clock->now())->orThrow();
 
-            $event = $this->newEvent($this->references->next($now), $municipality, $command, $timezone, $actor, $now, $type);
+            // Le compteur est le seul verrou de la création : l'horodatage de l'écriture est pris APRÈS son acquisition (DT-038).
+            $reference = $this->references->next($this->clock->now());
+            $now = $this->clock->now();
+            $event = $this->newEvent($reference, $municipality, $command, $timezone, $actor, $now, $type);
             $participation = EventParticipation::forOrganizer($event, $now);
             $zone = EventZone::proposeWholeMunicipality($participation, $actor, $now);
 

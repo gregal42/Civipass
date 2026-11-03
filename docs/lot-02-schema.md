@@ -402,3 +402,7 @@ Code : `src/Event/Application/{Service,Support,Command,Result}`. Aucune migratio
 ## 19. Sous-étape 5.3 — cycle de vie (aucun changement de schéma)
 
 La 5.3 n'ajoute ni table, ni colonne, ni index, ni migration. Elle s'appuie sur `event_event.suspended_at` (migration déjà livrée) et sur les index existants ; le verrouillage de toutes les participations d'un événement utilise l'index sur `event_id`. Détail : `docs/lots/tech-02.1/step-5-transactional-services-plan.md` §18.
+
+## 20. Sous-étapes 5.4 et 5.5 — zones, validités, opérations groupées (aucun changement de schéma)
+
+Aucune table, colonne, index ni migration. Les zones se verrouillent par `event_zone.id` (clé primaire) et par `(participation_id)` ; les créneaux se remplacent par suppression logique (`deleted_at`, DM-075) sans jamais être supprimés physiquement. `AuditAction` contenait déjà `ZONE_*`, `ZONE_VALIDITY_*` et `ZONE_BULK_OPERATION`. Le verrouillage de plusieurs zones utilise `WHERE id IN (…) AND participation_id = ? AND deleted_at IS NULL ORDER BY id FOR UPDATE`. Détail : `docs/lots/tech-02.1/step-5-transactional-services-plan.md` §19 à §21.

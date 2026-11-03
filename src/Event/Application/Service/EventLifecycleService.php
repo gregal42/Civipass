@@ -62,14 +62,14 @@ final readonly class EventLifecycleService
      */
     public function update(User $actor, string $eventId, UpdateEventCommand $command): EventStateResult
     {
-        $now = $this->clock->now();
         $known = $this->resolver->event($actor, $eventId, EventPermission::UpdateEvent);
         $type = null === $command->typeCode ? null : ($this->types->findByCode($command->typeCode) ?? throw new DomainRuleViolation('Type d\'événement inconnu.'));
         $timezone = null === $command->timezone ? null : EventTimezone::fromIdentifier($command->timezone);
 
-        return $this->transactions->run(function () use ($actor, $known, $command, $type, $timezone, $now): EventStateResult {
+        return $this->transactions->run(function () use ($actor, $known, $command, $type, $timezone): EventStateResult {
             $event = $this->locker->exclusiveEvent($known->id());
             $this->policy->forEvent($actor, EventPermission::UpdateEvent, $event)->orThrow();
+            $now = $this->clock->now(); // après l'acquisition des verrous (DT-038)
 
             $changed = $this->changedFields($event, $command, $type, $timezone);
             if ([] === $changed) {
@@ -138,14 +138,14 @@ final readonly class EventLifecycleService
      */
     public function close(User $actor, string $eventId): EventClosureResult
     {
-        $now = $this->clock->now();
         $known = $this->resolver->event($actor, $eventId, EventPermission::CloseEvent);
 
-        return $this->transactions->run(function () use ($actor, $known, $now): EventClosureResult {
+        return $this->transactions->run(function () use ($actor, $known): EventClosureResult {
             // Événement (X) puis toutes les participations (X, identifiant croissant) : jamais l'inverse.
             $event = $this->locker->exclusiveEvent($known->id());
             $participations = $this->locker->allParticipations($event);
             $this->policy->forEvent($actor, EventPermission::CloseEvent, $event)->orThrow();
+            $now = $this->clock->now(); // après l'acquisition des verrous (DT-038)
 
             $batch = Uuid::v7();
             $previousStatus = $event->status();
@@ -200,12 +200,12 @@ final readonly class EventLifecycleService
      */
     private function transition(User $actor, string $eventId, EventPermission $permission, AuditAction $action, \Closure $mutate, array $extra = []): EventStateResult
     {
-        $now = $this->clock->now();
         $known = $this->resolver->event($actor, $eventId, $permission);
 
-        return $this->transactions->run(function () use ($actor, $known, $permission, $action, $mutate, $extra, $now): EventStateResult {
+        return $this->transactions->run(function () use ($actor, $known, $permission, $action, $mutate, $extra): EventStateResult {
             $event = $this->locker->exclusiveEvent($known->id());
             $this->policy->forEvent($actor, $permission, $event)->orThrow();
+            $now = $this->clock->now(); // après l'acquisition des verrous (DT-038)
 
             $previous = EventAuditRecorder::eventState($event);
             $mutate($event, $now);

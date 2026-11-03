@@ -8,6 +8,8 @@ use App\Event\Domain\Event;
 use App\Event\Domain\EventParticipation;
 use App\Event\Domain\EventParticipationRepository;
 use App\Event\Domain\EventRepository;
+use App\Event\Domain\EventZone;
+use App\Event\Domain\EventZoneRepository;
 use App\Shared\Domain\OperationNotAllowed;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Uid\Uuid;
@@ -27,6 +29,7 @@ final readonly class EventLocker
     public function __construct(
         private EventRepository $events,
         private EventParticipationRepository $participations,
+        private EventZoneRepository $zones,
         private Connection $connection,
     ) {
     }
@@ -69,6 +72,37 @@ final readonly class EventLocker
         $this->assertInTransaction();
 
         return $this->participations->lockByEvent($lockedEvent->id());
+    }
+
+    /** Verrou exclusif d'une zone de la participation déjà verrouillée (ordre : événement → participation → zones). */
+    public function zone(Uuid $zoneId, EventParticipation $lockedParticipation): EventZone
+    {
+        $this->assertInTransaction();
+        $zone = $this->zones->lock($zoneId);
+        if (null === $zone || !$zone->participation()->id()->equals($lockedParticipation->id())) {
+            throw self::inaccessible();
+        }
+
+        return $zone;
+    }
+
+    /**
+     * Verrou exclusif des zones demandées, par identifiant croissant ; le nombre trouvé doit égaler le nombre demandé
+     * (zone étrangère, inexistante ou supprimée : refus en bloc, DM-028).
+     *
+     * @param list<Uuid> $zoneIds identifiants distincts
+     *
+     * @return list<EventZone>
+     */
+    public function zones(array $zoneIds, EventParticipation $lockedParticipation): array
+    {
+        $this->assertInTransaction();
+        $zones = $this->zones->lockByIdsInParticipation($zoneIds, $lockedParticipation->id());
+        if (\count($zones) !== \count($zoneIds)) {
+            throw self::inaccessible();
+        }
+
+        return $zones;
     }
 
     private function assertInTransaction(): void

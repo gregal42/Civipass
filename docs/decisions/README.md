@@ -8,7 +8,7 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 - Statuts : **Proposée** (recommandation non validée), **Validée**, **Remplacée**, **Abandonnée**.
 - Une fiche indique l'identifiant, le titre, la validation (date), le contexte, la décision, les conséquences, les documents concernés et les décisions remplacées.
 - Les dates de validation ne sont pas connues pour les décisions antérieures à cette mission : elles sont marquées « date de validation non renseignée » et ne sont jamais inventées.
-- Une recommandation d'agent n'est **jamais** une décision validée. Arbitrages **validés** : A1 à A14, R1 à R9, P1 à P6, DT-020, DT-022, DT-023, DT-030, T1 (DM-076), DRAFT → CLOSED (DM-077) et administration des accès commerciaux depuis Sonata (DM-078), `revoked_by` (DM-079), type de zone immuable (DM-080), historique de suspension (DM-081), T2 (DM-082), limite de 3 660 jours (DM-083) : DM-051 à DM-066, DM-068 à DM-092 ; DT-024, DT-035 à DT-037. `DM-067` n'est pas attribué. Points résiduels de détail (T2 à T6) : [`../revisions/CONTRADICTIONS.md`](../revisions/CONTRADICTIONS.md). Les fiches techniques `Proposée` (DT-021, DT-025 à DT-029, DT-031) sont des propositions en attente de validation.
+- Une recommandation d'agent n'est **jamais** une décision validée. Arbitrages **validés** : A1 à A14, R1 à R9, P1 à P6, DT-020, DT-022, DT-023, DT-030, T1 (DM-076), DRAFT → CLOSED (DM-077) et administration des accès commerciaux depuis Sonata (DM-078), `revoked_by` (DM-079), type de zone immuable (DM-080), historique de suspension (DM-081), T2 (DM-082), limite de 3 660 jours (DM-083) : DM-051 à DM-066, DM-068 à DM-096 ; DT-024, DT-035 à DT-038. `DM-067` n'est pas attribué. Points résiduels de détail (T2 à T6) : [`../revisions/CONTRADICTIONS.md`](../revisions/CONTRADICTIONS.md). Les fiches techniques `Proposée` (DT-021, DT-025 à DT-029, DT-031) sont des propositions en attente de validation.
 - Une contradiction entre un document et une décision validée est signalée dans la fiche (« Écarts documentaires signalés »), sans modifier silencieusement le document.
 - Les décisions D1–D20 de [`../lot-01-schema.md`](../lot-01-schema.md) et D1–D8 de [`../ux/UX-LOT-UI-02-architecture.md`](../ux/UX-LOT-UI-02-architecture.md) gardent leur numérotation d'origine dans leurs documents (collision connue, écart N4) ; ce registre les reprend sous des identifiants DM/DT.
 
@@ -94,6 +94,10 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DM-090](metier/DM-090-u5-visibilite-des-instructeurs-informations-operationnelles-.md) | U5 — Visibilité des instructeurs : informations opérationnelles seulement | Arbitrage TECH-02.1 (complément) | Validée |
 | [DM-091](metier/DM-091-u6-historique-intercommunal-apres-cloture.md) | U6 — Historique intercommunal après clôture | Arbitrage TECH-02.1 (complément) | Validée |
 | [DM-092](metier/DM-092-cloture-globale-automatique-toutes-les-participations-ouvert.md) | Clôture globale automatique : toutes les participations ouvertes sont clôturées dans la même transaction | Arbitrage TECH-02.1 (complément) | Validée |
+| [DM-093](metier/DM-093-confirmation-d-une-zone-sans-configuration-temporelle.md) | Confirmation d'une zone sans configuration temporelle | Arbitrage TECH-02.1 (complément) | Validée |
+| [DM-094](metier/DM-094-unconfigured-etat-initial-non-cible-de-configuration.md) | UNCONFIGURED : état initial, jamais cible de `configureValidity` | Arbitrage TECH-02.1 (complément) | Validée |
+| [DM-095](metier/DM-095-confirmation-avant-ecrasement-limitee-aux-operations-groupees.md) | Confirmation avant écrasement : opérations groupées ; l'individuel est une sauvegarde explicite | Arbitrage TECH-02.1 (complément) | Validée |
+| [DM-096](metier/DM-096-plafonds-de-securite-creneaux-et-zones-groupees.md) | Plafonds de sécurité : 500 créneaux par configuration, 100 zones par opération groupée | Arbitrage TECH-02.1 (complément) | Validée |
 
 ## Décisions techniques
 
@@ -136,6 +140,7 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DT-035](technique/DT-035-architecture-transactionnelle-du-module-event-sous-etape-5-1.md) | Architecture transactionnelle du module Event (sous-étape 5.1) | Transactions | Validée |
 | [DT-036](technique/DT-036-d3-isolation-repeatable-read-conservee-delai-de-verrou-de-5-.md) | D3 — Isolation REPEATABLE READ conservée, délai de verrou de 5 secondes | Transactions | Validée |
 | [DT-037](technique/DT-037-d5-audit-metier-structure-sans-texte-libre-ni-donnee-personn.md) | D5 — Audit métier structuré, sans texte libre ni donnée personnelle | Audit | Validée |
+| [DT-038](technique/DT-038-horodatage-d-audit-pris-sous-verrou.md) | Horodatage des écritures et des audits pris après l'acquisition des verrous | Audit | Validée |
 
 ## Modèle de fiche
 

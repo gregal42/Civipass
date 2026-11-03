@@ -65,11 +65,10 @@ final readonly class EventParticipationService
      */
     public function invite(User $actor, InviteMunicipalityCommand $command): InvitationResult
     {
-        $now = $this->clock->now();
         $event = $this->resolver->event($actor, $command->eventId, EventPermission::InviteMunicipality);
         $target = $this->eligibleMunicipality($command->municipalityId);
 
-        return $this->transactions->run(function () use ($actor, $command, $event, $target, $now): InvitationResult {
+        return $this->transactions->run(function () use ($actor, $command, $event, $target): InvitationResult {
             $locked = $this->locker->exclusiveEvent($event->id());
             $this->policy->forEvent($actor, EventPermission::InviteMunicipality, $locked)->orThrow();
 
@@ -82,6 +81,7 @@ final readonly class EventParticipationService
                 throw new OperationNotAllowed('Commune introuvable ou indisponible.');
             }
 
+            $now = $this->clock->now(); // après l'acquisition des verrous (DT-038)
             // Toutes les validations du domaine précèdent la première écriture.
             $participation = EventParticipation::invite($locked, $target, $actor, $command->message, $now);
             $zone = EventZone::proposeWholeMunicipality($participation, $actor, $now);
@@ -107,17 +107,17 @@ final readonly class EventParticipationService
      */
     public function resendInvitation(User $actor, string $participationId): InvitationResult
     {
-        $now = $this->clock->now();
         $known = Uuid::isValid($participationId) ? $this->participations->find(Uuid::fromString($participationId)) : null;
         if (null === $known) {
             throw new OperationNotAllowed('Ressource inaccessible.');
         }
         $this->policy->forEvent($actor, EventPermission::InviteMunicipality, $known->event())->orThrow();
 
-        return $this->transactions->run(function () use ($actor, $known, $now): InvitationResult {
+        return $this->transactions->run(function () use ($actor, $known): InvitationResult {
             $event = $this->locker->exclusiveEvent($known->event()->id());
             $participation = $this->locker->participation($known->id(), $event);
             $this->policy->forEvent($actor, EventPermission::InviteMunicipality, $event)->orThrow();
+            $now = $this->clock->now(); // après l'acquisition des verrous (DT-038)
 
             $previous = $participation->lastInvitationSentAt();
             $participation->resendInvitation($now); // refuse (sans écrire) si l'invitation n'est plus en attente
@@ -189,13 +189,13 @@ final readonly class EventParticipationService
      */
     private function transition(User $actor, string $participationId, EventPermission $permission, AuditAction $action, \Closure $mutate, array $extra = []): ParticipationStatusResult
     {
-        $now = $this->clock->now();
         $known = $this->resolver->participation($actor, $participationId, $permission);
 
-        return $this->transactions->run(function () use ($actor, $known, $permission, $action, $mutate, $extra, $now): ParticipationStatusResult {
+        return $this->transactions->run(function () use ($actor, $known, $permission, $action, $mutate, $extra): ParticipationStatusResult {
             $event = $this->locker->sharedEvent($known->event()->id());
             $participation = $this->locker->participation($known->id(), $event);
             $this->policy->forParticipation($actor, $permission, $participation)->orThrow();
+            $now = $this->clock->now(); // après l'acquisition des verrous (DT-038)
 
             $previous = EventAuditRecorder::participationState($participation);
             $mutate($participation, $now);

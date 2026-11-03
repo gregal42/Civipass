@@ -43,6 +43,16 @@ final class ThrowingZoneRepository implements EventZoneRepository
         return $this->inner->findByIdsInParticipation($zoneIds, $participationId);
     }
 
+    public function lock(Uuid $id): ?EventZone
+    {
+        return $this->inner->lock($id);
+    }
+
+    public function lockByIdsInParticipation(array $zoneIds, Uuid $participationId): array
+    {
+        return $this->inner->lockByIdsInParticipation($zoneIds, $participationId);
+    }
+
     public function existsActivationReadyZone(Uuid $eventId): bool
     {
         return $this->inner->existsActivationReadyZone($eventId);

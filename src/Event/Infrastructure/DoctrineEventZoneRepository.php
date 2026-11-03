@@ -11,7 +11,9 @@ use App\Event\Domain\ParticipationStatus;
 use App\Event\Domain\Validity\ValidityMode;
 use App\Event\Domain\ZoneStatus;
 use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Query;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\DependencyInjection\Attribute\AsAlias;
 use Symfony\Component\Uid\Uuid;
@@ -81,6 +83,34 @@ final readonly class DoctrineEventZoneRepository implements EventZoneRepository
             ->setParameter('participation', $participationId, UuidType::NAME)
             ->getQuery()
             ->getResult();
+    }
+
+    public function lock(Uuid $id): ?EventZone
+    {
+        // find() relit déjà l'entité sous verrou ; pas de refresh() simple (voir EventRepository::lock).
+        return $this->entityManager->find(EventZone::class, $id, LockMode::PESSIMISTIC_WRITE);
+    }
+
+    public function lockByIdsInParticipation(array $zoneIds, Uuid $participationId): array
+    {
+        if ([] === $zoneIds) {
+            return [];
+        }
+        $query = $this->entityManager->createQueryBuilder()
+            ->select('z')
+            ->from(EventZone::class, 'z')
+            ->where('z.id IN (:ids)')
+            ->andWhere('IDENTITY(z.participation) = :participation')
+            ->andWhere('z.deletedAt IS NULL')
+            ->setParameter('ids', array_map(static fn (Uuid $id): string => $id->toBinary(), $zoneIds), ArrayParameterType::STRING)
+            ->setParameter('participation', $participationId, UuidType::NAME)
+            ->orderBy('z.id', 'ASC')
+            ->getQuery();
+        $query->setLockMode(LockMode::PESSIMISTIC_WRITE);
+        $query->setHint(Query::HINT_REFRESH, true); // une entité déjà gérée est relue sous verrou, pas depuis l'instantané
+
+        /* @var list<EventZone> */
+        return $query->getResult();
     }
 
     public function existsActivationReadyZone(Uuid $eventId): bool

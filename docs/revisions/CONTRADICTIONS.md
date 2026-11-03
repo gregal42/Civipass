@@ -101,6 +101,8 @@ Correspondance établie à la lecture des intitulés : à valider avant toute re
 
 **DM-092** (clôture globale automatique) remplace le prérequis de clôture préalable des participations (A6.3 de DM-056, plan 5.1) ; R3 et R4 documentés (DM-086, DT-036).
 
+**TECH-02.1 validée et terminée (validation finale du commanditaire) ; risques résiduels et point bloquant : plan 5.1 §23.** **5.4 et 5.5 — aucune contradiction documentaire ni conflit code/décisions relevé.** Trois **interprétations** ont été **formalisées** à la passe de finalisation : **DM-093** (confirmation d'une zone sans configuration temporelle), **DM-094** (`UNCONFIGURED` jamais cible de configuration) et **DM-095** (DM-025 : confirmation avant écrasement pour les opérations **groupées**). Lecture de DM-025 : sa phrase de décision ne nomme pas explicitement les opérations groupées ; son thème, son contexte et le plan 5.1 les visent — **ambiguïté levée sans contradiction et sans réécriture de DM-025**. Horodatage d'audit : **DT-038**. Plafonds de sécurité : **DM-096**. Suppression groupée et modification groupée de propriétés **non implémentées** (aucune décision ne les prévoit). Détail : plan 5.1 §19.1, §19.2 et §21.
+
 Résolus en 5.2 : **D1 à D8, U5, U6** (DM-085 à DM-091, DT-024, DT-036, DT-037) ; **U5 et U6** remplacent les points U5/U6 de l'étape 4.
 
 

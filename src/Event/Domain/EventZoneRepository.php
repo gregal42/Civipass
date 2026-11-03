@@ -37,6 +37,22 @@ interface EventZoneRepository
     public function findByIdsInParticipation(array $zoneIds, Uuid $participationId): array;
 
     /**
+     * Verrou exclusif d'une zone, relue sous verrou (pas d'instantané périmé). À appeler après le verrou de la participation.
+     */
+    public function lock(Uuid $id): ?EventZone;
+
+    /**
+     * Verrou exclusif des zones demandées, non supprimées et appartenant à la participation, par identifiant croissant
+     * (ordre d'acquisition déterministe), relues sous verrou. L'appelant refuse l'opération si le nombre trouvé diffère
+     * du nombre demandé (DM-028).
+     *
+     * @param list<Uuid> $zoneIds
+     *
+     * @return list<EventZone>
+     */
+    public function lockByIdsInParticipation(array $zoneIds, Uuid $participationId): array;
+
+    /**
      * Garde d'activation (DM-059) : existe-t-il une zone confirmée, active, non supprimée, d'une participation ACTIVE,
      * avec une validité configurée (toute la durée, ou au moins un créneau non supprimé) ?
      */

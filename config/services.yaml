@@ -9,6 +9,9 @@
 parameters:
     # Expéditeur des emails (à définir en production) ; valeur de repli non routable.
     env(MAILER_FROM): 'no-reply@civipass.invalid'
+    # Plafonds de sécurité du module Event (DM-096), appliqués côté backend ; surchargeables par l'environnement.
+    env(EVENT_MAX_SLOTS_PER_VALIDITY): '500'
+    env(EVENT_MAX_ZONES_PER_BULK_OPERATION): '100'
 
 services:
     # default configuration for services in *this* file
@@ -30,6 +33,8 @@ services:
             - '../src/Event/Application/Read/'
             - '../src/Event/Application/Command/'
             - '../src/Event/Application/Result/'
+            - '../src/Event/Application/Support/ParsedValidity.php'
+            - '../src/Event/Application/Support/ZoneValidityPlan.php'
 
     # Objet de domaine sans dépendance obligatoire (le référentiel communal des fuseaux est fourni plus tard).
     App\Event\Domain\Time\TerritoryTimezoneResolver: ~
