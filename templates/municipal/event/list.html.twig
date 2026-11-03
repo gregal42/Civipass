@@ -15,11 +15,11 @@
 
   {% set total_text = page.total ~ (page.total > 1 ? ' événements' : ' événement') %}
   {% set create = page.create %}
-  {% embed 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Événements', sub: total_text ~ (query.hasFilters ? ' correspondant à votre recherche' : ''), create: create } only %}
+  {% embed 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Événements', sub: total_text ~ (query.hasFilters ? ' correspondant à votre recherche' : ''), create: create, create_url: create_url } only %}
     {% block actions %}
-      {# La création est un incrément ultérieur : proposée seulement si la politique l'autorise, jamais simulée. #}
+      {# Proposée seulement si la politique l'autorise ; la page de création refait ses propres contrôles. #}
       {% if create and create.allowed %}
-        {% include 'components/button.html.twig' with { id: 'create-u', label: 'Créer un événement', icon: 'plus', unavailable_reason: 'Disponible prochainement.' } only %}
+        {% include 'components/button.html.twig' with { id: 'create', label: 'Créer un événement', icon: 'plus', href: create_url } only %}
       {% elseif create and create.reason and create.reason.value == 'NO_USAGE_RIGHT' %}
         {% include 'components/button.html.twig' with { id: 'create-u', label: 'Créer un événement', icon: 'plus', unavailable_reason: cp_denial_message(create.reason) } only %}
       {% endif %}

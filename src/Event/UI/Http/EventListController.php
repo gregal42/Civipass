@@ -67,6 +67,7 @@ final class EventListController extends AbstractController
             'query' => $query,
             'filters' => $params,
             'type_options' => $types,
+            'create_url' => $this->generateUrl('app_municipal_event_new', $route()),
             'list_url' => $this->generateUrl('app_municipal_events', $route()),
             'page_pattern' => $this->generateUrl('app_municipal_events', $route($params + ['page' => '__PAGE__'])),
             'sort_url' => $this->generateUrl('app_municipal_events', $route(array_diff_key($params, ['tri' => true]) + ('asc' === $query->direction ? [] : ['tri' => 'asc']))),

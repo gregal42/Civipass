@@ -61,11 +61,12 @@ final class EventShowPageTest extends MunicipalPagesTestCase
         foreach (['Modifier', 'Inviter une commune', 'Activer l’événement', 'Clôturer l’événement'] as $label) {
             self::assertStringContainsString($label, $html, $label);
         }
-        self::assertStringContainsString('Disponible prochainement', $html);
+        self::assertStringContainsString('Disponible prochainement', $html, 'actions non branchées : indisponibles, jamais simulées');
+        self::assertStringContainsString('href="/communes/'.$this->id($this->w->org).'/evenements/'.$this->fire.'/modifier"', $html, 'Modifier est branchée : lien réel');
         self::assertStringNotContainsString('Suspendre l’événement', $html, 'sans objet pour un brouillon');
         self::assertStringNotContainsString('Réactiver l’événement', $html);
         self::assertStringNotContainsString('<form method="post" action="/communes', $html, 'aucune action simulée : aucun formulaire d\'écriture');
-        self::assertDoesNotMatchRegularExpression('#<a[^>]+class="cp-btn[^"]*"[^>]+href="[^"]*(activer|suspendre|cloturer|modifier|inviter)#i', $html);
+        self::assertDoesNotMatchRegularExpression('#<a[^>]+class="cp-btn[^"]*"[^>]+href="[^"]*(activer|suspendre|cloturer|inviter)#i', $html);
     }
 
     public function testTheChecklistTurnsGreenOnceAZoneIsReadyAndActionsFollowTheState(): void

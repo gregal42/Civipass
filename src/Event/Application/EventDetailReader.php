@@ -76,6 +76,7 @@ final readonly class EventDetailReader
             $relation,
             EventRelation::Organizer === $relation ? null : $own?->status(),
             $invitedOnly ? null : $event->description(),
+            EventRelation::Organizer === $relation ? $event->operationalInstructions() : null,
             $invitedOnly ? null : new EventLifecycleDates($event->createdAt(), $event->activatedAt(), $event->suspendedAt(), $event->closedAt()),
             $participantList,
             $this->actions($user, $event, $relation, $own),

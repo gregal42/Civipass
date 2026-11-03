@@ -4,11 +4,16 @@
     l'utilisateur ne peut pas utiliser ») ; l'en-tête explique la consultation seule ;
   - refusée pour un autre motif : le bouton est indisponible avec la phrase sûre du motif ;
   - permise : l'action n'est pas encore branchée en HTTP (incréments suivants) → indisponible, JAMAIS simulée.
-  Paramètres : action (ActionAvailability|null), label, icon, variant.
+  Une action BRANCHÉE reçoit son `href` : permise, elle devient un lien réel (la page de destination refait ses propres contrôles).
+  Paramètres : action (ActionAvailability|null), label, icon, variant, href (facultatif).
 #}
-{% macro button(action, label, icon, variant) %}
+{% macro button(action, label, icon, variant, href) %}
   {%- if action and (action.allowed or action.reason.value not in ['ROLE_NOT_ALLOWED', 'MUNICIPALITY_NOT_WRITABLE']) -%}
+    {%- if action.allowed and href|default('') -%}
+      {% include 'components/button.html.twig' with { id: 'act-' ~ action.action.value, label: label, icon: icon, variant: variant|default('secondary'), href: href } only %}
+    {%- else -%}
     {%- set reason = action.allowed ? 'Disponible prochainement.' : cp_denial_message(action.reason) -%}
     {% include 'components/button.html.twig' with { id: 'act-' ~ action.action.value, label: label, icon: icon, variant: variant|default('secondary'), unavailable_reason: reason } only %}
+    {%- endif -%}
   {%- endif -%}
 {% endmacro %}

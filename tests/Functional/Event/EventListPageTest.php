@@ -38,13 +38,12 @@ final class EventListPageTest extends MunicipalPagesTestCase
         self::assertStringContainsString('EVT-', $html, 'référence publique affichée');
     }
 
-    public function testTheCreateActionIsAvailabilityBasedAndNeverSimulated(): void
+    public function testTheCreateActionIsOfferedOnlyToThoseWhoMayCreate(): void
     {
         $this->loginAs($this->w->adminO);
         $html = $this->get($this->listUrl($this->w->org));
         self::assertStringContainsString('Créer un événement', $html);
-        self::assertStringContainsString('Disponible prochainement', $html, 'permise mais non branchée : indisponible, jamais simulée');
-        self::assertStringNotContainsString('href="/communes/'.$this->id($this->w->org).'/evenements/nouveau"', $html);
+        self::assertStringContainsString('href="/communes/'.$this->id($this->w->org).'/evenements/nouveau"', $html, 'action branchée : lien réel');
 
         $this->loginAs($this->w->instructorO);
         self::assertStringNotContainsString('Créer un événement', $this->get($this->listUrl($this->w->org)), 'un instructeur ne peut pas créer : action absente');

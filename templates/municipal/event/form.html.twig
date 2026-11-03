@@ -1,0 +1,95 @@
+{% extends 'layouts/app.html.twig' %}
+
+{#
+  Formulaire de création et de modification d'un événement (maquette UI-02 « event_form »). Aucune règle métier ici : les champs
+  verrouillés sont désactivés pour l'ergonomie, mais le serveur applique toujours les règles du domaine.
+  Variables : mode (new|edit), heading, data (saisies), errors (champ => message), summary, choices, alert, locked, type_options,
+  timezone_resolved, timezone_options, organizer_name, reference, action_url, cancel_url, csrf_id, field_ids.
+#}
+{% block content %}
+  {% set is_new = mode == 'new' %}
+  {% set tz_label = is_new ? (timezone_resolved ?? 'à choisir') : detail.timezone %}
+  {% include 'components/breadcrumb.html.twig' with {
+    items: is_new
+      ? [{ label: 'Événements', href: cancel_url }, { label: 'Créer un événement' }]
+      : [{ label: 'Événements', href: path('app_municipal_events', { municipalityId: active_municipality_id }) }, { label: detail.name, href: cancel_url }, { label: 'Modifier' }],
+    back: { label: is_new ? 'Événements' : detail.name, href: cancel_url },
+  } only %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: heading, sub: is_new ? '' : detail.name } only %}
+
+  {% if summary|length %}{% include 'components/error_summary.html.twig' with { errors: summary } only %}{% endif %}
+  {% if alert %}{% include 'components/alert.html.twig' with { variant: 'warning', title: 'Rien n’a été enregistré', text: alert, focus: true } only %}{% endif %}
+
+  <form id="event-form" class="cp-stack" style="gap: var(--space-5)" method="post" action="{{ action_url }}" novalidate data-controller="cp--unsaved-guard cp--submit-state" aria-label="{{ heading }}" tabindex="-1">
+    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+    <p class="app-note">Les champs marqués d’un astérisque sont obligatoires.</p>
+
+    {% include 'components/field.html.twig' with { id: 'ev-name', name: 'name', label: 'Nom de l’événement *', value: data.name, required: true, error: errors.name|default(''), help: 'Un nom court qui dit la situation et le lieu. Exemple : « Incendie du massif forestier ».' } only %}
+
+    {% include 'components/select.html.twig' with {
+      id: 'ev-type', name: 'type', label: 'Type d’événement *', value: data.type,
+      options: is_new ? [{ value: '', label: 'Choisir un type…' }]|merge(type_options) : type_options,
+      error: errors.type|default(''), disabled: locked.type, attrs: locked.type ? '' : 'required',
+      help: locked.type ? 'Verrouillé après l’activation de l’événement.' : 'Liste du référentiel des types d’événement.',
+    } only %}
+
+    {% include 'components/field.html.twig' with { id: 'ev-desc', name: 'description', type: 'textarea', label: 'Description', value: data.description, optional: true, error: errors.description|default(''), help: 'Ce qui se passe et qui est concerné. Visible des communes participantes.' } only %}
+
+    {% include 'components/field.html.twig' with { id: 'ev-instr', name: 'instructions', type: 'textarea', label: 'Consignes opérationnelles', value: data.instructions, optional: true, error: errors.instructions|default(''), help: 'Informations pratiques pour les agents de votre commune. Modifiables jusqu’à la clôture.' } only %}
+
+    {# Fuseau : déduit de la commune quand c'est possible (jamais transmis par le client), sinon choix explicite. #}
+    {% if is_new and timezone_resolved %}
+      {% include 'components/field.html.twig' with { id: 'ev-tz-info', name: 'tz_info', label: 'Fuseau horaire', value: timezone_resolved, readonly: true, help: 'Déduit de la commune organisatrice. Un seul fuseau par événement ; il sera verrouillé après l’activation.' } only %}
+    {% elseif locked.timezone %}
+      {% include 'components/field.html.twig' with { id: 'ev-tz-info', name: 'tz_info', label: 'Fuseau horaire', value: data.timezone, readonly: true, help: 'Verrouillé après l’activation de l’événement.' } only %}
+    {% else %}
+      {% include 'components/select.html.twig' with {
+        id: 'ev-tz', name: 'timezone', label: 'Fuseau horaire *', value: data.timezone,
+        options: [{ value: '', label: 'Choisir un fuseau…' }]|merge(timezone_options|map(t => { value: t, label: t })),
+        error: errors.timezone|default(''), attrs: 'required',
+        help: is_new ? 'Le fuseau de votre commune ne peut pas être déterminé automatiquement : choisissez-le. Un seul fuseau par événement, verrouillé après l’activation.' : 'Un seul fuseau par événement ; il sera verrouillé après l’activation.',
+      } only %}
+    {% endif %}
+
+    <fieldset class="cp-fieldset">
+      <legend class="cp-fieldset__legend">Dates <span class="cp-fieldset__legend-note">· heure locale ({{ tz_label }})</span></legend>
+      <div class="app-grid2">
+        {% include 'components/field.html.twig' with { id: 'ev-sd', name: 'start_date', type: 'date', label: 'Date de début *', value: data.startDate, required: not locked.start, disabled: locked.start, error: errors.start_date|default('') } only %}
+        {% include 'components/field.html.twig' with { id: 'ev-st', name: 'start_time', type: 'time', label: 'Heure de début *', value: data.startTime, required: not locked.start, disabled: locked.start, error: errors.start_time|default('') } only %}
+        {% include 'components/field.html.twig' with { id: 'ev-ed', name: 'end_date', type: 'date', label: 'Date de fin', value: data.endDate, optional: true, error: errors.end_date|default('') } only %}
+        {% include 'components/field.html.twig' with { id: 'ev-et', name: 'end_time', type: 'time', label: 'Heure de fin', value: data.endTime, optional: true, error: errors.end_time|default('') } only %}
+      </div>
+      <p class="cp-help">{{ locked.start ? 'La date de début est verrouillée après l’activation. ' : '' }}La fin peut rester vide si elle n’est pas connue. Elle ne peut pas précéder le début.</p>
+    </fieldset>
+
+    {# Horaire répété (retour à l'heure d'hiver) : le choix de l'occurrence est explicite (DM-055). #}
+    {% for key, options in choices %}
+      <fieldset class="cp-fieldset" id="ev-{{ key }}-occ-group">
+        <legend class="cp-fieldset__legend">Choisissez l’occurrence de l’heure {{ key == 'start' ? 'de début' : 'de fin' }}</legend>
+        {% if errors[key ~ '_occurrence']|default('') %}<p class="cp-field-error">{% include 'components/icon.html.twig' with { name: 'alert', size: 's' } only %}{{ errors[key ~ '_occurrence'] }}</p>{% endif %}
+        <div class="cp-stack" style="gap: var(--space-2)">
+          {% for o in options %}
+            {% include 'components/check.html.twig' with { type: 'radio', id: loop.first ? 'ev-' ~ key ~ '-occ' : 'ev-' ~ key ~ '-occ-' ~ o.value, name: key ~ '_occurrence', value: o.value, label: o.label, checked: (key == 'start' ? data.startOccurrence : data.endOccurrence) == o.value } only %}
+          {% endfor %}
+        </div>
+      </fieldset>
+    {% endfor %}
+
+    {% include 'components/field.html.twig' with { id: 'ev-org', name: 'organizer_display', label: 'Commune organisatrice', value: organizer_name, readonly: true, help: 'Déterminée par la commune active. Pour une autre commune, changez de commune dans la barre supérieure.' } only %}
+    {% if reference %}
+      {% include 'components/field.html.twig' with { id: 'ev-ref', name: 'reference_display', label: 'Référence', value: reference, readonly: true, mono: true, help: 'Générée automatiquement : elle ne peut pas être modifiée.' } only %}
+    {% endif %}
+
+    {% if is_new %}
+      {% include 'components/alert.html.twig' with { variant: 'info', title: 'L’événement est créé en brouillon', text: 'Il pourra être activé une fois ses zones confirmées, depuis sa fiche.' } only %}
+    {% elseif locked.type %}
+      {% include 'components/alert.html.twig' with { variant: 'info', title: 'Certains champs sont verrouillés', text: 'Après l’activation, le type, le fuseau horaire, la date de début et la référence ne peuvent plus être modifiés. Le nom, la description, les consignes et la date de fin restent modifiables.' } only %}
+    {% endif %}
+
+    <div class="cp-form-actions">
+      {% include 'components/button.html.twig' with { label: is_new ? 'Créer l’événement' : 'Enregistrer les modifications', type: 'submit', loading_label: 'Enregistrement…' } only %}
+      {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', href: cancel_url } only %}
+    </div>
+  </form>
+{% endblock %}

@@ -8,6 +8,9 @@
 
 {% block content %}
   {% import 'municipal/event/_actions.html.twig' as act %}
+  {% for message in app.flashes('success') %}
+    {% include 'components/alert.html.twig' with { variant: 'success', title: message, focus: true } only %}
+  {% endfor %}
   {% include 'components/breadcrumb.html.twig' with { items: [{ label: 'Événements', href: list_url }, { label: detail.name }], back: { label: 'Événements', href: list_url } } only %}
   {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
 
@@ -26,11 +29,11 @@
       title: detail.name, type: detail.typeLabel, icon: cp_event_icon(detail.typeCode), status: status_key,
       dates: { start: detail.startsAt|cp_datetime(tz), end: detail.endsAt ? detail.endsAt|cp_datetime(tz) : '' },
       organizer: detail.organizerMunicipalityName, communes: detail.participants.participatingCount, relation: relation, readonly: readonly_text,
-      detail: detail,
+      detail: detail, edit_url: edit_url,
     } only %}
     {% block actions %}
       {% import 'municipal/event/_actions.html.twig' as act %}
-      {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Update')), 'Modifier', 'settings', 'secondary') }}
+      {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Update')), 'Modifier', 'settings', 'secondary', edit_url) }}
       {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Invite')), 'Inviter une commune', 'mail', 'secondary') }}
     {% endblock %}
   {% endembed %}
@@ -61,6 +64,12 @@
           {% include 'components/section_head.html.twig' with { id: 'desc-h', title: 'Description' } only %}
           <p class="app-lead">{{ detail.description ?: 'Aucune description.' }}</p>
         </section>
+        {% if detail.operationalInstructions %}
+          <section class="cp-section" aria-labelledby="instr-h">
+            {% include 'components/section_head.html.twig' with { id: 'instr-h', title: 'Consignes opérationnelles', meta: 'Commune organisatrice' } only %}
+            <p class="app-lead" style="white-space: pre-line">{{ detail.operationalInstructions }}</p>
+          </section>
+        {% endif %}
       {% endif %}
 
       {% set visibility = detail.participants.visibility.value %}

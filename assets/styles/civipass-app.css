@@ -55,3 +55,7 @@ button.cp-nav__link { width: 100%; border: 0; background: none; font: inherit; t
 .cp-auth > * { min-width: 0; }
 .app-list .cp-btn { white-space: normal; height: auto; min-height: 2.75rem; padding-block: var(--space-2); text-align: left; justify-content: space-between; }
 @container cp-app (max-width: 719px) { .cp-evhead__actions .cp-unavailable .cp-btn { width: 100%; justify-content: center; } }
+
+/* Formulaires de l'espace municipal : deux colonnes pour les dates, une seule en compact. */
+.app-grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+@container cp-app (max-width: 639px) { .app-grid2 { grid-template-columns: minmax(0, 1fr); } }

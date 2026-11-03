@@ -44,6 +44,7 @@ final class EventShowController extends AbstractController
             'event' => ['id' => 'event', 'kicker' => 'Événement', 'value' => $detail->name, 'options' => []],
             'ctx_parts' => [...$shell['ctx_parts'], ['text' => $detail->name, 'strong' => true]],
             'detail' => $detail,
+            'edit_url' => $this->generateUrl('app_municipal_event_edit', ['municipalityId' => $municipalityId, 'eventId' => $eventId]),
             'list_url' => $this->generateUrl('app_municipal_events', ['municipalityId' => $municipalityId]),
         ]));
     }

@@ -22,7 +22,7 @@ final class EventDetailProjectionTest extends TestCase
 {
     private function detail(ActionAvailability ...$actions): EventDetail
     {
-        return new EventDetail('e', 'EVT-2026-000001', 'Nom', 'fire', 'Incendie', EventStatus::Draft, 'o', 'Organisatrice', new \DateTimeImmutable('2026-12-01'), null, 'Europe/Paris', EventRelation::Organizer, null, null, null, new ParticipantList(ParticipantListVisibility::None), array_values($actions), null);
+        return new EventDetail('e', 'EVT-2026-000001', 'Nom', 'fire', 'Incendie', EventStatus::Draft, 'o', 'Organisatrice', new \DateTimeImmutable('2026-12-01'), null, 'Europe/Paris', EventRelation::Organizer, null, null, null, null, new ParticipantList(ParticipantListVisibility::None), array_values($actions), null);
     }
 
     public function testReadOnlyReasonIsSetOnlyWhenEveryActionIsDeniedForRoleOrMunicipality(): void

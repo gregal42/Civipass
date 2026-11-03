@@ -8,6 +8,7 @@ use App\Shared\Domain\OperationConflict;
 use App\Shared\Domain\OperationNotAllowed;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Twig\Environment;
@@ -15,6 +16,7 @@ use Twig\Environment;
 /**
  * Traduit les erreurs métier de l'espace municipal en réponses HTTP, sans jamais révéler de motif :
  *  - ressource inaccessible (inexistante, étrangère, sans droit) → 404 identique pour tous les cas ;
+ *  - action refusée à un utilisateur qui voit pourtant la ressource (rôle, statut de la commune, état de l'événement) → 403 ;
  *  - conflit transactionnel (verrou, interblocage, unicité concurrente) → 409, « réessayez ».
  * Les erreurs de validation de formulaire sont rendues par les contrôleurs de formulaire (422 avec les saisies, 303 en
  * cas de succès) ; elles ne sont pas interceptées ici.
@@ -37,6 +39,8 @@ final readonly class ErrorResponseListener
         $throwable = $event->getThrowable();
         if ($throwable instanceof OperationNotAllowed) {
             $event->setResponse(new Response($this->twig->render('municipal/error/inaccessible.html.twig'), Response::HTTP_NOT_FOUND));
+        } elseif ($throwable instanceof AccessDeniedHttpException) {
+            $event->setResponse(new Response($this->twig->render('municipal/error/forbidden.html.twig'), Response::HTTP_FORBIDDEN));
         } elseif ($throwable instanceof OperationConflict) {
             $event->setResponse(new Response($this->twig->render('municipal/error/conflict.html.twig'), Response::HTTP_CONFLICT));
         }

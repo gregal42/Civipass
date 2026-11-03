@@ -33,6 +33,8 @@ final readonly class EventDetail
         public EventRelation $relation,
         public ?ParticipationStatus $myParticipationStatus,
         public ?string $description,
+        /** Consignes opérationnelles : réservées à la commune organisatrice (jamais aux participantes ni aux invitées). */
+        public ?string $operationalInstructions,
         public ?EventLifecycleDates $lifecycle,
         public ParticipantList $participants,
         public array $actions,

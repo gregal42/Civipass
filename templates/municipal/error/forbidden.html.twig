@@ -1,0 +1,12 @@
+{% extends 'layouts/auth.html.twig' %}
+{% set page_title = 'Action non autorisée' %}
+
+{% block content %}
+    {# Aucun motif détaillé : le rôle, le statut de la commune et l'état de l'événement ne sont pas détaillés ici. #}
+    {% embed 'components/panel.html.twig' with { id: 'err-h', title: 'Action non autorisée', level: 1 } only %}
+        {% block body %}
+            <p>Vous n’avez pas la possibilité d’effectuer cette action. Rien n’a été modifié.</p>
+            {% include 'components/button.html.twig' with { label: 'Retour à mon espace', href: path('app_municipal_select'), variant: 'secondary', icon: 'back' } only %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}
