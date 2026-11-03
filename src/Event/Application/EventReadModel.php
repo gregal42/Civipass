@@ -11,6 +11,7 @@ use App\Event\Application\Read\EventParticipantHistoryEntry;
 use App\Event\Application\Read\EventParticipationDetails;
 use App\Event\Application\Read\EventParticipationSummary;
 use App\Event\Application\Read\EventTypeOption;
+use App\Event\Application\Read\InvitationCandidate;
 use App\Event\Application\Read\InvitationView;
 use Symfony\Component\Uid\Uuid;
 
@@ -63,6 +64,15 @@ interface EventReadModel
      * @return list<EventParticipationDetails>
      */
     public function participationsOf(Uuid $eventId): array;
+
+    /**
+     * Communes ACTIVES dont le nom contient `term` ou dont le code INSEE commence par `term`, avec leur situation vis-à-vis de
+     * l'événement (hors organisatrice). Une commune non active n'apparaît pas : « introuvable ou indisponible » (DM-086).
+     * Aucune donnée commerciale.
+     *
+     * @return list<InvitationCandidate>
+     */
+    public function searchMunicipalitiesForInvitation(Uuid $eventId, string $term, int $limit): array;
 
     public function invitationOf(Uuid $eventId, Uuid $municipalityId): ?InvitationView;
 }

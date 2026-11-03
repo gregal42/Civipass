@@ -15,8 +15,6 @@ use App\Tests\Support\MembershipBuilder;
 use App\Tests\Support\MunicipalityBuilder;
 use App\Tests\Support\MunicipalPagesTestCase;
 use App\Tests\Support\UserBuilder;
-use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\DriverManager;
 
 /**
  * Création et modification d'un événement par l'interface (MySQL de test) : les données sont réellement écrites par les
@@ -32,24 +30,6 @@ final class EventFormPageTest extends MunicipalPagesTestCase
     private function editUrl(Municipality|string $municipality, string $eventId): string
     {
         return $this->eventUrl($municipality, $eventId).'/modifier';
-    }
-
-    private function token(string $formUrl): string
-    {
-        $html = $this->get($formUrl);
-        self::assertSame(1, preg_match('/name="_token" value="([^"]+)"/', $html, $m), 'jeton CSRF absent du formulaire');
-
-        return $m[1];
-    }
-
-    /**
-     * @param array<string, mixed> $fields
-     */
-    private function submit(string $url, array $fields, ?string $token = null): string
-    {
-        $this->client->request('POST', $url, $fields + ['_token' => $token ?? $this->token($url)]);
-
-        return (string) $this->client->getResponse()->getContent();
     }
 
     /**
@@ -81,14 +61,6 @@ final class EventFormPageTest extends MunicipalPagesTestCase
         return false === $row ? null : $row;
     }
 
-    /**
-     * @param list<mixed> $params
-     */
-    private function scalar(string $sql, array $params = []): int
-    {
-        return (int) $this->em()->getConnection()->fetchOne($sql, $params);
-    }
-
     private function eventCount(): int
     {
         return $this->scalar('SELECT COUNT(*) FROM event_event');
@@ -97,11 +69,6 @@ final class EventFormPageTest extends MunicipalPagesTestCase
     private function auditCount(string $action): int
     {
         return $this->scalar('SELECT COUNT(*) FROM audit_log WHERE action = ?', [$action]);
-    }
-
-    private function location(): string
-    {
-        return (string) $this->client->getResponse()->headers->get('Location');
     }
 
     private function activate(string $eventId): void
@@ -468,11 +435,6 @@ final class EventFormPageTest extends MunicipalPagesTestCase
     }
 
     // ═══ Création : conflit transactionnel ═══════════════════════════════════
-
-    private function otherConnection(): Connection
-    {
-        return DriverManager::getConnection($this->em()->getConnection()->getParams());
-    }
 
     public function testATransactionalConflictOnCreationIsReportedAndTheInputIsKept(): void
     {

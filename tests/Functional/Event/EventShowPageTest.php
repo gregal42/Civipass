@@ -66,7 +66,7 @@ final class EventShowPageTest extends MunicipalPagesTestCase
         self::assertStringNotContainsString('Suspendre l’événement', $html, 'sans objet pour un brouillon');
         self::assertStringNotContainsString('Réactiver l’événement', $html);
         self::assertStringNotContainsString('<form method="post" action="/communes', $html, 'aucune action simulée : aucun formulaire d\'écriture');
-        self::assertDoesNotMatchRegularExpression('#<a[^>]+class="cp-btn[^"]*"[^>]+href="[^"]*(activer|suspendre|cloturer|inviter)#i', $html);
+        self::assertDoesNotMatchRegularExpression('#<a[^>]+class="cp-btn[^"]*"[^>]+href="[^"]*(activer|suspendre|cloturer)#i', $html);
     }
 
     public function testTheChecklistTurnsGreenOnceAZoneIsReadyAndActionsFollowTheState(): void
@@ -171,8 +171,8 @@ final class EventShowPageTest extends MunicipalPagesTestCase
         self::assertStringContainsString('Participante', $html);
         self::assertStringContainsString('Feu de forêt au nord du massif', $html);
         self::assertStringContainsString('Votre participation', $html);
-        self::assertStringContainsString('Suspendre ma participation', $html);
-        self::assertStringContainsString('Clôturer ma participation', $html);
+        self::assertStringContainsString('Gérer ma participation', $html, 'les actions de participation sont sur la page des communes');
+        self::assertStringContainsString('/evenements/'.$this->fire.'/communes#ma-participation', $html);
         self::assertStringNotContainsString('Modifier', $html, 'seule l\'organisatrice modifie l\'événement');
         self::assertStringNotContainsString('Activer l’événement', $html);
     }
@@ -188,7 +188,8 @@ final class EventShowPageTest extends MunicipalPagesTestCase
         self::assertStringContainsString('Invitée', $html);
         self::assertStringContainsString('Invitation de '.$this->w->org->name(), $html);
         self::assertStringContainsString('Accepter l’invitation', $html);
-        self::assertStringContainsString('Disponible prochainement', $html);
+        self::assertStringContainsString('/participation/accepter"', $html, 'formulaire réel');
+        self::assertStringContainsString('Participer ne donne pas le droit de créer', $html);
         self::assertStringNotContainsString('Description réservée', $html, 'informations minimales (DM-084)');
         self::assertStringNotContainsString('Cycle de vie', $html);
         self::assertStringNotContainsString('id="communes"', $html, 'jamais la liste des autres communes');

@@ -8,43 +8,7 @@
 
 {% block content %}
   {% import 'municipal/event/_actions.html.twig' as act %}
-  {% for message in app.flashes('success') %}
-    {% include 'components/alert.html.twig' with { variant: 'success', title: message, focus: true } only %}
-  {% endfor %}
-  {% include 'components/breadcrumb.html.twig' with { items: [{ label: 'Événements', href: list_url }, { label: detail.name }], back: { label: 'Événements', href: list_url } } only %}
-  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
-
-  {# Relation de la commune active à l'événement et, le cas échéant, raison de la consultation seule. #}
-  {% set readonly = detail.readOnlyReason %}
-  {% if rel == 'organizer' %}
-    {% set relation = { label: 'Organisatrice', variant: 'default', text: 'Votre commune, ' ~ active_municipality_name ~ ', organise cet événement.' } %}
-  {% elseif rel == 'participant' %}
-    {% set relation = { label: 'Participante', variant: 'default', text: 'Votre commune participe à cet événement organisé par ' ~ detail.organizerMunicipalityName ~ '.' } %}
-  {% else %}
-    {% set relation = { label: 'Invitée', variant: 'default', text: 'Votre commune est invitée à cet événement par ' ~ detail.organizerMunicipalityName ~ '.' } %}
-  {% endif %}
-  {% set readonly_text = readonly ? (readonly.value == 'MUNICIPALITY_NOT_WRITABLE' ? 'Votre commune est suspendue : les informations restent consultables.' : 'Votre rôle dans ' ~ active_municipality_name ~ ' ne permet pas de modifier cet événement.') : '' %}
-
-  {% embed 'components/event_header.html.twig' with {
-      title: detail.name, type: detail.typeLabel, icon: cp_event_icon(detail.typeCode), status: status_key,
-      dates: { start: detail.startsAt|cp_datetime(tz), end: detail.endsAt ? detail.endsAt|cp_datetime(tz) : '' },
-      organizer: detail.organizerMunicipalityName, communes: detail.participants.participatingCount, relation: relation, readonly: readonly_text,
-      detail: detail, edit_url: edit_url,
-    } only %}
-    {% block actions %}
-      {% import 'municipal/event/_actions.html.twig' as act %}
-      {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Update')), 'Modifier', 'settings', 'secondary', edit_url) }}
-      {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Invite')), 'Inviter une commune', 'mail', 'secondary') }}
-    {% endblock %}
-  {% endembed %}
-
-  {% include 'components/subnav.html.twig' with { label: 'Rubriques de l’événement', items: [{ label: 'Fiche', href: '#', current: true }, { label: 'Communes', href: '#communes' }] } only %}
-
-  {% if status_key == 'suspended' %}
-    {% include 'components/alert.html.twig' with { variant: 'warning', title: 'Événement suspendu', text: life and life.suspendedAt ? 'Suspendu le ' ~ life.suspendedAt|cp_datetime(tz) ~ '.' : 'Cet événement est suspendu.' } only %}
-  {% elseif status_key == 'closed' %}
-    {% include 'components/alert.html.twig' with { variant: 'info', title: 'Événement clôturé', text: life and life.closedAt ? 'Clôturé le ' ~ life.closedAt|cp_datetime(tz) ~ '. Consultation seule.' : 'Cet événement est clôturé. Consultation seule.' } only %}
-  {% endif %}
+  {% include 'municipal/event/_head.html.twig' with { current: 'fiche' } %}
 
   <div class="app-split">
     <div class="app-stack">
@@ -54,7 +18,16 @@
         <section class="cp-section" aria-labelledby="inv-h">
           {% include 'components/section_head.html.twig' with { id: 'inv-h', title: 'Invitation de ' ~ detail.organizerMunicipalityName, meta: invitation and invitation.invitedAt ? 'Reçue le ' ~ invitation.invitedAt|cp_datetime(tz) : '' } only %}
           {% if invitation and invitation.invitationMessage %}<blockquote class="cp-invite__msg" style="margin: 0">« {{ invitation.invitationMessage }} »</blockquote>{% endif %}
-          <div class="cp-form-actions">{{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::AcceptInvitation')), 'Accepter l’invitation', 'check', 'primary') }}</div>
+          {% set acceptable = detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::AcceptInvitation')) %}
+          {% if acceptable and acceptable.allowed %}
+            <ul class="cp-consequences">
+              {% for c in ['Votre commune devient participante de cet événement : la participation est active immédiatement.', 'Participer ne donne pas le droit de créer vos propres événements.', 'Aucun abonnement n’est nécessaire pour participer.'] %}<li>{% include 'components/icon.html.twig' with { name: 'right', size: 's' } only %}<span>{{ c }}</span></li>{% endfor %}
+            </ul>
+            <form method="post" action="{{ path('app_municipal_participation_action', { municipalityId: active_municipality_id, eventId: detail.eventId, action: 'accepter' }) }}" novalidate data-controller="cp--submit-state">
+              <input type="hidden" name="_token" value="{{ csrf_token('participation_accepter_' ~ detail.eventId) }}">
+              <div class="cp-form-actions">{% include 'components/button.html.twig' with { label: 'Accepter l’invitation', icon: 'check', type: 'submit', loading_label: 'Acceptation…' } only %}</div>
+            </form>
+          {% endif %}
           {% set accept = detail.action(constant('App\\Event\\Application\\Read\\EventAction::AcceptInvitation')) %}
           {% if accept and not accept.allowed and accept.reason.value == 'ROLE_NOT_ALLOWED' %}<p class="app-note">Seul un administrateur communal peut accepter cette invitation.</p>{% endif %}
           <p class="app-note">L’invitation n’expire pas. Le refus d’une invitation n’est pas prévu en V1.</p>
@@ -102,11 +75,7 @@
           <div class="app-item">
             <div class="app-item__head"><span class="app-item__name">{{ active_municipality_name }}</span>{% include 'components/status_pill.html.twig' with { status: participation_pills[detail.myParticipationStatus.value], label: participation_labels[detail.myParticipationStatus.value] } only %}</div>
           </div>
-          <div class="cp-cluster" style="gap: var(--space-4); align-items: flex-start">
-            {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::SuspendParticipation')), 'Suspendre ma participation', '', 'secondary') }}
-            {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::ReactivateParticipation')), 'Réactiver ma participation', '', 'secondary') }}
-            {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::CloseParticipation')), 'Clôturer ma participation', '', 'danger-ghost') }}
-          </div>
+          <div class="cp-cluster">{% include 'components/button.html.twig' with { label: 'Gérer ma participation', href: communes_url ~ '#ma-participation', variant: 'secondary', icon: 'users' } only %}</div>
         </section>
       {% endif %}
 

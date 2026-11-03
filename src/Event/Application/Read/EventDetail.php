@@ -39,6 +39,10 @@ final readonly class EventDetail
         public ParticipantList $participants,
         public array $actions,
         public ?bool $activationReady,
+        /** Identifiant de la participation de la commune qui consulte (jamais pour l'organisatrice, jamais lu depuis le client). */
+        public ?string $ownParticipationId = null,
+        /** Participation gratuite : commune participante sans droit d'utilisation propre (DM-086) ; sert à l'information seulement. */
+        public bool $freeParticipation = false,
     ) {
     }
 

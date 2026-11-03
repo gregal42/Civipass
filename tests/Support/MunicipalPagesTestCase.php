@@ -11,6 +11,8 @@ use App\Event\Application\Service\EventLifecycleService;
 use App\Event\Application\Service\EventParticipationService;
 use App\Identity\Domain\User;
 use App\Municipality\Domain\Municipality;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\DriverManager;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\Uid\Uuid;
 
@@ -96,5 +98,42 @@ abstract class MunicipalPagesTestCase extends WebTestCase
     protected static function randomUuid(): string
     {
         return Uuid::v7()->toRfc4122();
+    }
+
+    /** Jeton CSRF d'un formulaire, lu sur sa page (comme un navigateur). */
+    protected function token(string $formUrl): string
+    {
+        $html = $this->get($formUrl);
+        self::assertSame(1, preg_match('/name="_token" value="([^"]+)"/', $html, $m), 'jeton CSRF absent du formulaire');
+
+        return $m[1];
+    }
+
+    /**
+     * @param array<string, mixed> $fields
+     */
+    protected function submit(string $url, array $fields, ?string $token = null, ?string $tokenPage = null): string
+    {
+        $this->client->request('POST', $url, $fields + ['_token' => $token ?? $this->token($tokenPage ?? $url)]);
+
+        return (string) $this->client->getResponse()->getContent();
+    }
+
+    /**
+     * @param list<mixed> $params
+     */
+    protected function scalar(string $sql, array $params = []): int
+    {
+        return (int) $this->em()->getConnection()->fetchOne($sql, $params);
+    }
+
+    protected function location(): string
+    {
+        return (string) $this->client->getResponse()->headers->get('Location');
+    }
+
+    protected function otherConnection(): Connection
+    {
+        return DriverManager::getConnection($this->em()->getConnection()->getParams());
     }
 }

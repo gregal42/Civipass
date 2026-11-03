@@ -1,0 +1,129 @@
+{% extends 'layouts/app.html.twig' %}
+
+{# Communes d'un événement : ce que la visibilité de la commune permet de voir (DM-084, DM-090, DM-091), et SA participation. #}
+{% set participation_labels = { INVITED: 'Invitée', ACTIVE: 'Active', SUSPENDED: 'Suspendue', CLOSED: 'Clôturée' } %}
+{% set participation_pills = { INVITED: 'invited', ACTIVE: 'active', SUSPENDED: 'suspended', CLOSED: 'closed' } %}
+{% set status_key = detail.status.value|lower %}
+{% set rel = detail.relation.value %}
+{% set tz = detail.timezone %}
+{% set life = detail.lifecycle %}
+
+{% block content %}
+  {% import 'municipal/event/_actions.html.twig' as act %}
+  {% include 'municipal/event/_head.html.twig' with { current: 'communes' } %}
+
+  {% include 'components/alert.html.twig' with { variant: 'quiet', icon: 'lock', text: 'Chaque commune garde son autonomie : elle gère sa participation, ses zones et ses décisions. L’organisatrice invite les communes mais n’agit pas sur la participation des autres.' } only %}
+
+  {% set participants = detail.participants %}
+  {% set visibility = participants.visibility.value %}
+  <section class="cp-section" aria-labelledby="pt-h">
+    <div class="cp-cluster" style="justify-content: space-between; align-items: center">
+      {% include 'components/section_head.html.twig' with { id: 'pt-h', title: 'Communes', meta: participants.participatingCount is not null ? participants.participatingCount ~ ' participante(s)' : '' } only %}
+      {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Invite')), 'Inviter une commune', 'mail', 'primary', invite_url) }}
+    </div>
+
+    {% if visibility == 'OWN_INVITATION_ONLY' %}
+      {% include 'components/empty_state.html.twig' with { icon: 'lock', title: 'Liste non disponible', text: 'Vous voyez la liste des communes une fois votre participation acceptée. Votre invitation est sur la fiche de l’événement.' } only %}
+    {% else %}
+      {% set rows = [] %}
+      {% set modals = [] %}
+      {% for d in participants.details %}
+        {% set pill %}{% include 'components/status_pill.html.twig' with { status: participation_pills[d.status.value], label: participation_labels[d.status.value] } only %}{% endset %}
+        {% set since = d.status.value == 'ACTIVE' and d.activatedAt ? 'Active depuis le ' ~ d.activatedAt|cp_datetime(tz) : (d.status.value == 'SUSPENDED' and d.suspendedAt ? 'Suspendue le ' ~ d.suspendedAt|cp_datetime(tz) : (d.status.value == 'CLOSED' and d.closedAt ? 'Clôturée le ' ~ d.closedAt|cp_datetime(tz) : (d.invitedAt ? 'Invitée le ' ~ d.invitedAt|cp_datetime(tz) : '—'))) %}
+        {% set button %}{% include 'components/button.html.twig' with { label: 'Détails', variant: 'ghost', size: 's', attrs: 'data-modal-open="part-' ~ loop.index ~ '" aria-haspopup="dialog"' } only %}{% endset %}
+        {% set rows = rows|merge([{ cells: { commune: { text: d.municipalityName }, status: { html: pill }, role: { text: d.organizer ? 'Organisatrice' : (d.status.value == 'INVITED' ? 'Invitée' : 'Participante') }, since: { text: since }, actions: { html: button } } }]) %}
+      {% endfor %}
+      {% for s in participants.summaries %}
+        {% set pill %}{% include 'components/status_pill.html.twig' with { status: participation_pills[s.status.value], label: participation_labels[s.status.value] } only %}{% endset %}
+        {% set rows = rows|merge([{ cells: { commune: { text: s.municipalityName }, status: { html: pill }, role: { text: s.organizer ? 'Organisatrice' : 'Participante' }, since: { text: '' }, actions: { text: '' } } }]) %}
+      {% endfor %}
+      {% for h in participants.history %}
+        {% set rows = rows|merge([{ cells: { commune: { text: h.municipalityName }, status: { text: 'A participé' }, role: { text: h.organizer ? 'Organisatrice' : 'Participante' }, since: { text: '' }, actions: { text: '' } } }]) %}
+      {% endfor %}
+      {% set columns = [{ key: 'commune', label: 'Commune', card: 'title' }, { key: 'status', label: 'Participation', card: 'status' }, { key: 'role', label: 'Rôle dans l’événement', card: 'sub' }] %}
+      {% if visibility == 'FULL' %}
+        {% set columns = columns|merge([{ key: 'since', label: 'Dates', wide: true, card: 'full' }, { key: 'actions', label: 'Détails', card: 'full' }]) %}
+      {% endif %}
+      {% include 'components/data_table.html.twig' with { caption: 'Organisatrice, participantes et invitations', columns: columns, rows: rows, empty: 'Aucune commune' } only %}
+      <details class="cp-panel" style="padding: var(--space-3) var(--space-4)">
+        <summary style="cursor: pointer; font-weight: 700; min-height: 32px">Que signifient les statuts de participation ?</summary>
+        {% include 'components/facts.html.twig' with { items: [
+          { label: 'Invitée', value: 'L’invitation est envoyée, sans expiration. La commune ne décide rien tant qu’elle n’a pas accepté.' },
+          { label: 'Active', value: 'La commune a accepté : elle participe à l’événement.' },
+          { label: 'Suspendue', value: 'La participation de cette commune est suspendue, sans effet sur les autres communes. Réactivable tant que l’événement n’est pas clôturé.' },
+          { label: 'Clôturée', value: 'Définitif : la participation ne peut plus être réactivée, ni la commune réinvitée.' } ] } only %}
+      </details>
+    {% endif %}
+  </section>
+
+  {# Participation de la commune active : la sienne uniquement. #}
+  {% set own = detail.myParticipationStatus %}
+  {% if rel != 'organizer' and own and visibility != 'OWN_INVITATION_ONLY' %}
+    {% set suspend = detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::SuspendParticipation')) %}
+    {% set reactivate = detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::ReactivateParticipation')) %}
+    {% set close = detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::CloseParticipation')) %}
+    <section class="cp-section" id="ma-participation" aria-labelledby="mine-h" data-controller="cp--disclosure">
+      {% include 'components/section_head.html.twig' with { id: 'mine-h', title: 'Votre participation', meta: active_municipality_name } only %}
+      <div class="app-item">
+        <div class="app-item__head"><span class="app-item__name">{{ active_municipality_name }}</span>{% include 'components/status_pill.html.twig' with { status: participation_pills[own.value], label: participation_labels[own.value] } only %}{% if detail.freeParticipation %}{% include 'components/tag.html.twig' with { label: 'Participation gratuite · sans abonnement' } only %}{% endif %}</div>
+        <p class="app-item__note">{{ own.value == 'CLOSED' ? 'Votre participation est clôturée : c’est définitif.' : (own.value == 'SUSPENDED' ? 'Votre participation est suspendue. Vous pouvez la réactiver tant que l’événement n’est pas clôturé.' : 'Votre commune participe à cet événement.') }}</p>
+      </div>
+      <div class="cp-cluster" style="gap: var(--space-4); align-items: flex-start">
+        {% if suspend and suspend.allowed %}{% include 'components/button.html.twig' with { label: 'Suspendre ma participation', variant: 'secondary', attrs: 'data-action="cp--disclosure#open" data-cp--disclosure-panel-param="psuspend" data-cp--disclosure-target="trigger" aria-expanded="false"' } only %}{% endif %}
+        {% if reactivate and reactivate.allowed %}
+          <form method="post" action="{{ path('app_municipal_participation_action', { municipalityId: active_municipality_id, eventId: detail.eventId, action: 'reactiver' }) }}" novalidate data-controller="cp--submit-state">
+            <input type="hidden" name="_token" value="{{ csrf_token('participation_reactiver_' ~ detail.eventId) }}">
+            {% include 'components/button.html.twig' with { label: 'Réactiver ma participation', type: 'submit', variant: 'secondary', loading_label: 'Réactivation…' } only %}
+          </form>
+        {% endif %}
+        {% if close and close.allowed %}{% include 'components/button.html.twig' with { label: 'Clôturer ma participation', variant: 'danger-ghost', attrs: 'data-action="cp--disclosure#open" data-cp--disclosure-panel-param="pclose" data-cp--disclosure-target="trigger" aria-expanded="false"' } only %}{% endif %}
+      </div>
+
+      {% if suspend and suspend.allowed %}
+        <div data-cp--disclosure-target="panel" data-panel="psuspend"{{ open_panel == 'psuspend' ? '' : ' hidden' }}>
+          {% embed 'components/confirm_panel.html.twig' with {
+            id: 'psuspend', title: 'Suspendre votre participation', confirm_label: 'Suspendre ma participation', loading_label: 'Suspension…',
+            action: path('app_municipal_participation_action', { municipalityId: active_municipality_id, eventId: detail.eventId, action: 'suspendre' }),
+            consequences: ['Les zones de votre commune ne sont plus opérationnelles.', 'Les autres communes ne sont pas affectées.'],
+            keeps: ['Vos zones restent modifiables.', 'Vous pourrez réactiver votre participation tant que l’événement n’est pas clôturé.'],
+            cancel_attrs: 'data-action="cp--disclosure#close"', token: csrf_token('participation_suspendre_' ~ detail.eventId), reason: suspend_reason, problem: problem|default(''),
+          } only %}
+            {% block fields %}
+              <input type="hidden" name="_token" value="{{ token }}">
+              {% include 'components/field.html.twig' with { id: 'psuspend-reason', name: 'reason', type: 'textarea', label: 'Raison de la suspension', required: true, value: reason, error: problem, help: 'Obligatoire. Inscrite au journal.' } only %}
+            {% endblock %}
+          {% endembed %}
+        </div>
+      {% endif %}
+      {% if close and close.allowed %}
+        <div data-cp--disclosure-target="panel" data-panel="pclose"{{ open_panel == 'pclose' ? '' : ' hidden' }}>
+          {% embed 'components/confirm_panel.html.twig' with {
+            id: 'pclose', title: 'Clôturer votre participation', confirm_label: 'Clôturer ma participation', loading_label: 'Clôture…',
+            action: path('app_municipal_participation_action', { municipalityId: active_municipality_id, eventId: detail.eventId, action: 'cloturer' }),
+            consequences: ['La clôture de votre participation est définitive : elle ne peut pas être réactivée.', 'Votre commune ne pourra plus être réinvitée à cet événement.', 'Les autres communes ne sont pas affectées.'],
+            keeps: ['L’historique de votre participation reste consultable.'],
+            cancel_attrs: 'data-action="cp--disclosure#close"', token: csrf_token('participation_cloturer_' ~ detail.eventId),
+          } only %}
+            {% block fields %}<input type="hidden" name="_token" value="{{ token }}">{% endblock %}
+          {% endembed %}
+        </div>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  {# Détail d'une participation : visibilité complète seulement (commune organisatrice, administrateur ou gestionnaire). #}
+  {% for d in participants.details %}
+    {% set facts = [
+      { label: 'Commune', value: d.municipalityName },
+      { label: 'Participation', value: participation_labels[d.status.value] },
+    ] %}
+    {% if d.invitedAt %}{% set facts = facts|merge([{ label: 'Invitation envoyée le', value: d.invitedAt|cp_datetime(tz) }]) %}{% endif %}
+    {% if d.invitationMessage %}{% set facts = facts|merge([{ label: 'Message d’invitation', value: '« ' ~ d.invitationMessage ~ ' »' }]) %}{% endif %}
+    {% if d.activatedAt %}{% set facts = facts|merge([{ label: 'Active depuis le', value: d.activatedAt|cp_datetime(tz) }]) %}{% endif %}
+    {% if d.suspendedAt %}{% set facts = facts|merge([{ label: 'Dernière suspension', value: d.suspendedAt|cp_datetime(tz), note: d.suspensionReason ? 'Raison : ' ~ d.suspensionReason : '' }]) %}{% endif %}
+    {% if d.closedAt %}{% set facts = facts|merge([{ label: 'Clôturée le', value: d.closedAt|cp_datetime(tz) }]) %}{% endif %}
+    {% embed 'components/modal.html.twig' with { id: 'part-' ~ loop.index, title: 'Participation de ' ~ d.municipalityName, facts: facts } only %}
+      {% block body %}{% include 'components/facts.html.twig' with { items: facts } only %}{% endblock %}
+    {% endembed %}
+  {% endfor %}
+{% endblock %}

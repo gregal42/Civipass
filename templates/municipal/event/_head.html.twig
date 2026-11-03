@@ -1,0 +1,45 @@
+{#
+  En-tête commun des pages d'un événement (fiche, communes) : confirmation, erreur, fil d'Ariane, statut de la commune, en-tête, rubriques,
+  états. Variable : current (fiche | communes). Inclus SANS `only` : il lit le contexte de la page.
+#}
+{% import 'municipal/event/_actions.html.twig' as act %}
+  {% for message in app.flashes('success') %}
+    {% include 'components/alert.html.twig' with { variant: 'success', title: message, focus: true } only %}
+  {% endfor %}
+  {% if alert %}{% include 'components/alert.html.twig' with { variant: 'warning', title: 'Rien n’a été enregistré', text: alert, focus: true } only %}{% endif %}
+  {% if problem|default('') and not open_panel %}{% include 'components/alert.html.twig' with { variant: 'error', title: 'Action impossible', text: problem, focus: true } only %}{% endif %}
+  {% include 'components/breadcrumb.html.twig' with { items: current == 'fiche' ? [{ label: 'Événements', href: list_url }, { label: detail.name }] : [{ label: 'Événements', href: list_url }, { label: detail.name, href: event_url }, { label: 'Communes' }], back: { label: current == 'fiche' ? 'Événements' : detail.name, href: current == 'fiche' ? list_url : event_url } } only %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% elseif detail.freeParticipation %}{% include 'components/commune_status.html.twig' with { state: 'free', commune: active_municipality_name } only %}{% endif %}
+
+  {# Relation de la commune active à l'événement et, le cas échéant, raison de la consultation seule. #}
+  {% set readonly = detail.readOnlyReason %}
+  {% if rel == 'organizer' %}
+    {% set relation = { label: 'Organisatrice', variant: 'default', text: 'Votre commune, ' ~ active_municipality_name ~ ', organise cet événement.' } %}
+  {% elseif rel == 'participant' %}
+    {% set relation = { label: 'Participante', variant: 'default', text: 'Votre commune participe à cet événement organisé par ' ~ detail.organizerMunicipalityName ~ '.' } %}
+  {% else %}
+    {% set relation = { label: 'Invitée', variant: 'default', text: 'Votre commune est invitée à cet événement par ' ~ detail.organizerMunicipalityName ~ '.' } %}
+  {% endif %}
+  {% set readonly_text = readonly ? (readonly.value == 'MUNICIPALITY_NOT_WRITABLE' ? 'Votre commune est suspendue : les informations restent consultables.' : 'Votre rôle dans ' ~ active_municipality_name ~ ' ne permet pas de modifier cet événement.') : '' %}
+
+  {% embed 'components/event_header.html.twig' with {
+      title: detail.name, type: detail.typeLabel, icon: cp_event_icon(detail.typeCode), status: status_key,
+      dates: { start: detail.startsAt|cp_datetime(tz), end: detail.endsAt ? detail.endsAt|cp_datetime(tz) : '' },
+      organizer: detail.organizerMunicipalityName, communes: detail.participants.participatingCount, relation: relation, readonly: readonly_text,
+      detail: detail, edit_url: edit_url, invite_url: invite_url, current: current,
+    } only %}
+    {% block actions %}
+      {% import 'municipal/event/_actions.html.twig' as act %}
+      {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Update')), 'Modifier', 'settings', 'secondary', edit_url) }}
+      {% if current != 'communes' %}{{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Invite')), 'Inviter une commune', 'mail', 'secondary', invite_url) }}{% endif %}
+    {% endblock %}
+  {% endembed %}
+
+  {% include 'components/subnav.html.twig' with { label: 'Rubriques de l’événement', items: [{ label: 'Fiche', href: event_url, current: current == 'fiche' }, { label: 'Communes', href: communes_url, current: current == 'communes' }] } only %}
+
+  {% if status_key == 'suspended' %}
+    {% include 'components/alert.html.twig' with { variant: 'warning', title: 'Événement suspendu', text: life and life.suspendedAt ? 'Suspendu le ' ~ life.suspendedAt|cp_datetime(tz) ~ '.' : 'Cet événement est suspendu.' } only %}
+  {% elseif status_key == 'closed' %}
+    {% include 'components/alert.html.twig' with { variant: 'info', title: 'Événement clôturé', text: life and life.closedAt ? 'Clôturé le ' ~ life.closedAt|cp_datetime(tz) ~ '. Consultation seule.' : 'Cet événement est clôturé. Consultation seule.' } only %}
+  {% endif %}
+

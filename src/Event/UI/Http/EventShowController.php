@@ -25,6 +25,7 @@ final class EventShowController extends AbstractController
     public function __construct(
         private readonly EventDetailReader $details,
         private readonly ShellContextFactory $shell,
+        private readonly EventViewFactory $views,
     ) {
     }
 
@@ -39,13 +40,6 @@ final class EventShowController extends AbstractController
             $request->getSession()->set(CommuneSelectionController::SESSION_KEY, $municipalityId);
         }
 
-        return $this->render('municipal/event/show.html.twig', array_merge($shell, [
-            'page_title' => $detail->name,
-            'event' => ['id' => 'event', 'kicker' => 'Événement', 'value' => $detail->name, 'options' => []],
-            'ctx_parts' => [...$shell['ctx_parts'], ['text' => $detail->name, 'strong' => true]],
-            'detail' => $detail,
-            'edit_url' => $this->generateUrl('app_municipal_event_edit', ['municipalityId' => $municipalityId, 'eventId' => $eventId]),
-            'list_url' => $this->generateUrl('app_municipal_events', ['municipalityId' => $municipalityId]),
-        ]));
+        return $this->render('municipal/event/show.html.twig', $this->views->page($shell, $detail, $municipalityId, $detail->name));
     }
 }

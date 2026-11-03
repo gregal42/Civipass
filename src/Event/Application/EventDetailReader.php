@@ -17,8 +17,10 @@ use App\Event\Domain\EventStatus;
 use App\Event\Domain\EventZoneRepository;
 use App\Event\Domain\ParticipationStatus;
 use App\Identity\Domain\User;
+use App\Municipality\Application\EventCreationPolicy;
 use App\Municipality\Application\MunicipalityContext;
 use App\Shared\Domain\OperationNotAllowed;
+use Psr\Clock\ClockInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -39,6 +41,8 @@ final readonly class EventDetailReader
         private EventParticipantReader $participants,
         private EventAccessPolicy $policy,
         private EventZoneRepository $zones,
+        private EventCreationPolicy $creation,
+        private ClockInterface $clock,
     ) {
     }
 
@@ -81,6 +85,8 @@ final readonly class EventDetailReader
             $participantList,
             $this->actions($user, $event, $relation, $own),
             EventRelation::Organizer === $relation && EventStatus::Draft === $event->status() ? $this->zones->existsActivationReadyZone($event->id()) : null,
+            EventRelation::Organizer === $relation ? null : $own?->id()->toRfc4122(),
+            EventRelation::Organizer !== $relation && !$this->creation->canCreateEvent($viewer, $this->clock->now()) && \App\Municipality\Domain\MunicipalityStatus::Active === $viewer->status(),
         );
     }
 

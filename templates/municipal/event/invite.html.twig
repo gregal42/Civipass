@@ -1,0 +1,59 @@
+{% extends 'layouts/app.html.twig' %}
+
+{# Inviter une commune : recherche par nom ou code INSEE (GET), puis envoi de l'invitation (POST). Aucune donnée commerciale. #}
+{% set state_labels = { invited: 'Déjà invitée', participating: 'Participe déjà', closed: 'Participation clôturée' } %}
+{% set status_key = detail.status.value|lower %}
+{% set rel = detail.relation.value %}
+{% set tz = detail.timezone %}
+
+{% block content %}
+  {% include 'components/breadcrumb.html.twig' with { items: [{ label: 'Événements', href: list_url }, { label: detail.name, href: event_url }, { label: 'Inviter une commune' }], back: { label: detail.name, href: event_url } } only %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Événement · ' ~ detail.name, title: 'Inviter une commune', sub: 'L’invitation n’expire pas. Une commune déjà inscrite l’accepte par son administrateur communal.' } only %}
+
+  {% if summary|length %}{% include 'components/error_summary.html.twig' with { errors: summary } only %}{% endif %}
+  {% if alert %}{% include 'components/alert.html.twig' with { variant: 'warning', title: 'Rien n’a été enregistré', text: alert, focus: true } only %}{% endif %}
+
+  <form class="cp-stack" style="gap: var(--space-4)" method="get" action="{{ invite_url }}" aria-label="Rechercher une commune" role="search">
+    {% include 'components/search_field.html.twig' with { id: 'insee-q', name: 'q', label: 'Rechercher la commune (nom ou code INSEE)', placeholder: 'Nom ou code INSEE', value: query } only %}
+    <p class="cp-help">Saisissez au moins {{ min_length }} caractères. Seules les communes actives peuvent être invitées.</p>
+  </form>
+
+  <form id="invite-form" class="cp-stack" style="gap: var(--space-5)" method="post" action="{{ invite_url }}" novalidate data-controller="cp--unsaved-guard cp--submit-state" tabindex="-1">
+    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+    <input type="hidden" name="q" value="{{ query }}">
+
+    <fieldset class="cp-fieldset" id="invite-candidates">
+      <legend class="cp-fieldset__legend">Commune à inviter</legend>
+      {% if errors.municipality_id|default('') %}<p class="cp-field-error">{% include 'components/icon.html.twig' with { name: 'alert', size: 's' } only %}{{ errors.municipality_id }}</p>{% endif %}
+      {% if found.tooShort %}
+        {% include 'components/empty_state.html.twig' with { icon: 'search', title: 'Saisie trop courte', text: 'Saisissez au moins ' ~ min_length ~ ' caractères pour lancer la recherche.' } only %}
+      {% elseif query == '' %}
+        {% include 'components/empty_state.html.twig' with { icon: 'search', title: 'Recherchez une commune', text: 'Les résultats apparaissent ici ; choisissez la commune à inviter.' } only %}
+      {% elseif found.items|length == 0 %}
+        {% include 'components/empty_state.html.twig' with { icon: 'search', title: 'Commune non trouvée', text: 'Aucune commune active ne correspond à cette recherche. Vérifiez l’orthographe ou le code INSEE.' } only %}
+      {% else %}
+        <div class="cp-choices">
+          {% for c in found.items %}
+            {% set available = c.state.value == 'available' %}
+            {% include 'components/choice.html.twig' with {
+              type: 'radio', name: 'municipality_id', value: c.municipalityId, id: 'cand-' ~ loop.index,
+              label: c.name, note: 'Code INSEE ' ~ c.inseeCode, checked: available and selected == c.municipalityId, disabled: not available,
+              tag: available ? null : { label: state_labels[c.state.value], variant: 'off' },
+            } only %}
+          {% endfor %}
+        </div>
+        <p class="cp-help">Une commune déjà invitée, participante ou dont la participation est clôturée ne peut pas être invitée.</p>
+      {% endif %}
+    </fieldset>
+
+    {% include 'components/field.html.twig' with { id: 'inv-msg', name: 'message', type: 'textarea', label: 'Message', value: message, optional: true, error: errors.message|default(''), help: 'Visible par la commune invitée.' } only %}
+
+    {% include 'components/alert.html.twig' with { variant: 'info', icon: 'shield', title: 'Participation sans abonnement', text: 'Une commune sans abonnement peut être invitée et participer gratuitement à cet événement. Cela ne lui donne pas le droit de créer ses propres événements.' } only %}
+
+    <div class="cp-form-actions">
+      {% include 'components/button.html.twig' with { label: 'Envoyer l’invitation', icon: 'mail', type: 'submit', loading_label: 'Envoi…' } only %}
+      {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', href: communes_url } only %}
+    </div>
+  </form>
+{% endblock %}

@@ -12,6 +12,8 @@ use App\Event\Application\Read\EventParticipantHistoryEntry;
 use App\Event\Application\Read\EventParticipationDetails;
 use App\Event\Application\Read\EventParticipationSummary;
 use App\Event\Application\Read\EventTypeOption;
+use App\Event\Application\Read\InvitationCandidate;
+use App\Event\Application\Read\InvitationCandidateState;
 use App\Event\Application\Read\InvitationView;
 use App\Event\Domain\EventStatus;
 use App\Event\Domain\ParticipationStatus;
@@ -98,6 +100,34 @@ final readonly class DbalEventReadModel implements EventReadModel
         );
 
         return new EventListPage(array_map(fn (array $r): EventListItem => $this->listItem($r, $municipalityId), $rows), $total, $query->page, $query->perPage);
+    }
+
+    public function searchMunicipalitiesForInvitation(Uuid $eventId, string $term, int $limit): array
+    {
+        $like = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $term);
+        $rows = $this->connection->fetchAllAssociative(
+            'SELECT m.id AS municipality_id, m.name, m.insee_code, p.status AS participation_status'
+            .' FROM municipality m'
+            .' JOIN event_event e ON e.id = :event'
+            .' LEFT JOIN event_participation p ON p.event_id = e.id AND p.municipality_id = m.id'
+            ." WHERE m.status = 'ACTIVE' AND m.id <> e.organizer_municipality_id"
+            ." AND (m.name LIKE :contains ESCAPE '!' OR m.insee_code LIKE :prefix ESCAPE '!')"
+            .' ORDER BY m.name, m.id LIMIT :limit',
+            ['event' => $eventId->toBinary(), 'contains' => '%'.$like.'%', 'prefix' => $like.'%', 'limit' => $limit],
+            ['limit' => ParameterType::INTEGER],
+        );
+
+        return array_map(static fn (array $r): InvitationCandidate => new InvitationCandidate(
+            self::uuid($r['municipality_id']),
+            (string) $r['name'],
+            (string) $r['insee_code'],
+            match (true) {
+                null === $r['participation_status'] => InvitationCandidateState::Available,
+                ParticipationStatus::Invited->value === $r['participation_status'] => InvitationCandidateState::Invited,
+                ParticipationStatus::Closed->value === $r['participation_status'] => InvitationCandidateState::Closed,
+                default => InvitationCandidateState::Participating,
+            },
+        ), $rows);
     }
 
     public function eventTypes(): array
