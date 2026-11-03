@@ -1,0 +1,43 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Event\Application;
+
+use App\Event\Application\Read\EventListItem;
+use App\Event\Application\Read\EventParticipationDetails;
+use App\Event\Application\Read\EventParticipationSummary;
+use App\Event\Application\Read\InvitationView;
+use Symfony\Component\Uid\Uuid;
+
+/**
+ * Lectures restreintes AU NIVEAU DE LA REQUÊTE : chaque méthode ne sélectionne que les colonnes de sa projection et
+ * ne retourne que les lignes de son périmètre (jamais « tout charger puis filtrer »). Aucune entité n'est chargée.
+ * Les appelants (EventListReader, EventParticipantReader) ont déjà vérifié le droit de consulter.
+ */
+interface EventReadModel
+{
+    /**
+     * Événements organisés par la commune OU auxquels elle participe (même invitée ou clôturée), du plus récent au plus ancien.
+     *
+     * @return list<EventListItem>
+     */
+    public function eventsOf(Uuid $municipalityId, int $limit): array;
+
+    /**
+     * Coordination : l'organisatrice et les communes dont la participation est ACTIVE ou SUSPENDED. Jamais les
+     * invitations en attente ni les participations clôturées (sauf l'organisatrice).
+     *
+     * @return list<EventParticipationSummary>
+     */
+    public function coordinationOf(Uuid $eventId): array;
+
+    /**
+     * Toutes les participations de l'événement, avec leurs informations de gestion (organisatrice uniquement).
+     *
+     * @return list<EventParticipationDetails>
+     */
+    public function participationsOf(Uuid $eventId): array;
+
+    public function invitationOf(Uuid $eventId, Uuid $municipalityId): ?InvitationView;
+}

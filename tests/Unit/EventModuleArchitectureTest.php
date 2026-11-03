@@ -53,10 +53,70 @@ final class EventModuleArchitectureTest extends TestCase
         }
     }
 
-    public function testEventModuleOnlyReachesOtherModulesThroughTheirDomain(): void
+    public function testEventModuleOnlyReachesOtherModulesThroughTheirDomainAndTheSharedPolicies(): void
+    {
+        // Seules exceptions : les politiques partagées du module Municipality (accès, création, contexte municipal).
+        $allowedApplication = ['App\\Municipality\\Application\\MembershipAccessPolicy', 'App\\Municipality\\Application\\EventCreationPolicy', 'App\\Municipality\\Application\\MunicipalityContext'];
+        foreach (self::phpFiles('src/Event') as $file) {
+            $content = (string) file_get_contents($file);
+            self::assertDoesNotMatchRegularExpression('/App\\\\(Municipality|Identity)\\\\(Infrastructure|UI)/', $content, $file);
+            preg_match_all('/use (App\\\\(?:Municipality|Identity)\\\\Application\\\\\w+);/', $content, $uses);
+            foreach ($uses[1] as $used) {
+                self::assertContains($used, $allowedApplication, $file);
+                self::assertStringContainsString('/src/Event/Application/', $file, 'jamais depuis le domaine ni l\'infrastructure');
+            }
+        }
+    }
+
+    public function testEventAccessPolicyDoesNotDependOnSymfonySecurityOrHttp(): void
+    {
+        foreach (self::phpFiles('src/Event/Application') as $file) {
+            $content = (string) file_get_contents($file);
+            self::assertStringNotContainsString('Symfony\\Component\\Security', $content, $file);
+            self::assertStringNotContainsString('Symfony\\Component\\HttpFoundation', $content, $file);
+            self::assertStringNotContainsString('->getUser()', $content, $file);
+        }
+    }
+
+    public function testRolesAreNeverTestedOutsideThePermissionMatrixAndTheMembershipPolicy(): void
+    {
+        // Source de vérité unique : les rôles autorisés ne se codent qu'à un endroit (EventPermission::roles()).
+        foreach (self::phpFiles('src/Event') as $file) {
+            if (str_ends_with($file, 'EventPermission.php')) {
+                continue;
+            }
+            self::assertStringNotContainsString('MunicipalityRole::', (string) file_get_contents($file), $file);
+        }
+    }
+
+    public function testReadProjectionsAreSelfContainedValueObjects(): void
+    {
+        foreach (self::phpFiles('src/Event/Application/Read') as $file) {
+            $content = (string) file_get_contents($file);
+            self::assertStringNotContainsString('Doctrine\\', $content, $file);
+            self::assertStringNotContainsString('App\\Municipality\\Domain', $content, $file);
+            self::assertStringNotContainsString('App\\Identity', $content, $file);
+            self::assertStringNotContainsString('App\\Event\\Domain\\EventParticipation;', $content, $file.' : aucune entité exposée');
+        }
+    }
+
+    public function testReadModelSelectsExplicitColumnsAndNeverLeaksInternalColumnsIntoCoordination(): void
+    {
+        $content = (string) file_get_contents(\dirname(__DIR__, 2).'/src/Event/Infrastructure/DbalEventReadModel.php');
+        self::assertDoesNotMatchRegularExpression('/\'SELECT\s+\*|\b\w+\.\*\s/', $content, 'jamais de SELECT * dans les requêtes');
+
+        preg_match('/function coordinationOf.*?\n    }\n/s', $content, $coordination);
+        self::assertNotEmpty($coordination);
+        foreach (['suspension_reason', 'invitation_message', 'invited_by', 'invited_at', 'last_invitation_sent_at', 'created_by', 'audit', 'commercial'] as $internal) {
+            self::assertStringNotContainsString($internal, $coordination[0], 'colonne interne dans la requête de coordination : '.$internal);
+        }
+    }
+
+    public function testNothingGrantsMunicipalRightsToSuperAdmins(): void
     {
         foreach (self::phpFiles('src/Event') as $file) {
-            self::assertDoesNotMatchRegularExpression('/App\\\\(Municipality|Identity)\\\\(Infrastructure|UI|Application)/', (string) file_get_contents($file), $file);
+            self::assertStringNotContainsString('isSuperAdmin', (string) file_get_contents($file), $file);
+            self::assertStringNotContainsString('ROLE_SUPER_ADMIN', (string) file_get_contents($file), $file);
         }
     }
 

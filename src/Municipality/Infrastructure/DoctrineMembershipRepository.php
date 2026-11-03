@@ -70,6 +70,12 @@ final readonly class DoctrineMembershipRepository implements MembershipRepositor
         return array_map(static fn (mixed $id): Uuid => Uuid::fromBinary((string) $id), $rows);
     }
 
+    public function findActiveByUser(User $user): array
+    {
+        return $this->entityManager->getRepository(MunicipalityMembership::class)
+            ->findBy(['user' => $user, 'active' => true]);
+    }
+
     public function findByMunicipality(Municipality $municipality): array
     {
         return $this->entityManager->getRepository(MunicipalityMembership::class)

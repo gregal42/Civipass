@@ -1,6 +1,6 @@
 # LOT 02 (TECH-02.1) — Schéma de données et règles : proposition définitive
 
-> **Révision 5 (révision 3 + étapes 2 et 3 : persistance, migration et validation MySQL ; voir §15 et §16) — proposition soumise à validation. Aucune entité, aucune migration, aucun code.** Ce document remplace [`lots/tech-02.1/modele-doctrine.md`](lots/tech-02.1/modele-doctrine.md) (conservé comme trace historique). Conformément à la règle 3 du `CLAUDE.md`, aucune migration ne sera écrite avant sa validation explicite.
+> **Révision 6 (étapes 2 et 3 : persistance, migration et validation MySQL, §15 et §16 ; étape 4 : politiques d'accès, §17) — proposition soumise à validation. Aucune entité, aucune migration, aucun code.** Ce document remplace [`lots/tech-02.1/modele-doctrine.md`](lots/tech-02.1/modele-doctrine.md) (conservé comme trace historique). Conformément à la règle 3 du `CLAUDE.md`, aucune migration ne sera écrite avant sa validation explicite.
 > Décisions sources : [registre](decisions/README.md) (A1–A14, R1–R9, P1–P6 : DM-051 à DM-075 ; DT-020, DT-022). Points résiduels de détail T2 à T6 : [`revisions/CONTRADICTIONS.md`](revisions/CONTRADICTIONS.md).
 
 ## 1. Périmètre
@@ -338,3 +338,52 @@ Implémenté (sans migration) : les cinq entités, `EventReferenceCounter`, `Mun
 - **Compteur** : validé sur MySQL (séquence, verrou concurrent, quatre processus parallèles, rollback sans trou, année UTC, dépassement de 999 999).
 - **Ajustement final** : migration complémentaire `Version20261103072308` (seule instruction : `ALTER TABLE event_event ADD suspended_at DATETIME DEFAULT NULL`), jouée sur `civipass_test` uniquement ; `Event.suspendedAt` aligne l'événement sur la participation (DM-081).
 - **Reste ouvert** : référentiel territorial polynésien à fournir.
+
+## 17. Étape 4 — politiques d'accès et isolation intercommunale (DT-034)
+
+Code : `src/Event/Application` (`EventPermission`, `EventAccessPolicy`, `EventResourceResolver`, `AccessDecision`, `AccessDenialReason`). Aucune migration ; aucun contrôleur ni service transactionnel.
+
+### 17.1 Matrice effective (DM-057), source unique : `EventPermission::roles()`
+
+| Permission | Ressource | Administrateur | Gestionnaire | Instructeur | Portée (commune propriétaire) |
+|---|---|---|---|---|---|
+| Créer un événement | commune cible | Oui | Oui | Non | sa commune ; commune ACTIVE **et droit d'utilisation valide** |
+| Consulter l'événement | événement | Oui | Oui | Oui | commune organisatrice ou participante (même invitée) |
+| Modifier / activer / suspendre / réactiver / clôturer / inviter | événement | Oui | Oui | Non | **commune organisatrice** |
+| Consulter une participation (détail) | participation | Oui | Oui | Oui | sa commune, ou la commune organisatrice |
+| Consulter la liste des participations | événement | Oui | Oui | Oui | niveau selon la commune du contexte (§17.4) |
+| **Accepter** une invitation | participation | Oui | **Non** | Non | commune destinataire |
+| Suspendre / réactiver / clôturer **sa** participation | participation | Oui | Oui | Non | commune de la participation |
+| Créer une zone | participation | Oui | **Non** | Non | commune de la participation, participation ACTIVE ou SUSPENDED |
+| Consulter une zone | zone | Oui | Oui | Oui | sa commune ; lecture seule pour les communes participantes (non seulement invitées) |
+| Modifier / supprimer logiquement une zone, configurer sa validité | zone | Oui | **Non** | Non | zone → participation → commune |
+| Supprimer logiquement un créneau | créneau | Oui | **Non** | Non | créneau → zone → participation → commune |
+| `CWS_IMPERSONATE`, `CWS_FORCE_CLOSE_EVENT` | — | — | — | — | refusées par défaut (`DenyAllCwsPermissionChecker`) |
+
+`superAdmin` : aucun droit communal implicite (refus `NoAccess` sans membership).
+
+### 17.2 États métier
+Événement clôturé : tout est figé (consultation seule). Activation : brouillon ; suspension : actif ; réactivation : suspendu ; clôture : tout état non clôturé, brouillon compris (DM-077). Participation : acceptation (`INVITED`, événement ouvert), suspension (`ACTIVE`), réactivation (`SUSPENDED`, événement ouvert), clôture propre (`ACTIVE`/`SUSPENDED`, jamais l'organisatrice ni une invitation). Zones : édition si participation `ACTIVE` ou `SUSPENDED` (DM-066), jamais `INVITED` ni `CLOSED` ; zone ou créneau supprimé : refus. **Aucune restriction ajoutée pour un événement suspendu** (DM-056, DM-066). Commune `SUSPENDED` : lecture seule ; `INACTIVE` : aucun accès (D16). L'expiration ou la révocation d'un droit d'utilisation n'affecte jamais la gestion des événements existants (DM-073).
+
+### 17.3 Ce que la politique ne fait pas (étape 5)
+Prérequis transversaux des services : zones prêtes pour l'activation (`existsActivationReadyZone`), participations à clôturer avant l'événement, unicité des invitations, statut administratif de la commune invitée (`EventCreationPolicy::canJoinNewEvent`), verrous et audit.
+
+### 17.4 Visibilité intercommunale et listes (DM-084, U1 à U4 tranchés)
+
+- **U1** : DM-057 conservé (zones et créneaux : administrateur communal seul).
+- **U2** : zones des autres communes en lecture seule pour une commune dont la participation est acceptée (ACTIVE, SUSPENDED, CLOSED) ; refusées à une commune invitée ou étrangère ; écriture : commune propriétaire seule.
+- **U3 — niveaux sur les participations d'un événement** (`EventAccessPolicy::participantListVisibility`, pour la commune du contexte municipal) :
+
+| Commune du contexte | Niveau | Contenu |
+|---|---|---|
+| Organisatrice | `Full` | toutes les participations, informations de gestion (`EventParticipationDetails`) |
+| Participante acceptée (ACTIVE, SUSPENDED, CLOSED) | `Coordination` | l'organisatrice et les communes ACTIVE ou SUSPENDED : identifiant, nom, statut (`EventParticipationSummary`) |
+| Simplement invitée | `OwnInvitationOnly` | sa propre invitation (`InvitationView`) |
+| Étrangère, sans membership effectif | `None` | refus « Ressource inaccessible. » |
+
+La projection de coordination n'a aucun champ de motif, d'audit, d'invitation, d'agent ou de donnée commerciale. Invitations en attente et participations clôturées ne sont pas exposées aux autres participantes.
+- **U4** : tout rôle d'une commune concernée consulte (instructeur compris) ; aucune opération de gestion pour l'instructeur ; aucun droit global.
+- **Listes** : `EventListReader` et `EventParticipantReader` exigent un contexte municipal vérifié (`MunicipalityContext` : utilisateur et membership actifs, commune ACTIVE ou SUSPENDED en lecture) puis exécutent des requêtes **bornées à la source** (`EventReadModel`, SQL à colonnes nommées, aucune entité chargée) : événements organisés par la commune ou auxquels elle participe (même invitée) ; participations selon le niveau. Aucun filtrage après coup.
+
+### 17.5 Divergences et points à arbitrer
+Voir `docs/revisions/CONTRADICTIONS.md` §G (U5).

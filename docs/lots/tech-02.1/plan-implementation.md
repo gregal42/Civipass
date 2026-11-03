@@ -25,7 +25,7 @@ Audit : `operator_id` et `batch_id` sur `audit_log` ; `AuditActor`/`AuditTrail` 
 ## Étape 3 (détail initial) — Migration unique
 Création des tables, initialisation de la ligne du compteur, `ALTER TABLE audit_log` ; **relue avant exécution**, jouée **uniquement** sur `civipass_test`, jamais sur `civipass` sans accord ; initialisation d'`EventType` seulement après validation de la liste.
 
-## Étape 4 — Politiques d'accès
+## Étape 4 — Politiques d'accès — **réalisée et finalisée (U1 à U4), sans migration**, voir `lot-02-schema.md` §17
 Matrice §8.1 du schéma, contextualisée par commune, commune `ACTIVE` en écriture ; `EventCreationPolicy` centralisé (statut administratif + port `MunicipalityEntitlementProvider` : abonnement, TRIAL, accès commercial CWS) ; aucun droit communal implicite pour CWS.
 
 ## Étape 5 — Services applicatifs (transactionnels, audités)

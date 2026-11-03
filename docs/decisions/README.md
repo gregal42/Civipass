@@ -85,6 +85,7 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DM-081](metier/DM-081-historique-de-suspension-conserve-a-la-reactivation.md) | Historique de suspension conservé à la réactivation | Arbitrage TECH-02.1 (complément) | Validée |
 | [DM-082](metier/DM-082-date-de-fin-d-un-evenement-actif-jamais-dans-le-passe-t2-con.md) | Date de fin d'un événement actif : jamais dans le passé (T2 confirmée) | Arbitrage TECH-02.1 (complément) | Validée |
 | [DM-083](metier/DM-083-limite-technique-des-recurrences-3-660-jours.md) | Limite technique des récurrences : 3 660 jours | Arbitrage TECH-02.1 (complément) | Validée |
+| [DM-084](metier/DM-084-visibilite-intercommunale-zones-participations-consultation-.md) | Visibilité intercommunale : zones, participations, consultation par les instructeurs (U2, U3, U4) | Arbitrage TECH-02.1 (complément) | Validée |
 
 ## Décisions techniques
 
@@ -123,6 +124,7 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DT-031](technique/DT-031-transitions-enums-de-domaine-comme-source-unique-symfony-wor.md) | Transitions : enums de domaine comme source unique, Symfony Workflow non branché | Architecture | Proposée |
 | [DT-032](technique/DT-032-audit-operator-id-et-batch-id-mappes-avec-la-migration-de-l-.md) | Audit : `operator_id` et `batch_id` mappés avec la migration de l'étape 3 | Audit | Remplacée |
 | [DT-033](technique/DT-033-migration-du-module-event-et-validation-mysql.md) | Migration du module Event et validation MySQL | Données | Validée |
+| [DT-034](technique/DT-034-politique-d-acces-du-module-event-matrice-unique-commune-ded.md) | Politique d'accès du module Event : matrice unique, commune déduite de la ressource | Sécurité | Proposée |
 
 ## Modèle de fiche
 

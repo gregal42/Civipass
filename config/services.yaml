@@ -26,6 +26,8 @@ services:
             - '../src/Kernel.php'
             - '../src/*/Domain/'
             - '../src/Shared/Application/AuditEvent.php'
+            - '../src/Event/Application/AccessDecision.php'
+            - '../src/Event/Application/Read/'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

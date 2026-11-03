@@ -23,6 +23,7 @@ Option A modifiée, précisée par R1 et R2. L'administrateur communal possède 
 - Politiques d'accès : tests négatifs avec identifiants forgés et rôles identiques dans une autre commune.
 - Pas de rôle « gestionnaire communal ».
 - `ROLE_SUPER_ADMIN` n'accorde aucun droit communal automatique (DM-005) ; l'impersonation relève de DM-061.
+- U1 confirmé : les zones et créneaux restent réservés à l'administrateur communal (pas au gestionnaire d'événement). U4 : la consultation (événements, participations, zones) est ouverte à tout rôle d'une commune concernée, instructeur compris ; aucune opération de gestion pour l'instructeur (DM-084).
 
 ## Documents concernés
 

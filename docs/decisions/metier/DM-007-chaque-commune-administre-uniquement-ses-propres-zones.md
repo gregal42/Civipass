@@ -18,6 +18,7 @@ Chaque commune administre uniquement ses propres zones. Dans un événement inte
 
 - Toute écriture sur une zone exige l'appartenance au membership actif de la commune de sa participation.
 - Tests négatifs avec identifiants forgés inter-communes.
+- Précisé par DM-084 (U2) : lecture seule pour une commune dont la participation est acceptée (ACTIVE, SUSPENDED, CLOSED) ; jamais pour une commune simplement invitée ou étrangère.
 
 ## Documents concernés
 

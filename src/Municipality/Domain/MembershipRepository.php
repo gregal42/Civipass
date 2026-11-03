@@ -29,6 +29,14 @@ interface MembershipRepository
     public function findActiveMunicipalityIdsAdministeredBy(User $user): array;
 
     /**
+     * Memberships actifs d'un utilisateur (quel que soit le statut de la commune : c'est la politique d'accès qui
+     * distingue lecture et écriture). Sert à déterminer pour le compte de quelles communes un utilisateur agit.
+     *
+     * @return list<MunicipalityMembership>
+     */
+    public function findActiveByUser(User $user): array;
+
+    /**
      * @return list<MunicipalityMembership>
      */
     public function findByMunicipality(Municipality $municipality): array;

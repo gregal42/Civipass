@@ -99,6 +99,8 @@ Correspondance établie à la lecture des intitulés : à valider avant toute re
 
 ## G. Points résiduels (révision 5)
 
+Résolus à l'étape 4 : **U1** (DM-057 conservé), **U2**, **U3**, **U4** (DM-084).
+
 Résolus à l'étape 2 : **T2** (DM-082), `revoked_by` (DM-079), type de zone immuable (DM-080), historique de suspension (DM-081), limite de 3 660 jours (DM-083).
 
 Résolus : **T1** (droits d'utilisation : DM-076), **DRAFT → CLOSED** (DM-077), **liste des `EventType`** (DM-053, DT-023).
@@ -116,3 +118,5 @@ Les points P1 à P6, DT-020 et DT-022 sont **validés** (DM-062, DM-070, DM-071,
 | — | Résolution fuseau des communes de Polynésie française | aucune hypothèse ; liste officielle à fournir | Avant production |
 | — | MFA absent | prérequis du lot Administration CWS | Non |
 | — | Écarts UI-02 (47) non réévalués après P1–P6 | à corriger côté design | Avant intégration UI |
+| **U5** | Instructeur de la commune **organisatrice** : visibilité complète (suspension, invitations en attente) comme les autres rôles de l'organisatrice, par lecture littérale de U3 ; à restreindre si ces informations de gestion ne doivent pas lui être ouvertes | à confirmer | Non |
+| **U6** | Après la clôture de l'événement toutes les participations sont CLOSED : une commune participante ne voit plus que l'organisatrice dans la liste de coordination (U3 : ACTIVE/SUSPENDED seulement) | à confirmer | Non |
