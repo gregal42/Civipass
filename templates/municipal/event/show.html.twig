@@ -79,8 +79,15 @@
         </section>
       {% endif %}
 
-      {% if rel == 'organizer' and detail.activationReady is not null and detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Activate')) %}
-        <section class="cp-section" aria-labelledby="act-h">
+      {% set A = 'App\\Event\\Application\\Read\\EventAction::' %}
+      {% set activate = detail.visibleAction(constant(A ~ 'Activate')) %}
+      {% set suspend = detail.visibleAction(constant(A ~ 'Suspend')) %}
+      {% set reactivate = detail.visibleAction(constant(A ~ 'Reactivate')) %}
+      {% set close = detail.visibleAction(constant(A ~ 'Close')) %}
+      {% set lc = { municipalityId: active_municipality_id, eventId: detail.eventId } %}
+
+      {% if rel == 'organizer' and detail.activationReady is not null and activate %}
+        <section class="cp-section" id="activation" aria-labelledby="act-h" data-controller="cp--disclosure">
           {% include 'components/section_head.html.twig' with { id: 'act-h', title: 'Activation' } only %}
           <ul class="app-checklist">
             <li class="{{ detail.activationReady ? 'is-ok' : 'is-todo' }}">
@@ -88,19 +95,82 @@
               <span>{{ detail.activationReady ? 'Au moins une zone confirmée, active et configurée : l’événement peut être activé.' : 'Aucune zone n’est prête : confirmez au moins une zone active et configurez sa validité.' }}</span>
             </li>
           </ul>
-          <div class="cp-cluster" style="gap: var(--space-4); align-items: flex-start">{{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Activate')), 'Activer l’événement', 'zap', 'primary') }}</div>
+          <div class="cp-cluster" style="gap: var(--space-4); align-items: flex-start">
+            {% if activate.allowed and detail.activationReady %}
+              {% include 'components/button.html.twig' with { label: 'Activer l’événement…', icon: 'zap', variant: 'primary', attrs: 'data-action="cp--disclosure#open" data-cp--disclosure-panel-param="lactivate" data-cp--disclosure-target="trigger" aria-expanded="false"' } only %}
+            {% else %}
+              {% include 'components/button.html.twig' with { id: 'act-activate', label: 'Activer l’événement', icon: 'zap', variant: 'primary', unavailable_reason: activate.allowed ? 'Confirmez au moins une zone active et configurez sa validité.' : cp_denial_message(activate.reason) } only %}
+            {% endif %}
+            {% if activate.allowed %}<a href="{{ zones_url }}">Gérer les zones</a>{% endif %}
+          </div>
+          {% if activate.allowed and detail.activationReady %}
+            <div data-cp--disclosure-target="panel" data-panel="lactivate"{{ open_panel == 'lactivate' ? '' : ' hidden' }}>
+              {% embed 'components/confirm_panel.html.twig' with {
+                id: 'lactivate', title: 'Activer « ' ~ detail.name ~ ' »', confirm_label: 'Activer l’événement', loading_label: 'Activation…',
+                action: path('app_municipal_event_lifecycle', lc|merge({ action: 'activer' })),
+                consequences: ['L’événement passe de « Brouillon » à « Actif » : ses zones confirmées, actives et configurées deviennent opérationnelles.'],
+                keeps: ['Après l’activation, le type, le fuseau horaire, la date de début et la référence ne peuvent plus être modifiés.', 'L’événement reste suspendable, puis réactivable, jusqu’à sa clôture.'],
+                cancel_attrs: 'data-action="cp--disclosure#close"', token: csrf_token('event_lifecycle_activer_' ~ detail.eventId), problem: problem|default(''),
+              } only %}
+                {% block fields %}<input type="hidden" name="_token" value="{{ token }}">{% if problem %}{% include 'components/alert.html.twig' with { variant: 'error', title: 'Activation impossible', text: problem } only %}{% endif %}{% endblock %}
+              {% endembed %}
+            </div>
+          {% endif %}
         </section>
       {% endif %}
 
-      {% if rel == 'organizer' and (detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Suspend')) or detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Reactivate')) or detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Close'))) %}
-        <section class="cp-section" aria-labelledby="life-h">
+      {% if rel == 'organizer' and (suspend or reactivate or close) %}
+        <section class="cp-section" id="cycle" aria-labelledby="life-h" data-controller="cp--disclosure">
           {% include 'components/section_head.html.twig' with { id: 'life-h', title: 'Suspension et clôture', meta: 'Commune organisatrice' } only %}
           <div class="cp-cluster" style="gap: var(--space-4); align-items: flex-start">
-            {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Suspend')), 'Suspendre l’événement', '', 'secondary') }}
-            {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Reactivate')), 'Réactiver l’événement', '', 'secondary') }}
-            {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Close')), 'Clôturer l’événement', '', 'danger-ghost') }}
+            {% if suspend %}
+              {% if suspend.allowed %}{% include 'components/button.html.twig' with { label: 'Suspendre l’événement…', icon: 'alert', variant: 'secondary', attrs: 'data-action="cp--disclosure#open" data-cp--disclosure-panel-param="lsuspend" data-cp--disclosure-target="trigger" aria-expanded="false"' } only %}
+              {% else %}{% include 'components/button.html.twig' with { id: 'act-suspend', label: 'Suspendre l’événement', variant: 'secondary', unavailable_reason: cp_denial_message(suspend.reason) } only %}{% endif %}
+            {% endif %}
+            {% if reactivate and reactivate.allowed %}
+              <form method="post" action="{{ path('app_municipal_event_lifecycle', lc|merge({ action: 'reactiver' })) }}" novalidate data-controller="cp--submit-state">
+                <input type="hidden" name="_token" value="{{ csrf_token('event_lifecycle_reactiver_' ~ detail.eventId) }}">
+                {% include 'components/button.html.twig' with { label: 'Réactiver l’événement', icon: 'refresh', type: 'submit', variant: 'secondary', loading_label: 'Réactivation…' } only %}
+              </form>
+            {% endif %}
+            {% if close %}
+              {% if close.allowed %}{% include 'components/button.html.twig' with { label: 'Clôturer l’événement…', variant: 'danger-ghost', attrs: 'data-action="cp--disclosure#open" data-cp--disclosure-panel-param="lclose" data-cp--disclosure-target="trigger" aria-expanded="false"' } only %}
+              {% else %}{% include 'components/button.html.twig' with { id: 'act-close', label: 'Clôturer l’événement', variant: 'danger-ghost', unavailable_reason: cp_denial_message(close.reason) } only %}{% endif %}
+            {% endif %}
           </div>
           <p class="app-note">La clôture est définitive : elle clôture aussi toutes les participations.</p>
+
+          {% if suspend and suspend.allowed %}
+            <div data-cp--disclosure-target="panel" data-panel="lsuspend"{{ open_panel == 'lsuspend' ? '' : ' hidden' }}>
+              {% embed 'components/confirm_panel.html.twig' with {
+                id: 'lsuspend', title: 'Suspendre l’événement', confirm_label: 'Suspendre l’événement', loading_label: 'Suspension…',
+                action: path('app_municipal_event_lifecycle', lc|merge({ action: 'suspendre' })),
+                consequences: ['L’événement n’est plus actif : ses zones n’ouvrent plus de droits tant qu’il est suspendu.'],
+                keeps: ['Les participations des communes ne sont pas suspendues.', 'Vous pourrez réactiver l’événement tant qu’il n’est pas clôturé.'],
+                cancel_attrs: 'data-action="cp--disclosure#close"', token: csrf_token('event_lifecycle_suspendre_' ~ detail.eventId), reason: suspend_reason, problem: problem|default(''),
+              } only %}
+                {% block fields %}
+                  <input type="hidden" name="_token" value="{{ token }}">
+                  {% include 'components/field.html.twig' with { id: 'lsuspend-reason', name: 'reason', type: 'textarea', label: 'Motif de la suspension', required: true, value: reason, error: problem, help: 'Obligatoire. Inscrit au journal.' } only %}
+                {% endblock %}
+              {% endembed %}
+            </div>
+          {% endif %}
+          {% if close and close.allowed %}
+            {% set open_count = 0 %}
+            {% for d in detail.participants.details %}{% if d.status.value != 'CLOSED' %}{% set open_count = open_count + 1 %}{% endif %}{% endfor %}
+            <div data-cp--disclosure-target="panel" data-panel="lclose"{{ open_panel == 'lclose' ? '' : ' hidden' }}>
+              {% embed 'components/confirm_panel.html.twig' with {
+                id: 'lclose', title: 'Clôturer l’événement', confirm_label: 'Clôturer définitivement', loading_label: 'Clôture…',
+                action: path('app_municipal_event_lifecycle', lc|merge({ action: 'cloturer' })),
+                consequences: ['La clôture est définitive : l’événement ne pourra plus être réactivé.', open_count ~ (open_count > 1 ? ' participations ouvertes (la vôtre comprise) sont clôturées' : ' participation ouverte (la vôtre) est clôturée') ~ ' en même temps, sans action des communes concernées.'],
+                keeps: ['L’événement, ses zones et leur historique restent consultables.'],
+                cancel_attrs: 'data-action="cp--disclosure#close"', token: csrf_token('event_lifecycle_cloturer_' ~ detail.eventId), problem: problem|default(''),
+              } only %}
+                {% block fields %}<input type="hidden" name="_token" value="{{ token }}">{% if problem %}{% include 'components/alert.html.twig' with { variant: 'error', title: 'Clôture impossible', text: problem } only %}{% endif %}{% endblock %}
+              {% endembed %}
+            </div>
+          {% endif %}
         </section>
       {% endif %}
     </div>

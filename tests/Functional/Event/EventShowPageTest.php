@@ -61,11 +61,14 @@ final class EventShowPageTest extends MunicipalPagesTestCase
         foreach (['Modifier', 'Inviter une commune', 'Activer l’événement', 'Clôturer l’événement'] as $label) {
             self::assertStringContainsString($label, $html, $label);
         }
-        self::assertStringContainsString('Disponible prochainement', $html, 'actions non branchées : indisponibles, jamais simulées');
+        self::assertStringNotContainsString('Disponible prochainement', $html, 'toutes les actions du cycle de vie sont branchées');
+        self::assertStringContainsString('Confirmez au moins une zone active et configurez sa validité.', $html, 'activation indisponible tant qu’aucune zone n’est prête : raison affichée');
         self::assertStringContainsString('href="/communes/'.$this->id($this->w->org).'/evenements/'.$this->fire.'/modifier"', $html, 'Modifier est branchée : lien réel');
         self::assertStringNotContainsString('Suspendre l’événement', $html, 'sans objet pour un brouillon');
         self::assertStringNotContainsString('Réactiver l’événement', $html);
-        self::assertStringNotContainsString('<form method="post" action="/communes', $html, 'aucune action simulée : aucun formulaire d\'écriture');
+        self::assertStringContainsString('/cycle/cloturer', $html, 'la clôture est un vrai formulaire protégé');
+        self::assertStringNotContainsString('/cycle/activer', $html, 'aucun formulaire d’activation tant qu’aucune zone n’est prête');
+        self::assertStringNotContainsString('/cycle/suspendre', $html);
         self::assertDoesNotMatchRegularExpression('#<a[^>]+class="cp-btn[^"]*"[^>]+href="[^"]*(activer|suspendre|cloturer)#i', $html);
     }
 

@@ -290,12 +290,12 @@ final class EventZoneValidityPageTest extends MunicipalPagesTestCase
         $this->assertStatus(303);
         $this->post($page, '/creneaux', $this->recurring('new', ['1', '2'], '07:00', '19:00', '2026-12-07', '2026-12-18'));
         $this->assertStatus(303);
+        self::assertStringContainsString('Le créneau a été ajouté.', $this->get($this->location()), 'confirmation après redirection');
 
         self::assertCount(3, $this->activeSlotIds($zoneId));
         $html = $this->get($page);
         self::assertStringContainsString('Le 05/12/2026, de 09:00 à 11:00.', $html);
         self::assertStringContainsString('Les lundis et mardis, de 07:00 à 19:00, du 07/12/2026 au 18/12/2026.', $html);
-        self::assertStringContainsString('Le créneau a été', $html.'Le créneau a été');
     }
 
     public function testEveryDayRecurrenceStoresAllTheDays(): void
@@ -360,7 +360,6 @@ final class EventZoneValidityPageTest extends MunicipalPagesTestCase
         self::assertStringContainsString('Le créneau a été modifié.', $this->get($this->location()));
         $html = $this->get($page);
         self::assertStringContainsString('Du 01/12/2026 à 07:00 au 03/12/2026 à 19:00', $html);
-        self::assertStringContainsString('Le créneau a été modifié.', $this->get($page).'Le créneau a été modifié.');
     }
 
     public function testEditingWithoutChangeWritesNothing(): void
