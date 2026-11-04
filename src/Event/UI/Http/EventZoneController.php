@@ -240,8 +240,9 @@ final class EventZoneController extends AbstractController
             'zone' => $zone,
             'group' => $board->groupOf($zone->zoneId),
             'problem' => null,
-            'show_url' => $this->generateUrl('app_municipal_event_zone', ['municipalityId' => $municipalityId, 'eventId' => $board->detail->eventId, 'zoneId' => $zone->zoneId]),
-            'edit_url' => $this->generateUrl('app_municipal_event_zone_edit', ['municipalityId' => $municipalityId, 'eventId' => $board->detail->eventId, 'zoneId' => $zone->zoneId]),
+            'zone_url' => $this->generateUrl('app_municipal_event_zone', ['municipalityId' => $municipalityId, 'eventId' => $board->detail->eventId, 'zoneId' => $zone->zoneId]),
+            'validity_url' => $this->generateUrl('app_municipal_zone_validity', ['municipalityId' => $municipalityId, 'eventId' => $board->detail->eventId, 'zoneId' => $zone->zoneId]),
+            'zone_edit_url' => $this->generateUrl('app_municipal_event_zone_edit', ['municipalityId' => $municipalityId, 'eventId' => $board->detail->eventId, 'zoneId' => $zone->zoneId]),
         ] + $extra);
     }
 

@@ -1,0 +1,21 @@
+{#
+  Choix explicite de l'occurrence d'un horaire qui se produit deux fois (retour à l'heure d'hiver, DM-055). Rien n'est choisi à la
+  place de l'utilisateur. Variables : id (identifiant du formulaire de créneau), choices (liste { date, field, time, label, options[], selected }),
+  tz (fuseau de l'événement). Inclus SANS `only` dans le formulaire du créneau : les champs partent avec lui.
+#}
+{% if choices|length %}
+  <fieldset class="cp-fieldset" id="{{ id }}_dst" tabindex="-1">
+    <legend class="cp-fieldset__legend">Changement d’heure · choisissez l’occurrence</legend>
+    <p class="cp-help">Un horaire de ce créneau se produit deux fois ce jour-là (retour à l’heure d’hiver, fuseau {{ tz }}). Rien n’est choisi à votre place.</p>
+    {% for c in choices %}
+      <fieldset class="cp-fieldset">
+        <legend class="cp-field__label">{{ c.label }}</legend>
+        <div class="cp-stack" style="gap: var(--space-2)">
+          {% for o in c.options %}
+            {% include 'components/check.html.twig' with { type: 'radio', id: id ~ '_dst_' ~ loop.parent.loop.index ~ '_' ~ o.value, name: id ~ '[dst][' ~ c.date ~ '][' ~ c.field ~ ']', value: o.value, label: o.label, checked: c.selected == o.value } only %}
+          {% endfor %}
+        </div>
+      </fieldset>
+    {% endfor %}
+  </fieldset>
+{% endif %}

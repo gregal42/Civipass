@@ -53,7 +53,7 @@ final class ServiceContractsTest extends TestCase
 
         self::assertNotContains(DomainRuleViolation::class, class_parents($conflict), 'un conflit technique n\'est pas un refus métier');
         self::assertInstanceOf(\RuntimeException::class, $conflict);
-        self::assertSame(['LOCK_WAIT_TIMEOUT', 'DEADLOCK', 'UNIQUE_VIOLATION'], array_map(static fn (ConflictCause $c): string => $c->value, ConflictCause::cases()), 'les trois seuls cas pris en charge');
+        self::assertSame(['LOCK_WAIT_TIMEOUT', 'DEADLOCK', 'UNIQUE_VIOLATION', 'STALE_STATE'], array_map(static fn (ConflictCause $c): string => $c->value, ConflictCause::cases()), 'les quatre seuls cas pris en charge');
     }
 
     public function testAuditStatesContainOnlyStructuredBusinessFieldsAndNoFreeText(): void

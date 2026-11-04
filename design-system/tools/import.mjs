@@ -79,6 +79,13 @@ for (const f of list('src/controllers/cp', '.ts')) {
   let js = r.code;
   const n = [...js.matchAll(/from "\.\/events"/g)].length;
   if (n) { js = js.replaceAll('from "./events"', 'from "./events.js"'); adaptations.push({ id: 'A4', target: `assets/controllers/cp/${f.replace(/\.ts$/, '.js')}`, description: 'Import relatif « ./events » → « ./events.js » (le navigateur et AssetMapper exigent l’extension).', occurrences: n }); }
+  if (f === 'validity_controller.ts') {
+    // ECARTS-UI-02 E14/E17/E18 : fuseau Europe/Paris codé en dur, annonces de changement d'heure fausses (« l'heure retenue sera 03:00 »,
+    // « la première occurrence sera retenue »). Le fuseau est celui de l'événement et le serveur (SlotInspector) fait foi : plus aucune
+    // annonce côté navigateur ; heures inexistantes et ambiguës sont traitées à l'enregistrement (refus, choix explicite de l'occurrence).
+    js = adapt('A12', 'assets/controllers/cp/validity_controller.js', js, 'this.show(this.dstTarget, d.from && d.to ? this.dstChange(d.from, d.to) : "");', 'this.show(this.dstTarget, "");', 1, 'Plus d’annonce de changement d’heure côté navigateur (fuseau Europe/Paris codé en dur) : le fuseau est celui de l’événement et le serveur fait foi (heure inexistante refusée, heure ambiguë à choisir).');
+    js = adapt('A12', 'assets/controllers/cp/validity_controller.js', js, 'if (this.hasClockTarget) this.show(this.clockTarget, d.from && d.to ? this.clockIssues(d.from, d.to, d.times, d.days) : "");', 'if (this.hasClockTarget) this.show(this.clockTarget, "");', 1, 'Annonce « l’heure retenue sera 03:00 » / « la première occurrence sera retenue » supprimée : contraire au moteur (aucun ajustement automatique, DM-055).');
+  }
   put(`assets/controllers/cp/${f.replace(/\.ts$/, '.js')}`, `// Généré depuis src/controllers/cp/${f} du design system Civipass (TypeScript → JavaScript). Ne pas modifier à la main :\n// voir design-system/PROVENANCE.md.\n${js}`, { source: `src/controllers/cp/${f}`, adapted: true });
 }
 
@@ -108,6 +115,13 @@ for (const f of list('templates/components', '.twig')) {
   if (f === 'zone_card.html.twig') {
     // DM-051 : aucun statut « À confirmer » ; la zone non confirmée est un libellé calculé depuis `confirmedAt`.
     t = adapt('A10', 'templates/components/zone_card.html.twig', t, "unconfirmed: { status: 'pending', label: 'À confirmer' }", "unconfirmed: { status: 'pending', label: 'Non confirmée' }", 1, 'Libellé « Non confirmée » (calculé depuis confirmedAt) à la place de « À confirmer » : DM-051 n’introduit aucun statut « À confirmer ».');
+    adapted = true;
+  }
+  if (f === 'validity_form.html.twig') {
+    // ECARTS-UI-02 E14 : le fuseau est celui de l'événement (variable `timezone`), pas « heure de Paris ».
+    t = adapt('A11', 'templates/components/validity_form.html.twig', t, '<span class="cp-fieldset__legend-note">· heure de Paris</span>', '<span class="cp-fieldset__legend-note">· heure locale{% if timezone|default(\'\') %} ({{ timezone }}){% endif %}</span>', 1, 'Fuseau de l’événement affiché à la place de « heure de Paris » codé en dur.');
+    // ECARTS-UI-02 E22 : libellé validé « Périodes spécifiques » (et non « Sur des périodes spécifiques »).
+    t = adapt('A13', 'templates/components/validity_form.html.twig', t, "label: 'Sur des périodes spécifiques'", "label: 'Périodes spécifiques'", 1, 'Libellé validé « Périodes spécifiques » (ECARTS-UI-02 E22).');
     adapted = true;
   }
   put(`templates/components/${f}`, t, { source: `templates/components/${f}`, adapted });

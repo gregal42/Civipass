@@ -8,13 +8,17 @@ use App\Event\Application\Read\ActionAvailability;
 use App\Event\Application\Read\EventAction;
 use App\Event\Application\Read\EventDetail;
 use App\Event\Application\Read\EventRelation;
+use App\Event\Application\Read\SlotView;
 use App\Event\Application\Read\ZoneBoard;
 use App\Event\Application\Read\ZoneGroup;
 use App\Event\Application\Read\ZoneView;
 use App\Event\Domain\EventParticipationRepository;
 use App\Event\Domain\EventZone;
 use App\Event\Domain\EventZoneRepository;
+use App\Event\Domain\EventZoneValidity;
+use App\Event\Domain\EventZoneValidityRepository;
 use App\Event\Domain\ParticipationStatus;
+use App\Event\Domain\Validity\ValidityMode;
 use App\Event\Domain\ZoneStatus;
 use App\Identity\Domain\User;
 use App\Municipality\Application\MunicipalityContext;
@@ -38,6 +42,7 @@ final readonly class EventZoneReader
         private MunicipalityContext $context,
         private EventParticipationRepository $participations,
         private EventZoneRepository $zones,
+        private EventZoneValidityRepository $slots,
         private EventAccessPolicy $policy,
     ) {
     }
@@ -54,7 +59,7 @@ final readonly class EventZoneReader
         $viewer = $this->context->requireMembership($user, $municipalityId, write: false)->municipality();
         $visible = $this->visibleMunicipalityIds($detail);
 
-        $groups = [];
+        $pending = [];
         $ownParticipation = null;
         foreach ($this->participations->findByEvent(Uuid::fromString($detail->eventId)) as $participation) {
             $isOwn = $participation->municipality()->id()->equals($viewer->id());
@@ -67,15 +72,22 @@ final readonly class EventZoneReader
             if (!$isOwn && ParticipationStatus::Invited === $participation->status()) {
                 continue; // invitation non acceptée : la commune n'est pas encore participante, ses zones (conservées) ne sont pas listées
             }
-            $views = [];
+            $allowed = [];
             foreach ($this->zones->findActiveByParticipation($participation->id()) as $zone) {
                 if ($this->policy->forZone($user, EventPermission::ViewZone, $zone)->isAllowed()) {
-                    $views[] = $this->view($user, $zone, $isOwn, $isOwn && !$detail->status->isClosed());
+                    $allowed[] = $zone;
                 }
             }
-            if ([] === $views && !$isOwn) {
+            if ([] === $allowed && !$isOwn) {
                 continue;
             }
+            $pending[] = [$participation, $isOwn, $allowed];
+        }
+
+        $slots = $this->slotsByZone(array_merge(...array_map(static fn (array $p): array => $p[2], $pending)));
+        $groups = [];
+        foreach ($pending as [$participation, $isOwn, $allowed]) {
+            $views = array_map(fn (EventZone $zone): ZoneView => $this->view($user, $zone, $isOwn, $isOwn && !$detail->status->isClosed(), $slots[$zone->id()->toRfc4122()] ?? []), $allowed);
             $groups[] = new ZoneGroup($participation->municipality()->id()->toRfc4122(), $participation->municipality()->name(), $isOwn, $participation->isOrganizer(), $participation->status(), $views);
         }
         usort($groups, static fn (ZoneGroup $a, ZoneGroup $b): int => [!$a->own, !$a->organizer, $a->municipalityName] <=> [!$b->own, !$b->organizer, $b->municipalityName]);
@@ -104,7 +116,50 @@ final readonly class EventZoneReader
         );
     }
 
-    private function view(User $user, EventZone $zone, bool $own, bool $withActions): ZoneView
+    /**
+     * Créneaux non supprimés des zones en « périodes spécifiques », en UNE requête, dans l'ordre de la configuration (identifiants
+     * UUID v7, créés dans l'ordre de la configuration).
+     *
+     * @param list<EventZone> $zones
+     *
+     * @return array<string, list<SlotView>>
+     */
+    private function slotsByZone(array $zones): array
+    {
+        $ids = [];
+        foreach ($zones as $zone) {
+            if (ValidityMode::SpecificPeriods === $zone->validityMode()) {
+                $ids[] = $zone->id();
+            }
+        }
+        if ([] === $ids) {
+            return [];
+        }
+        $rows = $this->slots->findActiveByZones($ids);
+        usort($rows, static fn (EventZoneValidity $a, EventZoneValidity $b): int => $a->id()->toRfc4122() <=> $b->id()->toRfc4122());
+
+        $byZone = [];
+        foreach ($rows as $row) {
+            $slot = $row->toSlot();
+            $byZone[$row->zone()->id()->toRfc4122()][] = new SlotView(
+                $row->id()->toRfc4122(),
+                $slot->kind,
+                $slot->startDate->toString(),
+                $slot->startTime->toString(),
+                $slot->endDate?->toString(),
+                $slot->endTime->toString(),
+                array_values(array_filter([1, 2, 3, 4, 5, 6, 7], static fn (int $day): bool => $slot->weekdays?->includes($day) ?? false)),
+                $slot->dstChoices->toArray(),
+            );
+        }
+
+        return $byZone;
+    }
+
+    /**
+     * @param list<SlotView> $slots
+     */
+    private function view(User $user, EventZone $zone, bool $own, bool $withActions, array $slots): ZoneView
     {
         $actions = [];
         if ($withActions) {
@@ -114,6 +169,7 @@ final readonly class EventZoneReader
                 [EventAction::SuspendZone, EventPermission::ModifyZone, ZoneStatus::Active === $zone->status()],
                 [EventAction::ReactivateZone, EventPermission::ModifyZone, ZoneStatus::Suspended === $zone->status()],
                 [EventAction::DeleteZone, EventPermission::DeleteZone, true],
+                [EventAction::ConfigureValidity, EventPermission::ConfigureZoneValidity, true],
             ];
             foreach ($relevance as [$action, $permission, $pertinent]) {
                 if ($pertinent) {
@@ -123,6 +179,6 @@ final readonly class EventZoneReader
             }
         }
 
-        return new ZoneView($zone->id()->toRfc4122(), $zone->label(), $zone->type(), $zone->description(), $zone->status(), $zone->confirmedAt(), $zone->validityMode(), $own, $actions);
+        return new ZoneView($zone->id()->toRfc4122(), $zone->label(), $zone->type(), $zone->description(), $zone->status(), $zone->confirmedAt(), $zone->validityMode(), $own, $actions, $slots);
     }
 }

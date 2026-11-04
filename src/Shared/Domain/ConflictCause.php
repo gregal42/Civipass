@@ -12,4 +12,6 @@ enum ConflictCause: string
     case Deadlock = 'DEADLOCK';
     /** Unicité violée par une écriture concurrente, sur une contrainte explicitement déclarée par le service. */
     case UniqueViolation = 'UNIQUE_VIOLATION';
+    /** État attendu par l'appelant périmé : la ressource a changé depuis sa lecture (vérifié SOUS verrou par le service). */
+    case StaleState = 'STALE_STATE';
 }

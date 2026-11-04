@@ -12,13 +12,13 @@
 #}
 {%- set v = value|default({}) -%}{%- set e = errors|default({}) -%}{%- set mode = v.mode|default('continuous') -%}
 <fieldset class="cp-fieldset cp-vform" id="{{ id }}" data-controller="cp--validity"{% if event_range|default('') %} data-cp--validity-event-value="{{ event_range }}"{% endif %}>
-  <legend class="cp-fieldset__legend">{{ title|default('Créneau de validité') }} <span class="cp-fieldset__legend-note">· heure de Paris</span></legend>
+  <legend class="cp-fieldset__legend">{{ title|default('Créneau de validité') }} <span class="cp-fieldset__legend-note">· heure locale{% if timezone|default('') %} ({{ timezone }}){% endif %}</span></legend>
   {%- if with_scope|default(false) %}
   <fieldset class="cp-fieldset" id="{{ id }}_scope">
     <legend class="cp-field__label">Validité</legend>
     <div class="cp-choices cp-vform__scope">
       {% include 'components/choice.html.twig' with { type: 'radio', name: id ~ '[scope]', value: 'event', id: id ~ '_scope_event', label: 'Pendant toute la durée de l’événement', note: event_range|default('') ? 'Soit ' ~ event_range ~ '.' : '', checked: scope|default('periods') == 'event' } only %}
-      {% include 'components/choice.html.twig' with { type: 'radio', name: id ~ '[scope]', value: 'periods', id: id ~ '_scope_periods', label: 'Sur des périodes spécifiques', note: 'Un ou plusieurs créneaux.', checked: scope|default('periods') == 'periods' } only %}
+      {% include 'components/choice.html.twig' with { type: 'radio', name: id ~ '[scope]', value: 'periods', id: id ~ '_scope_periods', label: 'Périodes spécifiques', note: 'Un ou plusieurs créneaux.', checked: scope|default('periods') == 'periods' } only %}
     </div>
   </fieldset>
   {%- endif %}

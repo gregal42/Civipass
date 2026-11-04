@@ -1,0 +1,112 @@
+{% extends 'layouts/app.html.twig' %}
+
+{#
+  Validité d'une zone (maquette UI-02 « zone_validity »). Trois états, aucun statut métier : « Validité à configurer »
+  (la zone n'ouvre aucun droit), « Pendant toute la durée de l'événement », « Périodes spécifiques » (créneaux). Les créneaux sont
+  des horaires LOCAUX du fuseau de l'événement. Le moteur remplace la configuration entière : chaque formulaire porte l'empreinte
+  de la configuration affichée. DM-018 : les chevauchements sont autorisés, aucun contrôle ni message.
+  Variables : zone, group, board, can_edit, revision, edit_values, forms (id => { values, errors, choices }), summary, open_panel.
+#}
+{% set status_key = detail.status.value|lower %}
+{% set rel = detail.relation.value %}
+{% set tz = detail.timezone %}
+{% set life = detail.lifecycle %}
+
+{% block content %}
+  {% import 'municipal/event/_actions.html.twig' as act %}
+  {% include 'municipal/event/_head.html.twig' with { current: 'zones' } %}
+  {% include 'municipal/event/_zone_nav.html.twig' with { zone_tab: 'validite' } %}
+
+  {% set periods = zone.validityMode.value == 'SPECIFIC_PERIODS' %}
+  {% set event_range = 'du ' ~ detail.startsAt|cp_datetime(tz) ~ (detail.endsAt ? ' au ' ~ detail.endsAt|cp_datetime(tz) : ', sans date de fin') %}
+  {% set route = { municipalityId: active_municipality_id, eventId: detail.eventId, zoneId: zone.zoneId } %}
+
+  {% if stale|default(false) %}
+    <section class="cp-section" aria-labelledby="stale-h">
+      {% include 'components/section_head.html.twig' with { id: 'stale-h', title: 'Configuration modifiée', meta: zone.label } only %}
+      {% include 'components/button.html.twig' with { label: 'Relire la configuration actuelle', icon: 'back', variant: 'secondary', href: validity_url } only %}
+    </section>
+  {% else %}
+  {% if summary|length %}{% include 'components/error_summary.html.twig' with { errors: summary } only %}{% endif %}
+
+  <section class="cp-section" aria-labelledby="sc-h">
+    {% include 'components/section_head.html.twig' with { id: 'sc-h', title: 'Validité de la zone', meta: zone.label ~ ' · fuseau ' ~ tz } only %}
+    {% if zone.validityMode.value == 'EVENT_DURATION' %}
+      {% include 'components/alert.html.twig' with { variant: 'quiet', icon: 'clock', title: 'Pendant toute la durée de l’événement', text: 'Soit ' ~ event_range ~ '. Aucun créneau n’est nécessaire.' } only %}
+    {% elseif periods %}
+      {% include 'components/alert.html.twig' with { variant: 'quiet', icon: 'clock', title: 'Périodes spécifiques', text: zone.slots|length ~ (zone.slots|length > 1 ? ' créneaux' : ' créneau') ~ ' : la zone est valable dès qu’au moins un créneau couvre l’instant contrôlé. Heures locales (' ~ tz ~ ').' } only %}
+    {% else %}
+      {% include 'components/alert.html.twig' with { variant: 'warning', icon: 'clock', title: 'Validité à configurer', text: 'Cette zone est enregistrée, mais elle n’ouvre aucun droit d’accès tant que sa validité n’est pas configurée.' } only %}
+    {% endif %}
+    {% if not zone.isConfirmed %}<p class="app-note">Cette zone n’est pas confirmée : même configurée, elle n’ouvre aucun droit d’accès tant qu’elle n’est pas confirmée.</p>{% endif %}
+
+    {% if can_edit and not periods %}
+      {% set cfg = forms.cfg|default(null) %}
+      <form id="cfg-form" class="cp-stack" style="gap: var(--space-5)" method="post" action="{{ path('app_municipal_zone_validity_scope', route) }}" novalidate data-controller="cp--unsaved-guard cp--submit-state" aria-label="Choisir la validité" tabindex="-1">
+        <input type="hidden" name="_token" value="{{ csrf_token('zone_validity_scope_' ~ zone.zoneId) }}">
+        <input type="hidden" name="revision" value="{{ revision }}">
+        {% include 'components/validity_form.html.twig' with {
+          id: 'cfg', title: 'Choisir la validité', with_scope: true, scope: cfg ? 'periods' : 'event', event_range: event_range, timezone: tz,
+          value: cfg ? cfg.values : { mode: 'continuous' }, errors: cfg ? cfg.errors : {},
+        } only %}
+        {% include 'municipal/event/_dst_choices.html.twig' with { id: 'cfg', choices: cfg ? cfg.choices : [] } %}
+        <div class="cp-form-actions">{% include 'components/button.html.twig' with { label: 'Enregistrer la validité', type: 'submit', loading_label: 'Enregistrement…' } only %}</div>
+      </form>
+    {% endif %}
+  </section>
+
+  {% if periods %}
+    <section class="cp-section" aria-labelledby="sl-h" data-controller="cp--disclosure">
+      <div class="cp-cluster" style="justify-content: space-between; align-items: center">
+        {% include 'components/section_head.html.twig' with { id: 'sl-h', title: 'Créneaux de validité', meta: zone.slots|length ~ (zone.slots|length > 1 ? ' créneaux' : ' créneau') } only %}
+        {% if can_edit %}{% include 'components/button.html.twig' with { id: 'act-add-slot', label: 'Ajouter un créneau', icon: 'plus', attrs: 'data-action="cp--disclosure#open" data-cp--disclosure-panel-param="add" data-cp--disclosure-target="trigger" aria-expanded="false"' } only %}{% endif %}
+      </div>
+
+      <ol class="cp-slots">
+        {% for slot in zone.slots %}
+          {% set n = loop.index %}
+          {% set items = [] %}
+          {% if can_edit %}
+            {% set items = [{ label: 'Modifier', icon: 'settings', href: path('app_municipal_zone_validity_slot_edit', route|merge({ slotId: slot.slotId })) }] %}
+            {% if zone.slots|length > 1 %}{% set items = items|merge([{ label: 'Supprimer', danger: true, href: path('app_municipal_zone_validity_slot_delete', route|merge({ slotId: slot.slotId })) }]) %}{% endif %}
+          {% endif %}
+          {% include 'components/validity_slot.html.twig' with { index: n, mode: cp_slot_mode(slot), summary: cp_slot_summary(slot), note: cp_slot_note(slot), actions: items } only %}
+        {% endfor %}
+      </ol>
+      {% if can_edit and zone.slots|length == 1 %}<p class="app-note">Une zone en périodes spécifiques garde au moins un créneau. Pour retirer le dernier, passez à « Pendant toute la durée de l’événement ».</p>{% endif %}
+
+      {% if can_edit %}
+        <div class="cp-cluster" style="gap: var(--space-4); align-items: flex-start">
+          {% include 'components/button.html.twig' with { id: 'act-to-event', label: 'Passer à la durée de l’événement', variant: 'secondary', attrs: 'data-action="cp--disclosure#open" data-cp--disclosure-panel-param="toevent" data-cp--disclosure-target="trigger" aria-expanded="false"' } only %}
+        </div>
+
+        <div data-cp--disclosure-target="panel" data-panel="add"{{ open_panel == 'add' ? '' : ' hidden' }}>
+          {% set f = forms.new|default(null) %}
+          <form id="new-form" class="cp-stack" style="gap: var(--space-5)" method="post" action="{{ path('app_municipal_zone_validity_slot_add', route) }}" novalidate data-controller="cp--unsaved-guard cp--submit-state" aria-label="Ajouter un créneau" tabindex="-1">
+            <input type="hidden" name="_token" value="{{ csrf_token('zone_validity_add_' ~ zone.zoneId) }}">
+            <input type="hidden" name="revision" value="{{ revision }}">
+            {% include 'components/validity_form.html.twig' with { id: 'new', title: 'Ajouter un créneau', timezone: tz, value: f ? f.values : { mode: 'continuous' }, errors: f ? f.errors : {} } only %}
+            {% include 'municipal/event/_dst_choices.html.twig' with { id: 'new', choices: f ? f.choices : [] } %}
+            <div class="cp-form-actions">
+              {% include 'components/button.html.twig' with { label: 'Enregistrer le créneau', type: 'submit', loading_label: 'Enregistrement…' } only %}
+              {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', attrs: 'data-action="cp--disclosure#close"' } only %}
+            </div>
+          </form>
+        </div>
+
+        <div data-cp--disclosure-target="panel" data-panel="toevent"{{ open_panel == 'toevent' ? '' : ' hidden' }}>
+          {% embed 'components/confirm_panel.html.twig' with {
+            id: 'toevent', title: 'Passer à « Pendant toute la durée de l’événement »', confirm_label: 'Confirmer le changement', loading_label: 'Enregistrement…',
+            action: path('app_municipal_zone_validity_scope', route),
+            consequences: ['Les ' ~ zone.slots|length ~ ' créneau(x) de la zone sont supprimés : la zone est valable pendant toute la durée de l’événement (' ~ event_range ~ ').'],
+            keeps: ['La suppression est tracée : l’historique des créneaux reste conservé.'],
+            cancel_attrs: 'data-action="cp--disclosure#close"', token: csrf_token('zone_validity_scope_' ~ zone.zoneId), revision: revision,
+          } only %}
+            {% block fields %}<input type="hidden" name="_token" value="{{ token }}"><input type="hidden" name="revision" value="{{ revision }}"><input type="hidden" name="cfg[scope]" value="event">{% endblock %}
+          {% endembed %}
+        </div>
+      {% endif %}
+    </section>
+  {% endif %}
+  {% endif %}
+{% endblock %}

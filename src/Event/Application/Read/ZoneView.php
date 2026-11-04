@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Event\Application\Read;
 
 use App\Event\Application\AccessDenialReason;
+use App\Event\Application\Support\ValidityRevision;
 use App\Event\Domain\Validity\ValidityMode;
 use App\Event\Domain\ZoneStatus;
 use App\Event\Domain\ZoneType;
@@ -18,6 +19,7 @@ final readonly class ZoneView
 {
     /**
      * @param list<ActionAvailability> $actions
+     * @param list<SlotView>           $slots   créneaux non supprimés, dans l'ordre de la configuration (mode « périodes spécifiques »)
      */
     public function __construct(
         public string $zoneId,
@@ -29,7 +31,28 @@ final readonly class ZoneView
         public ValidityMode $validityMode,
         public bool $own,
         public array $actions = [],
+        public array $slots = [],
     ) {
+    }
+
+    /**
+     * Empreinte de la configuration de validité telle qu'affichée (mode + créneaux) : un formulaire la rapporte, le moteur
+     * (EventZoneService::configureValidity) la compare sous verrou et refuse l'écriture si la configuration a changé entre-temps.
+     */
+    public function validityRevision(): string
+    {
+        return ValidityRevision::of($this->validityMode, array_map(static fn (SlotView $s): string => $s->slotId, $this->slots));
+    }
+
+    public function slot(string $slotId): ?SlotView
+    {
+        foreach ($this->slots as $slot) {
+            if ($slot->slotId === $slotId) {
+                return $slot;
+            }
+        }
+
+        return null;
     }
 
     public function isConfirmed(): bool

@@ -42,8 +42,8 @@ class stdin_default extends Controller {
     if (this.hasDaysTarget) this.daysTarget.hidden = this.value('[name$="[every]"]:checked') !== "days";
     const d = this.describe(mode);
     this.summaryTarget.textContent = d.text;
-    this.show(this.dstTarget, d.from && d.to ? this.dstChange(d.from, d.to) : "");
-    if (this.hasClockTarget) this.show(this.clockTarget, d.from && d.to ? this.clockIssues(d.from, d.to, d.times, d.days) : "");
+    this.show(this.dstTarget, "");
+    if (this.hasClockTarget) this.show(this.clockTarget, "");
   }
   show(el, text) {
     el.textContent = text;

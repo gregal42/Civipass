@@ -1,0 +1,58 @@
+{% extends 'layouts/app.html.twig' %}
+
+{#
+  Modification ou suppression d'UN créneau de validité, sur une page dédiée (une zone peut porter jusqu'à 500 créneaux : la page de la
+  validité ne rend aucun formulaire par créneau). Heures locales du fuseau de l'événement ; le moteur remplace la configuration entière.
+  Variables : slot_mode (edit | delete), slot (SlotView), slot_index, zone, revision, edit_values, forms.edit, summary.
+#}
+{% set status_key = detail.status.value|lower %}
+{% set rel = detail.relation.value %}
+{% set tz = detail.timezone %}
+{% set life = detail.lifecycle %}
+
+{% block content %}
+  {% include 'municipal/event/_head.html.twig' with { current: 'zones' } %}
+  {% include 'municipal/event/_zone_nav.html.twig' with { zone_tab: 'validite' } %}
+
+  {% set route = { municipalityId: active_municipality_id, eventId: detail.eventId, zoneId: zone.zoneId, slotId: slot.slotId } %}
+  {% if summary|length %}{% include 'components/error_summary.html.twig' with { errors: summary } only %}{% endif %}
+
+  <section class="cp-section" aria-labelledby="slot-h">
+    {% include 'components/section_head.html.twig' with { id: 'slot-h', title: (slot_mode == 'edit' ? 'Modifier le créneau ' : 'Supprimer le créneau ') ~ slot_index, meta: zone.label ~ ' · fuseau ' ~ tz } only %}
+    <ol class="cp-slots">
+      {% include 'components/validity_slot.html.twig' with { index: slot_index, mode: cp_slot_mode(slot), summary: cp_slot_summary(slot), note: cp_slot_note(slot), actions: [] } only %}
+    </ol>
+
+    {% if slot_mode == 'edit' %}
+      {% set f = forms.edit|default(null) %}
+      <form id="edit-form" class="cp-stack" style="gap: var(--space-5)" method="post" action="{{ path('app_municipal_zone_validity_slot_edit', route) }}" novalidate data-controller="cp--unsaved-guard cp--submit-state" aria-label="Modifier le créneau {{ slot_index }}" tabindex="-1">
+        <input type="hidden" name="_token" value="{{ csrf_token('zone_validity_edit_' ~ slot.slotId) }}">
+        <input type="hidden" name="revision" value="{{ revision }}">
+        {% include 'components/validity_form.html.twig' with { id: 'edit', title: 'Modifier le créneau ' ~ slot_index, timezone: tz, value: f ? f.values : edit_values[slot_index - 1], errors: f ? f.errors : {} } only %}
+        {% include 'municipal/event/_dst_choices.html.twig' with { id: 'edit', choices: f ? f.choices : [] } %}
+        <div class="cp-form-actions">
+          {% include 'components/button.html.twig' with { label: 'Enregistrer les modifications', type: 'submit', loading_label: 'Enregistrement…' } only %}
+          {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', href: validity_url } only %}
+        </div>
+      </form>
+    {% else %}
+      {# Même structure que le composant confirm_panel, avec un « Annuler » qui est un vrai lien de retour (page dédiée, pas de panneau à refermer). #}
+      <form class="cp-confirm" id="del" action="{{ path('app_municipal_zone_validity_slot_delete', route) }}" method="post" novalidate aria-labelledby="del-title" data-controller="cp--submit-state">
+        <div class="cp-confirm__head">{% include 'components/icon.html.twig' with { name: 'alert' } only %}<h2 class="cp-confirm__title" id="del-title">Supprimer ce créneau</h2></div>
+        <div class="cp-confirm__body">
+          <ul class="cp-consequences"><li>{% include 'components/icon.html.twig' with { name: 'right', size: 's' } only %}<span>Le créneau n’ouvre plus aucun droit d’accès sur cette zone.</span></li></ul>
+          <ul class="cp-consequences cp-consequences--keep">
+            <li>{% include 'components/icon.html.twig' with { name: 'check', size: 's' } only %}<span>Les autres créneaux sont conservés.</span></li>
+            <li>{% include 'components/icon.html.twig' with { name: 'check', size: 's' } only %}<span>La suppression est tracée : l’historique du créneau reste conservé.</span></li>
+          </ul>
+          <input type="hidden" name="_token" value="{{ csrf_token('zone_validity_delete_' ~ slot.slotId) }}">
+          <input type="hidden" name="revision" value="{{ revision }}">
+          <div class="cp-form-actions">
+            {% include 'components/button.html.twig' with { label: 'Supprimer le créneau', variant: 'danger', type: 'submit', loading_label: 'Suppression…' } only %}
+            {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', href: validity_url } only %}
+          </div>
+        </div>
+      </form>
+    {% endif %}
+  </section>
+{% endblock %}

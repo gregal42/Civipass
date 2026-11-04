@@ -4,7 +4,7 @@
   "screensSource": "UI-01",
   "tokensVersion": 1,
   "tokensSource": "Prototype UI Civipass V1 (direction « Signalétique civique »), validé le 01/11/2026",
-  "importedAt": "2026-11-03",
+  "importedAt": "2026-11-04",
   "tool": "design-system/tools/import.mjs",
   "counts": {
     "componentTemplates": 75,
@@ -128,6 +128,18 @@
       "occurrences": 1
     },
     {
+      "id": "A12",
+      "target": "assets/controllers/cp/validity_controller.js",
+      "description": "Plus d’annonce de changement d’heure côté navigateur (fuseau Europe/Paris codé en dur) : le fuseau est celui de l’événement et le serveur fait foi (heure inexistante refusée, heure ambiguë à choisir).",
+      "occurrences": 1
+    },
+    {
+      "id": "A12",
+      "target": "assets/controllers/cp/validity_controller.js",
+      "description": "Annonce « l’heure retenue sera 03:00 » / « la première occurrence sera retenue » supprimée : contraire au moteur (aucun ajustement automatique, DM-055).",
+      "occurrences": 1
+    },
+    {
       "id": "A9",
       "target": "templates/components/lifecycle.html.twig",
       "description": "Formulations neutres : le composant présentait comme opérationnelles des fonctions (formulaire public, demandes, droits) qui ne sont pas encore développées.",
@@ -173,6 +185,18 @@
       "id": "A5",
       "target": "templates/components/topbar.html.twig",
       "description": "Fermeture du formulaire de déconnexion.",
+      "occurrences": 1
+    },
+    {
+      "id": "A11",
+      "target": "templates/components/validity_form.html.twig",
+      "description": "Fuseau de l’événement affiché à la place de « heure de Paris » codé en dur.",
+      "occurrences": 1
+    },
+    {
+      "id": "A13",
+      "target": "templates/components/validity_form.html.twig",
+      "description": "Libellé validé « Périodes spécifiques » (ECARTS-UI-02 E22).",
       "occurrences": 1
     },
     {
@@ -565,7 +589,7 @@
       "source": "src/controllers/cp/validity_controller.ts",
       "target": "assets/controllers/cp/validity_controller.js",
       "sourceSha": "5e7c0e22f661fef3459774f9eee9c477919d8cedebb80d281a356154a6127fe3",
-      "targetSha": "1722c1103a6aecc9a6094e7521c6ad36c02ed906155cd0da4deb1ccca67f64d0",
+      "targetSha": "09fcd2af1fc570fc32948b2c8583720d8fbfab0738cb10be285e2c7fbf7213e9",
       "adapted": true
     },
     {
@@ -1055,8 +1079,8 @@
       "source": "templates/components/validity_form.html.twig",
       "target": "templates/components/validity_form.html.twig",
       "sourceSha": "0be51d771ed797fbedd55121174ed8c2dd0db95ef75a6fce0bc4426d36fdf0ef",
-      "targetSha": "0be51d771ed797fbedd55121174ed8c2dd0db95ef75a6fce0bc4426d36fdf0ef",
-      "adapted": false
+      "targetSha": "f6bbc8a67be107d2a09587efe24acca3c076ac2bbdf8b594fc7facbfaf93b082",
+      "adapted": true
     },
     {
       "source": "templates/components/validity_slot.html.twig",

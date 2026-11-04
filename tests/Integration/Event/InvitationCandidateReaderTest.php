@@ -84,7 +84,10 @@ final class InvitationCandidateReaderTest extends EventSchemaTestCase
 
         self::assertSame(['Saumaise', 'Saumos'], array_keys($this->search('Saum')), 'tri par nom, actives seulement');
         self::assertSame(['Saumaise'], array_keys($this->search('33520')), 'code INSEE');
-        self::assertSame(['Saumaise', 'Saumos'], array_keys($this->search('335')), 'préfixe du code INSEE');
+        // Le jeu de test nomme ses communes « Commune 1NNNN » (compteur statique) : un nom peut contenir « 335 » selon l'ordre
+        // d'exécution de la suite. On ne retient que les communes de ce test.
+        $prefixed = array_values(array_filter(array_keys($this->search('335')), static fn (string $name): bool => !str_starts_with($name, 'Commune ')));
+        self::assertSame(['Saumaise', 'Saumos'], $prefixed, 'préfixe du code INSEE');
         self::assertSame([], $this->search($this->w->org->name()), 'l\'organisatrice n\'est jamais proposée');
         self::assertSame([], $this->search('%%'), 'jokers littéraux');
         self::assertSame([], $this->search('_ab'));

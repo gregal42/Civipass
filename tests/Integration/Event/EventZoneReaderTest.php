@@ -7,6 +7,8 @@ namespace App\Tests\Integration\Event;
 use App\Event\Application\Command\CreateEventCommand;
 use App\Event\Application\Command\CreateZoneCommand;
 use App\Event\Application\Command\InviteMunicipalityCommand;
+use App\Event\Application\Command\ValiditySlotInput;
+use App\Event\Application\Command\ZoneValidityCommand;
 use App\Event\Application\EventZoneReader;
 use App\Event\Application\Read\EventAction;
 use App\Event\Application\Service\EventCreationService;
@@ -164,5 +166,70 @@ final class EventZoneReaderTest extends EventSchemaTestCase
 
         $board = $this->reader()->forEvent($this->as($this->w->adminO), $this->w->org->id()->toRfc4122(), $this->event);
         self::assertContains($other, array_map(static fn ($g): string => $g->municipalityId, $board->groups), 'visible après acceptation');
+    }
+
+    public function testTheSlotsOfAZoneInSpecificPeriodsAreProjectedInTheConfigurationOrder(): void
+    {
+        $zone = $this->zoneIdOf('Quartier du port');
+        $this->service(EventZoneService::class)->configureValidity($this->as($this->w->adminO), $zone, new ZoneValidityCommand('SPECIFIC_PERIODS', [
+            new ValiditySlotInput('RECURRING', '2026-12-07', '22:00', '06:00', '2026-12-18', [1, 3]),
+            new ValiditySlotInput('PUNCTUAL', '2026-12-05', '09:30', '11:00'),
+            new ValiditySlotInput('CONTINUOUS', '2026-12-01', '08:00', '18:00', '2026-12-02'),
+        ]));
+
+        $board = $this->reader()->forEvent($this->as($this->w->adminO), $this->w->org->id()->toRfc4122(), $this->event);
+        $view = $board->zone($zone) ?? self::fail('zone absente');
+
+        self::assertCount(3, $view->slots);
+        self::assertSame(['RECURRING', 'PUNCTUAL', 'CONTINUOUS'], array_map(static fn ($s): string => $s->kind->value, $view->slots));
+        self::assertSame([1, 3], $view->slots[0]->isoWeekdays);
+        self::assertSame(['22:00', '06:00'], [$view->slots[0]->startTime, $view->slots[0]->endTime], 'heures locales, jamais UTC');
+        self::assertTrue($view->action(EventAction::ConfigureValidity)?->allowed);
+        self::assertSame($view->validityRevision(), $board->zone($zone)->validityRevision(), 'empreinte stable');
+    }
+
+    public function testTheValidityRevisionChangesWithTheModeAndTheSlots(): void
+    {
+        $zone = $this->zoneIdOf('Quartier du port');
+        $user = $this->as($this->w->adminO);
+        $revision = fn (): string => ($this->reader()->forEvent($user, $this->w->org->id()->toRfc4122(), $this->event)->zone($zone) ?? self::fail())->validityRevision();
+        $initial = $revision();
+
+        $this->service(EventZoneService::class)->configureValidity($user, $zone, new ZoneValidityCommand('EVENT_DURATION'));
+        $duration = $revision();
+        $this->service(EventZoneService::class)->configureValidity($user, $zone, new ZoneValidityCommand('SPECIFIC_PERIODS', [new ValiditySlotInput('PUNCTUAL', '2026-12-05', '09:30', '11:00')]));
+        $periods = $revision();
+        $this->service(EventZoneService::class)->configureValidity($user, $zone, new ZoneValidityCommand('SPECIFIC_PERIODS', [new ValiditySlotInput('PUNCTUAL', '2026-12-05', '09:30', '12:00')]));
+
+        self::assertCount(4, array_unique([$initial, $duration, $periods, $revision()]));
+    }
+
+    public function testTheSlotsOfAnotherCommunesZoneAreVisibleButOfferNoAction(): void
+    {
+        $zone = $this->zoneIdOf('Quartier du port');
+        $this->service(EventZoneService::class)->configureValidity($this->as($this->w->adminO), $zone, new ZoneValidityCommand('SPECIFIC_PERIODS', [new ValiditySlotInput('PUNCTUAL', '2026-12-05', '09:30', '11:00')]));
+
+        $view = $this->reader()->forEvent($this->as($this->w->adminB), $this->w->guestB->id()->toRfc4122(), $this->event)->zone($zone) ?? self::fail('zone absente');
+
+        self::assertCount(1, $view->slots);
+        self::assertFalse($view->own);
+        self::assertSame([], $view->actions);
+    }
+
+    public function testAManagerSeesTheSlotsWithoutTheConfigureAction(): void
+    {
+        $zone = $this->zoneIdOf('Quartier du port');
+        $this->service(EventZoneService::class)->configureValidity($this->as($this->w->adminO), $zone, new ZoneValidityCommand('SPECIFIC_PERIODS', [new ValiditySlotInput('PUNCTUAL', '2026-12-05', '09:30', '11:00')]));
+
+        $view = $this->reader()->forEvent($this->as($this->w->managerO), $this->w->org->id()->toRfc4122(), $this->event)->zone($zone) ?? self::fail('zone absente');
+
+        self::assertCount(1, $view->slots);
+        self::assertNull($view->visibleAction(EventAction::ConfigureValidity), 'refus de rôle : action non affichée');
+        self::assertFalse($view->action(EventAction::ConfigureValidity)?->allowed);
+    }
+
+    private function zoneIdOf(string $label): string
+    {
+        return (string) $this->em->getConnection()->fetchOne('SELECT BIN_TO_UUID(id) FROM event_zone WHERE label = ?', [$label]);
     }
 }

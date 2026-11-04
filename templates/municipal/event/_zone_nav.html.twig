@@ -1,0 +1,7 @@
+{#
+  Rubriques d'une zone (fiche, validité). Inclus SANS `only` : lit le contexte de la page. Variable : zone_tab (fiche | validite).
+#}
+{% include 'components/subnav.html.twig' with { label: 'Rubriques de la zone', items: [
+  { label: 'Fiche', href: zone_url, current: zone_tab == 'fiche' },
+  { label: 'Validité', href: validity_url, current: zone_tab == 'validite' },
+] } only %}

@@ -156,9 +156,12 @@ final readonly class EventZoneService
     /**
      * Remplace la configuration de validité (DM-075). Fuseau de l'événement relu SOUS verrou ; tout est validé
      * (mode, créneaux, heures inexistantes ou ambiguës, limite de 3 660 jours) avant la première écriture. Remplacement
-     * identique : ni écriture ni audit (DM-088). Un seul `batch_id` pour les audits d'un même remplacement.
+     * identique : ni écriture ni audit (DM-088). Un seul `batch_id` pour les audits d'un même remplacement. Si la commande porte une
+     * empreinte attendue, elle est comparée à la configuration lue sous les verrous de la zone : périmée, rien n'est écrit
+     * (OperationConflict, cause StaleState).
      *
      * @throws DomainRuleViolation configuration invalide (InvalidValiditySlot pour un créneau)
+     * @throws OperationConflict   empreinte attendue périmée, verrou non obtenu à temps ou interblocage
      */
     public function configureValidity(User $actor, string $zoneId, ZoneValidityCommand $command): ZoneValidityResult
     {
@@ -169,6 +172,7 @@ final readonly class EventZoneService
             $participation = $this->locker->participation($known->participation()->id(), $event);
             $zone = $this->locker->zone($known->id(), $participation);
             $this->policy->forZone($actor, EventPermission::ConfigureZoneValidity, $zone)->orThrow();
+            $this->validity->assertRevision($zone, $command->expectedRevision); // sous les verrous, dans la transaction de l'écriture
             $now = $this->clock->now(); // après l'acquisition des verrous (DT-038)
 
             $plan = $this->validity->plan($zone, $this->validity->parse($command, $event->timezone()));

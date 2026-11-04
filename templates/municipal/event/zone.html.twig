@@ -11,12 +11,14 @@
 
 {% block content %}
   {% include 'municipal/event/_head.html.twig' with { current: 'zones' } %}
+  {% include 'municipal/event/_zone_nav.html.twig' with { zone_tab: 'fiche' } %}
   {% set A = 'App\\Event\\Application\\Read\\EventAction::' %}
   {% set confirm = zone.visibleAction(constant(A ~ 'ConfirmZone')) %}
   {% set suspend = zone.visibleAction(constant(A ~ 'SuspendZone')) %}
   {% set reactivate = zone.visibleAction(constant(A ~ 'ReactivateZone')) %}
   {% set update = zone.visibleAction(constant(A ~ 'UpdateZone')) %}
   {% set delete = zone.visibleAction(constant(A ~ 'DeleteZone')) %}
+  {% set configure = zone.own ? zone.visibleAction(constant(A ~ 'ConfigureValidity')) : null %}
   {% set route = { municipalityId: active_municipality_id, eventId: detail.eventId, zoneId: zone.zoneId } %}
   {% set status = zone.status.value == 'SUSPENDED' ? 'suspended' : (zone.isConfirmed ? 'active' : 'unconfirmed') %}
 
@@ -24,15 +26,17 @@
     <div class="cp-cluster" style="justify-content: space-between; align-items: center">
       {% include 'components/section_head.html.twig' with { id: 'zone-h', title: zone.label, meta: cp_zone_type(zone.type) ~ ' · ' ~ group.municipalityName } only %}
       <div class="cp-cluster">
-        {% if zone.own and update and update.allowed %}{% include 'components/button.html.twig' with { label: 'Modifier', icon: 'settings', variant: 'secondary', href: edit_url } only %}{% endif %}
+        {% if zone.own and update and update.allowed %}{% include 'components/button.html.twig' with { label: 'Modifier', icon: 'settings', variant: 'secondary', href: zone_edit_url } only %}{% endif %}
       </div>
     </div>
     {% include 'components/zone_card.html.twig' with {
       id: 'zone-card', name: zone.label, type: cp_zone_type(zone.type), commune: group.municipalityName, status: status, description: zone.description ?? '',
       validity_scope: zone.validityMode.value == 'EVENT_DURATION' ? 'event' : (zone.validityMode.value == 'SPECIFIC_PERIODS' ? 'periods' : ''),
-      validity: [], validity_empty: zone.own ? 'La validité se configure dans un prochain temps.' : '',
+      validity: zone.slots|map(s => cp_slot_summary(s))|slice(0, 3)|merge(zone.slots|length > 3 ? ['… et ' ~ (zone.slots|length - 3) ~ ' autre(s) créneau(x).'] : []),
+      validity_empty: zone.own ? 'Configurez-la depuis la rubrique « Validité ».' : '',
       readonly: zone.own ? '' : 'Zone gérée par ' ~ group.municipalityName,
     } only %}
+    <p><a href="{{ validity_url }}">{{ configure and configure.allowed ? 'Gérer la validité de la zone' : 'Voir le détail de la validité' }}</a></p>
     {% if not zone.isConfirmed %}<p class="app-note">Cette zone n’est pas encore confirmée : elle ne sera utilisable qu’après confirmation par la commune.</p>{% endif %}
 
     {% if zone.own %}

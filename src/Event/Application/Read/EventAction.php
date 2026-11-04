@@ -24,4 +24,5 @@ enum EventAction: string
     case SuspendZone = 'suspend_zone';
     case ReactivateZone = 'reactivate_zone';
     case DeleteZone = 'delete_zone';
+    case ConfigureValidity = 'configure_validity';
 }

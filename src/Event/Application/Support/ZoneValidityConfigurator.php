@@ -21,7 +21,9 @@ use App\Event\Domain\Validity\Weekdays;
 use App\Identity\Domain\User;
 use App\Shared\Domain\AuditAction;
 use App\Shared\Domain\AuditSubjectType;
+use App\Shared\Domain\ConflictCause;
 use App\Shared\Domain\DomainRuleViolation;
+use App\Shared\Domain\OperationConflict;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Uid\Uuid;
 
@@ -79,6 +81,24 @@ final readonly class ZoneValidityConfigurator
         }
 
         return new ParsedValidity($mode, $slots);
+    }
+
+    /**
+     * Refuse l'écriture si la configuration de la zone n'est plus celle que l'appelant a vue. À appeler SOUS les verrous de la
+     * participation et de la zone, dans la transaction de l'écriture : lecture et écriture ne peuvent plus être séparées par une
+     * modification concurrente (toute autre configuration de cette zone attend le verrou).
+     *
+     * @throws OperationConflict StaleState
+     */
+    public function assertRevision(EventZone $zone, ?string $expected): void
+    {
+        if (null === $expected) {
+            return;
+        }
+        $current = ValidityRevision::of($zone->validityMode(), array_map(static fn (EventZoneValidity $v): string => $v->id()->toRfc4122(), $this->slots->findActiveByZone($zone->id())));
+        if (!hash_equals($current, $expected)) {
+            throw new OperationConflict(ConflictCause::StaleState);
+        }
     }
 
     public function plan(EventZone $zone, ParsedValidity $target): ZoneValidityPlan

@@ -9,7 +9,7 @@ declare(strict_types=1);
  * Cinquième argument facultatif `marqueur:secondes` : l'opération tient ses verrous (attente avant le commit, après la mutation)
  * et dépose le fichier marqueur dès qu'elle les tient (SleepingAuditTrail).
  *
- * Actions : zone-update (json {label}), zone-confirm, zone-suspend, zone-reactivate, zone-delete, zone-validity (json {mode, slots}),
+ * Actions : zone-update (json {label}), zone-confirm, zone-suspend, zone-reactivate, zone-delete, zone-validity (json {mode, slots, expectedRevision?}),
  * activate, close-event, bulk-suspend / bulk-reactivate (targetId = participation, json {zoneIds}),
  * bulk-validity (json {zoneIds, mode, slots, confirm}).
  */
@@ -53,7 +53,7 @@ $payload = isset($argv[4]) ? json_decode($argv[4], true, 512, \JSON_THROW_ON_ERR
 $validity = static fn (array $p): ZoneValidityCommand => new ZoneValidityCommand($p['mode'], array_map(
     static fn (array $s): ValiditySlotInput => new ValiditySlotInput($s['kind'], $s['startDate'], $s['startTime'], $s['endTime'], $s['endDate'] ?? null, $s['isoWeekdays'] ?? [], $s['dstChoices'] ?? []),
     $p['slots'] ?? [],
-));
+), $p['expectedRevision'] ?? null);
 
 try {
     $zones = $container->get(EventZoneService::class);
@@ -107,5 +107,5 @@ try {
     };
     echo json_encode(['ok' => true], \JSON_THROW_ON_ERROR);
 } catch (Throwable $e) {
-    echo json_encode(['ok' => false, 'error' => get_class($e), 'message' => $e->getMessage()], \JSON_THROW_ON_ERROR);
+    echo json_encode(['ok' => false, 'error' => get_class($e), 'message' => $e->getMessage(), 'cause' => $e instanceof App\Shared\Domain\OperationConflict ? $e->cause->value : null], \JSON_THROW_ON_ERROR);
 }
