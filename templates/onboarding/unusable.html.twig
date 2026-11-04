@@ -1,0 +1,27 @@
+{% extends 'layouts/auth.html.twig' %}
+{% set page_title = 'Invitation' %}
+{% block meta %}<meta name="referrer" content="no-referrer"><meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{#
+  Lien d'invitation inutilisable : inconnu, expiré, déjà utilisé, remplacé, invitation terminée ou trop de tentatives. Aucune
+  information sur l'événement, la commune ou l'organisatrice n'est affichée.
+#}
+{% block content %}
+  {% set titles = { UNKNOWN: 'Lien introuvable', EXPIRED: 'Ce lien a expiré', USED: 'Ce lien a déjà été utilisé', REPLACED: 'Ce lien a été remplacé', INACTIVE: 'Cette invitation n’est plus en attente', TOO_MANY: 'Trop de tentatives' } %}
+  {% set texts = {
+    UNKNOWN: 'Ce lien n’est pas valide. Vérifiez que vous avez copié l’adresse complète depuis l’e-mail reçu.',
+    EXPIRED: 'Pour des raisons de sécurité, ce lien n’est plus utilisable. L’invitation, elle, n’expire pas : demandez à la commune organisatrice de la renvoyer, un nouveau lien vous sera adressé.',
+    USED: 'Ce lien personnel a déjà servi. Si vous avez créé votre compte, connectez-vous à Civipass pour répondre à l’invitation.',
+    REPLACED: 'Un envoi plus récent a remplacé ce lien. Utilisez le lien du dernier e-mail reçu.',
+    INACTIVE: 'Cette invitation a déjà reçu une réponse, a été clôturée, ou l’événement est terminé. Rien d’autre n’est à faire avec ce lien.',
+    TOO_MANY: 'Trop de demandes depuis votre connexion. Patientez quelques minutes puis réessayez.',
+  } %}
+  {% embed 'components/panel.html.twig' with { id: 'inv-h', title: titles[status]|default('Lien introuvable'), level: 1, text: texts[status]|default(texts.UNKNOWN), status: status } only %}
+    {% block body %}
+      <p>{{ text }}</p>
+      {% if status in ['USED', 'REPLACED', 'EXPIRED', 'INACTIVE'] %}
+        {% include 'components/button.html.twig' with { label: 'Se connecter à Civipass', href: path('app_login'), variant: 'secondary' } only %}
+      {% endif %}
+    {% endblock %}
+  {% endembed %}
+{% endblock %}

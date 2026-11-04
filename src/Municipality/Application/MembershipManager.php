@@ -10,6 +10,7 @@ use App\Municipality\Domain\Municipality;
 use App\Municipality\Domain\MunicipalityMembership;
 use App\Municipality\Domain\MunicipalityRepository;
 use App\Municipality\Domain\MunicipalityRole;
+use App\Municipality\Domain\MunicipalityStatus;
 use App\Shared\Application\AuditEvent;
 use App\Shared\Application\AuditTrail;
 use App\Shared\Domain\AuditAction;
@@ -69,6 +70,61 @@ final readonly class MembershipManager
             $this->record($existing, AuditAction::MembershipActivated, $actor, $previous, $now);
 
             return $existing;
+        });
+    }
+
+    /**
+     * Inscrit `$user` comme PREMIER administrateur d'une commune qui n'en a aucun, à la suite d'un lien d'invitation (UI-02). Seul
+     * chemin d'attribution du rôle sans administrateur existant ; il est volontairement étroit :
+     *  - rôle MunicipalityAdmin UNIQUEMENT (jamais gestionnaire ni instructeur) ;
+     *  - refusé dès que la commune a un administrateur effectif : un lien ne donne jamais de droits sur une commune déjà administrée
+     *    (vérifié SOUS le verrou de la commune : deux inscriptions simultanées, une seule aboutit) ;
+     *  - commune ACTIVE et compte actif exigés ; un compte déjà rattaché à la commune n'est pas modifié (refus : ses rôles se
+     *    gèrent par un administrateur ou le superadmin) ;
+     *  - aucun abonnement, aucun droit commercial.
+     * `$withinTransaction` s'exécute DANS la transaction, avant l'écriture (consommation atomique du lien) : faux = refus, rien n'est écrit.
+     * La vérification d'e-mail prouve le contrôle de la boîte, pas l'habilitation officielle à représenter la mairie (documenté).
+     *
+     * @param \Closure(): bool $withinTransaction
+     *
+     * @throws OperationNotAllowed
+     */
+    public function enrollFirstAdministrator(User $user, Municipality $municipality, \Closure $withinTransaction): MunicipalityMembership
+    {
+        return $this->transaction->run(function () use ($user, $municipality, $withinTransaction): MunicipalityMembership {
+            $municipality = $this->lockedMunicipality($municipality);
+            if (MunicipalityStatus::Active !== $municipality->status()) {
+                throw new OperationNotAllowed('Cette commune n\'est pas disponible.');
+            }
+            if (!$user->isActive()) {
+                throw new OperationNotAllowed('Un compte désactivé ne peut pas être rattaché à une commune.');
+            }
+            if ($this->memberships->countEffectiveAdmins($municipality) > 0) {
+                throw new OperationNotAllowed('Cette commune dispose déjà d\'un administrateur.');
+            }
+            $existing = $this->memberships->findOneByUserAndMunicipality($user, $municipality);
+            if (null !== $existing && $existing->isActive()) {
+                throw new OperationNotAllowed('Ce compte est déjà rattaché à la commune.');
+            }
+            if (!$withinTransaction()) {
+                throw new OperationNotAllowed('Ce lien n\'est plus utilisable.');
+            }
+
+            $now = $this->clock->now();
+            if (null === $existing) {
+                $membership = new MunicipalityMembership($user, $municipality, [MunicipalityRole::MunicipalityAdmin], $now);
+                $this->memberships->add($membership);
+                $action = AuditAction::MembershipCreated;
+                $previous = null;
+            } else {
+                $previous = $this->snapshot($existing);
+                $existing->activate([MunicipalityRole::MunicipalityAdmin], $now);
+                $membership = $existing;
+                $action = AuditAction::MembershipActivated;
+            }
+            $this->audit->record(new AuditEvent($now, $action, AuditSubjectType::MunicipalityMembership, $membership->id(), $municipality->id(), AuditActor::user($user->id()), $previous, $this->snapshot($membership) + ['origin' => 'INVITATION_LINK']));
+
+            return $membership;
         });
     }
 

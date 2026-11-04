@@ -66,13 +66,14 @@ interface EventReadModel
     public function participationsOf(Uuid $eventId): array;
 
     /**
-     * Communes ACTIVES dont le nom contient `term` ou dont le code INSEE commence par `term`, avec leur situation vis-à-vis de
-     * l'événement (hors organisatrice). Une commune non active n'apparaît pas : « introuvable ou indisponible » (DM-086).
-     * Aucune donnée commerciale.
+     * Communes à inviter : référentiel national (actif) ET communes déjà inscrites absentes du référentiel, dont le nom contient
+     * `term` (`normalizedTerm` : même normalisation que le référentiel) ou dont le code INSEE commence par `term`. Une commune
+     * inscrite non ACTIVE n'apparaît pas : « introuvable ou indisponible » (DM-086) ; une commune du référentiel non encore
+     * inscrite est proposée (elle le sera à l'invitation). L'organisatrice n'est jamais proposée. Aucune donnée commerciale.
      *
      * @return list<InvitationCandidate>
      */
-    public function searchMunicipalitiesForInvitation(Uuid $eventId, string $term, int $limit): array;
+    public function searchCommunesForInvitation(Uuid $eventId, string $term, string $normalizedTerm, int $limit): array;
 
     public function invitationOf(Uuid $eventId, Uuid $municipalityId): ?InvitationView;
 }

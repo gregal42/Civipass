@@ -1,0 +1,17 @@
+Bonjour,
+
+{{ organizerName }} invite la commune de {{ communeName }} à rejoindre l'événement « {{ eventName }} » sur Civipass.
+{% if message %}
+Message de l'organisatrice :
+{{ message }}
+{% endif %}
+Qu'est-ce que Civipass ? Civipass est une plateforme qui permet aux communes de se coordonner pendant une situation de crise : zones d'accès, périodes de validité et décisions de chaque commune restent sous sa responsabilité. Participer à cet événement est gratuit et ne crée aucun abonnement.
+
+Pour répondre à cette invitation, ouvrez ce lien (valable jusqu'au {{ expiresAt|date('d/m/Y', 'Europe/Paris') }}) :
+
+{{ joinUrl }}
+
+Ce lien vous mène à une page de présentation : il ne donne aucun accès à lui seul. Si votre commune a déjà un administrateur sur Civipass, c'est lui qui accepte l'invitation après connexion ; sinon, vous pourrez indiquer l'adresse de la personne qui sera administrateur communal.
+
+Si vous n'attendiez pas cet e-mail, ignorez-le : rien n'est enregistré à votre nom.
+Civipass ne vous demandera jamais votre mot de passe par e-mail.

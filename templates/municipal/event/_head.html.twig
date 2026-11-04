@@ -6,6 +6,9 @@
   {% for message in app.flashes('success') %}
     {% include 'components/alert.html.twig' with { variant: 'success', title: message, focus: true } only %}
   {% endfor %}
+  {% for message in app.flashes('warning') %}
+    {% include 'components/alert.html.twig' with { variant: 'warning', title: message, focus: true } only %}
+  {% endfor %}
   {% if alert %}{% include 'components/alert.html.twig' with { variant: 'warning', title: 'Rien n’a été enregistré', text: alert, focus: true } only %}{% endif %}
   {% if problem|default('') and not open_panel %}{% include 'components/alert.html.twig' with { variant: 'error', title: 'Action impossible', text: problem, focus: true } only %}{% endif %}
   {% set crumbs = [{ label: 'Événements', href: list_url }] %}

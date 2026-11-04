@@ -137,7 +137,7 @@ final class InvitationCandidateReaderTest extends EventSchemaTestCase
     {
         $properties = array_map(static fn (\ReflectionProperty $p): string => $p->getName(), (new \ReflectionClass(InvitationCandidate::class))->getProperties());
 
-        self::assertSame(['municipalityId', 'name', 'inseeCode', 'state'], $properties);
+        self::assertSame(['municipalityId', 'name', 'inseeCode', 'state', 'registered'], $properties);
     }
 
     public function testOnlyTheOrganizingMunicipalityWithTheRightToInviteMaySearch(): void

@@ -1,0 +1,140 @@
+#!/usr/bin/env bash
+# Workflow qualité ÉCONOME : tests ciblés pendant le développement, contrôle complet à la livraison. Sorties compactes (une ligne
+# si tout passe, uniquement les échecs sinon) ; le journal complet reste dans var/qa/ (non versionné). Ne remplace JAMAIS
+# `make quality`, qui reste le contrôle de livraison.
+#
+#   bin/qa changed      tests liés aux fichiers modifiés (git) : même nom, tests fonctionnels du module (UI, gabarits), architecture
+#   bin/qa failed       relance UNIQUEMENT les tests échoués au dernier passage
+#   bin/qa lint         PHP-CS-Fixer (correction) + PHPStan sur les fichiers PHP modifiés
+#   bin/qa module NOM   tous les tests d'un module (Event, Municipality, Identity, Onboarding, Shared)
+#   bin/qa run MOTIF    tests dont le nom correspond au motif (--filter)
+#   bin/qa full         `make quality` complet, sortie compacte (à lancer UNE fois, en fin d'incrément)
+#   bin/qa log [N]      dernières lignes du dernier journal (à n'utiliser qu'en cas de besoin)
+set -u
+cd "$(dirname "$0")/.."
+PHP="${DOCKER_PHP_CONTAINER_NAME:-saas_civipass_php-fpm}"
+OUT=var/qa
+mkdir -p "$OUT"
+
+exec_php() { docker exec "$PHP" "$@"; }
+
+changed_files() { { git diff --name-only HEAD; git ls-files --others --exclude-standard; } | sort -u; }
+
+# Affiche les échecs d'un journal PHPUnit (sans les lignes de journal applicatif), bornés.
+show_failures() {
+  local log="$1" limit="${2:-70}"
+  grep -v '^\[' "$log" | awk '/^There (was|were) [0-9]+ (failure|error|warning|risky|deprecation|PHPUnit)/{p=1} p' | head -n "$limit"
+  echo "… journal complet : $log (bin/qa log pour la fin)"
+}
+
+run_phpunit() {
+  local log="$OUT/phpunit.log"
+  exec_php php bin/phpunit --no-progress --colors=never "$@" >"$log" 2>&1
+  local rc=$?
+  if [ $rc -eq 0 ]; then
+    grep -E '^OK \(|^Tests:|No tests executed' "$log" | tail -1
+  else
+    grep -E '^Tests:' "$log" | tail -1
+    show_failures "$log"
+    # Identifiants des tests échoués, pour `bin/qa failed`.
+    grep -E '^[0-9]+\) ' "$log" | sed -E 's/^[0-9]+\) //; s/ with data set.*$//; s/@.*$//' | sort -u >"$OUT/failed.txt"
+  fi
+  [ $rc -eq 0 ] && : >"$OUT/failed.txt"
+  return $rc
+}
+
+filter_for_files() { # liste de fichiers de test -> regex --filter
+  local names=()
+  for f in "$@"; do names+=("$(basename "$f" .php)"); done
+  local joined; joined=$(printf '%s|' "${names[@]}"); joined="${joined%|}"
+  echo "/\\\\(${joined})::/"
+}
+
+tests_for() {
+  local f="$1" base mod
+  case "$f" in
+    tests/*Test.php) echo "$f" ;;
+    src/*)
+      base=$(basename "$f" .php)
+      find tests -name "${base}Test.php" 2>/dev/null
+      mod=$(echo "$f" | cut -d/ -f2)
+      case "$f" in
+        */UI/*) find "tests/Functional/$mod" -name '*Test.php' 2>/dev/null ;;
+        */Domain/*) find "tests/Unit/$mod" -name '*Test.php' 2>/dev/null ;;
+      esac
+      echo tests/Unit/ArchitectureTest.php; echo tests/Unit/EventModuleArchitectureTest.php ;;
+    templates/municipal/event/*|templates/municipal/error/*) find tests/Functional/Event -name '*Test.php' ;;
+    templates/onboarding/*|templates/email/*) find tests/Functional/Onboarding -name '*Test.php' 2>/dev/null ;;
+    templates/components/*|templates/layouts/*|design-system/*|assets/*) find tests/Unit/DesignSystem -name '*Test.php' 2>/dev/null; echo tests/Integration/DesignSystemTwigTest.php ;;
+    templates/*) find tests/Functional -name '*Test.php' ;;
+    tests/Support/*) echo "TRANSVERSE" ;;
+    config/*|src/Migrations/*|composer.*|Makefile|phpunit.dist.xml) echo "TRANSVERSE" ;;
+  esac
+}
+
+cmd_changed() {
+  local files tests=() transverse=0
+  files=$(changed_files)
+  [ -z "$files" ] && { echo "Aucun fichier modifié : rien à tester."; return 0; }
+  while IFS= read -r f; do
+    while IFS= read -r t; do
+      [ -z "$t" ] && continue
+      [ "$t" = "TRANSVERSE" ] && { transverse=1; continue; }
+      [ -f "$t" ] && tests+=("$t")
+    done < <(tests_for "$f")
+  done <<<"$files"
+  if [ ${#tests[@]} -eq 0 ]; then
+    echo "Aucun test associé trouvé. Essayez : bin/qa module <Module>  ou  bin/qa run <motif>"; return 0
+  fi
+  local unique=()
+  while IFS= read -r t; do unique+=("$t"); done < <(printf '%s\n' "${tests[@]}" | sort -u)
+  tests=("${unique[@]}")
+  echo "→ ${#tests[@]} classe(s) de test liées aux fichiers modifiés"
+  [ $transverse -eq 1 ] && echo "ℹ changement transverse (config, migrations, support de test) : prévoir bin/qa full en fin d'incrément"
+  run_phpunit --filter "$(filter_for_files "${tests[@]}")"
+}
+
+cmd_failed() {
+  if [ ! -s "$OUT/failed.txt" ]; then echo "Aucun échec enregistré au dernier passage."; return 0; fi
+  local classes; classes=$(sed -E 's/::.*$//; s/^.*\\//' "$OUT/failed.txt" | sort -u | paste -sd'|' -)
+  local methods; methods=$(sed -E 's/^.*:://' "$OUT/failed.txt" | sort -u | paste -sd'|' -)
+  echo "→ relance des tests échoués ($(wc -l <"$OUT/failed.txt" | tr -d ' '))"
+  run_phpunit --filter "/\\\\(${classes})::(${methods})/"
+}
+
+cmd_lint() {
+  local php_files
+  php_files=$(changed_files | grep -E '\.php$' | while read -r f; do [ -f "$f" ] && echo "$f"; done)
+  [ -z "$php_files" ] && { echo "Aucun fichier PHP modifié."; return 0; }
+  # shellcheck disable=SC2086
+  exec_php vendor/bin/php-cs-fixer fix --no-interaction --quiet $php_files >"$OUT/cs.log" 2>&1
+  # shellcheck disable=SC2086
+  if exec_php vendor/bin/phpstan analyse -c phpstan.dist.neon --no-progress --error-format=raw $php_files >"$OUT/phpstan.log" 2>&1; then
+    echo "CS-Fixer et PHPStan : OK ($(echo "$php_files" | wc -l | tr -d ' ') fichier(s))"
+  else
+    head -n 40 "$OUT/phpstan.log" | cut -c1-240; echo "… journal complet : $OUT/phpstan.log"; return 1
+  fi
+}
+
+cmd_full() {
+  echo "→ make quality (contrôle de livraison complet)"
+  if make quality >"$OUT/quality.log" 2>&1; then
+    grep -E '^OK \(|All quality checks passed' "$OUT/quality.log" | sed -E 's/\x1b\[[0-9;]*m//g' | tail -2
+  else
+    show_failures "$OUT/quality.log" 90
+    grep -E '^\[ERROR\]|^ \[ERROR\]' "$OUT/quality.log" | head -3
+    grep -E '^[0-9]+\) ' "$OUT/quality.log" | sed -E 's/^[0-9]+\) //; s/ with data set.*$//; s/@.*$//' | sort -u >"$OUT/failed.txt"
+    return 1
+  fi
+}
+
+case "${1:-help}" in
+  changed) cmd_changed ;;
+  failed) cmd_failed ;;
+  lint) cmd_lint ;;
+  module) [ -n "${2:-}" ] || { echo "Usage : bin/qa module <Module>"; exit 2; }; run_phpunit --filter "/\\\\${2}\\\\/" ;;
+  run) [ -n "${2:-}" ] || { echo "Usage : bin/qa run <motif>"; exit 2; }; run_phpunit --filter "$2" ;;
+  full) cmd_full ;;
+  log) tail -n "${2:-40}" "$OUT/phpunit.log" 2>/dev/null | grep -v '^\[' ;;
+  *) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//' ;;
+esac

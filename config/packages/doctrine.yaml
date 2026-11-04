@@ -31,6 +31,11 @@ doctrine:
                 is_bundle: false
                 dir: '%kernel.project_dir%/src/Municipality/Domain'
                 prefix: 'App\Municipality\Domain'
+            Onboarding:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Onboarding/Domain'
+                prefix: 'App\Onboarding\Domain'
             Shared:
                 type: attribute
                 is_bundle: false

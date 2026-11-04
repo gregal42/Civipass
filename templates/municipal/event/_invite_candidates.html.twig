@@ -1,0 +1,26 @@
+{#
+  Résultats de la recherche d'une commune à inviter (référentiel national). Inclus par la page d'invitation et renvoyé tel quel par le
+  point d'accès de recherche dynamique. Variables : found (InvitationCandidates), query, selected (code INSEE), errors, min_length.
+  Une commune non encore inscrite sur Civipass est proposée : elle l'est à l'envoi de l'invitation (sans abonnement).
+#}
+{% set state_labels = { invited: 'Déjà invitée', participating: 'Participe déjà', closed: 'Participation clôturée' } %}
+{% if errors.insee_code|default('') %}<p class="cp-field-error">{% include 'components/icon.html.twig' with { name: 'alert', size: 's' } only %}{{ errors.insee_code }}</p>{% endif %}
+{% if found.tooShort %}
+  {% include 'components/empty_state.html.twig' with { icon: 'search', title: 'Saisie trop courte', text: 'Saisissez au moins ' ~ min_length ~ ' caractères pour lancer la recherche.' } only %}
+{% elseif query == '' %}
+  {% include 'components/empty_state.html.twig' with { icon: 'search', title: 'Recherchez une commune', text: 'Toutes les communes de France sont recherchables, même si elles ne sont pas encore sur Civipass. Les résultats apparaissent ici.' } only %}
+{% elseif found.items|length == 0 %}
+  {% include 'components/empty_state.html.twig' with { icon: 'search', title: 'Commune non trouvée', text: 'Aucune commune ne correspond à cette recherche. Vérifiez l’orthographe ou le code INSEE.' } only %}
+{% else %}
+  <div class="cp-choices">
+    {% for c in found.items %}
+      {% set available = c.state.value == 'available' %}
+      {% include 'components/choice.html.twig' with {
+        type: 'radio', name: 'insee_code', value: c.inseeCode, id: 'cand-' ~ loop.index,
+        label: c.name, note: 'Code INSEE ' ~ c.inseeCode ~ (c.registered ? '' : ' · pas encore inscrite sur Civipass'), checked: available and selected == c.inseeCode, disabled: not available,
+        tag: available ? null : { label: state_labels[c.state.value], variant: 'off' },
+      } only %}
+    {% endfor %}
+  </div>
+  <p class="cp-help">Une commune déjà invitée, participante ou dont la participation est clôturée ne peut pas être invitée. Une commune pas encore inscrite sera inscrite à l’envoi de l’invitation, sans abonnement.</p>
+{% endif %}

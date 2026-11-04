@@ -12,6 +12,16 @@ enum AuditAction: string
     case MembershipDeactivated = 'MEMBERSHIP_DEACTIVATED';
     case MunicipalityStatusChanged = 'MUNICIPALITY_STATUS_CHANGED';
     case MunicipalityContactChanged = 'MUNICIPALITY_CONTACT_CHANGED';
+    /** Synchronisation du référentiel national des communes (import console, origine système). */
+    case NationalCommunesSynchronized = 'NATIONAL_COMMUNES_SYNCHRONIZED';
+    /** Commune inscrite à partir du référentiel national, à l'occasion d'une invitation (aucun droit commercial). */
+    /** Lien d'invitation émis (contact ou administrateur) : jamais le jeton ni l'adresse complète dans l'audit. */
+    case InvitationLinkIssued = 'INVITATION_LINK_ISSUED';
+    case InvitationEmailSent = 'INVITATION_EMAIL_SENT';
+    case InvitationEmailFailed = 'INVITATION_EMAIL_FAILED';
+    case InvitationAdministratorDelegated = 'INVITATION_ADMINISTRATOR_DELEGATED';
+    case InvitationAdministratorEnrolled = 'INVITATION_ADMINISTRATOR_ENROLLED';
+    case MunicipalityRegisteredFromReferential = 'MUNICIPALITY_REGISTERED_FROM_REFERENTIAL';
     case UserSuperAdminChanged = 'USER_SUPER_ADMIN_CHANGED';
     case UserActivationChanged = 'USER_ACTIVATION_CHANGED';
     case UserPasswordReset = 'USER_PASSWORD_RESET';

@@ -14,7 +14,7 @@
 | [`archive/`](archive/README.md) | Vide : rien n'est archivé à ce jour |
 | `tools/verify-docs.sh` | Vérifie les SHA-256 et les liens relatifs |
 
-Documents techniques existants : [`architecture.md`](architecture.md), [`data-model.md`](data-model.md), [`security.md`](security.md), [`development-roadmap.md`](development-roadmap.md) (LOT 00), [`authentication.md`](authentication.md), [`testing.md`](testing.md), [`design-system.md`](design-system.md), [`backoffice.md`](backoffice.md).
+Documents techniques existants : [`architecture.md`](architecture.md), [`data-model.md`](data-model.md), [`security.md`](security.md), [`development-roadmap.md`](development-roadmap.md) (LOT 00), [`authentication.md`](authentication.md), [`testing.md`](testing.md), [`design-system.md`](design-system.md), [`backoffice.md`](backoffice.md), [`dev-workflow.md`](dev-workflow.md) (workflow économe : tests ciblés, sorties compactes), [`invitations-intercommunales.md`](invitations-intercommunales.md) (référentiel national, invitations par e-mail, délégation de l'administrateur communal).
 
 ## Documents de référence
 

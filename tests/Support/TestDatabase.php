@@ -19,7 +19,7 @@ final class TestDatabase
      * Tables du LOT TECH-02.1, purgées dès qu'elles existent (schéma migré à l'étape 3). `event_reference_counter`
      * est exclue : sa ligne unique est créée par la migration et ne doit pas être supprimée.
      */
-    private const EVENT_TABLES = ['event_zone_validity', 'event_zone', 'event_participation', 'event_event', 'event_type', 'municipality_commercial_access'];
+    private const EVENT_TABLES = ['onboarding_invitation_link', 'event_zone_validity', 'event_zone', 'event_participation', 'event_event', 'event_type', 'municipality_commercial_access', 'municipality_national_commune'];
 
     public static function reset(EntityManagerInterface $em): void
     {

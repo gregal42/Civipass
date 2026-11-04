@@ -56,6 +56,36 @@
     {% endif %}
   </section>
 
+  {# Invitations en attente : état du dernier e-mail et renvoi (commune organisatrice uniquement, droit d'inviter). #}
+  {% set invite_action = detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Invite')) %}
+  {% set pending = [] %}
+  {% for d in participants.details %}{% if d.status.value == 'INVITED' %}{% set pending = pending|merge([d]) %}{% endif %}{% endfor %}
+  {% if rel == 'organizer' and pending|length and invite_action and invite_action.allowed %}
+    <section class="cp-section" id="invitations" aria-labelledby="pend-h">
+      {% include 'components/section_head.html.twig' with { id: 'pend-h', title: 'Invitations en attente', meta: pending|length ~ ' commune(s)' } only %}
+      <div class="cp-stack" style="gap: var(--space-3)">
+        {% for d in pending %}
+          {% set delivery = deliveries[d.participationId]|default(null) %}
+          <div class="app-item">
+            <div class="app-item__head"><span class="app-item__name">{{ d.municipalityName }}</span>
+              {% if delivery %}{% include 'components/status_pill.html.twig' with { status: delivery.status.value == 'SENT' ? 'active' : 'suspended', label: delivery.status.value == 'SENT' ? 'E-mail envoyé' : (delivery.status.value == 'FAILED' ? 'E-mail non envoyé' : 'Envoi en attente') } only %}{% endif %}
+            </div>
+            <p class="app-item__note">
+              {% if delivery %}
+                Dernier e-mail : {{ delivery.maskedRecipient }}{{ delivery.attemptedAt ? ' · ' ~ delivery.attemptedAt|cp_datetime(tz) : '' }}. Lien {{ delivery.expired ? 'expiré' : 'valable jusqu’au ' ~ delivery.expiresAt|cp_datetime(tz) }}.
+              {% else %}Aucun e-mail enregistré pour cette invitation.{% endif %}
+            </p>
+            <form method="post" action="{{ path('app_municipal_event_invitation_resend', { municipalityId: active_municipality_id, eventId: detail.eventId, participationId: d.participationId }) }}" novalidate data-controller="cp--submit-state" class="cp-cluster" style="gap: var(--space-3); align-items: flex-end">
+              <input type="hidden" name="_token" value="{{ csrf_token('event_resend_' ~ d.participationId) }}">
+              {% include 'components/field.html.twig' with { id: 'resend-' ~ loop.index, name: 'contact_email', type: 'email', label: 'Adresse e-mail', optional: true, help: delivery ? 'Laissez vide pour réutiliser l’adresse précédente.' : 'Indiquez l’adresse du destinataire.', required: not delivery } only %}
+              {% include 'components/button.html.twig' with { label: 'Renvoyer l’invitation', icon: 'mail', type: 'submit', variant: 'secondary', loading_label: 'Envoi…' } only %}
+            </form>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
   {# Participation de la commune active : la sienne uniquement. #}
   {% set own = detail.myParticipationStatus %}
   {% if rel != 'organizer' and own and visibility != 'OWN_INVITATION_ONLY' %}

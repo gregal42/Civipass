@@ -7,14 +7,16 @@ namespace App\Event\Application;
 use App\Event\Application\Read\InvitationCandidates;
 use App\Event\Domain\EventRepository;
 use App\Identity\Domain\User;
+use App\Municipality\Domain\NationalCommune;
 use App\Municipality\Application\MunicipalityContext;
 use App\Shared\Domain\OperationNotAllowed;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Recherche d'une commune à inviter à un événement (par nom ou code INSEE). Réservée à la commune organisatrice qui a le droit
+ * Recherche d'une commune à inviter à un événement (par nom ou code INSEE) dans le référentiel national, y compris une commune
+ * non encore inscrite sur Civipass. Réservée à la commune organisatrice qui a le droit
  * d'inviter : contexte municipal vérifié (identifiant non fiable), événement organisé par cette commune, politique d'accès
- * « inviter ». Seules les communes actives sont trouvées ; leur situation vis-à-vis de l'événement est indiquée, jamais leurs
+ * « inviter ». Seules les communes actives du référentiel et les communes inscrites actives sont trouvées ; leur situation vis-à-vis de l'événement est indiquée, jamais leurs
  * données commerciales ni de gestion. L'invitation elle-même reste décidée par EventParticipationService.
  */
 final readonly class InvitationCandidateReader
@@ -43,10 +45,13 @@ final readonly class InvitationCandidateReader
         $this->policy->forEvent($user, EventPermission::InviteMunicipality, $event)->orThrow();
 
         $term = trim(mb_substr($query, 0, 100));
-        if (mb_strlen($term) < self::MIN_LENGTH) {
+        // La longueur minimale s'applique au terme NORMALISÉ (celui qui interroge le référentiel) : « %% » ou « _a » ne lancent pas
+        // une recherche sur tout le référentiel.
+        $normalized = NationalCommune::normalize($term);
+        if (mb_strlen($term) < self::MIN_LENGTH || mb_strlen($normalized) < self::MIN_LENGTH) {
             return new InvitationCandidates($term, [], tooShort: '' !== $term);
         }
 
-        return new InvitationCandidates($term, $this->read->searchMunicipalitiesForInvitation($event->id(), $term, self::MAX_RESULTS));
+        return new InvitationCandidates($term, $this->read->searchCommunesForInvitation($event->id(), $term, $normalized, self::MAX_RESULTS));
     }
 }

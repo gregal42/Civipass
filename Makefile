@@ -128,7 +128,7 @@ get-url:
 # Quality & Tests
 # -----------------------------------------------------------------------------------------------------------
 
-.PHONY: test test-db phpstan cs-check cs-fix quality
+.PHONY: test test-db phpstan cs-check cs-fix quality test-changed test-failed qa
 
 # Provisions the dedicated TEST database and applies the migrations to it ONLY (--env=test).
 # - The app user only owns the development database, so database creation/grant goes through the MySQL
@@ -162,3 +162,16 @@ cs-fix:
 
 quality: phpstan cs-check test
 	@echo "$(STEP) All quality checks passed! $(STEP)"
+
+# -----------------------------------------------------------------------------------------------------------
+# Workflow économe (bin/qa) : tests ciblés pendant le développement, sorties compactes. `quality` reste le contrôle de
+# livraison complet et n'est JAMAIS remplacé par ces cibles.
+# -----------------------------------------------------------------------------------------------------------
+test-changed:
+	@bin/qa changed
+
+test-failed:
+	@bin/qa failed
+
+qa:
+	@bin/qa full

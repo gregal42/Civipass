@@ -102,23 +102,44 @@ final readonly class DbalEventReadModel implements EventReadModel
         return new EventListPage(array_map(fn (array $r): EventListItem => $this->listItem($r, $municipalityId), $rows), $total, $query->page, $query->perPage);
     }
 
-    public function searchMunicipalitiesForInvitation(Uuid $eventId, string $term, int $limit): array
+    public function searchCommunesForInvitation(Uuid $eventId, string $term, string $normalizedTerm, int $limit): array
     {
-        $like = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $term);
+        $like = static fn (string $text): string => str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $text);
         $rows = $this->connection->fetchAllAssociative(
-            'SELECT m.id AS municipality_id, m.name, m.insee_code, p.status AS participation_status'
+            'SELECT r.insee_code, r.name, r.municipality_id, r.participation_status, r.registered FROM ('
+            // Référentiel national : inscrite (ACTIVE seulement) ou non encore inscrite.
+            .'SELECT n.insee_code AS insee_code, n.name AS name, n.search_name AS sort_name, m.id AS municipality_id, p.status AS participation_status, IF(m.id IS NULL, 0, 1) AS registered'
+            .' FROM municipality_national_commune n'
+            .' JOIN event_event e ON e.id = :event'
+            .' JOIN municipality o ON o.id = e.organizer_municipality_id'
+            .' LEFT JOIN municipality m ON m.insee_code = n.insee_code'
+            .' LEFT JOIN event_participation p ON p.event_id = e.id AND p.municipality_id = m.id'
+            ." WHERE n.active = 1 AND n.insee_code <> o.insee_code AND (m.id IS NULL OR m.status = 'ACTIVE')"
+            ." AND (n.search_name LIKE :nameContains ESCAPE '!' OR n.insee_code LIKE :codePrefix ESCAPE '!')"
+            .' UNION ALL '
+            // Communes inscrites que le référentiel actif ne connaît pas (jeux de test, communes historiques).
+            .'SELECT m.insee_code, m.name, LOWER(m.name), m.id, p.status, 1'
             .' FROM municipality m'
             .' JOIN event_event e ON e.id = :event'
             .' LEFT JOIN event_participation p ON p.event_id = e.id AND p.municipality_id = m.id'
             ." WHERE m.status = 'ACTIVE' AND m.id <> e.organizer_municipality_id"
-            ." AND (m.name LIKE :contains ESCAPE '!' OR m.insee_code LIKE :prefix ESCAPE '!')"
-            .' ORDER BY m.name, m.id LIMIT :limit',
-            ['event' => $eventId->toBinary(), 'contains' => '%'.$like.'%', 'prefix' => $like.'%', 'limit' => $limit],
+            .' AND NOT EXISTS (SELECT 1 FROM municipality_national_commune n2 WHERE n2.insee_code = m.insee_code AND n2.active = 1)'
+            ." AND (m.name LIKE :contains ESCAPE '!' OR m.insee_code LIKE :codePrefix ESCAPE '!')"
+            .') r ORDER BY CASE WHEN r.sort_name = :exact THEN 0 WHEN r.sort_name LIKE :namePrefix ESCAPE \'!\' THEN 1 WHEN r.insee_code LIKE :codePrefix ESCAPE \'!\' THEN 2 ELSE 3 END, r.name, r.insee_code LIMIT :limit',
+            [
+                'event' => $eventId->toBinary(),
+                'nameContains' => '%'.$like($normalizedTerm).'%',
+                'contains' => '%'.$like($term).'%',
+                'codePrefix' => $like($term).'%',
+                'namePrefix' => $like($normalizedTerm).'%',
+                'exact' => $normalizedTerm,
+                'limit' => $limit,
+            ],
             ['limit' => ParameterType::INTEGER],
         );
 
         return array_map(static fn (array $r): InvitationCandidate => new InvitationCandidate(
-            self::uuid($r['municipality_id']),
+            null === $r['municipality_id'] ? null : self::uuid($r['municipality_id']),
             (string) $r['name'],
             (string) $r['insee_code'],
             match (true) {
@@ -127,6 +148,7 @@ final readonly class DbalEventReadModel implements EventReadModel
                 ParticipationStatus::Closed->value === $r['participation_status'] => InvitationCandidateState::Closed,
                 default => InvitationCandidateState::Participating,
             },
+            1 === (int) $r['registered'],
         ), $rows);
     }
 

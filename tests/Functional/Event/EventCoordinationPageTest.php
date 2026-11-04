@@ -103,7 +103,7 @@ final class EventCoordinationPageTest extends MunicipalPagesTestCase
         self::assertStringContainsString('Code INSEE 33519', $byName);
         self::assertStringNotContainsString('Saumur-Inactive', $byName, 'commune inactive : introuvable');
         self::assertStringNotContainsString('Saumery-Suspendue', $byName, 'commune suspendue : indisponible');
-        self::assertStringContainsString('value="'.$this->id($saumos).'"', $byName);
+        self::assertStringContainsString('value="33519"', $byName, 'la commune est choisie par son code INSEE');
 
         $byInsee = $this->get($this->inviteUrl($this->w->org, $this->fire, '?q=3352'));
         self::assertStringContainsString('Saumaise-la-Forêt', $byInsee, 'code INSEE : préfixe');
@@ -118,14 +118,14 @@ final class EventCoordinationPageTest extends MunicipalPagesTestCase
 
         self::assertStringContainsString($this->w->guestB->name(), $html);
         self::assertStringContainsString('Participe déjà', $html);
-        self::assertMatchesRegularExpression('/<input[^>]*value="'.$this->id($this->w->guestB).'"[^>]*disabled/', $html, 'non sélectionnable');
-        self::assertStringNotContainsString('value="'.$this->id($this->w->org).'"', $html, 'l\'organisatrice n\'est pas proposée');
+        self::assertMatchesRegularExpression('/<input[^>]*value="'.$this->w->guestB->inseeCode()->value.'"[^>]*disabled/', $html, 'non sélectionnable');
+        self::assertStringNotContainsString('value="'.$this->w->org->inseeCode()->value.'"', $html, 'l\'organisatrice n\'est pas proposée');
         // Aucune donnée commerciale par commune : seul l'avis général sur la participation sans abonnement est affiché.
         self::assertStringNotContainsString('Sans abonnement</span>', $html);
 
         $this->lifecycle()->close($this->user($this->w->adminO), $this->accident);
         $closed = $this->get($this->inviteUrl($this->w->org, $this->accident, '?q=Commune'));
-        self::assertStringNotContainsString('value="'.$this->id($this->w->org).'"', $closed);
+        self::assertStringNotContainsString('value="'.$this->w->org->inseeCode()->value.'"', $closed);
     }
 
     public function testTheSearchRulesShortInputNoResultAndWildcards(): void
@@ -151,7 +151,7 @@ final class EventCoordinationPageTest extends MunicipalPagesTestCase
         $participations = $this->participations();
         $audits = $this->audits('PARTICIPATION_INVITED');
 
-        $this->submit($this->inviteUrl($this->w->org, $this->fire), ['municipality_id' => $this->id($saumos), 'message' => 'Bienvenue dans la coordination.', 'q' => 'Saumos']);
+        $this->submit($this->inviteUrl($this->w->org, $this->fire), ['insee_code' => $this->em()->find(Municipality::class, $saumos->id())?->inseeCode()->value, 'contact_email' => 'contact@mairie.example', 'message' => 'Bienvenue dans la coordination.', 'q' => 'Saumos']);
 
         self::assertSame(303, $this->httpStatus());
         self::assertSame($this->communesUrl($this->w->org, $this->fire), parse_url($this->location(), \PHP_URL_PATH));
@@ -160,7 +160,8 @@ final class EventCoordinationPageTest extends MunicipalPagesTestCase
         self::assertSame($audits + 1, $this->audits('PARTICIPATION_INVITED'));
         self::assertSame(1, $this->scalar('SELECT COUNT(*) FROM event_zone z JOIN event_participation p ON p.id = z.participation_id WHERE p.municipality_id = ?', [$saumos->id()->toBinary()]), 'zone « Commune entière » proposée');
         $page = $this->get($this->communesUrl($this->w->org, $this->fire));
-        self::assertStringContainsString('L’invitation a été envoyée à Saumos', $page);
+        preg_match('#cp-alert.*?</div>#s', $page, $dbg);
+        self::assertStringContainsString('L’invitation a été envoyée à Saumos', $page, (string) ($dbg[0] ?? 'aucune alerte'));
         self::assertStringContainsString('Saumos', $page);
         self::assertStringContainsString('Invitée', $page);
         self::assertStringContainsString('Bienvenue dans la coordination.', $page, 'message visible de l\'organisatrice (détails)');
@@ -172,7 +173,7 @@ final class EventCoordinationPageTest extends MunicipalPagesTestCase
         $this->loginAs($this->w->adminO);
         $message = str_repeat('Message très long. ', 1000); // ~19 000 caractères : la colonne est un LONGTEXT, aucune règle ne la borne
 
-        $this->submit($this->inviteUrl($this->w->org, $this->fire), ['municipality_id' => $this->id($saumos), 'message' => $message]);
+        $this->submit($this->inviteUrl($this->w->org, $this->fire), ['insee_code' => $this->em()->find(Municipality::class, $saumos->id())?->inseeCode()->value, 'contact_email' => 'contact@mairie.example', 'message' => $message]);
 
         self::assertSame(303, $this->httpStatus());
         self::assertSame(trim($message), $this->scalarString('SELECT invitation_message FROM event_participation WHERE municipality_id = ?', [$saumos->id()->toBinary()]));
@@ -183,7 +184,7 @@ final class EventCoordinationPageTest extends MunicipalPagesTestCase
         $saumos = $this->municipality('Saumos', '33519');
         $this->loginAs($this->w->managerO);
 
-        $this->submit($this->inviteUrl($this->w->org, $this->fire), ['municipality_id' => $this->id($saumos), 'message' => '']);
+        $this->submit($this->inviteUrl($this->w->org, $this->fire), ['insee_code' => $this->em()->find(Municipality::class, $saumos->id())?->inseeCode()->value, 'contact_email' => 'contact@mairie.example', 'message' => '']);
 
         self::assertSame(303, $this->httpStatus());
         self::assertSame('INVITED', $this->participationStatus($saumos, $this->fire));
@@ -195,8 +196,8 @@ final class EventCoordinationPageTest extends MunicipalPagesTestCase
     public static function invalidSelections(): iterable
     {
         yield 'aucune commune' => [''];
-        yield 'identifiant mal formé' => ['pas-un-uuid'];
-        yield 'commune inconnue' => ['01a1a1d2-0000-7000-8000-000000000000'];
+        yield 'code mal formé' => ['pas-un-code'];
+        yield 'code inconnu du référentiel et de Civipass' => ['99999'];
     }
 
     #[\PHPUnit\Framework\Attributes\DataProvider('invalidSelections')]
@@ -205,7 +206,7 @@ final class EventCoordinationPageTest extends MunicipalPagesTestCase
         $this->loginAs($this->w->adminO);
         $participations = $this->participations();
 
-        $html = $this->submit($this->inviteUrl($this->w->org, $this->fire), ['municipality_id' => $municipalityId, 'message' => 'Message conservé', 'q' => 'x']);
+        $html = $this->submit($this->inviteUrl($this->w->org, $this->fire), ['insee_code' => $municipalityId, 'contact_email' => 'contact@mairie.example', 'message' => 'Message conservé', 'q' => 'x']);
 
         self::assertSame(422, $this->httpStatus());
         self::assertStringContainsString('Corrigez', $html);
@@ -219,17 +220,17 @@ final class EventCoordinationPageTest extends MunicipalPagesTestCase
         $this->loginAs($this->w->adminO);
         $participations = $this->participations();
 
-        $already = $this->submit($this->inviteUrl($this->w->org, $this->fire), ['municipality_id' => $this->id($this->w->guestB)]);
+        $already = $this->submit($this->inviteUrl($this->w->org, $this->fire), ['insee_code' => $this->em()->find(Municipality::class, $this->w->guestB->id())?->inseeCode()->value, 'contact_email' => 'contact@mairie.example']);
         self::assertSame(422, $this->httpStatus());
         self::assertStringContainsString('déjà invitée', $already);
 
-        $unavailable = $this->submit($this->inviteUrl($this->w->org, $this->fire), ['municipality_id' => $this->id($inactive)]);
+        $unavailable = $this->submit($this->inviteUrl($this->w->org, $this->fire), ['insee_code' => $this->em()->find(Municipality::class, $inactive->id())?->inseeCode()->value, 'contact_email' => 'contact@mairie.example']);
         self::assertSame(422, $this->httpStatus());
         self::assertStringContainsString('introuvable ou indisponible', $unavailable);
 
         $this->participationLifecycle()->close($this->user($this->w->adminB), (string) $this->scalarString('SELECT LOWER(CONCAT(SUBSTR(HEX(id),1,8),\'-\',SUBSTR(HEX(id),9,4),\'-\',SUBSTR(HEX(id),13,4),\'-\',SUBSTR(HEX(id),17,4),\'-\',SUBSTR(HEX(id),21))) FROM event_participation WHERE municipality_id = ?', [$this->w->guestB->id()->toBinary()]));
         $this->loginAs($this->w->adminO);
-        $closed = $this->submit($this->inviteUrl($this->w->org, $this->fire), ['municipality_id' => $this->id($this->w->guestB)]);
+        $closed = $this->submit($this->inviteUrl($this->w->org, $this->fire), ['insee_code' => $this->em()->find(Municipality::class, $this->w->guestB->id())?->inseeCode()->value, 'contact_email' => 'contact@mairie.example']);
         self::assertSame(422, $this->httpStatus());
         self::assertStringContainsString('clôturée', $closed, 'DM-089 : jamais réinvitée');
         self::assertSame($participations, $this->participations());
@@ -242,11 +243,11 @@ final class EventCoordinationPageTest extends MunicipalPagesTestCase
         $participations = $this->participations();
         $url = $this->inviteUrl($this->w->org, $this->fire);
 
-        $this->client->request('POST', $url, ['municipality_id' => $this->id($saumos)]);
+        $this->client->request('POST', $url, ['insee_code' => $this->em()->find(Municipality::class, $saumos->id())?->inseeCode()->value, 'contact_email' => 'contact@mairie.example']);
         self::assertSame(422, $this->httpStatus());
-        $html = $this->submit($url, ['municipality_id' => $this->id($saumos)], 'forgé');
+        $html = $this->submit($url, ['insee_code' => $this->em()->find(Municipality::class, $saumos->id())?->inseeCode()->value, 'contact_email' => 'contact@mairie.example'], 'forgé');
         self::assertStringContainsString('Le formulaire a expiré', $html);
-        $this->submit($url, ['municipality_id' => $this->id($saumos)], null, $this->inviteUrl($this->w->org, $this->accident));
+        $this->submit($url, ['insee_code' => $this->em()->find(Municipality::class, $saumos->id())?->inseeCode()->value, 'contact_email' => 'contact@mairie.example'], null, $this->inviteUrl($this->w->org, $this->accident));
         self::assertSame(422, $this->httpStatus(), 'jeton lié à l\'événement');
         self::assertSame($participations, $this->participations());
     }
@@ -267,7 +268,7 @@ final class EventCoordinationPageTest extends MunicipalPagesTestCase
             $this->loginAs($user);
             $this->get($this->inviteUrl($municipality, $event));
             self::assertSame($status, $this->httpStatus(), $label.' (GET)');
-            $this->client->request('POST', $this->inviteUrl($municipality, $event), ['municipality_id' => $this->id($saumos), '_token' => 'x']);
+            $this->client->request('POST', $this->inviteUrl($municipality, $event), ['insee_code' => $this->em()->find(Municipality::class, $saumos->id())?->inseeCode()->value, 'contact_email' => 'contact@mairie.example', '_token' => 'x']);
             self::assertSame($status, $this->httpStatus(), $label.' (POST)');
         }
         self::assertSame($participations, $this->participations());
@@ -302,7 +303,7 @@ final class EventCoordinationPageTest extends MunicipalPagesTestCase
         $saumos = $this->municipality('Saumos', '33519');
         $admin = $this->userIn($saumos, MunicipalityRole::MunicipalityAdmin);
         $this->loginAs($this->w->adminO);
-        $this->submit($this->inviteUrl($this->w->org, $this->fire), ['municipality_id' => $this->id($saumos), 'message' => 'Bienvenue']);
+        $this->submit($this->inviteUrl($this->w->org, $this->fire), ['insee_code' => $this->em()->find(Municipality::class, $saumos->id())?->inseeCode()->value, 'contact_email' => 'contact@mairie.example', 'message' => 'Bienvenue']);
         self::assertSame('INVITED', $this->participationStatus($saumos, $this->fire));
         $before = [$this->scalar('SELECT COUNT(*) FROM municipality_commercial_access'), $this->scalar('SELECT COUNT(*) FROM identity_user'), $this->scalar('SELECT COUNT(*) FROM municipality_membership'), $this->scalar('SELECT COUNT(*) FROM municipality')];
 
@@ -627,7 +628,7 @@ final class EventCoordinationPageTest extends MunicipalPagesTestCase
         $other->fetchOne('SELECT id FROM event_event WHERE name = ? FOR UPDATE', ['Incendie du massif forestier']);
 
         try {
-            $html = $this->submit($url, ['municipality_id' => $this->id($saumos), 'message' => 'Message à ne pas perdre', 'q' => 'Saumos'], $token);
+            $html = $this->submit($url, ['insee_code' => $this->em()->find(Municipality::class, $saumos->id())?->inseeCode()->value, 'contact_email' => 'contact@mairie.example', 'message' => 'Message à ne pas perdre', 'q' => 'Saumos'], $token);
         } finally {
             $other->rollBack();
         }
@@ -638,7 +639,7 @@ final class EventCoordinationPageTest extends MunicipalPagesTestCase
         self::assertStringContainsString('name="_token"', $html, 'page complète réaffichée');
         self::assertSame($participations, $this->participations(), 'aucun succès annoncé');
 
-        $this->submit($url, ['municipality_id' => $this->id($saumos), 'message' => 'Message à ne pas perdre']);
+        $this->submit($url, ['insee_code' => $this->em()->find(Municipality::class, $saumos->id())?->inseeCode()->value, 'contact_email' => 'contact@mairie.example', 'message' => 'Message à ne pas perdre']);
         self::assertSame(303, $this->httpStatus(), 'nouvelle tentative manuelle');
     }
 

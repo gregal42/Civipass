@@ -10,6 +10,8 @@ enum AuditSubjectType: string
     case Municipality = 'MUNICIPALITY';
     case MunicipalityMembership = 'MUNICIPALITY_MEMBERSHIP';
     case MunicipalityCommercialAccess = 'MUNICIPALITY_COMMERCIAL_ACCESS';
+    case NationalCommuneReferential = 'NATIONAL_COMMUNE_REFERENTIAL';
+    case InvitationLink = 'INVITATION_LINK';
     case Event = 'EVENT';
     case EventParticipation = 'EVENT_PARTICIPATION';
     case EventZone = 'EVENT_ZONE';

@@ -33,6 +33,20 @@ framework:
             policy: sliding_window
             limit: 10
             interval: '15 minutes'
+        # Liens d'invitation : 30 ouvertures de lien / 15 min par IP ; 5 désignations d'administrateur / heure par lien ;
+        # 10 inscriptions d'administrateur / 15 min par IP.
+        invitation_link_ip:
+            policy: sliding_window
+            limit: 30
+            interval: '15 minutes'
+        invitation_delegation:
+            policy: sliding_window
+            limit: 5
+            interval: '1 hour'
+        invitation_enroll_ip:
+            policy: sliding_window
+            limit: 10
+            interval: '15 minutes'
 
     #esi: true
     #fragments: true

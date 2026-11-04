@@ -6,13 +6,14 @@ namespace App\Event\UI\Http;
 
 use App\Event\Application\EventDetailReader;
 use App\Event\Application\InvitationCandidateReader;
-use App\Event\Application\Command\InviteMunicipalityCommand;
 use App\Event\Application\Read\EventAction;
 use App\Event\Application\Read\EventDetail;
 use App\Event\Application\Read\EventRelation;
-use App\Event\Application\Read\InvitationCandidates;
 use App\Event\Application\Service\EventParticipationService;
 use App\Identity\Domain\User;
+use App\Onboarding\Application\InvitationDeliveryReader;
+use App\Onboarding\Application\InvitationDispatcher;
+use App\Onboarding\Domain\InvitationDispatchResult;
 use App\Shared\Domain\DomainRuleViolation;
 use App\Shared\Domain\OperationConflict;
 use App\Shared\Domain\OperationNotAllowed;
@@ -62,6 +63,8 @@ final class EventCoordinationController extends AbstractController
         private readonly EventDetailReader $details,
         private readonly InvitationCandidateReader $candidates,
         private readonly EventParticipationService $participations,
+        private readonly InvitationDispatcher $dispatcher,
+        private readonly InvitationDeliveryReader $deliveries,
         private readonly ShellContextFactory $shell,
         private readonly EventViewFactory $views,
     ) {
@@ -74,7 +77,10 @@ final class EventCoordinationController extends AbstractController
         $shell = $this->shell->forMunicipality($user, $municipalityId, 'events', 'Communes');
         $detail = $this->details->forEvent($user, $municipalityId, $eventId);
 
-        return $this->render('municipal/event/communes.html.twig', $this->views->page($shell, $detail, $municipalityId, 'Communes · '.$detail->name));
+        return $this->render('municipal/event/communes.html.twig', $this->views->page($shell, $detail, $municipalityId, 'Communes · '.$detail->name, null, [
+            // Seule la commune organisatrice (visibilité complète) voit l'état des e-mails d'invitation et peut les renvoyer.
+            'deliveries' => EventRelation::Organizer === $detail->relation ? $this->deliveries->forEvent(Uuid::fromString($detail->eventId)) : [],
+        ]));
     }
 
     #[Route('/communes/{municipalityId}/evenements/{eventId}/inviter', name: 'app_municipal_event_invite', requirements: ['municipalityId' => Requirement::UUID, 'eventId' => Requirement::UUID], methods: ['GET', 'POST'])]
@@ -94,11 +100,13 @@ final class EventCoordinationController extends AbstractController
             'found' => $found,
             'query' => $query,
             'message' => $this->text($post['message'] ?? ''),
-            'selected' => $this->text($post['municipality_id'] ?? ''),
+            'contact_email' => $this->text($post['contact_email'] ?? ''),
+            'selected' => $this->text($post['insee_code'] ?? ''),
             'summary' => [],
             'errors' => [],
             'csrf_id' => 'event_invite_'.$eventId,
             'min_length' => InvitationCandidateReader::MIN_LENGTH,
+            'search_url' => $this->generateUrl('app_municipal_event_invite_candidates', ['municipalityId' => $municipalityId, 'eventId' => $eventId]),
         ]), new Response('', $status));
         if (!$request->isMethod('POST')) {
             return $view();
@@ -108,19 +116,24 @@ final class EventCoordinationController extends AbstractController
         if (!$this->isCsrfTokenValid('event_invite_'.$eventId, $token)) {
             return $view(alert: 'Le formulaire a expiré. Vos saisies sont conservées : validez à nouveau.', status: Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-        $selected = $this->text($post['municipality_id'] ?? '');
+        $selected = $this->text($post['insee_code'] ?? '');
+        $contact = trim($this->text($post['contact_email'] ?? ''));
         $message = trim($this->text($post['message'] ?? ''));
         $errors = [];
-        if (!Uuid::isValid($selected)) {
-            $errors['municipality_id'] = 'Choisissez la commune à inviter.';
+        if (1 !== preg_match('/^(\d{2}|2A|2B)\d{3}$/', $selected)) {
+            $errors['insee_code'] = 'Choisissez la commune à inviter.';
+        }
+        if ('' === $contact) {
+            $errors['contact_email'] = 'Indiquez l’adresse e-mail du destinataire de l’invitation.';
+        } elseif (mb_strlen($contact) > 180 || false === filter_var($contact, \FILTER_VALIDATE_EMAIL)) {
+            $errors['contact_email'] = 'Cette adresse e-mail n’est pas valide.';
         }
         if ([] !== $errors) {
             return $view(['errors' => $errors, 'summary' => $this->summary($errors)], status: Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $name = $this->nameOf($found, $selected);
         try {
-            $this->participations->invite($user, new InviteMunicipalityCommand($eventId, $selected, '' === $message ? null : $message));
+            $result = $this->dispatcher->invite($user, $eventId, $selected, $contact, '' === $message ? null : $message);
         } catch (OperationNotAllowed $e) {
             if (!\in_array($e->getMessage(), self::COMMUNICABLE_REFUSALS, true)) {
                 throw $this->denied(); // refus d'accès ou motif inconnu : réponse uniforme, jamais le motif
@@ -132,9 +145,75 @@ final class EventCoordinationController extends AbstractController
         } catch (OperationConflict) {
             return $view(alert: $this->conflictMessage(), status: Response::HTTP_CONFLICT);
         }
-        $this->addFlash('success', null === $name ? 'L’invitation a été envoyée.' : sprintf('L’invitation a été envoyée à %s.', $name));
+        $this->flashDispatch($result);
 
         return $this->redirectToRoute('app_municipal_event_communes', ['municipalityId' => $municipalityId, 'eventId' => $eventId], Response::HTTP_SEE_OTHER);
+    }
+
+    /**
+     * Fragment HTML des résultats de recherche (recherche dynamique) ; la page elle-même fonctionne sans JavaScript.
+     */
+    #[Route('/communes/{municipalityId}/evenements/{eventId}/inviter/communes', name: 'app_municipal_event_invite_candidates', requirements: ['municipalityId' => Requirement::UUID, 'eventId' => Requirement::UUID], methods: ['GET'])]
+    public function candidates(string $municipalityId, string $eventId, Request $request): Response
+    {
+        $user = $this->currentUser();
+        $this->shell->forMunicipality($user, $municipalityId, 'events', 'Inviter une commune');
+        $detail = $this->details->forEvent($user, $municipalityId, $eventId);
+        $availability = $detail->action(EventAction::Invite);
+        if (EventRelation::Organizer !== $detail->relation || null === $availability || !$availability->allowed) {
+            throw $this->denied();
+        }
+        $query = $this->text($request->query->all()['q'] ?? '');
+        $response = $this->render('municipal/event/_invite_candidates.html.twig', [
+            'found' => $this->candidates->search($user, $municipalityId, $eventId, $query),
+            'query' => $query,
+            'selected' => '',
+            'errors' => [],
+            'min_length' => InvitationCandidateReader::MIN_LENGTH,
+        ]);
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
+    }
+
+    /**
+     * Renvoie l'invitation d'une commune encore « invitée » : nouveau lien (l'ancien est révoqué), adresse corrigeable. Le
+     * `participationId` vient de la fiche lue côté serveur pour la commune organisatrice, jamais d'un identifiant non vérifié :
+     * le répartiteur vérifie qu'il appartient bien à cet événement.
+     */
+    #[Route('/communes/{municipalityId}/evenements/{eventId}/invitations/{participationId}/renvoyer', name: 'app_municipal_event_invitation_resend', requirements: ['municipalityId' => Requirement::UUID, 'eventId' => Requirement::UUID, 'participationId' => Requirement::UUID], methods: ['POST'])]
+    public function resend(string $municipalityId, string $eventId, string $participationId, Request $request): Response
+    {
+        $user = $this->currentUser();
+        $this->shell->forMunicipality($user, $municipalityId, 'events', 'Renvoyer l’invitation');
+        $detail = $this->details->forEvent($user, $municipalityId, $eventId);
+        $availability = $detail->action(EventAction::Invite);
+        if (EventRelation::Organizer !== $detail->relation || null === $availability || !$availability->allowed) {
+            throw $this->denied();
+        }
+        $post = $request->request->all();
+        $back = $this->redirectToRoute('app_municipal_event_communes', ['municipalityId' => $municipalityId, 'eventId' => $eventId], Response::HTTP_SEE_OTHER);
+        if (!$this->isCsrfTokenValid('event_resend_'.$participationId, $this->text($post['_token'] ?? ''))) {
+            $this->addFlash('warning', 'Le formulaire a expiré : rien n’a été envoyé. Recommencez.');
+
+            return $back;
+        }
+        try {
+            $result = $this->dispatcher->resend($user, $eventId, $participationId, $this->text($post['contact_email'] ?? ''));
+        } catch (OperationNotAllowed) {
+            throw $this->denied();
+        } catch (DomainRuleViolation $e) {
+            $this->addFlash('warning', $e->getMessage());
+
+            return $back;
+        } catch (OperationConflict) {
+            $this->addFlash('warning', $this->conflictMessage());
+
+            return $back;
+        }
+        $this->flashDispatch($result);
+
+        return $back;
     }
 
     #[Route('/communes/{municipalityId}/evenements/{eventId}/participation/{action}', name: 'app_municipal_participation_action', requirements: ['municipalityId' => Requirement::UUID, 'eventId' => Requirement::UUID, 'action' => 'accepter|suspendre|reactiver|cloturer'], methods: ['POST'])]
@@ -192,15 +271,15 @@ final class EventCoordinationController extends AbstractController
         return $this->render($template, $this->views->page($shell, $detail, $municipalityId, $detail->name, $alert, $extra), new Response('', $status));
     }
 
-    private function nameOf(InvitationCandidates $found, string $municipalityId): ?string
+    private function flashDispatch(InvitationDispatchResult $result): void
     {
-        foreach ($found->items as $candidate) {
-            if ($candidate->municipalityId === $municipalityId) {
-                return $candidate->name;
-            }
-        }
+        $registered = $result->communeRegistered ? ' Cette commune n’était pas encore inscrite sur Civipass : elle l’est désormais, sans abonnement.' : '';
+        if ($result->emailSent) {
+            $this->addFlash('success', sprintf('L’invitation a été envoyée à %s : un e-mail a été adressé à %s.%s', $result->communeName, $result->maskedRecipient, $registered));
 
-        return null;
+            return;
+        }
+        $this->addFlash('warning', sprintf('L’invitation de %s est enregistrée, mais l’e-mail n’a pas pu être envoyé à %s. Utilisez « Renvoyer l’invitation » pour réessayer.%s', $result->communeName, $result->maskedRecipient, $registered));
     }
 
     /**
@@ -210,7 +289,7 @@ final class EventCoordinationController extends AbstractController
      */
     private function summary(array $errors): array
     {
-        $targets = ['municipality_id' => 'invite-candidates'];
+        $targets = ['insee_code' => 'invite-candidates', 'contact_email' => 'inv-contact'];
 
         return array_map(static fn (string $key, string $message): array => ['target' => $targets[$key] ?? 'invite-form', 'message' => $message], array_keys($errors), $errors);
     }

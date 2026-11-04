@@ -41,3 +41,11 @@ Hiérarchie en cas de contradiction métier : 1. décisions validées ; 2. SFD V
 ## Conventions techniques
 Symfony 8.1, PHP 8.4, Doctrine ORM. UUID v7 en `BINARY(16)`, dates en UTC (type `datetime_immutable` surchargé), `TransactionRunner` pour les opérations transactionnelles, audit via `AuditTrail` dans la même transaction, Sonata en lecture seule, design system importé par copie versionnée (`design-system/`).
 Qualité : `make quality` (CS-Fixer, PHPStan niveau 6, PHPUnit) ; `make test-db` provisionne la base `*_test`. Ne jamais lancer de migration sur la base de développement sans accord.
+
+## Workflow économe (tokens) — détail : `docs/dev-workflow.md`
+- **Pendant l'incrément** : `bin/qa lint` (CS-Fixer + PHPStan sur les fichiers modifiés) puis `bin/qa changed` (tests liés aux fichiers modifiés), après un ensemble cohérent de modifications, pas après chaque ligne. Autres : `bin/qa failed` (relance les seuls tests échoués), `bin/qa module <Module>`, `bin/qa run <motif>`. Équivalents `make test-changed`, `make test-failed`.
+- **Après un échec** : corriger, `bin/qa failed` jusqu'au vert, puis une fois `bin/qa changed`. Jamais masquer un échec, désactiver ou assouplir un test.
+- **Fin d'incrément (avant de proposer la livraison)** : `bin/qa full` (= `make quality`, sortie compacte) **obligatoire**, puis `docs/tools/verify-docs.sh`, validation Doctrine, `git diff`. Un seul passage complet par livraison ; changement transverse (config, migrations, `tests/Support`) : toujours un passage complet.
+- **Sorties** : succès = une ligne ; échec = échecs seuls ; journaux complets dans `var/qa/` (ne les lire qu'au besoin, avec `grep`).
+- **Contexte** : ce fichier est l'index ; ne lire que les décisions `docs/decisions/`, les sections SFD/STD et les fichiers utiles à la tâche ; pas de relecture complète de la documentation par incrément ; pas de recherche répétée ; sous-agents seulement si le bénéfice est clair ; comptes rendus courts (modifications, tests, blocages, résultat).
+

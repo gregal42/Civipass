@@ -1,0 +1,67 @@
+{% extends 'layouts/auth.html.twig' %}
+{% set page_title = 'Invitation à un événement' %}
+{% block meta %}<meta name="referrer" content="no-referrer"><meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{#
+  Page d'accueil d'un lien d'invitation (publique). Elle ne montre QUE le contenu de l'e-mail : organisatrice, événement, commune
+  invitée, message. Aucun droit n'est accordé par le lien ; chaque étape vérifie les droits réels.
+  Cas : contact_administered | contact_delegate | admin_commune_administered | admin_login_required | admin_wrong_account |
+        admin_confirm | admin_signup.  Variables : case, r (LinkResolution), error, form, administrator_email, invited_email_masked.
+#}
+{% block content %}
+  {% for message in app.flashes('success') %}{% include 'components/alert.html.twig' with { variant: 'success', title: message, focus: true } only %}{% endfor %}
+  {% for message in app.flashes('warning') %}{% include 'components/alert.html.twig' with { variant: 'warning', title: message, focus: true } only %}{% endfor %}
+
+  {% embed 'components/panel.html.twig' with { id: 'inv-h', title: r.organizerName ~ ' vous invite à rejoindre un événement', level: 1, r: r, case: case, error: error, form: form, administrator_email: administrator_email, invited_email_masked: invited_email_masked, csrf_delegate: csrf_token('invitation_delegate'), csrf_join: csrf_token('invitation_join'), login_url: path('app_login') } only %}
+    {% block body %}
+      <div class="app-item">
+        <div class="app-item__head"><span class="app-item__name">{{ r.eventName }}</span></div>
+        <p class="app-item__note">Commune invitée : <b>{{ r.communeName }}</b> · Organisatrice : <b>{{ r.organizerName }}</b></p>
+      </div>
+      {% if r.message %}<blockquote class="cp-invite__msg" style="margin: 0">« {{ r.message }} »</blockquote>{% endif %}
+      <p class="cp-help">Civipass permet aux communes de se coordonner pendant une crise : chaque commune garde l’autonomie de ses zones et de ses décisions. Participer à cet événement est gratuit et ne crée aucun abonnement ; cela ne donne pas le droit de créer ses propres événements.</p>
+
+      {% if error %}{% include 'components/alert.html.twig' with { variant: 'error', id: 'form-error', title: 'Rien n’a été enregistré', text: error } only %}{% endif %}
+
+      {% if case == 'contact_administered' %}
+        <p><b>Votre commune dispose déjà d’un administrateur sur Civipass.</b> L’invitation est acceptée par un administrateur communal : connectez-vous avec son compte pour la retrouver et y répondre.</p>
+        {% include 'components/button.html.twig' with { label: 'Se connecter', href: login_url, icon: 'right' } only %}
+
+      {% elseif case == 'contact_delegate' %}
+        <p><b>Votre commune n’a pas encore d’administrateur sur Civipass.</b> Indiquez l’adresse e-mail de la personne qui sera administrateur communal : elle recevra un lien personnel pour créer son compte, puis acceptera l’invitation.</p>
+        <form method="post" action="{{ path('app_invitation_delegate') }}" novalidate data-controller="cp--submit-state">
+          {% include 'components/field.html.twig' with { id: 'administrator-email', name: 'administrator_email', type: 'email', label: 'Adresse e-mail de l’administrateur communal', required: true, value: administrator_email, autocomplete: 'email', attrs: 'autofocus', help: 'Ce peut être votre propre adresse ou celle d’un collègue ; aucun domaine particulier n’est imposé.' } only %}
+          <input type="hidden" name="_token" value="{{ csrf_delegate }}">
+          {% include 'components/button.html.twig' with { label: 'Envoyer le lien à cette personne', type: 'submit', icon: 'mail', loading_label: 'Envoi…' } only %}
+        </form>
+        {% include 'components/alert.html.twig' with { variant: 'info', icon: 'shield', title: 'Ce que vérifie Civipass', text: 'La personne désignée prouve qu’elle contrôle cette boîte e-mail ; Civipass ne peut pas vérifier à elle seule qu’elle est habilitée à représenter la mairie : elle l’atteste. Le lien est personnel, valable 3 jours et utilisable une seule fois.' } only %}
+
+      {% elseif case == 'admin_commune_administered' %}
+        <p><b>{{ r.communeName }} dispose déjà d’un administrateur sur Civipass.</b> Ce lien ne donne aucun droit. Connectez-vous avec un compte administrateur de la commune pour répondre à l’invitation.</p>
+        {% include 'components/button.html.twig' with { label: 'Se connecter', href: login_url, icon: 'right' } only %}
+
+      {% elseif case == 'admin_login_required' %}
+        <p>Un compte Civipass existe déjà pour l’adresse <b>{{ invited_email_masked }}</b>. Connectez-vous avec ce compte pour devenir administrateur de {{ r.communeName }}.</p>
+        {% include 'components/button.html.twig' with { label: 'Se connecter', href: login_url, icon: 'right' } only %}
+
+      {% elseif case == 'admin_wrong_account' %}
+        <p><b>Vous êtes connecté(e) avec un autre compte.</b> Ce lien personnel est destiné à l’adresse {{ invited_email_masked }}. Déconnectez-vous, puis reconnectez-vous avec le compte de cette adresse.</p>
+
+      {% elseif case == 'admin_confirm' or case == 'admin_signup' %}
+        <p>Vous avez été désigné(e) pour devenir <b>administrateur communal de {{ r.communeName }}</b> (adresse {{ invited_email_masked }}). Vous pourrez ensuite accepter l’invitation à l’événement.</p>
+        <form method="post" action="{{ path('app_invitation_join') }}" novalidate data-controller="cp--submit-state" class="cp-stack" style="gap: var(--space-4)">
+          {% if case == 'admin_signup' %}
+            {% include 'components/field.html.twig' with { id: 'first-name', name: 'first_name', label: 'Prénom', required: true, value: form.first_name, autocomplete: 'given-name' } only %}
+            {% include 'components/field.html.twig' with { id: 'last-name', name: 'last_name', label: 'Nom', required: true, value: form.last_name, autocomplete: 'family-name' } only %}
+            {% include 'components/field.html.twig' with { id: 'password', name: 'password', type: 'password', label: 'Mot de passe', required: true, autocomplete: 'new-password', attrs: 'minlength="12"', help: '12 caractères minimum : préférez une phrase longue.' } only %}
+            {% include 'components/field.html.twig' with { id: 'password-confirm', name: 'password_confirm', type: 'password', label: 'Confirmez le mot de passe', required: true, autocomplete: 'new-password', attrs: 'minlength="12"' } only %}
+          {% endif %}
+          {% include 'components/check.html.twig' with { id: 'attest', name: 'attest', value: '1', label: 'J’atteste être habilité(e) à représenter ' ~ r.communeName ~ ' et à gérer sa participation sur Civipass.' } only %}
+          {% include 'components/alert.html.twig' with { variant: 'quiet', icon: 'shield', text: 'Ouvrir ce lien depuis votre boîte e-mail prouve que vous la contrôlez ; cela ne prouve pas à lui seul votre habilitation officielle, que vous attestez ici. Vous recevrez uniquement le rôle d’administrateur communal : aucun abonnement n’est créé.' } only %}
+          <input type="hidden" name="_token" value="{{ csrf_join }}">
+          {% include 'components/button.html.twig' with { label: case == 'admin_signup' ? 'Créer mon compte' : 'Devenir administrateur', type: 'submit', icon: 'check', loading_label: 'Enregistrement…' } only %}
+        </form>
+      {% endif %}
+    {% endblock %}
+  {% endembed %}
+{% endblock %}

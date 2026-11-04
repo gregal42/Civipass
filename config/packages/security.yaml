@@ -70,7 +70,7 @@ security:
         # relève du contexte municipal (membership effectif) et des politiques, jamais de cette règle ; les futures écritures
         # exigeront IS_AUTHENTICATED_FULLY.
         # Écriture (formulaires de création, de modification, d'invitation et actions de participation, GET comme POST) : authentification COMPLÈTE, jamais « se souvenir de moi ».
-        - { path: '^/communes/[^/]+/evenements/(nouveau|[^/]+/(modifier|inviter|participation/[a-z]+|cycle/[a-z]+)|[^/]+/zones/(nouvelle|[^/]+/(modifier|confirmer|suspendre|reactiver|supprimer|validite(/.*)?)))$', roles: IS_AUTHENTICATED_FULLY }
+        - { path: '^/communes/[^/]+/evenements/(nouveau|[^/]+/(modifier|inviter(/communes)?|invitations/[0-9a-f-]+/renvoyer|participation/[a-z]+|cycle/[a-z]+)|[^/]+/zones/(nouvelle|[^/]+/(modifier|confirmer|suspendre|reactiver|supprimer|validite(/.*)?)))$', roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/communes(?:/|$), roles: IS_AUTHENTICATED_REMEMBERED }
 
 when@test:
