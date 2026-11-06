@@ -36,6 +36,7 @@ final readonly class EventViewFactory
             'list_url' => $this->urls->generate('app_municipal_events', ['municipalityId' => $municipalityId]),
             'event_url' => $this->urls->generate('app_municipal_event', $route),
             'edit_url' => $this->urls->generate('app_municipal_event_edit', $route),
+            'new_request_url' => $this->urls->generate('app_municipal_request_new_event', $route),
             'invite_url' => $this->urls->generate('app_municipal_event_invite', $route),
             'communes_url' => $this->urls->generate('app_municipal_event_communes', $route),
             'zones_url' => $this->urls->generate('app_municipal_event_zones', $route),

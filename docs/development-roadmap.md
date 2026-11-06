@@ -30,6 +30,8 @@ Petits lots, schéma revu avant migrations, tests automatisés et `make quality`
 - **État (TECH-02.1)** : backend des événements, invitations, participations, cycle de vie, zones, validités et opérations groupées implémenté (étapes 1 à 5.5), **TECH-02.1 validée et terminée** ; aucun écran, contrôleur ni API. Avant l'exposition HTTP : plafond cumulé des opérations groupées et services de lecture des zones (plan 5.1 §23). Détail : `docs/lots/tech-02.1/plan-implementation.md`.
 
 ## LOT 03 — Dépôt citoyen
+
+> **Révision LOT 03 (5 novembre 2026) — traçabilité** : « simple indicateur particulier/professionnel », « véhicules facultatifs » et « dossier figé » sont précisés ou remplacés par [`lot-03-schema.md`](lot-03-schema.md) (décisions DM-097 à DM-105, DT-039) : catégorie de bénéficiaire et motif en référentiels, mode de déplacement exclusif, saisie pour un tiers par un agent, zones proposables. Le texte d'origine ci-dessous est conservé pour mémoire.
 - Formulaire unique particulier/professionnel (simple indicateur), sans compte.
 - Coordonnées email ou téléphone, véhicules facultatifs mais plaque obligatoire si véhicule coché, pièces facultatives 5×10 Mo, demandes multi-communes.
 - Dossier figé après dépôt, plusieurs demandes par personne/événement.

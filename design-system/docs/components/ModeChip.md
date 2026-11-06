@@ -12,3 +12,7 @@ Puce de mode de déplacement : véhicule, à pied, à vélo.
 - « Véhicule » s’accompagne toujours des plaques autorisées.
 
 Variables : en-tête du gabarit (`@param`) et `index.d.ts`.
+
+
+## LOT 03 — `foot_bike`
+Libellé « À pied / à vélo » : mode exclusif du formulaire de demande (l’autre choix est « En véhicule »).

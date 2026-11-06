@@ -4,11 +4,11 @@
 
 | | |
 |---|---|
-| Source | archive « UI-02 » (dépôt du design system, `package.json` : `civipass-design-system` 1.0.0) |
+| Source | archive « civipass-design-system » (dépôt du design system, `package.json` : `civipass-design-system` 1.0.0) |
 | Écrans et données de la galerie dev | archive « UI-01 » |
 | Référentiel de tokens | version 1 — Prototype UI Civipass V1 (direction « Signalétique civique »), validé le 01/11/2026 |
-| Date d'import | 2026-11-04 |
-| Contenu importé | 75 gabarits de composants, 2 layouts du design system, 66 exemples, 17 contrôleurs Stimulus, 2 feuilles de style, 5 polices, 256 fichiers au total dont 33 adaptés |
+| Date d'import | 2026-11-05 |
+| Contenu importé | 75 gabarits de composants, 2 layouts du design system, 66 exemples, 19 contrôleurs Stimulus, 2 feuilles de style, 5 polices, 261 fichiers au total dont 35 adaptés |
 
 ## Où se trouve chaque chose
 

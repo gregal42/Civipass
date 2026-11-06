@@ -1,0 +1,23 @@
+{#- Section « Situation » : catégorie du bénéficiaire et motif du déplacement (deux référentiels distincts).
+    Variables : f{ category, motif, detail }, err{ category, motif, detail }, categories[], motifs[] (actifs, triés). Le formulaire parent porte cp--reveal. -#}
+<fieldset class="cp-panel cp-reqform__card" id="category" tabindex="-1"{% if err.category|default('') %} aria-describedby="category-error"{% endif %}>
+  <legend class="cp-reqform__legend">{{ agent|default(false) ? 'Le bénéficiaire est…' : 'Vous êtes…' }}</legend>
+  {%- if err.category|default('') %}<p class="cp-field-error" id="category-error">{% include 'components/icon.html.twig' with { name: 'alert', size: 's' } only %}{{ err.category }}</p>{% endif %}
+  <div class="cp-choices cp-choices--grid"{% if err.category|default('') %} aria-invalid="true"{% endif %}>
+    {%- for c in categories %}
+    {% include 'components/choice.html.twig' with { type: 'radio', name: 'category', value: c.id, id: 'cat-' ~ c.id, label: c.label, checked: f.category == c.id } only %}
+    {%- endfor %}
+  </div>
+</fieldset>
+
+<fieldset class="cp-panel cp-reqform__card" id="motif" tabindex="-1"{% if err.motif|default('') %} aria-describedby="motif-error"{% endif %}>
+  <legend class="cp-reqform__legend">{{ agent|default(false) ? 'Pourquoi doit-il se déplacer ?' : 'Pourquoi devez-vous vous déplacer ?' }}</legend>
+  {%- if err.motif|default('') %}<p class="cp-field-error" id="motif-error">{% include 'components/icon.html.twig' with { name: 'alert', size: 's' } only %}{{ err.motif }}</p>{% endif %}
+  <div class="cp-choices"{% if err.motif|default('') %} aria-invalid="true"{% endif %}>
+    {%- for m in motifs %}
+    {% include 'components/choice.html.twig' with { type: 'radio', name: 'motif', value: m.id, id: 'motif-' ~ m.id, label: m.label, checked: f.motif == m.id } only %}
+    {%- endfor %}
+  </div>
+  {% include 'components/field.html.twig' with { id: 'detail', name: 'detail', type: 'textarea', label: 'Précision', value: f.detail, error: err.detail|default(''),
+    help: 'Facultative, sauf si vous choisissez « Autre ».', attrs: 'data-cp--reveal-target="required" data-when="motif=other" maxlength="500"' } only %}
+</fieldset>

@@ -8,8 +8,9 @@
 | [`references/SFD/`](references/SFD/) | SFD détaillé (référence principale), SFD courte, ancien document SF/RM, analyses |
 | [`decisions/`](decisions/README.md) | Registre des décisions métier (`DM-`) et techniques (`DT-`) |
 | [`lots/`](lots/README.md) | Documents par lot, dont l'audit [TECH-02.1](lots/tech-02.1/audit-coherence.md) |
-| [`revisions/`](revisions/README.md) | Propositions de révision SFD V1.1 et STD V1.2 (non validées), contradictions, écarts UI-02 |
+| [`revisions/`](revisions/README.md) | Propositions de révision SFD V1.1 et STD V1.2 (non validées), contradictions, écarts UI-02 et UI-03 |
 | [`lot-02-schema.md`](lot-02-schema.md) | **Schéma de données LOT 02 proposé (en attente de validation)** |
+| [`lot-03-schema.md`](lot-03-schema.md) | **Schéma de données LOT 03 (demandes) proposé, en attente de validation** |
 | [`ux/`](ux/README.md) | Référentiel UX, brief UI, architecture LOT UI-02 |
 | [`archive/`](archive/README.md) | Vide : rien n'est archivé à ce jour |
 | `tools/verify-docs.sh` | Vérifie les SHA-256 et les liens relatifs |

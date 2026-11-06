@@ -30,7 +30,10 @@ const src = (...p) => path.join(archive, ...p);
 const srcScreens = (...p) => path.join(screensArchive, ...p);
 const dst = (...p) => path.join(project, ...p);
 const sha = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
-const esbuild = createRequire(src('package.json'))('esbuild');
+// Outils Node (esbuild, police du monogramme) : ceux de l'archive des composants si elle porte ses node_modules, sinon ceux de
+// l'archive des écrans (une archive livrée sans node_modules, comme UI-03, reste importable sans rien y écrire).
+const toolsArchive = fs.existsSync(src('node_modules/esbuild')) ? archive : screensArchive;
+const esbuild = createRequire(path.join(toolsArchive, 'package.json'))('esbuild');
 const pkg = JSON.parse(fs.readFileSync(src('package.json'), 'utf8'));
 const tokens = JSON.parse(fs.readFileSync(src('tokens/tokens.json'), 'utf8'));
 
@@ -194,7 +197,7 @@ for (const [f, name] of Object.entries(SCREEN)) {
 {
   const color = (name) => tokens.color.tokens.find((t) => t.name === name).value.light;
   const woff = 'node_modules/@fontsource/atkinson-hyperlegible-mono/files/atkinson-hyperlegible-mono-latin-700-normal.woff';
-  put('assets/images/civipass-monogram.svg', buildMonogramSvg(src(woff), { brand: color('brand'), onBrand: color('on-brand') }), { source: woff, adapted: true });
+  put('assets/images/civipass-monogram.svg', buildMonogramSvg(path.join(toolsArchive, woff), { brand: color('brand'), onBrand: color('on-brand') }), { source: woff, adapted: true, screens: toolsArchive === screensArchive });
   adaptations.push({ id: 'M1', target: 'assets/images/civipass-monogram.svg', description: 'Monogramme « Cp » du design system (composant .cp-logo__mark : carré brand de 30 px, rayon 8 px, Atkinson Hyperlegible Mono Bold 14 px, couleur on-brand) en SVG vectoriel, glyphes convertis en tracés depuis la police du design system. Sert de logo au back-office Sonata, qui ne charge ni le CSS ni les polices du design system. Aucune forme nouvelle.', occurrences: null });
 }
 

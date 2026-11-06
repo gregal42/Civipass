@@ -4,14 +4,14 @@
   "screensSource": "UI-01",
   "tokensVersion": 1,
   "tokensSource": "Prototype UI Civipass V1 (direction « Signalétique civique »), validé le 01/11/2026",
-  "importedAt": "2026-11-04",
+  "importedAt": "2026-11-05",
   "tool": "design-system/tools/import.mjs",
   "counts": {
     "componentTemplates": 75,
     "layouts": 2,
     "examples": 66,
-    "controllers": 17,
-    "files": 256
+    "controllers": 19,
+    "files": 261
   },
   "components": [
     "action_bar",
@@ -427,8 +427,8 @@
     {
       "source": "dist/civipass.css",
       "target": "assets/styles/civipass/civipass.css",
-      "sourceSha": "3672ecf51dbb79aadad5897f4157baeedbf579e4cfdc3aa6e6416338a9c7fcb8",
-      "targetSha": "3672ecf51dbb79aadad5897f4157baeedbf579e4cfdc3aa6e6416338a9c7fcb8",
+      "sourceSha": "1b4332dbd06b1f1097e964fef89ef9236255c038206097a55f8aa7129fe650ed",
+      "targetSha": "1b4332dbd06b1f1097e964fef89ef9236255c038206097a55f8aa7129fe650ed",
       "adapted": false
     },
     {
@@ -551,6 +551,20 @@
       "adapted": true
     },
     {
+      "source": "src/controllers/cp/repeat_controller.ts",
+      "target": "assets/controllers/cp/repeat_controller.js",
+      "sourceSha": "01c6fa4fe2e56220d820e2718cdf0c00933b0bc1aa589e0c38121af82ef888a4",
+      "targetSha": "dad373c3ef3705bc14ee467999a59336bae876a7d8545679ae8f0379297d58ef",
+      "adapted": true
+    },
+    {
+      "source": "src/controllers/cp/reveal_controller.ts",
+      "target": "assets/controllers/cp/reveal_controller.js",
+      "sourceSha": "451156471ab6f44ef788a9bf33d0038693e6a0a30f53b61c9f151d5f5fea52a1",
+      "targetSha": "202adb14b7e85449bfd357e9380ffae84ee3f5a6a872e6390d4a9b0882d832e5",
+      "adapted": true
+    },
+    {
       "source": "src/controllers/cp/submit_state_controller.ts",
       "target": "assets/controllers/cp/submit_state_controller.js",
       "sourceSha": "b46714e5e30f5393e6bb0a7520fd7d4cd69d957147c157c4856a275c2bb4ad68",
@@ -595,8 +609,8 @@
     {
       "source": "src/controllers/cp/zone_select_controller.ts",
       "target": "assets/controllers/cp/zone_select_controller.js",
-      "sourceSha": "cfa0b5617d63a6cc5648d5500bebcc07078933d304c1dbe7c2639e57e29e8d86",
-      "targetSha": "8a3ff63a7021042b4149b28380d157ee5e023836f2c5aad4533600fd0a87444b",
+      "sourceSha": "9785fcd400f314fbc121dbd8a7e1a0f724ce70ad4b1cbdf9cd8160990f854c41",
+      "targetSha": "be5f33f42ad849e94b0c28d1db00a2cdd23cefc2a4086ae0325c64221c6acc4c",
       "adapted": true
     },
     {
@@ -882,8 +896,8 @@
     {
       "source": "templates/components/mode_chip.html.twig",
       "target": "templates/components/mode_chip.html.twig",
-      "sourceSha": "64de75dda82dd00a398f1becce31933c24b80f939d31e1cc1ec45c45f19ee25f",
-      "targetSha": "64de75dda82dd00a398f1becce31933c24b80f939d31e1cc1ec45c45f19ee25f",
+      "sourceSha": "b567e923a48909e5145d59278e985f7711d2925a7f4129f5f4a8a772e4901c4d",
+      "targetSha": "b567e923a48909e5145d59278e985f7711d2925a7f4129f5f4a8a772e4901c4d",
       "adapted": false
     },
     {
@@ -1120,8 +1134,8 @@
     {
       "source": "templates/components/zone_select.html.twig",
       "target": "templates/components/zone_select.html.twig",
-      "sourceSha": "aa44fe2fc0e3c84595d6ec2d1f4872a46dcd4c6f03a6f01032c9bdfc3c57206a",
-      "targetSha": "aa44fe2fc0e3c84595d6ec2d1f4872a46dcd4c6f03a6f01032c9bdfc3c57206a",
+      "sourceSha": "fe54253896944eadf984d6492485bb7d033cf0d8b3ddbc64512aedd9a0e824ae",
+      "targetSha": "fe54253896944eadf984d6492485bb7d033cf0d8b3ddbc64512aedd9a0e824ae",
       "adapted": false
     },
     {
@@ -1778,8 +1792,8 @@
     {
       "source": "docs/components/DataTable.md",
       "target": "design-system/docs/components/DataTable.md",
-      "sourceSha": "e27a1c035fb915b2114d8fa9eb3a7d80260e6ea70b5a793ec32e209be6615fa3",
-      "targetSha": "e27a1c035fb915b2114d8fa9eb3a7d80260e6ea70b5a793ec32e209be6615fa3",
+      "sourceSha": "016498dc244dde59d0c0d7530a3f9452971035dcde5be87ac1d6555e5594039f",
+      "targetSha": "016498dc244dde59d0c0d7530a3f9452971035dcde5be87ac1d6555e5594039f",
       "adapted": false
     },
     {
@@ -1918,8 +1932,8 @@
     {
       "source": "docs/components/ModeChip.md",
       "target": "design-system/docs/components/ModeChip.md",
-      "sourceSha": "f22bf4b781b8fca258c901cf9c79df685a8d824ae741b1f0e19167b97826d907",
-      "targetSha": "f22bf4b781b8fca258c901cf9c79df685a8d824ae741b1f0e19167b97826d907",
+      "sourceSha": "38b430a706bfbb8a1e2fc491019682c6b720016b3b4b2108f4f4aeef8c0cf181",
+      "targetSha": "38b430a706bfbb8a1e2fc491019682c6b720016b3b4b2108f4f4aeef8c0cf181",
       "adapted": false
     },
     {
@@ -1986,6 +2000,13 @@
       "adapted": false
     },
     {
+      "source": "docs/components/Repeat.md",
+      "target": "design-system/docs/components/Repeat.md",
+      "sourceSha": "3271bdda34a55cf82a88a6b272e2362ed8f78ce1f9cb3b5b58ac8bbe1fc02291",
+      "targetSha": "3271bdda34a55cf82a88a6b272e2362ed8f78ce1f9cb3b5b58ac8bbe1fc02291",
+      "adapted": false
+    },
+    {
       "source": "docs/components/RequestCard.md",
       "target": "design-system/docs/components/RequestCard.md",
       "sourceSha": "1896603fe5ccea07f3313af6d5e08962fc140430146b6faaa8341b95c02069c4",
@@ -1997,6 +2018,13 @@
       "target": "design-system/docs/components/RequestList.md",
       "sourceSha": "0074eaef6dfb952f3bdcbd91fc1f67fbfac34806233dd758ed8d29af8fce0aca",
       "targetSha": "0074eaef6dfb952f3bdcbd91fc1f67fbfac34806233dd758ed8d29af8fce0aca",
+      "adapted": false
+    },
+    {
+      "source": "docs/components/Reveal.md",
+      "target": "design-system/docs/components/Reveal.md",
+      "sourceSha": "8f627623ae83dbf774930f01bb4b4328f6a6669991c9909ca6d55740a93b97db",
+      "targetSha": "8f627623ae83dbf774930f01bb4b4328f6a6669991c9909ca6d55740a93b97db",
       "adapted": false
     },
     {
@@ -2044,8 +2072,8 @@
     {
       "source": "docs/components/SubNav.md",
       "target": "design-system/docs/components/SubNav.md",
-      "sourceSha": "537c75b4f42eca7c9d42ed9f172ccdc03fb63c9d72d9246a1b021e16b909e127",
-      "targetSha": "537c75b4f42eca7c9d42ed9f172ccdc03fb63c9d72d9246a1b021e16b909e127",
+      "sourceSha": "22c4ed34b946d7c79dab281924547650772346cdcd3a9c4f252c019252fe710f",
+      "targetSha": "22c4ed34b946d7c79dab281924547650772346cdcd3a9c4f252c019252fe710f",
       "adapted": false
     },
     {
@@ -2121,8 +2149,8 @@
     {
       "source": "docs/components/ZoneSelect.md",
       "target": "design-system/docs/components/ZoneSelect.md",
-      "sourceSha": "1bf691f0f54aee8acabff334dd71324e2b6125c703bf58e79a04788b9ccdc0b3",
-      "targetSha": "1bf691f0f54aee8acabff334dd71324e2b6125c703bf58e79a04788b9ccdc0b3",
+      "sourceSha": "d8cb0b04bad29e5862bfb6aed61cd659cad387e298a078deca4672b093ebe956",
+      "targetSha": "d8cb0b04bad29e5862bfb6aed61cd659cad387e298a078deca4672b093ebe956",
       "adapted": false
     },
     {
@@ -2130,6 +2158,13 @@
       "target": "design-system/docs/cover.html",
       "sourceSha": "8a01ff5caf05db7e287b154fdb9f6bd67d2b721165b9ae52ef184b61561a869c",
       "targetSha": "8a01ff5caf05db7e287b154fdb9f6bd67d2b721165b9ae52ef184b61561a869c",
+      "adapted": false
+    },
+    {
+      "source": "docs/lots/LOT-03.md",
+      "target": "design-system/docs/lots/LOT-03.md",
+      "sourceSha": "c4b3b12022090a72ad7e314ed2007533e6b88d8aac40f6ffa48286061e298612",
+      "targetSha": "c4b3b12022090a72ad7e314ed2007533e6b88d8aac40f6ffa48286061e298612",
       "adapted": false
     },
     {

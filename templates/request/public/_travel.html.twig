@@ -1,0 +1,32 @@
+{#- Section « Déplacement » (SCR-023) : mode exclusif ; en véhicule, de 1 à 10 plaques françaises (SIV ou FNI). Variables : f{ mode, plates[] }, err{ mode, plates }. Parent : cp--reveal. -#}
+<fieldset class="cp-panel cp-reqform__card" id="mode" tabindex="-1"{% if err.mode|default('') %} aria-describedby="mode-error"{% endif %}>
+  <legend class="cp-reqform__legend">{{ agent|default(false) ? 'Comment le bénéficiaire va-t-il se déplacer ?' : 'Comment allez-vous vous déplacer ?' }}</legend>
+  {%- if err.mode|default('') %}<p class="cp-field-error" id="mode-error">{% include 'components/icon.html.twig' with { name: 'alert', size: 's' } only %}{{ err.mode }}</p>{% endif %}
+  <div class="cp-choices cp-choices--grid"{% if err.mode|default('') %} aria-invalid="true"{% endif %}>
+    {% include 'components/choice.html.twig' with { type: 'radio', name: 'mode', value: 'foot_bike', id: 'mode-foot', icon: 'walk', label: 'À pied / à vélo', checked: f.mode == 'foot_bike' } only %}
+    {% include 'components/choice.html.twig' with { type: 'radio', name: 'mode', value: 'vehicle', id: 'mode-vehicle', icon: 'car', label: 'En véhicule', checked: f.mode == 'vehicle' } only %}
+  </div>
+</fieldset>
+
+<fieldset class="cp-panel cp-reqform__card" id="plates" tabindex="-1" data-cp--reveal-target="section" data-when="mode=vehicle"
+  data-controller="cp--repeat" data-cp--repeat-noun-value="plaque" aria-describedby="plates-help{% if err.plates|default('') %} plates-error{% endif %}"{% if f.mode != 'vehicle' %} hidden{% endif %}>
+  <legend class="cp-reqform__legend">Immatriculations</legend>
+  <p class="cp-muted" id="plates-help">De 1 à 10 plaques françaises. Exemples : <span class="cp-mono">AB-123-CD</span> ou <span class="cp-mono">1234 AB 56</span>. Une ligne par véhicule.</p>
+  {%- if err.plates|default('') %}<p class="cp-field-error" id="plates-error">{% include 'components/icon.html.twig' with { name: 'alert', size: 's' } only %}{{ err.plates }}</p>{% endif %}
+  <div class="cp-repeat" data-cp--repeat-target="list">
+    {%- for p in (f.plates|length ? f.plates : ['']) %}
+    <div class="cp-repeat__row" data-repeat-row>
+      {% include 'components/field.html.twig' with { id: 'plate-' ~ loop.index0, name: 'plates[]', label: 'Immatriculation', value: p, mono: true, attrs: 'autocapitalize="characters" spellcheck="false" data-plate' } only %}
+      {% include 'components/icon_button.html.twig' with { icon: 'trash', label: 'Retirer cette immatriculation', attrs: 'data-action="cp--repeat#remove"' } only %}
+    </div>
+    {%- endfor %}
+  </div>
+  <template data-cp--repeat-target="template">
+    <div class="cp-repeat__row" data-repeat-row>
+      {% include 'components/field.html.twig' with { id: 'plate-__INDEX__', name: 'plates[]', label: 'Immatriculation', mono: true, attrs: 'autocapitalize="characters" spellcheck="false" data-plate' } only %}
+      {% include 'components/icon_button.html.twig' with { icon: 'trash', label: 'Retirer cette immatriculation', attrs: 'data-action="cp--repeat#remove"' } only %}
+    </div>
+  </template>
+  <div>{% include 'components/button.html.twig' with { label: 'Ajouter une immatriculation', variant: 'secondary', icon: 'plus', attrs: 'data-cp--repeat-target="add" data-action="cp--repeat#add"' } only %}</div>
+  <p class="cp-sr-only" aria-live="polite" data-cp--repeat-target="status"></p>
+</fieldset>

@@ -43,6 +43,11 @@ framework:
             policy: sliding_window
             limit: 5
             interval: '1 hour'
+        # Dépôt public de demande : 40 téléversements de justificatifs / 15 min par IP (stockage et analyse bornés).
+        public_request_upload_ip:
+            policy: sliding_window
+            limit: 40
+            interval: '15 minutes'
         invitation_enroll_ip:
             policy: sliding_window
             limit: 10

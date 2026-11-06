@@ -18,6 +18,8 @@
 - `EventZone` : rattachement à participation, source Zone facultative, **instantané nom/description**, actif. Création pendant événement actif possible, même par commune invitée. Désactivation d'une zone ≠ révocation automatique d'autorisations déjà délivrées.
 
 ## Demandes (6)
+
+> **Révision LOT 03 (5 novembre 2026)** : `Application` (booléens `isProfessional`, `hasVehicle`, motif et statut globaux) est remplacée par le modèle proposé dans [`lot-03-schema.md`](lot-03-schema.md) (DM-097 à DM-105). Le texte d'origine ci-dessous est conservé pour mémoire.
 - `Application` : UUID, référence, événement, `isProfessional` booléen, `hasVehicle` booléen, motif, statut, dates. Plusieurs demandes par personne et événement possibles. Dossier non modifiable par citoyen après soumission.
 - `ApplicantContact` : lien 1:1 vers Application, nom, prénom, adresse, email nullable, téléphone nullable ; au moins l'un des deux.
 - `ApplicationMunicipality` : application + eventParticipation, unique par couple.

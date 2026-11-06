@@ -1,0 +1,6 @@
+{#- Section « Zones » (SCR-022) : zones ouvertes aux demandes, regroupées par commune participante active. Variables : zone_communes[] (ZoneSelect, zones_only), err{ zones }. -#}
+<div class="cp-panel cp-reqform__card" data-controller="clear-error" data-clear-error-watch-value='input[name$="[zones][]"]' data-clear-error-error-value="#zones-error" data-action="change->clear-error#clear">
+  {% include 'components/zone_select.html.twig' with { id: 'zones', legend: agent|default(false) ? 'Où le bénéficiaire doit-il se rendre ?' : 'Où devez-vous vous rendre ?', zones_only: true, communes: zone_communes, error: err.zones|default(''), attrs: 'tabindex="-1"',
+    help: agent|default(false) ? 'Cochez votre commune, puis la ou les zones nécessaires. Seules les zones de votre commune peuvent être choisies.' : 'Cochez une commune, puis la ou les zones nécessaires. Vous pouvez choisir des zones dans plusieurs communes : chaque commune décidera pour les siennes.' } only %}
+  <p class="cp-help">Seules les zones actuellement ouvertes aux demandes sont proposées.</p>
+</div>

@@ -129,3 +129,19 @@ Les points P1 à P6, DT-020 et DT-022 sont **validés** (DM-062, DM-070, DM-071,
 | **R2** | Invitation en attente sans expiration ni relance automatique (D4) : une commune sans administrateur la conserve indéfiniment | mécanisme d'habilitation futur | Non |
 | **R3** | `resendInvitation` enregistre la demande, jamais un envoi effectif (aucune notification dans le périmètre) | lot Notifications | Non |
 | **R4** | La traduction des unicités repose sur le nom d'index dans le message MySQL ; l'interblocage réel n'est pas forçable de façon déterministe (conversion DBAL testée) | à surveiller | Non |
+
+## H. LOT 03 — Demandes (5 novembre 2026)
+
+| Id | Contradiction | Résolution | Traçabilité |
+|---|---|---|---|
+| Q1 | Motif : texte obligatoire (SFD) / liste (UX) / `reason_code` (modèle) | Référentiel distinct de la catégorie, libellés neutres | DM-097 |
+| Q2 | Catégories : sept (CDC) / « particulier-professionnel » (roadmap) / cinq (UI-03) | Cinq, référentiel administrable | DM-098 |
+| Q3 | Modes cumulables (STD, UX) / « piéton/vélo ou véhicule(s) » (SFD) | Exclusif | DM-103 |
+| Q4 | `LP-AAAA-…` (SFD SCR-026) / `DEM-AAAA-NNNN` (UI-001) | `DEM-` pour les demandes, `LP-` pour les laissez-passer | DM-105 |
+| Q5 | « Zone ouverte aux demandes » non définie | `mayOpenRights()` | DM-104 |
+| Q6 | SFD SCR-022 et REC-02 : commune invitée ciblable, instruction différée | **Sans objet** : une commune invitée n'a aucune zone proposable ; elle n'instruit que les demandes déposées après être devenue opérationnelle | DM-104, DM-101 |
+| Q7 | CDC §7.2 : création directe d'un dossier **et** d'un laissez-passer | Dossier au LOT 03, laissez-passer reporté | DM-099 |
+| Q8 | Dossier « figé » (roadmap) / correction d'identité par les agents (SFD §6.3) | Figé au LOT 03 ; corrections historisées au LOT 04 | lot-03-schema §4.3 |
+| Q9 | Plaques étrangères | Hors V1 (conséquence de DM-103), risque accepté | DM-103 |
+
+Arbitrages S1 à S8 validés le 5 novembre 2026 ([lot-03-schema.md](../lot-03-schema.md) §15). Reste à valider : textes juridiques de confidentialité (avant production).

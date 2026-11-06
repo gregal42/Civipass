@@ -40,8 +40,8 @@ final class DeferredMailQueue
             try {
                 $this->mailer->send($message);
             } catch (\Throwable $e) {
-                // Jamais le jeton, le lien ni le destinataire dans les journaux.
-                $this->logger->error('Échec d\'envoi d\'un email de sécurité.', [
+                // Jamais le jeton, le lien, la référence ni le destinataire dans les journaux.
+                $this->logger->error('Échec d\'envoi d\'un email différé.', [
                     'subject' => $message->getSubject(),
                     'exception' => $e::class,
                 ]);

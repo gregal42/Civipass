@@ -3,20 +3,27 @@
   @param string id  @param string legend
   @param array communes  Liste de { id, name, checked, preselected (verrouillée), scope (all | zones), zones: [{ id, name, checked, status (active | suspended) }] }.
   @param string error
+  @param bool zones_only  PROPOSITION LOT 03 (additive) : sans choix « Commune entière / Certaines zones » ; les zones de la commune
+                          (dont, le cas échéant, sa zone « Commune entière ») s’affichent dès que la commune est cochée.
+  @param string help      Aide sous la légende (règle de sélection).   @param string attrs  Attributs de confiance sur le fieldset.
 #}
-<fieldset class="cp-fieldset cp-zone-select" id="{{ id }}" data-controller="cp--zone-select"{% if error|default('') %} aria-describedby="{{ id }}-error"{% endif %}>
+<fieldset class="cp-fieldset cp-zone-select" id="{{ id }}" data-controller="cp--zone-select"{% if error|default('') or help|default('') %} aria-describedby="{% if help|default('') %}{{ id }}-help{% endif %}{% if error|default('') %} {{ id }}-error{% endif %}"{% endif %} {{ attrs|default('')|raw }}>
   <legend class="cp-fieldset__legend">{{ legend|default('Communes et zones') }}</legend>
+  {%- if help|default('') %}<p class="cp-help" id="{{ id }}-help">{{ help }}</p>{% endif %}
+  {%- if error|default('') %}<p class="cp-field-error" id="{{ id }}-error">{% include 'components/icon.html.twig' with { name: 'alert', size: 's' } only %}{{ error }}</p>{% endif %}
   {%- for c in communes %}
   <div class="cp-zone-select__commune" data-role="item">
     <label class="cp-zone-select__head"><input type="checkbox" name="{{ id }}[{{ c.id }}][selected]" value="1" data-role="commune"{% if c.checked|default(false) or c.preselected|default(false) %} checked{% endif %}{% if c.preselected|default(false) %} disabled data-locked="true"{% endif %}><span>{{ c.name }}</span>{% if c.preselected|default(false) %}{% include 'components/tag.html.twig' with { label: 'Présélectionnée' } only %}{% endif %}</label>
     {%- if c.preselected|default(false) %}<input type="hidden" name="{{ id }}[{{ c.id }}][selected]" value="1">{% endif %}
     <div class="cp-zone-select__body" data-role="body">
+      {%- if not zones_only|default(false) %}
       <div class="cp-checks cp-checks--stack" role="radiogroup" aria-label="Territoire demandé à {{ c.name }}">
         {% include 'components/check.html.twig' with { type: 'radio', id: id ~ '-' ~ c.id ~ '-all', name: id ~ '[' ~ c.id ~ '][scope]', value: 'all', label: 'Commune entière', checked: c.scope|default('all') == 'all', attrs: 'data-role="scope"' } only %}
         {%- if c.zones|default([])|length %}
         {% include 'components/check.html.twig' with { type: 'radio', id: id ~ '-' ~ c.id ~ '-zones', name: id ~ '[' ~ c.id ~ '][scope]', value: 'zones', label: 'Certaines zones seulement', checked: c.scope|default('all') == 'zones', attrs: 'data-role="scope"' } only %}
         {%- endif %}
       </div>
+      {%- endif %}
       {%- if c.zones|default([])|length %}
       <div class="cp-zone-select__zones" data-role="zones">
         {%- for z in c.zones %}
@@ -27,5 +34,4 @@
     </div>
   </div>
   {%- endfor %}
-  {%- if error|default('') %}<p class="cp-field-error" id="{{ id }}-error">{% include 'components/icon.html.twig' with { name: 'alert', size: 's' } only %}{{ error }}</p>{% endif %}
 </fieldset>

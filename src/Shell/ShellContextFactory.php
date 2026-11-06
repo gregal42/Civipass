@@ -6,6 +6,7 @@ namespace App\Shell;
 
 use App\Identity\Domain\User;
 use App\Municipality\Application\MembershipAccessPolicy;
+use App\Request\Application\AgentRequestAccess;
 use App\Municipality\Application\MunicipalityContext;
 use App\Municipality\Domain\MembershipRepository;
 use App\Municipality\Domain\MunicipalityMembership;
@@ -53,6 +54,13 @@ final readonly class ShellContextFactory
         $role = $this->roleLabel($membership);
         $eventsUrl = $this->urls->generate('app_municipal_events', ['municipalityId' => $municipality->id()->toRfc4122()]);
 
+        $nav = [['label' => 'Événements', 'icon' => 'flag', 'href' => $eventsUrl, 'current' => 'events' === $section]];
+        if ($membership->hasRole(MunicipalityRole::Instructor)) {
+            $nav[] = ['label' => 'Demandes', 'icon' => 'file', 'href' => $this->urls->generate('app_municipal_requests', ['municipalityId' => $municipality->id()->toRfc4122()]), 'current' => 'requests' === $section];
+        }
+        if (AgentRequestAccess::mayEnter($membership)) {
+            $nav[] = ['label' => 'Nouvelle demande', 'icon' => 'plus', 'href' => $this->urls->generate('app_municipal_request_new', ['municipalityId' => $municipality->id()->toRfc4122()]), 'current' => 'new_request' === $section];
+        }
         $options = [];
         foreach ($this->readableMemberships($user) as $candidate) {
             $options[] = [
@@ -65,11 +73,8 @@ final readonly class ShellContextFactory
 
         return [
             'page_title' => $pageTitle,
-            'nav_items' => [['label' => 'Événements', 'icon' => 'flag', 'href' => $eventsUrl, 'current' => 'events' === $section]],
-            'bottom_items' => [
-                ['label' => 'Événements', 'icon' => 'flag', 'href' => $eventsUrl, 'current' => 'events' === $section],
-                ['label' => 'Menu', 'icon' => 'menu', 'href' => '#', 'modal' => 'cp-mobile-menu'],
-            ],
+            'nav_items' => $nav,
+            'bottom_items' => [...$nav, ['label' => 'Menu', 'icon' => 'menu', 'href' => '#', 'modal' => 'cp-mobile-menu']],
             'menu_items' => [],
             'commune' => [
                 'id' => 'commune',
@@ -85,6 +90,7 @@ final readonly class ShellContextFactory
             'home' => $eventsUrl,
             'logout_href' => $this->urls->generate('app_logout'),
             'cstatus' => MunicipalityStatus::Suspended === $municipality->status() ? ['state' => 'suspended', 'commune' => $municipality->name()] : null,
+            'agent_role' => AgentRequestAccess::mayEnter($membership),
             'active_municipality_id' => $municipality->id()->toRfc4122(),
             'active_municipality_name' => $municipality->name(),
         ];

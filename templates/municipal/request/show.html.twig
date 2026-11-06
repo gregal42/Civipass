@@ -1,0 +1,67 @@
+{% extends 'layouts/app.html.twig' %}
+{% set tz = detail.timezone %}
+{% set modes = { FOOT_BIKE: 'À pied ou à vélo', VEHICLE: 'En véhicule' } %}
+
+{% block content %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+  {% include 'components/breadcrumb.html.twig' with { items: [ { label: 'Demandes', href: requests_url }, { label: detail.eventName, href: list_url }, { label: detail.reference, mono: true } ], back: { label: 'Demandes', href: list_url } } only %}
+
+  <header class="cp-dossier-head">
+    <p class="cp-eyebrow cp-mono">{{ detail.reference }}</p>
+    <h1 class="cp-dossier-head__title">{{ detail.lastName|upper }} {{ detail.firstName }} {% include 'components/status_pill.html.twig' with { status: 'pending', label: 'À traiter', size: 'l' } only %}</h1>
+    <div class="cp-dossier-head__meta">
+      <span>{% include 'components/icon.html.twig' with { name: 'flag', size: 's' } only %} {{ detail.eventName }}</span>
+      <span>{% include 'components/icon.html.twig' with { name: 'clock', size: 's' } only %} Déposée le {{ detail.submittedAt|cp_datetime(tz) }}</span>
+    </div>
+    {% if detail.participationStatus.value == 'SUSPENDED' %}
+      {% include 'components/banner.html.twig' with { variant: 'warning', text: 'La participation de ' ~ active_municipality_name ~ ' est suspendue : ce dossier reste consultable, en lecture seule.' } only %}
+    {% elseif detail.participationStatus.value == 'CLOSED' %}
+      {% include 'components/banner.html.twig' with { variant: 'info', text: 'Participation clôturée : historique en lecture seule.' } only %}
+    {% endif %}
+  </header>
+
+  <div class="cp-dossier__grid" style="margin-top: 20px">
+    <div class="cp-dossier__main">
+      {% set contact = [{ label: 'Nom', value: detail.lastName }, { label: 'Prénom', value: detail.firstName }] %}
+      {% if detail.address %}{% set contact = contact|merge([{ label: 'Adresse', value: detail.address }]) %}{% endif %}
+      {% if detail.email %}{% set contact = contact|merge([{ label: 'Adresse e-mail', value: detail.email }]) %}{% endif %}
+      {% if detail.phone %}{% set contact = contact|merge([{ label: 'Téléphone', value: detail.phone }]) %}{% endif %}
+      {% embed 'components/panel.html.twig' with { id: 'ben-h', title: 'Bénéficiaire', items: contact } only %}
+        {% block body %}{% include 'components/facts.html.twig' with { items: items } only %}{% endblock %}
+      {% endembed %}
+
+      {% set situation = [{ label: 'Catégorie', value: detail.categoryLabel }, { label: 'Motif', value: detail.motifLabel }] %}
+      {% if detail.motifDetail %}{% set situation = situation|merge([{ label: 'Précisions', value: detail.motifDetail }]) %}{% endif %}
+      {% embed 'components/panel.html.twig' with { id: 'sit-h', title: 'Situation', items: situation } only %}
+        {% block body %}{% include 'components/facts.html.twig' with { items: items } only %}{% endblock %}
+      {% endembed %}
+
+      {% set zone_items = detail.zones|map(z => { label: 'Zone', value: z }) %}
+      {% embed 'components/panel.html.twig' with { id: 'zon-h', title: 'Zones demandées à ' ~ active_municipality_name, items: zone_items } only %}
+        {% block body %}{% include 'components/facts.html.twig' with { items: items } only %}{% endblock %}
+      {% endembed %}
+
+      {% set plates_html %}{% if detail.plates|length %}<span class="cp-plates">{% for p in detail.plates %}{% include 'components/plate.html.twig' with { number: p } only %}{% endfor %}</span>{% else %}<span class="cp-facts__plain">Sans véhicule</span>{% endif %}{% endset %}
+      {% set travel = [{ label: 'Mode de déplacement', value: modes[detail.travelMode.value] }] %}
+      {% if detail.travelMode.value == 'VEHICLE' %}{% set travel = travel|merge([{ label: 'Immatriculations', html: plates_html }]) %}{% endif %}
+      {% embed 'components/panel.html.twig' with { id: 'dep-h', title: 'Déplacement', items: travel } only %}
+        {% block body %}{% include 'components/facts.html.twig' with { items: items } only %}{% endblock %}
+      {% endembed %}
+
+      {% embed 'components/panel.html.twig' with { id: 'docs-h', title: 'Justificatifs', meta: detail.attachments|length ? detail.attachments|length ~ (detail.attachments|length > 1 ? ' pièces' : ' pièce') : '', attachments: detail.attachments, urls: download_urls } only %}
+        {% block body %}
+          {% if attachments|length %}
+            <ul class="cp-docs">
+              {% for a in attachments %}
+                <li class="cp-doc">{% include 'components/icon.html.twig' with { name: 'file' } only %}<p class="cp-doc__name">{{ a.name }}</p><p class="cp-doc__meta">{{ a.typeLabel }} · {{ a.sizeLabel }}</p>
+                  <span class="cp-doc__action">{% include 'components/button.html.twig' with { label: 'Télécharger', variant: 'secondary', href: urls[a.id] } only %}</span></li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="cp-facts__plain">Aucun justificatif joint.</p>
+          {% endif %}
+        {% endblock %}
+      {% endembed %}
+    </div>
+  </div>
+{% endblock %}

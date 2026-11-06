@@ -51,6 +51,9 @@ enum AuditAction: string
     case ZoneValiditySlotDeleted = 'ZONE_VALIDITY_SLOT_DELETED';
     case ZoneBulkOperation = 'ZONE_BULK_OPERATION';
 
+    // Demandes de laissez-passer (LOT 03)
+    case RequestSubmitted = 'REQUEST_SUBMITTED';
+
     // Accès commerciaux CWS (DM-076, DT-030) : écrits par le lot Administration CWS.
     case CommercialAccessGranted = 'COMMERCIAL_ACCESS_GRANTED';
     case CommercialAccessRevoked = 'COMMERCIAL_ACCESS_REVOKED';

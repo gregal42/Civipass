@@ -1,0 +1,18 @@
+{#
+  Dépôt de demande indisponible (SCR-019) : événement suspendu, clos ou sans zone ouverte aux demandes. AUCUN formulaire n'est servi.
+  Variables : request_event{ name }.
+#}
+{% extends 'layouts/public.html.twig' %}
+{% block content %}
+<div class="cp-reqform">
+  <div class="cp-reqform__head">
+    <p class="cp-eyebrow">{{ request_event.name }}</p>
+    <h1 class="cp-reqform__title">Demande de laissez-passer</h1>
+  </div>
+  <div class="cp-reqform__main">
+    {% embed 'components/alert.html.twig' with { variant: 'warning', title: 'Les demandes ne sont plus ouvertes pour cet événement', focus: true } only %}
+      {% block content %}<p>L’événement est suspendu ou terminé, ou aucune zone n’est ouverte aux demandes : aucune nouvelle demande ne peut être déposée. Pour toute question, contactez votre mairie.</p>{% endblock %}
+    {% endembed %}
+  </div>
+</div>
+{% endblock %}

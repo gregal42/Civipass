@@ -1,0 +1,122 @@
+{#
+  Formulaire public de demande de laissez-passer (SCR-020 à SCR-025), adapté de public_request.html.twig du prototype UI-03.
+  Une page serveur par étape ; aucun compte ; brouillon en session.
+  Saisie par un agent (agent = vrai) : même formulaire dans la mise en page municipale (layout), libellés « pour le compte d'un bénéficiaire »
+  et attestation d'information de l'agent à la place de la prise de connaissance du bénéficiaire.
+  Variables : request_event{ name, communes[] }, step, steps[] (Stepper), action, prev_href, csrf_id, f (valeurs), err (erreurs par champ ou bloc),
+              errors[] (résumé si plusieurs), categories[], motifs[], zone_communes[], files[], recap[].
+#}
+{% extends layout|default('layouts/public.html.twig') %}
+{# Titre du document : préfixé « Erreur — » quand la page contient des erreurs de validation (titre visible inchangé). #}
+{% block title %}{% if err|length %}Erreur — {% endif %}{{ page_title }} · Civipass{% endblock %}
+{% block content %}
+<div class="cp-reqform">
+  <div class="cp-reqform__head">
+    <p class="cp-eyebrow">{{ request_event.name }}</p>
+    <h1 class="cp-reqform__title">{{ agent ? 'Nouvelle demande de laissez-passer' : 'Demande de laissez-passer' }}</h1>
+    {%- if agent %}
+    <p class="cp-muted"><b>Événement :</b> {{ request_event.name }} · <b>Commune :</b> {{ active_municipality_name }}</p>
+    <p class="cp-muted">Vous effectuez cette saisie pour un bénéficiaire. Votre identité sera enregistrée comme agent à l’origine du dossier.</p>
+    {% include 'components/alert.html.twig' with { variant: 'warning', title: 'Saisie préparatoire : la délivrance immédiate n’est pas encore disponible', text: 'Cette saisie enregistre une demande en attente. Elle ne délivre aucun laissez-passer et ne vaut pas autorisation.' } only %}
+    {%- endif %}
+    {% include 'components/stepper.html.twig' with { label: 'Étapes de la demande', steps: steps } only %}
+  </div>
+
+  <div class="cp-reqform__main">
+    {%- if errors|length > 1 %}{% include 'components/error_summary.html.twig' with { errors: errors } only %}{% endif %}
+    {%- for message in notice|default([]) %}{% include 'components/alert.html.twig' with { variant: 'error', title: 'Votre demande n’a pas pu être envoyée', text: message ~ ' Votre saisie est conservée : vous pouvez corriger puis réessayer.', focus: loop.first } only %}{% endfor %}
+    {%- if err.form|default('') %}{% include 'components/alert.html.twig' with { variant: 'error', title: err.form, focus: true } only %}{% endif %}
+    <form class="cp-reqform__form" action="{{ action }}" method="post" novalidate{% if step == 'justificatifs' %} enctype="multipart/form-data"{% endif %}
+      data-controller="cp--reveal cp--unsaved-guard cp--submit-state" data-action="change->cp--reveal#update">
+      <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+      {%- if step == 'identite' %}{% include 'request/public/_identity.html.twig' with { f: f, err: err, agent: agent } only %}
+      {%- elseif step == 'situation' %}{% include 'request/public/_situation.html.twig' with { f: f, err: err, categories: categories, motifs: motifs, agent: agent } only %}
+      {%- elseif step == 'zones' %}{% include 'request/public/_zones.html.twig' with { err: err, zone_communes: zone_communes, agent: agent } only %}
+      {%- elseif step == 'deplacement' %}{% include 'request/public/_travel.html.twig' with { f: f, err: err, agent: agent } only %}
+      {%- elseif step == 'justificatifs' %}{% include 'request/public/_documents.html.twig' with { err: err, files: files, agent: agent } only %}
+      {%- elseif step == 'recapitulatif' %}
+        <p class="cp-muted">{{ agent ? 'Vérifiez les informations du bénéficiaire.' : 'Vérifiez vos informations.' }} Après l’envoi, la demande ne pourra plus être modifiée.</p>
+        {%- for s in recap %}
+        {% embed 'components/panel.html.twig' with { id: 'recap-' ~ loop.index, title: s.title, s: s } only %}
+          {% block head_end %}<a class="cp-reqform__edit" href="{{ s.href }}">Modifier<span class="cp-sr-only"> : {{ s.title }}</span></a>{% endblock %}
+          {% block body %}
+            {%- set items = [] %}
+            {%- for i in s.items %}
+              {%- if i.plates is defined %}
+                {%- set plates_html %}{% for plate in i.plates %}{% include 'components/plate.html.twig' with { number: plate } only %} {% endfor %}{% endset %}
+                {%- set items = items|merge([{ label: i.label, html: plates_html }]) %}
+              {%- else %}{% set items = items|merge([i]) %}{% endif %}
+            {%- endfor %}
+            {% include 'components/facts.html.twig' with { items: items } only %}
+          {% endblock %}
+        {% endembed %}
+        {%- endfor %}
+        {%- if agent %}
+        <fieldset class="cp-panel cp-reqform__card" id="privacy" tabindex="-1"{% if err.privacy|default('') %} aria-describedby="privacy-error"{% endif %}>
+          <legend class="cp-reqform__legend">Information du bénéficiaire</legend>
+          <p>Les informations sont transmises aux seules communes concernées par la demande, pour l’instruire.{% if privacy_url %} <a href="{{ privacy_url }}" target="_blank" rel="noopener noreferrer">Lire la politique de confidentialité</a>{% endif %}</p>
+          {%- if err.privacy|default('') %}<p class="cp-field-error" id="privacy-error">{% include 'components/icon.html.twig' with { name: 'alert', size: 's' } only %}{{ err.privacy }}</p>{% endif %}
+          {% include 'components/check.html.twig' with { id: 'privacy-ok', name: 'privacy', value: '1', label: 'J’atteste avoir informé le bénéficiaire de la finalité de cette demande et du traitement de ses données personnelles. (obligatoire)', checked: f.privacy == '1' } only %}
+        </fieldset>
+        {%- else %}
+        <fieldset class="cp-panel cp-reqform__card" id="privacy" tabindex="-1"{% if err.privacy|default('') %} aria-describedby="privacy-error"{% endif %}>
+          <legend class="cp-reqform__legend">Vos données personnelles</legend>
+          <p>Vos informations sont transmises aux seules communes concernées par votre demande, pour l’instruire.{% if privacy_url %} <a href="{{ privacy_url }}" target="_blank" rel="noopener noreferrer">Lire la politique de confidentialité</a>{% endif %}</p>
+          {%- if err.privacy|default('') %}<p class="cp-field-error" id="privacy-error">{% include 'components/icon.html.twig' with { name: 'alert', size: 's' } only %}{{ err.privacy }}</p>{% endif %}
+          {% include 'components/check.html.twig' with { id: 'privacy-ok', name: 'privacy', value: '1', label: 'J’ai pris connaissance de la politique de confidentialité (obligatoire)', checked: f.privacy == '1' } only %}
+        </fieldset>
+        {%- endif %}
+      {%- endif %}
+
+      <div class="cp-reqform__nav">
+        {%- if step == 'recapitulatif' %}
+        {% include 'components/button.html.twig' with { label: agent ? 'Déposer la demande' : 'Envoyer ma demande', icon: 'check', type: 'submit', loading_label: 'Vérification en cours…' } only %}
+        {%- else %}
+        {% include 'components/button.html.twig' with { label: 'Continuer', icon_after: 'right', type: 'submit' } only %}
+        {%- endif %}
+        {%- if prev_href %}{% include 'components/button.html.twig' with { label: 'Précédent', variant: 'ghost', icon: 'left', href: prev_href } only %}{% endif %}
+      </div>
+    </form>
+    {#- Formulaire de retrait des justificatifs reçus, HORS du formulaire principal : les boutons « Retirer » lui sont rattachés par
+        l'attribut form, donc la touche Entrée (bouton par défaut du formulaire principal) ne peut jamais déclencher un retrait. -#}
+    {%- if step == 'justificatifs' and files|length %}
+    <form id="remove-files" action="{{ action }}" method="post"><input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"></form>
+    {%- endif %}
+  </div>
+
+  <aside class="cp-reqform__aside" aria-label="À propos de cette demande">
+    {%- if agent %}
+    <section class="cp-panel cp-reqform__card">
+      <h2 class="cp-reqform__h3">{% include 'components/icon.html.twig' with { name: 'info', size: 's' } only %} Saisie pour un bénéficiaire</h2>
+      <ul class="cp-reqform__list">
+        <li>Saisissez les coordonnées du <b>bénéficiaire</b>, jamais les vôtres.</li>
+        <li>Seules les zones de <b>{{ active_municipality_name }}</b> peuvent être choisies.</li>
+        <li>Déposer la demande ne vaut pas autorisation et ne donne aucun droit d’instruction.</li>
+      </ul>
+    </section>
+    <section class="cp-panel cp-reqform__card">
+      <h2 class="cp-reqform__h3">{% include 'components/icon.html.twig' with { name: 'map', size: 's' } only %} Commune concernée</h2>
+      <p>{{ request_event.communes|join(', ') }}</p>
+    </section>
+    {%- else %}
+    <section class="cp-panel cp-reqform__card">
+      <h2 class="cp-reqform__h3">{% include 'components/icon.html.twig' with { name: 'info', size: 's' } only %} Avant de commencer</h2>
+      <ul class="cp-reqform__list">
+        <li>Aucun compte n’est nécessaire. La demande est faite pour vous-même.</li>
+        <li>Vous pouvez demander l’accès à plusieurs zones, dans plusieurs communes, en une seule demande.</li>
+        <li>Vous n’avez pas de date à choisir : la période d’accès est fixée par la mairie.</li>
+        <li><b>Déposer une demande ne vaut pas autorisation.</b> Chaque commune décide pour son territoire.</li>
+      </ul>
+    </section>
+    <section class="cp-panel cp-reqform__card">
+      <h2 class="cp-reqform__h3">{% include 'components/icon.html.twig' with { name: 'map', size: 's' } only %} Communes concernées</h2>
+      <p>{{ request_event.communes|join(', ') }}</p>
+    </section>
+    <section class="cp-panel cp-reqform__card">
+      <h2 class="cp-reqform__h3">{% include 'components/icon.html.twig' with { name: 'shield', size: 's' } only %} Vos données</h2>
+      <p class="cp-muted">Elles servent uniquement à instruire votre demande, par les communes que vous choisirez. L’information complète vous est présentée avant l’envoi.</p>
+    </section>
+    {%- endif %}
+  </aside>
+</div>
+{% endblock %}

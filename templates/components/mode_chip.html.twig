@@ -1,6 +1,6 @@
 {#
   Mode de déplacement.
-  @param string mode  vehicle | foot | bike
+  @param string mode  vehicle | foot | bike | foot_bike (LOT 03 : « À pied / à vélo », mode exclusif du formulaire)
 #}
-{%- set m = { vehicle: ['car', 'Véhicule'], foot: ['walk', 'À pied'], bike: ['bike', 'À vélo'] }[mode] -%}
+{%- set m = { vehicle: ['car', 'Véhicule'], foot: ['walk', 'À pied'], bike: ['bike', 'À vélo'], foot_bike: ['walk', 'À pied / à vélo'] }[mode] -%}
 <span class="cp-mode">{% include 'components/icon.html.twig' with { name: m[0], size: 's' } only %} {{ m[1] }}</span>

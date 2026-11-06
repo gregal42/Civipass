@@ -16,7 +16,7 @@ class stdin_default extends Controller {
         }
         const scope = item.querySelector('[data-role="scope"]:checked');
         if (zones) {
-          const show = on && scope?.value === "zones";
+          const show = on && (scope ? scope.value === "zones" : !item.querySelector('[data-role="scope"]'));
           zones.hidden = !show;
           zones.querySelectorAll("input").forEach((i) => i.disabled = !show || i.dataset.locked === "true");
         }

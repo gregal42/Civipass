@@ -43,12 +43,16 @@
       title: detail.name, type: detail.typeLabel, icon: cp_event_icon(detail.typeCode), status: status_key,
       dates: { start: detail.startsAt|cp_datetime(tz), end: detail.endsAt ? detail.endsAt|cp_datetime(tz) : '' },
       organizer: detail.organizerMunicipalityName, communes: detail.participants.participatingCount, relation: relation, readonly: readonly_text,
-      detail: detail, edit_url: edit_url, invite_url: invite_url, current: current,
+      detail: detail, edit_url: edit_url, invite_url: invite_url, current: current, agent_role: agent_role|default(false), new_request_url: new_request_url|default(''),
     } only %}
     {% block actions %}
       {% import 'municipal/event/_actions.html.twig' as act %}
       {{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Update')), 'Modifier', 'settings', 'secondary', edit_url) }}
       {% if current == 'fiche' %}{{ act.button(detail.visibleAction(constant('App\\Event\\Application\\Read\\EventAction::Invite')), 'Inviter une commune', 'mail', 'secondary', invite_url) }}{% endif %}
+      {# Proposée seulement à un agent habilité, pour un événement actif dont la participation de la commune est active ; l'écran de saisie revérifie tout. #}
+      {% if agent_role|default(false) and detail.status.value == 'ACTIVE' and (detail.relation.value == 'organizer' or (detail.myParticipationStatus and detail.myParticipationStatus.value == 'ACTIVE')) %}
+        {% include 'components/button.html.twig' with { id: 'act-new-request', label: 'Nouvelle demande', icon: 'plus', variant: 'secondary', href: new_request_url } only %}
+      {% endif %}
     {% endblock %}
   {% endembed %}
 

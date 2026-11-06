@@ -1131,3 +1131,63 @@ a.cp-stepper__link:hover { border-color: var(--line-strong); color: var(--ink); 
 .cp-vform__scope { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .cp-vform__periods { display: grid; gap: var(--space-4); min-width: 0; }
 @container cp-vform (max-width: 599px) { .cp-vform__scope { grid-template-columns: minmax(0, 1fr); } }
+
+/* ── src/css/components/requests.css ── */
+/* ───────── LOT 03 — Demandes : formulaire (public et saisie agent), lignes répétables, liste ───────── */
+
+/* Formulaire de demande en étapes (gabarit public) : en-tête + étapes sur toute la largeur, formulaire, encart d’aide. */
+.cp-reqform { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(260px, 1fr); gap: var(--space-6); align-items: start; }
+.cp-reqform > * { min-width: 0; }
+.cp-reqform__head { grid-column: 1 / -1; display: grid; gap: var(--space-3); min-width: 0; }
+.cp-reqform__title { margin: 0; font-size: var(--cp-fs-h1); line-height: 1.2; }
+.cp-reqform__main, .cp-reqform__form, .cp-reqform__aside { display: grid; gap: var(--space-4); min-width: 0; }
+.cp-reqform--agent { max-width: 860px; }
+.cp-reqform__card { display: grid; gap: var(--space-3); min-width: 0; margin: 0; padding: var(--space-5); }
+fieldset.cp-reqform__card { border: 1px solid var(--line); border-radius: var(--radius-l); background: var(--surface); }
+fieldset.cp-reqform__card[aria-invalid="true"] { border: 2px solid var(--bad); }
+.cp-reqform__card:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.cp-reqform__card p { margin: 0; }
+.cp-reqform__legend { padding: 0; margin: 0; font-size: var(--cp-fs-h3, 1.25rem); font-weight: 700; }
+.cp-reqform__h3 { display: flex; gap: var(--space-2); align-items: center; margin: 0; font-size: 1rem; }
+.cp-reqform__h3 .cp-icon { color: var(--brand); }
+.cp-reqform__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: var(--space-4); }
+.cp-reqform__grid > * { min-width: 0; }
+.cp-reqform__list { display: grid; gap: var(--space-2); margin: 0; padding-left: 1.2em; }
+.cp-reqform__nav { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+.cp-reqform__edit { margin-left: auto; font-size: var(--cp-fs-small); font-weight: 700; color: var(--brand); }
+.cp-reqform .cp-zone-select { border: 0; padding: 0; margin: 0; }
+@container cp-public (max-width: 759px) {
+  .cp-reqform { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+  .cp-reqform__card { padding: var(--space-4); }
+  .cp-reqform__nav { flex-direction: column; align-items: stretch; }
+  .cp-reqform__nav .cp-btn { width: 100%; justify-content: center; }
+}
+@container cp-app (max-width: 639px) {
+  .cp-reqform__card { padding: var(--space-4); }
+  .cp-reqform__nav { flex-direction: column; align-items: stretch; }
+  .cp-reqform__nav .cp-btn { width: 100%; justify-content: center; }
+}
+
+/* Lignes répétables (cp--repeat) : champ + bouton « Retirer » aligné sur la saisie. */
+.cp-repeat { display: grid; gap: var(--space-3); }
+.cp-repeat__row { display: grid; grid-template-columns: minmax(0, 22rem) auto; gap: var(--space-2); align-items: end; }
+.cp-repeat__row > * { min-width: 0; }
+.cp-repeat__row > :last-child { margin-bottom: 2px; }
+
+/* Liste : mention de visibilité intercommunale. */
+.cp-scope-note { display: flex; gap: var(--space-2); align-items: flex-start; margin: 0; }
+
+/* DataTable (évolution LOT 03) : ouverture d’une ligne rendue évidente. */
+.cp-table tbody tr:has(.cp-table__link) { cursor: pointer; }
+.cp-table tbody tr:has(.cp-table__link):hover .cp-table__link { text-decoration: underline; }
+@container cp-table (max-width: 639px) {
+  .cp-table tbody tr:has(.cp-table__link) { padding-right: 40px; min-height: var(--tap-min); }
+  .cp-table tbody tr:has(.cp-table__link)::after { content: ""; position: absolute; right: 16px; top: 50%; width: 9px; height: 9px; border-top: 2px solid var(--ink-3); border-right: 2px solid var(--ink-3); transform: translateY(-50%) rotate(45deg); }
+}
+
+/* SubNav (évolution LOT 03) : en compact, les rubriques se partagent la largeur avant de défiler (compteurs non tronqués). */
+@container cp-app (max-width: 639px) {
+  .cp-subnav__list { gap: 0; }
+  .cp-subnav__link { flex: 1 0 auto; justify-content: center; padding-inline: 10px; }
+  .cp-subnav__list > li { display: flex; flex: 1 0 auto; }
+}

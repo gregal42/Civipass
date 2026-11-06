@@ -1,0 +1,28 @@
+{#
+  Confirmation du dépôt (SCR-026), adaptée de public_request.html.twig (étape « confirmation ») du prototype UI-03.
+  Page réservée à la session qui a déposé : aucun QR code, aucun suivi en ligne, aucune modification possible.
+  Variables : request_event{ name }, reference, email.
+#}
+{% extends 'layouts/public.html.twig' %}
+{% block content %}
+<div class="cp-reqform">
+  <div class="cp-reqform__head">
+    <p class="cp-eyebrow">{{ request_event.name }}</p>
+    <h1 class="cp-reqform__title">Demande envoyée</h1>
+  </div>
+  <div class="cp-reqform__main">
+    {% embed 'components/alert.html.twig' with { variant: 'success', title: 'Votre demande a bien été envoyée', focus: true, reference: reference } only %}
+      {% block content %}<p>Référence de votre demande : <b class="cp-mono">{{ reference }}</b>. Notez-la : elle vous sera demandée si vous contactez votre mairie.</p>{% endblock %}
+    {% endembed %}
+    <section class="cp-panel cp-reqform__card" aria-labelledby="next-h">
+      <h2 class="cp-reqform__legend" id="next-h">Et maintenant ?</h2>
+      <ul class="cp-reqform__list">
+        <li>Chaque commune concernée examine la demande pour ses zones.</li>
+        <li>La commune vous contactera avec les coordonnées indiquées{{ email ? ' (' ~ email ~ ')' : '' }}.{% if email %} Un accusé de réception vous est envoyé à cette adresse.{% endif %}</li>
+        <li><b>Cette demande ne vaut pas autorisation.</b> Aucun laissez-passer n’est délivré à ce stade.</li>
+        <li>La demande ne peut plus être modifiée et ne peut pas être suivie en ligne.</li>
+      </ul>
+    </section>
+  </div>
+</div>
+{% endblock %}

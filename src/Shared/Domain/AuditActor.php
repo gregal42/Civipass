@@ -29,6 +29,11 @@ final readonly class AuditActor
         return new self(AuditOrigin::Console, null);
     }
 
+    public static function public(): self
+    {
+        return new self(AuditOrigin::Public, null);
+    }
+
     public static function system(): self
     {
         return new self(AuditOrigin::System, null);

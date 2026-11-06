@@ -1,0 +1,79 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block content %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+  {% set event = listing.event %}
+  {% set page = listing.page %}
+
+  {% if not event %}
+    {% embed 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Demandes', sub: 'Demandes de laissez-passer reçues' } only %}{% endembed %}
+    {% include 'components/empty_state.html.twig' with { icon: 'flag', title: 'Aucun événement', text: 'Les demandes apparaissent ici dès que votre commune participe à un événement.' } only %}
+  {% else %}
+    {% set total_text = page.total ~ (page.total > 1 ? ' demandes' : ' demande') %}
+    {% embed 'components/page_head.html.twig' with { eyebrow: 'Demandes · ' ~ active_municipality_name, title: event.name, sub: total_text ~ (query.hasFilters ? ' correspondant à votre recherche' : ' reçues pour cet événement') } only %}{% endembed %}
+
+    {% if event.participationStatus.value == 'SUSPENDED' %}
+      {% include 'components/banner.html.twig' with { variant: 'warning', text: 'La participation de ' ~ active_municipality_name ~ ' est suspendue : les dossiers existants restent consultables, en lecture seule.' } only %}
+    {% elseif event.participationStatus.value == 'CLOSED' %}
+      {% include 'components/banner.html.twig' with { variant: 'info', text: 'Participation clôturée : historique en lecture seule.' } only %}
+    {% endif %}
+
+    {% set chips = [] %}
+    {% if query.search %}{% set chips = chips|merge([{ label: 'Recherche : ' ~ query.search, remove_href: chip_urls.q }]) %}{% endif %}
+    {% if filters.categorie is defined %}
+      {% for c in listing.categories %}{% if c.code == filters.categorie %}{% set chips = chips|merge([{ label: 'Catégorie : ' ~ c.label, remove_href: chip_urls.categorie }]) %}{% endif %}{% endfor %}
+    {% endif %}
+
+    {% embed 'components/filter_bar.html.twig' with {
+        id: 'filters', action: list_url,
+        search: { id: 'q', label: 'Rechercher une demande', placeholder: 'Référence, nom ou prénom', value: query.search },
+        count_label: total_text, chips: chips, active_count: chips|length, reset_href: reset_url,
+        events: listing.events|map(e => { value: e.eventId, label: e.name }), event_value: event.eventId,
+        categories: [{ value: '', label: 'Toutes les catégories' }]|merge(listing.categories|map(c => { value: c.code, label: c.label })), category_value: filters.categorie ?? '',
+      } only %}
+      {% block filters %}
+        {% include 'components/select.html.twig' with { id: 'f-evenement', name: 'evenement', label: 'Événement', options: events, value: event_value } only %}
+        {% include 'components/select.html.twig' with { id: 'f-categorie', name: 'categorie', label: 'Catégorie', options: categories, value: category_value } only %}
+      {% endblock %}
+    {% endembed %}
+
+    {% if page.total == 0 %}
+      {% if query.hasFilters %}
+        {% include 'components/empty_state.html.twig' with { icon: 'search', title: 'Aucune demande ne correspond', text: 'Modifiez la recherche ou retirez des filtres.' } only %}
+      {% else %}
+        {% include 'components/empty_state.html.twig' with { icon: 'file', title: 'Aucune demande', text: 'Les demandes déposées pour cet événement concernant votre commune apparaîtront ici.' } only %}
+      {% endif %}
+    {% else %}
+      {% set rows = [] %}
+      {% for r in page.items %}
+        {% set pill %}{% include 'components/status_pill.html.twig' with { status: 'pending', label: 'À traiter' } only %}{% endset %}
+        {% set action %}{% include 'components/button.html.twig' with { label: 'Consulter', variant: 'secondary', href: detail_urls[r.requestId] } only %}{% endset %}
+        {% set rows = rows|merge([{ cells: {
+            ref: { text: r.reference, mono: true },
+            name: { text: r.lastName|upper ~ ' ' ~ r.firstName, href: detail_urls[r.requestId] },
+            when: { text: r.submittedAt|cp_datetime(event.timezone), muted: true },
+            cat: { text: r.categoryLabel },
+            zones: { text: r.zones|join(', ') },
+            status: { html: pill },
+            action: { html: action },
+        } }]) %}
+      {% endfor %}
+      {% include 'components/data_table.html.twig' with {
+        caption: page.from ~ '–' ~ page.to ~ ' sur ' ~ page.total ~ ' · plus récentes d’abord',
+        columns: [
+          { key: 'name', label: 'Bénéficiaire', card: 'title' },
+          { key: 'ref', label: 'Référence', card: 'sub' },
+          { key: 'when', label: 'Déposée le', card: 'aside', sort: 'desc' },
+          { key: 'cat', label: 'Catégorie', wide: true },
+          { key: 'zones', label: 'Zones de ' ~ active_municipality_name, card: 'full' },
+          { key: 'status', label: 'Statut', card: 'status' },
+          { key: 'action', label: 'Action', card: 'hide' },
+        ],
+        rows: rows,
+      } only %}
+      {% if page.pages > 1 %}
+        {% include 'components/pagination.html.twig' with { from: page.from, to: page.to, total: page.total, noun: 'demandes', page: page.page, pages: page.pages, href_pattern: page_pattern } only %}
+      {% endif %}
+    {% endif %}
+  {% endif %}
+{% endblock %}

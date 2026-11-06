@@ -21,6 +21,12 @@ final class TestDatabase
      */
     private const EVENT_TABLES = ['onboarding_invitation_link', 'event_zone_validity', 'event_zone', 'event_participation', 'event_event', 'event_type', 'municipality_commercial_access', 'municipality_national_commune'];
 
+    /**
+     * Tables du LOT 03 (module Request), purgées dès qu'elles existent. Le compteur de références n'a pas de ligne
+     * d'amorçage (une ligne par année, créée au premier dépôt) : il est entièrement vidé.
+     */
+    private const REQUEST_TABLES = ['request_idempotency_key', 'request_permit_request_zone', 'request_permit_request_attachment', 'request_permit_request_vehicle', 'request_permit_request_municipality', 'request_permit_request', 'request_motif', 'request_beneficiary_category', 'request_reference_counter'];
+
     public static function reset(EntityManagerInterface $em): void
     {
         $connection = $em->getConnection();
@@ -34,7 +40,7 @@ final class TestDatabase
             Assert::fail(sprintf('Base "%s" refusée : les tests destructifs exigent une base de test (_test).', $database));
         }
 
-        $existing = array_filter(self::EVENT_TABLES, static fn (string $table): bool => $connection->createSchemaManager()->tablesExist([$table]));
+        $existing = array_filter([...self::REQUEST_TABLES, ...self::EVENT_TABLES], static fn (string $table): bool => $connection->createSchemaManager()->tablesExist([$table]));
         $connection->executeStatement('SET FOREIGN_KEY_CHECKS = 0');
         foreach ([...$existing, ...self::TABLES] as $table) {
             $connection->executeStatement('DELETE FROM '.$table);

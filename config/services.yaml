@@ -14,6 +14,11 @@ parameters:
     # (en dessous, la réponse est jugée partielle et l'import refusé).
     env(GEO_API_URL): 'https://geo.api.gouv.fr/communes'
     env(NATIONAL_COMMUNES_MIN_COUNT): '30000'
+    # Stockage privé des fichiers (hors du répertoire public) : jamais servi par le serveur web.
+    # Page de la politique de confidentialité vers laquelle l'attestation du formulaire public renvoie (aucun lien si vide :
+    # le texte juridique relève des collectivités et de leur DPO).
+    env(PRIVACY_POLICY_URL): ''
+    env(PRIVATE_STORAGE_DIR): '%kernel.project_dir%/var/storage'
     env(EVENT_MAX_SLOTS_PER_VALIDITY): '500'
     env(EVENT_MAX_ZONES_PER_BULK_OPERATION): '100'
 
@@ -41,6 +46,11 @@ services:
             - '../src/Event/Application/Result/'
             - '../src/Event/Application/Support/ParsedValidity.php'
             - '../src/Event/Application/Support/ZoneValidityPlan.php'
+            - '../src/Request/Application/Command/'
+            - '../src/Request/Application/Read/'
+            - '../src/Request/Application/Result/'
+            - '../src/Request/UI/Http/PublicRequestDraft.php'
+            - '../src/Request/UI/Http/RequestFormContext.php'
 
     # Objet de domaine sans dépendance obligatoire (le référentiel communal des fuseaux est fourni plus tard).
     App\Event\Domain\Time\TerritoryTimezoneResolver: ~
@@ -49,6 +59,10 @@ services:
     # please note that last definitions always *replace* previous ones
 
 when@test:
+    parameters:
+        # Stockage isolé des tests (jamais le stockage réel).
+        env(PRIVATE_STORAGE_DIR): '%kernel.project_dir%/var/storage_test'
+
     services:
         # Mêmes classes, mêmes alias (#[AsAlias]) et mêmes dépendances qu'en production : seule la visibilité change,
         # pour que le conteneur de test puisse lire les services (sinon supprimés car non référencés).

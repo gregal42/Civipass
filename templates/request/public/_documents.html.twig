@@ -1,0 +1,16 @@
+{#- Section « Justificatifs » (SCR-021) : facultatifs, 5 fichiers maximum, 10 Mo par fichier. Aucun ajout après dépôt.
+    Variables : files[] ({ key, name, size } : fichiers déjà reçus), err{ files }. -#}
+<div class="cp-panel cp-reqform__card" id="docs" tabindex="-1">
+  <h2 class="cp-reqform__legend">Justificatifs</h2>
+  <p class="cp-muted">Facultatifs. Une pièce peut aider la commune à décider (attestation de domicile, ordre de mission…). {{ agent|default(false) ? 'Aucun ajout ne sera possible après le dépôt.' : 'Vous ne pourrez plus en ajouter après l’envoi.' }}</p>
+  {%- if files|length %}
+  <ul class="cp-files" aria-label="Fichiers déjà reçus">
+    {%- for f in files %}
+    <li class="cp-file">{% include 'components/icon.html.twig' with { name: 'file' } only %}<div style="min-width: 0"><p class="cp-file__name">{{ f.name }}</p><p class="cp-file__meta">{{ (f.size / 1024)|round }} Ko · reçu</p></div>
+      <button type="submit" form="remove-files" name="remove" value="{{ f.key }}" class="cp-icon-btn" aria-label="Retirer {{ f.name }}" title="Retirer {{ f.name }}">{% include 'components/icon.html.twig' with { name: 'trash' } only %}</button></li>
+    {%- endfor %}
+  </ul>
+  {%- endif %}
+  {% include 'components/file_upload.html.twig' with { id: 'files', name: 'files[]', label: 'Fichiers à joindre', max: 5 - files|length } only %}
+  {%- if err.files|default('') %}<div id="files-error">{% for line in err.files|split("\n") %}<p class="cp-field-error">{% include 'components/icon.html.twig' with { name: 'alert', size: 's' } only %}{{ line }}</p>{% endfor %}</div>{% endif %}
+</div>

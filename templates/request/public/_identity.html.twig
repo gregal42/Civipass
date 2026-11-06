@@ -1,0 +1,20 @@
+{#- Section « Identité et contact » (SCR-020). Variables : f{ last, first, address, email, phone }, err{ last, first, address, contact, email, phone }. -#}
+<fieldset class="cp-panel cp-reqform__card" id="identity">
+  <legend class="cp-reqform__legend">Qui va se déplacer ?</legend>
+  <p class="cp-muted">{{ agent|default(false) ? 'Indiquez l’identité du bénéficiaire : la demande est faite pour son compte.' : 'Indiquez votre identité : la demande est faite pour vous-même.' }}</p>
+  <div class="cp-reqform__grid">
+    {% include 'components/field.html.twig' with { id: 'last', name: 'last', label: 'Nom', required: true, value: f.last, error: err.last|default(''), autocomplete: agent|default(false) ? 'off' : 'family-name' } only %}
+    {% include 'components/field.html.twig' with { id: 'first', name: 'first', label: 'Prénom', required: true, value: f.first, error: err.first|default(''), autocomplete: agent|default(false) ? 'off' : 'given-name' } only %}
+  </div>
+  {% include 'components/field.html.twig' with { id: 'address', name: 'address', label: 'Adresse postale', optional: true, value: f.address, error: err.address|default(''), autocomplete: agent|default(false) ? 'off' : 'street-address' } only %}
+</fieldset>
+
+<fieldset class="cp-panel cp-reqform__card" id="contact" tabindex="-1"{% if err.contact|default('') %} aria-invalid="true"{% endif %} aria-describedby="contact-help{% if err.contact|default('') %} contact-error{% endif %}">
+  <legend class="cp-reqform__legend">{{ agent|default(false) ? 'Comment joindre le bénéficiaire ?' : 'Comment vous joindre ?' }}</legend>
+  <p class="cp-muted" id="contact-help">{{ agent|default(false) ? 'Ces coordonnées sont celles du bénéficiaire (pas les vôtres) : la commune s’en servira pour le contacter.' : 'Ces coordonnées permettront à la commune de vous contacter au sujet de votre demande.' }} Indiquez au moins une adresse e-mail ou un numéro de téléphone.</p>
+  {%- if err.contact|default('') %}<p class="cp-field-error" id="contact-error">{% include 'components/icon.html.twig' with { name: 'alert', size: 's' } only %}{{ err.contact }}</p>{% endif %}
+  <div class="cp-reqform__grid">
+    {% include 'components/field.html.twig' with { id: 'email', name: 'email', type: 'email', label: 'Adresse e-mail', value: f.email, error: err.email|default(''), help: 'Exemple : nom@exemple.fr' } only %}
+    {% include 'components/field.html.twig' with { id: 'phone', name: 'phone', type: 'tel', label: 'Téléphone mobile', value: f.phone, error: err.phone|default(''), help: 'Exemple : 06 12 34 56 78' } only %}
+  </div>
+</fieldset>

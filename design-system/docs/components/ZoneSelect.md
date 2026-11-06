@@ -13,3 +13,7 @@ Choix des communes puis des zones : « Commune entière » sans autre choix, ou 
 - Proposition pour le formulaire public (référentiel §8, étape 3) ; côté agent, l’approbation utilise des cartes de choix.
 
 Variables : en-tête du gabarit (`@param`) et `index.d.ts`.
+
+
+## LOT 03 — `zones_only`, `help`, `attrs`
+Dans le formulaire de demande, une zone « Commune entière » est une zone comme les autres (LOT UI-02). Avec `zones_only: true`, le choix « Commune entière / Certaines zones » disparaît : cocher une commune affiche directement ses zones ouvertes aux demandes. L’erreur s’affiche sous la légende, reliée au groupe par `aria-describedby`.

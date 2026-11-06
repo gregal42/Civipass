@@ -21,3 +21,7 @@ Navigation secondaire entre les rubriques d’un même objet : vue d’ensemble,
 `Tabs` change un panneau dans la page sans changer d’URL. `SubNav` change de page.
 
 Variables : en-tête du gabarit (`@param`) et `index.d.ts`.
+
+
+## LOT 03 — compact
+Sous 640 px, les rubriques se partagent la largeur avant de défiler : les trois onglets de la liste des demandes et leurs compteurs restent entiers à 375 px.

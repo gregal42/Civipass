@@ -1,0 +1,22 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block content %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+  {% embed 'components/page_head.html.twig' with { eyebrow: 'Demandes · ' ~ active_municipality_name, title: 'Nouvelle demande', sub: 'Créée pour le compte d’un bénéficiaire' } only %}{% endembed %}
+
+  {% if events|length == 0 %}
+    {% include 'components/empty_state.html.twig' with { icon: 'flag', title: 'Aucun événement ouvert aux demandes', text: 'Une demande ne peut être saisie que pour un événement actif auquel votre commune participe.' } only %}
+  {% else %}
+    <p class="cp-muted">Choisissez l’événement pour lequel saisir la demande pour le compte d’un bénéficiaire. Votre identité sera enregistrée comme agent à l’origine du dossier.</p>
+    {% set rows = [] %}
+    {% for e in events %}
+      {% set action %}{% include 'components/button.html.twig' with { label: 'Nouvelle demande', icon: 'plus', variant: 'secondary', href: start_urls[e.eventId] } only %}{% endset %}
+      {% set rows = rows|merge([{ cells: { name: { text: e.name, href: start_urls[e.eventId] }, action: { html: action } } }]) %}
+    {% endfor %}
+    {% include 'components/data_table.html.twig' with {
+      caption: 'Événements ouverts aux demandes · ' ~ active_municipality_name,
+      columns: [{ key: 'name', label: 'Événement', card: 'title' }, { key: 'action', label: 'Action', card: 'hide' }],
+      rows: rows,
+    } only %}
+  {% endif %}
+{% endblock %}

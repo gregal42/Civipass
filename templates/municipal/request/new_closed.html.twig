@@ -1,0 +1,6 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block content %}
+  {% embed 'components/page_head.html.twig' with { eyebrow: 'Demandes · ' ~ active_municipality_name, title: 'Nouvelle demande', sub: request_event.name } only %}{% endembed %}
+  {% include 'components/empty_state.html.twig' with { icon: 'lock', title: 'Aucune zone ne peut être demandée pour le moment', text: 'Aucune commune participante ne propose de zone éligible pour cet événement : la saisie de demande est indisponible.' } only %}
+{% endblock %}
