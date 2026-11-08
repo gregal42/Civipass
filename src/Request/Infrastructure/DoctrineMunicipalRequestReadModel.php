@@ -6,14 +6,17 @@ namespace App\Request\Infrastructure;
 
 use App\Event\Domain\EventParticipation;
 use App\Event\Domain\ParticipationStatus;
+use App\Event\Domain\ZoneStatus;
 use App\Request\Application\MunicipalRequestReadModel;
 use App\Request\Application\Read\DownloadableAttachment;
+use App\Request\Application\Read\DecisionView;
 use App\Request\Application\Read\MunicipalRequestDetail;
 use App\Request\Application\Read\MunicipalRequestPage;
 use App\Request\Application\Read\MunicipalRequestQuery;
 use App\Request\Application\Read\MunicipalRequestRow;
 use App\Request\Application\Read\RequestAttachmentView;
 use App\Request\Application\Read\RequestEventOption;
+use App\Request\Application\Read\RequestZoneView;
 use App\Request\Domain\BeneficiaryCategory;
 use App\Request\Domain\PermitRequestAttachment;
 use App\Request\Domain\PermitRequestMunicipality;
@@ -126,6 +129,9 @@ final readonly class DoctrineMunicipalRequestReadModel implements MunicipalReque
         $event = $request->event();
         $zones = array_map(static fn (PermitRequestZone $z): string => $z->zoneLabel(), $portion->zones());
         sort($zones);
+        $zoneViews = array_map(static fn (PermitRequestZone $z): RequestZoneView => new RequestZoneView($z->zoneLabel(), $z->zone()->validityMode(), ZoneStatus::Suspended === $z->zone()->status()), $portion->zones());
+        usort($zoneViews, static fn (RequestZoneView $a, RequestZoneView $b): int => strcmp($a->label, $b->label));
+        $decision = $portion->decision();
 
         return new MunicipalRequestDetail(
             $request->id()->toRfc4122(),
@@ -148,6 +154,20 @@ final readonly class DoctrineMunicipalRequestReadModel implements MunicipalReque
             $request->travelMode(),
             array_map(static fn (PermitRequestVehicle $v): string => self::plate($v), $request->vehicles()),
             array_map(static fn (PermitRequestAttachment $a): RequestAttachmentView => RequestAttachmentView::of($a->id()->toRfc4122(), $a->originalName(), $a->mimeType(), $a->sizeBytes()), $request->attachments()),
+            $event->status(),
+            $event->endsAt(),
+            $zoneViews,
+            null === $decision ? null : new DecisionView(
+                $decision->outcome(),
+                $decision->path(),
+                $decision->decidedAt(),
+                trim($decision->decidedBy()->firstName().' '.$decision->decidedBy()->lastName()),
+                $decision->durationMode(),
+                $decision->validFrom(),
+                $decision->validUntil(),
+                $decision->refusalReasonLabel(),
+                $decision->refusalComment(),
+            ),
         );
     }
 
@@ -209,6 +229,9 @@ final readonly class DoctrineMunicipalRequestReadModel implements MunicipalReque
             ->setParameter('municipality', $municipalityId, 'uuid')
             ->setParameter('event', Uuid::fromString($event->eventId), 'uuid')
             ->setParameter('invited', ParticipationStatus::Invited);
+        if (null !== $query->status) {
+            $qb->andWhere('prm.status = :status')->setParameter('status', $query->status);
+        }
         if (null !== $query->categoryCode) {
             $qb->join('r.category', 'c')->andWhere('c.code = :category')->setParameter('category', $query->categoryCode);
         }

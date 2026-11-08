@@ -1,0 +1,40 @@
+{% extends 'layouts/app.html.twig' %}
+
+{#
+  Refus (LOT 04.2) : motif actif du référentiel, commentaire facultatif (obligatoire pour « Autre », 500 caractères au plus), rappel du périmètre.
+  Variables : detail, reasons[{code,label,needsDetail}], form{reason,comment}, errors{reason,comment,form}, summary, action_url, csrf_id, request_url.
+#}
+{% block content %}
+  {% set action = 'refuse' %}
+  {% include 'municipal/request/_decision_head.html.twig' %}
+
+  {% if summary|length %}{% include 'components/error_summary.html.twig' with { errors: summary } only %}{% endif %}
+
+  <form class="cp-decision cp-decision--refuse" id="refuse-form" action="{{ action_url }}" method="post" novalidate aria-labelledby="refuse-form-title" data-controller="cp--unsaved-guard cp--submit-state">
+    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+    <div class="cp-decision__head">{% include 'components/icon.html.twig' with { name: 'x' } only %}<h2 class="cp-decision__title" id="refuse-form-title">Motif du refus</h2>
+      <p class="cp-decision__intro">Le refus concerne toutes les zones demandées à {{ active_municipality_name }}. Il ne concerne pas les autres communes.</p></div>
+    <div class="cp-decision__body">
+      <ul class="cp-consequences">
+        {% for z in detail.zoneViews %}<li>{% include 'components/icon.html.twig' with { name: 'right', size: 's' } only %}<span>{{ z.label }}</span></li>{% endfor %}
+      </ul>
+
+      <fieldset class="cp-fieldset" id="f-reason"{% if errors.reason is defined %} aria-describedby="f-reason-error"{% endif %}>
+        <legend class="cp-fieldset__legend">Motif *</legend>
+        <div class="cp-choices">
+          {% for r in reasons %}
+            {% include 'components/choice.html.twig' with { type: 'radio', name: 'reason', value: r.code, id: 'f-reason-' ~ r.code, label: r.label, note: r.needsDetail ? 'Un commentaire est obligatoire.' : '', checked: form.reason == r.code } only %}
+          {% endfor %}
+        </div>
+        {% if errors.reason is defined %}<p class="cp-field__error" id="f-reason-error">{{ errors.reason }}</p>{% endif %}
+      </fieldset>
+
+      {% include 'components/field.html.twig' with { id: 'f-comment', name: 'comment', type: 'textarea', label: 'Commentaire', optional: true, value: form.comment, error: errors.comment|default(''), attrs: 'maxlength="500"', help: '500 caractères au plus. Obligatoire pour le motif « Autre ».' } only %}
+
+      <div class="cp-form-actions">
+        {% include 'components/button.html.twig' with { label: 'Confirmer le refus', variant: 'refuse', icon: 'x', type: 'submit', loading_label: 'Enregistrement…' } only %}
+        {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', href: request_url } only %}
+      </div>
+    </div>
+  </form>
+{% endblock %}

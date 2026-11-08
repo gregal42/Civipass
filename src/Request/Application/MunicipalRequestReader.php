@@ -5,14 +5,19 @@ declare(strict_types=1);
 namespace App\Request\Application;
 
 use App\Event\Domain\EventStatus;
+use App\Event\Domain\ParticipationStatus;
 use App\Identity\Domain\User;
 use App\Municipality\Application\MunicipalityContext;
 use App\Municipality\Domain\MunicipalityRole;
+use App\Request\Application\Read\DecisionPage;
 use App\Request\Application\Read\DownloadableAttachment;
 use App\Request\Application\Read\MunicipalRequestDetail;
 use App\Request\Application\Read\MunicipalRequestListing;
 use App\Request\Application\Read\MunicipalRequestQuery;
 use App\Request\Application\Read\RequestEventOption;
+use App\Request\Domain\MunicipalRequestStatus;
+use App\Request\Domain\RefusalReason;
+use App\Request\Domain\RefusalReasonRepository;
 use App\Shared\Domain\OperationNotAllowed;
 use Symfony\Component\Uid\Uuid;
 
@@ -27,6 +32,7 @@ final readonly class MunicipalRequestReader
     public function __construct(
         private MunicipalityContext $context,
         private MunicipalRequestReadModel $read,
+        private RefusalReasonRepository $refusalReasons,
     ) {
     }
 
@@ -52,7 +58,7 @@ final readonly class MunicipalRequestReader
         $categories = $this->read->categories();
         // Une catégorie inconnue n'est pas un filtre : elle est ignorée, jamais exécutée.
         if (null !== $query->categoryCode && [] === array_filter($categories, static fn (array $c): bool => $c['code'] === $query->categoryCode)) {
-            $query = new MunicipalRequestQuery($query->search, null, $query->page);
+            $query = new MunicipalRequestQuery($query->search, null, $query->page, $query->status);
         }
 
         return new MunicipalRequestListing($events, $selected, $categories, null === $selected ? null : $this->read->search($municipality, $selected, $query));
@@ -67,6 +73,39 @@ final readonly class MunicipalRequestReader
         $municipality = $this->municipality($user, $municipalityId);
 
         return $this->read->detail($municipality, $this->uuid($requestId)) ?? throw new OperationNotAllowed('Ressource inaccessible.');
+    }
+
+    /**
+     * Fiche de la commune + ce qu'il faut aux écrans de décision : motifs de refus actifs et raison éventuelle d'indisponibilité
+     * (commune suspendue, participation non active, événement non opérationnel). Informatif : le service d'instruction revérifie tout.
+     *
+     * @throws OperationNotAllowed
+     * @throws InstructorRoleRequired
+     */
+    public function decisionPage(User $user, string $municipalityId, string $requestId): DecisionPage
+    {
+        $detail = $this->detail($user, $municipalityId, $requestId);
+
+        return new DecisionPage(
+            $detail,
+            array_map(static fn (RefusalReason $r): array => ['code' => $r->code(), 'label' => $r->label(), 'needsDetail' => $r->needsDetail()], $this->refusalReasons->active()),
+            MunicipalRequestStatus::Pending === $detail->status ? $this->unavailableReason($user, $municipalityId, $detail) : null,
+        );
+    }
+
+    private function unavailableReason(User $user, string $municipalityId, MunicipalRequestDetail $detail): ?string
+    {
+        try {
+            $this->context->requireMembership($user, $municipalityId, write: true);
+        } catch (OperationNotAllowed) {
+            return 'Votre commune est suspendue : la décision est impossible, le dossier reste consultable.';
+        }
+
+        return match (true) {
+            ParticipationStatus::Active !== $detail->participationStatus => 'La participation de votre commune à cet événement n’est pas active : la décision est impossible, le dossier reste consultable.',
+            EventStatus::Active !== $detail->eventStatus => 'L’événement n’est pas ouvert aux décisions (suspendu ou clôturé) : le dossier reste consultable.',
+            default => null,
+        };
     }
 
     /**

@@ -20,6 +20,7 @@
 
     {% set chips = [] %}
     {% if query.search %}{% set chips = chips|merge([{ label: 'Recherche : ' ~ query.search, remove_href: chip_urls.q }]) %}{% endif %}
+    {% if query.status %}{% set chips = chips|merge([{ label: 'Statut : ' ~ { PENDING: 'En attente', APPROVED: 'Approuvées', REFUSED: 'Refusées' }[query.status.value], remove_href: chip_urls.statut }]) %}{% endif %}
     {% if filters.categorie is defined %}
       {% for c in listing.categories %}{% if c.code == filters.categorie %}{% set chips = chips|merge([{ label: 'Catégorie : ' ~ c.label, remove_href: chip_urls.categorie }]) %}{% endif %}{% endfor %}
     {% endif %}
@@ -30,12 +31,16 @@
         count_label: total_text, chips: chips, active_count: chips|length, reset_href: reset_url,
         events: listing.events|map(e => { value: e.eventId, label: e.name }), event_value: event.eventId,
         categories: [{ value: '', label: 'Toutes les catégories' }]|merge(listing.categories|map(c => { value: c.code, label: c.label })), category_value: filters.categorie ?? '',
+        status_value: filters.statut ?? '',
       } only %}
       {% block filters %}
+        <input type="hidden" name="statut" value="{{ status_value }}">
         {% include 'components/select.html.twig' with { id: 'f-evenement', name: 'evenement', label: 'Événement', options: events, value: event_value } only %}
         {% include 'components/select.html.twig' with { id: 'f-categorie', name: 'categorie', label: 'Catégorie', options: categories, value: category_value } only %}
       {% endblock %}
     {% endembed %}
+
+    {% include 'components/subnav.html.twig' with { label: 'Filtrer par statut de la demande', items: status_tabs } only %}
 
     {% if page.total == 0 %}
       {% if query.hasFilters %}
@@ -46,20 +51,20 @@
     {% else %}
       {% set rows = [] %}
       {% for r in page.items %}
-        {% set pill %}{% include 'components/status_pill.html.twig' with { status: 'pending', label: 'À traiter' } only %}{% endset %}
+        {% set pill %}{% include 'components/status_pill.html.twig' with { status: r.status.value|lower, label: { PENDING: 'À traiter', APPROVED: 'Approuvée', REFUSED: 'Refusée' }[r.status.value] } only %}{% endset %}
         {% set action %}{% include 'components/button.html.twig' with { label: 'Consulter', variant: 'secondary', href: detail_urls[r.requestId] } only %}{% endset %}
         {% set rows = rows|merge([{ cells: {
             ref: { text: r.reference, mono: true },
             name: { text: r.lastName|upper ~ ' ' ~ r.firstName, href: detail_urls[r.requestId] },
             when: { text: r.submittedAt|cp_datetime(event.timezone), muted: true },
             cat: { text: r.categoryLabel },
-            zones: { text: r.zones|join(', ') },
+            zones: { text: r.zones|length ~ (r.zones|length > 1 ? ' zones' : ' zone') ~ ' : ' ~ r.zones|join(', ') },
             status: { html: pill },
             action: { html: action },
         } }]) %}
       {% endfor %}
       {% include 'components/data_table.html.twig' with {
-        caption: page.from ~ '–' ~ page.to ~ ' sur ' ~ page.total ~ ' · plus récentes d’abord',
+        caption: page.from ~ '–' ~ page.to ~ ' sur ' ~ page.total ~ ' · plus récentes d’abord · ' ~ event.name,
         columns: [
           { key: 'name', label: 'Bénéficiaire', card: 'title' },
           { key: 'ref', label: 'Référence', card: 'sub' },

@@ -1,0 +1,4 @@
+{#- En-tête commun des écrans de décision : fil d'Ariane, statut de la commune, titre et rappel du périmètre. Inclus SANS `only` (lit le contexte). Variables : detail, action ('approve'|'refuse'), requests_url, list_url, request_url. -#}
+{% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+{% include 'components/breadcrumb.html.twig' with { items: [ { label: 'Demandes', href: requests_url }, { label: detail.eventName, href: list_url }, { label: detail.reference, href: request_url, mono: true }, { label: action == 'approve' ? 'Approuver' : 'Refuser' } ], back: { label: 'Dossier ' ~ detail.reference, href: request_url } } only %}
+{% include 'components/page_head.html.twig' with { eyebrow: 'Demande ' ~ detail.reference ~ ' · ' ~ active_municipality_name, title: (action == 'approve' ? 'Approuver la demande de ' : 'Refuser la demande de ') ~ detail.firstName ~ ' ' ~ detail.lastName|upper, sub: detail.eventName } only %}

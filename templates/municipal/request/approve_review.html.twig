@@ -1,0 +1,55 @@
+{% extends 'layouts/app.html.twig' %}
+{% import 'municipal/request/_macros.html.twig' as m %}
+
+{#
+  Approbation, étape 2 : récapitulatif avant confirmation. La période est calculée par le serveur (même calcul que la décision).
+  Variables : detail, form, window (GrantWindow), problems (ZoneProblem[] : zones incompatibles, confirmation impossible), action_url, csrf_id, request_url.
+#}
+{% block content %}
+  {% set action = 'approve' %}
+  {% include 'municipal/request/_decision_head.html.twig' %}
+  {% set tz = detail.timezone %}
+
+  <form class="cp-decision" id="approve-confirm" action="{{ action_url }}" method="post" data-turbo="false" novalidate aria-labelledby="approve-confirm-title" data-controller="cp--unsaved-guard cp--submit-state">
+    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+    <input type="hidden" name="step" value="confirm">
+    {% for field, value in form %}{% if value != '' %}<input type="hidden" name="{{ field }}" value="{{ value }}">{% endif %}{% endfor %}
+    <div class="cp-decision__head">{% include 'components/icon.html.twig' with { name: 'check' } only %}<h2 class="cp-decision__title" id="approve-confirm-title">Confirmer l’approbation</h2>
+      <p class="cp-decision__intro">La décision est définitive : elle ne pourra être ni modifiée ni annulée dans cette version.</p></div>
+    <div class="cp-decision__body">
+      {% include 'components/recap.html.twig' with { title: 'Récapitulatif', rows: [
+        { key: 'Commune', value: active_municipality_name },
+        { key: 'Demande', value: detail.reference, mono: true },
+        { key: 'Zones concernées', value: detail.zoneViews|map(z => z.label)|join(' ; ') },
+        { key: 'Portée', value: 'Toutes les zones demandées à ' ~ active_municipality_name ~ ', sans exception' },
+        { key: 'Durée choisie', value: m.duration(window.mode.value)|trim },
+        { key: 'Période d’autorisation', value: m.period(window.from, window.until, tz)|trim },
+        { key: 'Accès', value: 'Limités aux périodes propres à chaque zone' },
+      ] } only %}
+      {% if problems|length %}
+        {% embed 'components/alert.html.twig' with { variant: 'error', title: 'Approbation impossible avec cette durée', focus: true, problems: problems } only %}
+          {% block content %}
+            <p>L’approbation porte sur toutes les zones ou sur aucune. Chaque zone doit avoir au moins une période d’accès dans la durée choisie :</p>
+            <ul>{% for p in problems %}<li><b>{{ p.label }}</b> — {{ p.explanation }}</li>{% endfor %}</ul>
+            <p>Modifiez la durée, ou refusez la demande.</p>
+          {% endblock %}
+        {% endembed %}
+      {% endif %}
+      <div class="cp-form-actions">
+        {% if problems|length == 0 %}
+          {% include 'components/button.html.twig' with { label: 'Confirmer l’approbation', variant: 'approve', icon: 'check', type: 'submit', loading_label: 'Enregistrement…' } only %}
+        {% else %}
+          {% include 'components/button.html.twig' with { label: 'Confirmer l’approbation', variant: 'approve', icon: 'check', disabled: true, unavailable_reason: 'Une zone est incompatible avec la durée choisie.' } only %}
+        {% endif %}
+      </div>
+    </div>
+  </form>
+  {# Retour au formulaire : les valeurs repartent en POST, jamais dans l'URL. #}
+  <form method="post" action="{{ action_url }}" data-turbo="false" class="cp-form-actions" style="margin-top: var(--space-3)">
+    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+    <input type="hidden" name="step" value="edit">
+    {% for field, value in form %}{% if value != '' %}<input type="hidden" name="{{ field }}" value="{{ value }}">{% endif %}{% endfor %}
+    {% include 'components/button.html.twig' with { label: 'Modifier la durée', variant: 'secondary', type: 'submit' } only %}
+    {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'ghost', href: request_url } only %}
+  </form>
+{% endblock %}

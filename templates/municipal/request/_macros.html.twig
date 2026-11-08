@@ -1,0 +1,17 @@
+{#- Libellés partagés des écrans de décision (LOT 04.2) : durées, modes de validité des zones, statuts de la portion communale. -#}
+{% macro duration(mode) -%}
+  {{ { H24: '24 heures', H48: '48 heures', H72: '72 heures', CUSTOM: 'Jusqu’à une date de fin choisie', UNTIL_CLOSURE: 'Jusqu’à la clôture de l’événement' }[mode] }}
+{%- endmacro %}
+
+{% macro validity(mode) -%}
+  {{ { UNCONFIGURED: 'Validité à configurer', EVENT_DURATION: 'Toute la durée de l’événement', SPECIFIC_PERIODS: 'Périodes spécifiques' }[mode] }}
+{%- endmacro %}
+
+{% macro status_label(status) -%}
+  {{ { PENDING: 'À traiter', APPROVED: 'Approuvée', REFUSED: 'Refusée' }[status] }}
+{%- endmacro %}
+
+{#- Période globale d’une approbation : « du … au … » ou « à partir du … jusqu’à la clôture ». from/until : instants UTC ; tz : fuseau de l’événement. -#}
+{% macro period(from, until, tz) -%}
+  {%- if until -%}du {{ from|cp_datetime(tz) }} au {{ until|cp_datetime(tz) }}{%- else -%}à partir du {{ from|cp_datetime(tz) }}, jusqu’à la clôture de l’événement{%- endif -%}
+{%- endmacro %}

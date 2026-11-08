@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Request\Domain;
 
 use App\Event\Domain\EventParticipation;
+use App\Identity\Domain\User;
 use App\Municipality\Domain\Municipality;
 use App\Shared\Domain\DomainRuleViolation;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -16,7 +17,8 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * Part communale d'un dossier (DM-101) : porte l'état propre à une commune. Les décisions sont indépendantes par
- * commune (aucun statut global). Au LOT 03, seul `PENDING` est écrit.
+ * commune (aucun statut global). `PENDING` au dépôt ; `approve()` / `refuse()` (DM-106) sont les seules transitions, terminales
+ * au LOT 04.1 : elles créent la décision immuable et font passer le statut courant, jamais l'un sans l'autre.
  */
 #[ORM\Entity]
 #[ORM\Table(name: 'request_permit_request_municipality')]
@@ -38,6 +40,9 @@ class PermitRequestMunicipality
     /** @var Collection<int, PermitRequestZone> */
     #[ORM\OneToMany(targetEntity: PermitRequestZone::class, mappedBy: 'requestMunicipality', cascade: ['persist'])]
     private Collection $zones;
+
+    #[ORM\OneToOne(targetEntity: PermitRequestDecision::class, mappedBy: 'requestMunicipality', cascade: ['persist'])]
+    private ?PermitRequestDecision $decision = null;
 
     /**
      * @param list<\App\Event\Domain\EventZone> $zones
@@ -97,6 +102,50 @@ class PermitRequestMunicipality
     public function zones(): array
     {
         return array_values($this->zones->toArray());
+    }
+
+    public function decision(): ?PermitRequestDecision
+    {
+        return $this->decision;
+    }
+
+    /**
+     * Approuve TOUTES les zones demandées à cette commune (aucune approbation partielle). Les contrôles dépendant de
+     * l'environnement (verrous, droits de l'agent, zones utilisables, durée) sont ceux de MunicipalDecisionApplier.
+     */
+    public function approve(GrantWindow $window, User $by, DecisionPath $path, \DateTimeImmutable $now): PermitRequestDecision
+    {
+        $this->assertDecidable(MunicipalRequestStatus::Approved);
+        $decision = PermitRequestDecision::approved($this, $window, $path, $now, $by);
+
+        return $this->record($decision, MunicipalRequestStatus::Approved);
+    }
+
+    /** Refuse TOUTES les zones demandées à cette commune ; les autres communes du dossier ne sont pas touchées. */
+    public function refuse(RefusalReason $reason, ?string $comment, User $by, DecisionPath $path, \DateTimeImmutable $now): PermitRequestDecision
+    {
+        $this->assertDecidable(MunicipalRequestStatus::Refused);
+        $decision = PermitRequestDecision::refused($this, $reason, $comment, $path, $now, $by);
+
+        return $this->record($decision, MunicipalRequestStatus::Refused);
+    }
+
+    private function assertDecidable(MunicipalRequestStatus $target): void
+    {
+        if (!$this->status->canTransitionTo($target) || null !== $this->decision) {
+            throw new DomainRuleViolation('Cette demande a déjà fait l\'objet d\'une décision de la commune.');
+        }
+        if (!$this->participation->isOperational()) {
+            throw new DomainRuleViolation('La participation de la commune ou l\'événement n\'est pas opérationnel.');
+        }
+    }
+
+    private function record(PermitRequestDecision $decision, MunicipalRequestStatus $status): PermitRequestDecision
+    {
+        $this->decision = $decision;
+        $this->status = $status;
+
+        return $decision;
     }
 
     public function createdAt(): \DateTimeImmutable

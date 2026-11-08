@@ -1,0 +1,64 @@
+{% extends 'layouts/app.html.twig' %}
+{% import 'municipal/request/_macros.html.twig' as m %}
+
+{#
+  Approbation, étape 1 : choix de la durée (LOT 04.2). Aucune date de début : l'autorisation commence à la validation.
+  Variables : detail, form{mode,end_date,end_time,occurrence}, errors{duration,form}, summary, ask_occurrence, action_url, csrf_id, request_url.
+#}
+{% block content %}
+  {% set action = 'approve' %}
+  {% include 'municipal/request/_decision_head.html.twig' %}
+  {% set tz = detail.timezone %}
+
+  {% if summary|length %}{% include 'components/error_summary.html.twig' with { errors: summary } only %}{% endif %}
+
+  <form class="cp-decision" id="approve-form" action="{{ action_url }}" method="post" data-turbo="false" novalidate aria-labelledby="approve-form-title"
+        data-controller="cp--reveal cp--unsaved-guard cp--submit-state" data-action="change->cp--reveal#update">
+    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+    <input type="hidden" name="step" value="review">
+    <div class="cp-decision__head">{% include 'components/icon.html.twig' with { name: 'check' } only %}<h2 class="cp-decision__title" id="approve-form-title">Durée de l’autorisation</h2>
+      <p class="cp-decision__intro">L’approbation porte sur toutes les zones demandées à {{ active_municipality_name }}, ou sur aucune. Elle prend effet dès la confirmation.</p></div>
+    <div class="cp-decision__body">
+      <div class="cp-stack" style="gap: var(--space-3)">
+        <p class="cp-field__label">Zones concernées</p>
+        <ul class="cp-consequences">
+          {% for z in detail.zoneViews %}<li>{% include 'components/icon.html.twig' with { name: 'right', size: 's' } only %}<span>{{ z.label }} — {{ m.validity(z.validityMode.value)|trim }}{{ z.suspended ? ' · zone suspendue' : '' }}</span></li>{% endfor %}
+        </ul>
+        <p class="cp-help">Chaque zone doit avoir au moins une période d’accès dans la durée choisie ; sinon l’approbation est refusée en entier. Les accès restent limités aux périodes propres à chaque zone.</p>
+      </div>
+
+      <fieldset class="cp-fieldset" id="f-mode"{% if errors.duration is defined %} aria-describedby="f-mode-error"{% endif %}>
+        <legend class="cp-fieldset__legend">Durée de validité</legend>
+        <div class="cp-choices">
+          {% set options = [
+            { value: 'H24', label: '24 heures', note: 'À compter de la validation.' },
+            { value: 'H48', label: '48 heures', note: 'À compter de la validation.' },
+            { value: 'H72', label: '72 heures', note: 'À compter de la validation.' },
+            { value: 'CUSTOM', label: 'Date et heure de fin personnalisées', note: 'Vous choisissez la fin ; le début est la validation.' },
+            { value: 'UNTIL_CLOSURE', label: 'Jusqu’à la clôture de l’événement', note: 'Aucune date n’est figée : la fin dépend de l’événement.' },
+          ] %}
+          {% for o in options %}
+            {% include 'components/choice.html.twig' with { type: 'radio', name: 'mode', value: o.value, id: 'f-mode-' ~ o.value, label: o.label, note: o.note, checked: form.mode == o.value or (form.mode not in ['H24', 'H48', 'H72', 'CUSTOM', 'UNTIL_CLOSURE'] and o.value == 'H24') } only %}
+          {% endfor %}
+        </div>
+        {% if errors.duration is defined %}<p class="cp-field__error" id="f-mode-error">{{ errors.duration }}</p>{% endif %}
+      </fieldset>
+
+      <div class="cp-stack" data-cp--reveal-target="section" data-when="mode=CUSTOM" style="gap: var(--space-3)"{% if form.mode != 'CUSTOM' %} hidden{% endif %}>
+        <div class="cp-row" style="gap: var(--space-3); flex-wrap: wrap">
+          {% include 'components/field.html.twig' with { id: 'f-end_date', name: 'end_date', type: 'date', label: 'Date de fin *', value: form.end_date, required: true } only %}
+          {% include 'components/field.html.twig' with { id: 'f-end_time', name: 'end_time', type: 'time', label: 'Heure de fin *', value: form.end_time, required: true } only %}
+          {% if ask_occurrence %}
+            {% include 'components/select.html.twig' with { id: 'f-occurrence', name: 'occurrence', label: 'Cette heure se produit deux fois', options: [{ value: '', label: 'Choisir…' }, { value: 'first', label: 'Première fois' }, { value: 'second', label: 'Seconde fois' }], value: form.occurrence } only %}
+          {% endif %}
+        </div>
+        <p class="cp-help">Heure de l’événement ({{ tz }}). {% if detail.eventEndsAt %}La fin ne peut pas dépasser la fin prévue de l’événement : {{ detail.eventEndsAt|cp_datetime(tz) }}.{% else %}Cet événement n’a pas de fin prévue.{% endif %} La fin doit être postérieure à maintenant.</p>
+      </div>
+
+      <div class="cp-form-actions">
+        {% include 'components/button.html.twig' with { label: 'Voir le récapitulatif', variant: 'approve', icon: 'check', type: 'submit', loading_label: 'Vérification…' } only %}
+        {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', href: request_url } only %}
+      </div>
+    </div>
+  </form>
+{% endblock %}

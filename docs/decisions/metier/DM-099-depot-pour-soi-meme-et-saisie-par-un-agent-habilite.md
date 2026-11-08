@@ -4,7 +4,7 @@
 - **Thème** : LOT 03 — Demandes
 - **Statut** : Validée
 - **Validation** : Validé par le commanditaire (arbitrages A1 à A7 de `DesignImport/UI-03/LOT-03.md`, 5 novembre 2026, et message « LOT 03 — Incrément 0 », 5 novembre 2026)
-- **Décisions remplacées** : Aucune.
+- **Décisions remplacées** : Aucune. **Partiellement remplacée par [DM-108](DM-108-delivrance-directe-et-remplacement-de-dm-099.md)** (§2 et §5, délivrance directe par un agent, 8 novembre 2026) ; le texte d'origine est conservé ci-dessous.
 
 ## Contexte
 

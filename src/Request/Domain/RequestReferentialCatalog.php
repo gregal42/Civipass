@@ -31,6 +31,21 @@ final class RequestReferentialCatalog
         ['code' => 'volunteer', 'label' => 'Bénévoles'],
     ];
 
+    /**
+     * Motifs de refus V1 (DM-110, DT-039), dans l'ordre d'affichage. « Autre » exige un commentaire.
+     *
+     * @var list<array{code: string, label: string, needsDetail: bool}>
+     */
+    public const REFUSAL_REASONS = [
+        ['code' => 'ineligible_beneficiary', 'label' => 'Bénéficiaire non éligible', 'needsDetail' => false],
+        ['code' => 'reason_not_justified', 'label' => 'Motif de la demande non justifié ou non vérifiable', 'needsDetail' => false],
+        ['code' => 'documents_insufficient', 'label' => 'Justificatifs insuffisants ou illisibles', 'needsDetail' => false],
+        ['code' => 'zone_not_concerned', 'label' => 'Zone ou secteur non concerné par le besoin', 'needsDetail' => false],
+        ['code' => 'duplicate', 'label' => 'Demande en doublon', 'needsDetail' => false],
+        ['code' => 'inconsistent_information', 'label' => 'Informations incohérentes', 'needsDetail' => false],
+        ['code' => 'other', 'label' => 'Autre', 'needsDetail' => true],
+    ];
+
     private function __construct()
     {
     }

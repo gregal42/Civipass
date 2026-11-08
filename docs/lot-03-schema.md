@@ -6,7 +6,7 @@
 ## 1. Périmètre
 
 Module `src/Request` (couches `Domain`, `Application`, `Infrastructure`, `UI` selon besoin) : dépôt public sans compte, saisie par un agent habilité, référentiels des motifs et des catégories, consultation (liste et fiche) par les communes concernées.
-**Hors périmètre** : instruction (approbation, refus, notes, verrou de 15 min, correction d'identité) = LOT 04 ; laissez-passer, PDF, QR, délivrance directe = LOT 05 ; notifications (aucune confirmation par e-mail tant que le lot Notifications n'existe pas) = LOT 07 ; politique de conservation et purge des pièces = LOT 07 ; interface d'administration des référentiels (reportée, DT-039) ; suivi public du dossier (exclu en V1).
+**Hors périmètre** : instruction (approbation, refus, correction d'identité) = LOT 04 (les **notes privées** et le **verrou de 15 min** sont retirés de la V1) ; délivrance directe = LOT 04.3 (DM-108, remplace DM-099 §5) ; laissez-passer, PDF, QR = LOT 05 ; notifications (aucune confirmation par e-mail tant que le lot Notifications n'existe pas) = LOT 07 ; politique de conservation et purge des pièces = LOT 07 ; interface d'administration des référentiels (reportée, DT-039) ; suivi public du dossier (exclu en V1).
 
 Conventions du dépôt : UUID v7 `BINARY(16)` ; dates UTC ; énums PHP en `VARCHAR` ; FK en `RESTRICT` ; aucune suppression physique d'une donnée métier ; tables préfixées par le module (`request_`) ; audit dans la transaction ; `TransactionRunner`.
 Nom de classe : `PermitRequest` (et non `Request`) pour éviter la collision avec `HttpFoundation\Request` et le mot « application » du STD.
@@ -32,7 +32,7 @@ Un dossier unique par dépôt (DM-101) ; une « part » par commune concernée p
 | `RequestOrigin` | `PUBLIC`, `AGENT` | DM-099 |
 | `TravelMode` | `FOOT_BIKE`, `VEHICLE` | DM-103 |
 | `PlateFormat` | `SIV`, `FNI` | DM-103 |
-| `MunicipalRequestStatus` | `PENDING`, `APPROVED`, `REFUSED` | SFD §2, CDC §7.1 ; **S2 validé**. **LOT 03 : seul `PENDING` est écrit** ; les transitions et la décision (totale ou partielle) sont du LOT 04. `inReview` et `additionalInfoRequested` du STD ne sont **pas** retenus (pièces complémentaires hors V1 ; le verrou n'est pas un statut). |
+| `MunicipalRequestStatus` | `PENDING`, `APPROVED`, `REFUSED` | SFD §2, CDC §7.1 ; **S2 validé**. **LOT 03 : seul `PENDING` est écrit** ; les transitions et la décision sont du LOT 04 (**décision binaire par commune, sans approbation partielle : DM-106**, qui corrige la mention « totale ou partielle » d'origine ; voir [lot-04-schema.md](lot-04-schema.md)). `inReview` et `additionalInfoRequested` du STD ne sont **pas** retenus (pièces complémentaires hors V1 ; le verrou n'est pas un statut). |
 | `AuditAction` (ajouts) | `REQUEST_SUBMITTED` (une ligne par commune concernée, `origin` dans `new_value`), `REQUEST_REFERENTIAL_CHANGED` | DT-037 |
 | `AuditSubjectType` (ajouts) | `PERMIT_REQUEST`, `REQUEST_MOTIF`, `BENEFICIARY_CATEGORY` | DT-006 |
 | `AuditOrigin` (ajout) | `PUBLIC` (dépôt sans compte) ; `actor_id = NULL` | DT-022 |

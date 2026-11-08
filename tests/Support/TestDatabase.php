@@ -25,7 +25,7 @@ final class TestDatabase
      * Tables du LOT 03 (module Request), purgées dès qu'elles existent. Le compteur de références n'a pas de ligne
      * d'amorçage (une ligne par année, créée au premier dépôt) : il est entièrement vidé.
      */
-    private const REQUEST_TABLES = ['request_idempotency_key', 'request_permit_request_zone', 'request_permit_request_attachment', 'request_permit_request_vehicle', 'request_permit_request_municipality', 'request_permit_request', 'request_motif', 'request_beneficiary_category', 'request_reference_counter'];
+    private const REQUEST_TABLES = ['request_idempotency_key', 'request_permit_request_decision', 'request_permit_request_zone', 'request_permit_request_attachment', 'request_permit_request_vehicle', 'request_permit_request_municipality', 'request_permit_request', 'request_motif', 'request_beneficiary_category', 'request_refusal_reason', 'request_reference_counter'];
 
     public static function reset(EntityManagerInterface $em): void
     {

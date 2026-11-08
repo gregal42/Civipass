@@ -37,12 +37,14 @@ Petits lots, schéma revu avant migrations, tests automatisés et `make quality`
 - Dossier figé après dépôt, plusieurs demandes par personne/événement.
 
 ## LOT 04 — Instruction
-- Instruction par commune, décisions et notes privées ; historique immuable.
+- Instruction par commune : décision binaire APPROVED/REFUSED (DM-106), durée d'autorisation (DM-109), motifs de refus (DM-110), historique immuable ; délivrance directe (DM-108). Les notes privées et le verrou fonctionnel de 15 minutes sont retirés de la V1.
 - Tests d'accès croisés et de concurrence.
+- Découpage : 04.1 moteur de décision ; 04.2 interface d'instruction ; 04.3 délivrance directe ; 04.4 correction d'identité (détail : [lot-04-schema.md](lot-04-schema.md)).
 
 ## LOT 05 — Laissez-passer
 - QR stable, PDF A4, autorisations communales, zones et véhicules.
-- 24/48/72 h, date personnalisée, fin événement ; prolongation, modification, révocation, historique.
+- Le choix de durée (24/48/72 h, date personnalisée, jusqu'à clôture) et la fenêtre globale sont livrés au LOT 04 (DM-109) ; le LOT 05 ajoute prolongation, modification, révocation et historique.
+- Laissez-passer émis à la première approbation communale, unique par demande, QR stable ; les approbations suivantes ajoutent leurs droits (DT-044).
 - Tests des échéances et des transitions intercommunales.
 
 ## LOT 06 — Contrôle

@@ -8,7 +8,7 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 - Statuts : **Proposée** (recommandation non validée), **Validée**, **Remplacée**, **Abandonnée**.
 - Une fiche indique l'identifiant, le titre, la validation (date), le contexte, la décision, les conséquences, les documents concernés et les décisions remplacées.
 - Les dates de validation ne sont pas connues pour les décisions antérieures à cette mission : elles sont marquées « date de validation non renseignée » et ne sont jamais inventées.
-- Une recommandation d'agent n'est **jamais** une décision validée. Arbitrages **validés** : A1 à A14, R1 à R9, P1 à P6, DT-020, DT-022, DT-023, DT-030, T1 (DM-076), DRAFT → CLOSED (DM-077) et administration des accès commerciaux depuis Sonata (DM-078), `revoked_by` (DM-079), type de zone immuable (DM-080), historique de suspension (DM-081), T2 (DM-082), limite de 3 660 jours (DM-083) : DM-051 à DM-066, DM-068 à DM-105 (DM-097 à DM-105 : LOT 03, 5 novembre 2026) ; DT-024, DT-035 à DT-039. `DM-067` n'est pas attribué. Points résiduels de détail (T2 à T6) : [`../revisions/CONTRADICTIONS.md`](../revisions/CONTRADICTIONS.md). Les fiches techniques `Proposée` (DT-021, DT-025 à DT-029, DT-031) sont des propositions en attente de validation.
+- Une recommandation d'agent n'est **jamais** une décision validée. Arbitrages **validés** : A1 à A14, R1 à R9, P1 à P6, DT-020, DT-022, DT-023, DT-030, T1 (DM-076), DRAFT → CLOSED (DM-077) et administration des accès commerciaux depuis Sonata (DM-078), `revoked_by` (DM-079), type de zone immuable (DM-080), historique de suspension (DM-081), T2 (DM-082), limite de 3 660 jours (DM-083) : DM-051 à DM-066, DM-068 à DM-110 (DM-097 à DM-105 : LOT 03, 5 novembre 2026 ; DM-106 à DM-110 : LOT 04, 8 novembre 2026) ; DT-024, DT-035 à DT-044. `DM-067` n'est pas attribué. Points résiduels de détail (T2 à T6) : [`../revisions/CONTRADICTIONS.md`](../revisions/CONTRADICTIONS.md). Les fiches techniques `Proposée` (DT-021, DT-025 à DT-029, DT-031) sont des propositions en attente de validation.
 - Une contradiction entre un document et une décision validée est signalée dans la fiche (« Écarts documentaires signalés »), sans modifier silencieusement le document.
 - Les décisions D1–D20 de [`../lot-01-schema.md`](../lot-01-schema.md) et D1–D8 de [`../ux/UX-LOT-UI-02-architecture.md`](../ux/UX-LOT-UI-02-architecture.md) gardent leur numérotation d'origine dans leurs documents (collision connue, écart N4) ; ce registre les reprend sous des identifiants DM/DT.
 
@@ -107,6 +107,11 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DM-103](metier/DM-103-mode-de-deplacement-exclusif-et-plaques-siv-fni.md) | Mode de déplacement exclusif ; plaques françaises SIV/FNI | LOT 03 — Demandes | Validée |
 | [DM-104](metier/DM-104-zones-proposables-au-depot.md) | Zones proposables au dépôt : « ouverte aux demandes » définie | LOT 03 — Demandes | Validée |
 | [DM-105](metier/DM-105-references-dem-pour-les-demandes-lp-pour-les-laissez-passer.md) | Références : `DEM-AAAA-NNNN` pour les demandes, `LP-` pour les laissez-passer délivrés | LOT 03 — Demandes | Validée |
+| [DM-106](metier/DM-106-decision-binaire-par-commune.md) | Décision binaire par commune, sans approbation partielle | LOT 04 — Instruction | Validée |
+| [DM-107](metier/DM-107-instruction-reservee-a-instructor.md) | Instruction réservée au rôle INSTRUCTOR de la commune | LOT 04 — Instruction | Validée |
+| [DM-108](metier/DM-108-delivrance-directe-et-remplacement-de-dm-099.md) | Délivrance directe : approbation immédiate, remplacement de DM-099 §2 et §5 | LOT 04 — Instruction | Validée |
+| [DM-109](metier/DM-109-durees-et-periodes-effectives.md) | Durées d'autorisation et périodes d'accès effectives | LOT 04 — Instruction | Validée |
+| [DM-110](metier/DM-110-motifs-de-refus.md) | Référentiel des motifs de refus | LOT 04 — Instruction | Validée |
 
 ## Décisions techniques
 
@@ -151,6 +156,11 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DT-037](technique/DT-037-d5-audit-metier-structure-sans-texte-libre-ni-donnee-personn.md) | D5 — Audit métier structuré, sans texte libre ni donnée personnelle | Audit | Validée |
 | [DT-038](technique/DT-038-horodatage-d-audit-pris-sous-verrou.md) | Horodatage des écritures et des audits pris après l'acquisition des verrous | Audit | Validée |
 | [DT-039](technique/DT-039-referentiels-de-demande-initialisation-et-gestion-par-commande.md) | Référentiels de demande : persistance en base, initialisation idempotente ; administration ultérieure par Sonata | Données | Validée |
+| [DT-040](technique/DT-040-decision-municipale-immuable-et-moteur-commun.md) | Décision municipale immuable et moteur de décision commun | LOT 04 — Architecture | Validée |
+| [DT-041](technique/DT-041-verrous-et-conflits-de-la-decision.md) | Ordre des verrous et conflits de la décision municipale | LOT 04 — Architecture | Validée |
+| [DT-042](technique/DT-042-fenetre-d-autorisation-stockee-acces-calcules.md) | Fenêtre d'autorisation stockée, accès effectifs calculés | LOT 04 — Architecture | Validée |
+| [DT-043](technique/DT-043-delivrance-directe-dans-le-service-de-depot.md) | Délivrance directe : raccordement dans le service de dépôt (LOT 04.3) | LOT 04 — Architecture | Validée |
+| [DT-044](technique/DT-044-point-d-integration-du-lot-05.md) | Point d'intégration du LOT 05 : port transactionnel, effets après commit | LOT 04 — Architecture | Validée |
 
 ## Modèle de fiche
 

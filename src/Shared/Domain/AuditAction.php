@@ -54,6 +54,10 @@ enum AuditAction: string
     // Demandes de laissez-passer (LOT 03)
     case RequestSubmitted = 'REQUEST_SUBMITTED';
 
+    // Décisions communales (LOT 04, DM-106) : une ligne par décision, sans commentaire libre ni donnée personnelle.
+    case RequestApproved = 'REQUEST_APPROVED';
+    case RequestRefused = 'REQUEST_REFUSED';
+
     // Accès commerciaux CWS (DM-076, DT-030) : écrits par le lot Administration CWS.
     case CommercialAccessGranted = 'COMMERCIAL_ACCESS_GRANTED';
     case CommercialAccessRevoked = 'COMMERCIAL_ACCESS_REVOKED';
