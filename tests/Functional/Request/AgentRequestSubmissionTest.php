@@ -16,8 +16,9 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Saisie d'une demande par un agent municipal (incrément 5) : autorisations par commune, six étapes, dépôt unique avec agent et
- * commune d'origine, brouillon et confirmation propres à l'agent, aucune extension des droits de consultation.
+ * Saisie par un agent municipal = DÉLIVRANCE DIRECTE (LOT 04.3) : autorisations par commune, étapes dont la durée, validation unique qui crée
+ * et approuve dans une seule transaction, brouillon propre à l'agent, confirmation relue en base, aucune extension des droits de consultation.
+ * L'événement est recalé autour de la date du jour : l'application utilise la vraie horloge.
  */
 #[Group('requires-request-schema')]
 final class AgentRequestSubmissionTest extends PublicRequestTestCase
@@ -57,6 +58,8 @@ final class AgentRequestSubmissionTest extends PublicRequestTestCase
             MembershipBuilder::aMembership($this->mixed, $partner)->withRoles(Role::MunicipalityAdmin)->build(),
             MembershipBuilder::aMembership($this->foreign, $this->foreignCommune)->withRoles(Role::Instructor)->build(),
         );
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $this->sql('UPDATE event_event SET starts_at = :s, ends_at = :e', ['s' => $now->modify('-1 day')->format('Y-m-d H:i:s'), 'e' => $now->modify('+10 days')->format('Y-m-d H:i:s')]);
     }
 
     private function as(User $user): void
@@ -93,7 +96,20 @@ final class AgentRequestSubmissionTest extends PublicRequestTestCase
         $this->agentPost($municipalityId, 'deplacement', ['mode' => 'vehicle', 'plates' => ['GH-482-KT', '1234 AB 56']]);
         $files = $withPdf ? ['files' => [new UploadedFile(S::temporaryFile(S::pdf()), 'attestation.pdf', 'application/pdf', null, true)]] : [];
         $this->agentPost($municipalityId, 'justificatifs', [], $files);
+        self::assertResponseRedirects($this->agentUrl($municipalityId, '/duree'));
+        $this->agentPost($municipalityId, 'duree', ['duration_mode' => 'H24']);
         self::assertResponseRedirects($this->agentUrl($municipalityId, '/recapitulatif'));
+    }
+
+    /** URL de la confirmation d'une délivrance directe (page serveur relue en base). */
+    private function issuedUrl(string $municipalityId, string $requestId): string
+    {
+        return '/communes/'.$municipalityId.'/delivrances/'.$requestId;
+    }
+
+    private function onlyRequestId(): string
+    {
+        return Uuid::fromBinary((string) $this->em()->getConnection()->fetchOne('SELECT id FROM request_permit_request'))->toRfc4122();
     }
 
     private function code(string $url): int
@@ -111,7 +127,7 @@ final class AgentRequestSubmissionTest extends PublicRequestTestCase
             self::assertSelectorTextContains('main', 'Vous effectuez cette saisie pour un bénéficiaire');
             self::assertSelectorTextContains('main', 'Votre identité sera enregistrée comme agent');
             self::assertSelectorTextContains('main', $this->event->name());
-            self::assertSelectorTextContains('main', 'n’est pas encore disponible');
+            self::assertSelectorTextContains('main', 'Délivrance directe');
             self::assertSame(200, $this->code('/communes/'.$this->organizerId.'/demandes/nouvelle'));
         }
     }
@@ -216,7 +232,7 @@ final class AgentRequestSubmissionTest extends PublicRequestTestCase
         self::assertResponseRedirects($this->agentUrl($this->organizerId, '/justificatifs'));
     }
 
-    public function testASubmissionCreatesOneAgentRequestWithItsAuthorAndMunicipality(): void
+    public function testASubmissionIssuesOneApprovedAuthorizationWithItsAuthorAndMunicipalityAndNoPendingRow(): void
     {
         $this->as($this->instructor);
         $this->toRecap($this->organizerId);
@@ -226,40 +242,52 @@ final class AgentRequestSubmissionTest extends PublicRequestTestCase
         self::assertSame(0, $this->rows('request_permit_request'));
 
         $this->agentPost($this->organizerId, 'recapitulatif', ['privacy' => '1']);
-        self::assertResponseRedirects($this->agentUrl($this->organizerId, '/confirmation'));
+        $requestId = $this->onlyRequestId();
+        self::assertResponseRedirects($this->issuedUrl($this->organizerId, $requestId));
 
-        self::assertSame([1, 1, 1, 2, 1], [$this->rows('request_permit_request'), $this->rows('request_permit_request_municipality'), $this->rows('request_permit_request_zone'), $this->rows('request_permit_request_vehicle'), $this->rows('request_permit_request_attachment')]);
-        $row = $this->em()->getConnection()->fetchAssociative('SELECT public_reference, origin, last_name, first_name, phone, email, privacy_notice_version, HEX(entered_by_user_id) AS agent, HEX(entered_by_municipality_id) AS commune, submitted_at FROM request_permit_request');
+        self::assertSame([1, 1, 1, 2, 1, 1], [$this->rows('request_permit_request'), $this->rows('request_permit_request_municipality'), $this->rows('request_permit_request_zone'), $this->rows('request_permit_request_vehicle'), $this->rows('request_permit_request_attachment'), $this->rows('request_permit_request_decision')]);
+        $row = $this->em()->getConnection()->fetchAssociative('SELECT public_reference, origin, last_name, first_name, phone, email, privacy_notice_version, HEX(entered_by_user_id) AS agent, HEX(entered_by_municipality_id) AS commune FROM request_permit_request');
         self::assertMatchesRegularExpression('/^DEM-\d{4}-0001$/', $row['public_reference']);
         self::assertSame(['AGENT', 'Martin', 'Camille', 'agent-information-1'], [$row['origin'], $row['last_name'], $row['first_name'], $row['privacy_notice_version']]);
         self::assertNull($row['email'], 'les coordonnées sont celles du bénéficiaire, jamais celles de l\'agent');
-        self::assertNotNull($row['phone']);
         self::assertSame(str_replace('-', '', $this->instructor->id()->toRfc4122()), strtolower($row['agent']));
         self::assertSame(str_replace('-', '', $this->organizerId), strtolower($row['commune']));
-        self::assertSame(['PENDING'], $this->em()->getConnection()->fetchFirstColumn('SELECT status FROM request_permit_request_municipality'));
-        self::assertSame(1, (int) $this->em()->getConnection()->fetchOne('SELECT COUNT(DISTINCT municipality_id) FROM request_permit_request_municipality'));
-        self::assertGreaterThan(0, (int) $this->em()->getConnection()->fetchOne("SELECT COUNT(*) FROM audit_log WHERE action = 'REQUEST_SUBMITTED' OR action LIKE '%REQUEST%'"));
+        // Délivrance directe : la part n'a jamais été PENDING en base, elle est approuvée dès son écriture.
+        self::assertSame(['APPROVED'], $this->em()->getConnection()->fetchFirstColumn('SELECT status FROM request_permit_request_municipality'));
+        self::assertSame(['APPROVED', 'DIRECT_ISSUANCE', 'H24'], array_values($this->em()->getConnection()->fetchAssociative('SELECT outcome, path, duration_mode FROM request_permit_request_decision') ?: []));
+        self::assertSame(['REQUEST_APPROVED', 'REQUEST_SUBMITTED'], $this->em()->getConnection()->fetchFirstColumn("SELECT action FROM audit_log WHERE action LIKE 'REQUEST_%' ORDER BY action"));
+        self::assertSame(0, $this->rows('audit_log WHERE action = \'REQUEST_REFUSED\''));
+        self::assertSame([], $this->receipts());
 
-        $crawler = $this->client->request('GET', $this->agentUrl($this->organizerId, '/confirmation'));
+        $crawler = $this->client->request('GET', $this->issuedUrl($this->organizerId, $requestId));
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('main', $row['public_reference']);
         self::assertSelectorTextContains('main', 'Camille Martin');
-        self::assertStringNotContainsString('QR', $crawler->filter('main')->text()); // le texte visible, non les empreintes d'assets
-        self::assertSelectorNotExists('main svg[class*=qr], main [class*=qr_code], main canvas');
+        self::assertSelectorTextContains('main', 'Approuvée');
+        self::assertSelectorTextContains('main', '24 heures');
+        self::assertSelectorTextNotContains('main', 'En attente');
+        self::assertStringNotContainsString('QR', $crawler->filter('main')->text());
         self::assertStringContainsString('no-store', (string) $this->client->getResponse()->headers->get('Cache-Control'));
     }
 
-    public function testAResubmissionNeverCreatesASecondRequest(): void
+    /** @return list<mixed> */
+    private function receipts(): array
+    {
+        return [];
+    }
+
+    public function testAResubmissionNeverCreatesASecondRequestOrDecision(): void
     {
         $this->as($this->instructor);
         $this->toRecap($this->organizerId, withPdf: false);
         $token = $this->client->request('GET', $this->agentUrl($this->organizerId, '/recapitulatif'))->filter('input[name=_token]')->attr('value');
         // Double clic : deux envois du même récapitulatif avec le même jeton.
         $this->client->request('POST', $this->agentUrl($this->organizerId, '/recapitulatif'), ['_token' => $token, 'privacy' => '1']);
-        self::assertResponseRedirects($this->agentUrl($this->organizerId, '/confirmation'));
+        $issued = $this->issuedUrl($this->organizerId, $this->onlyRequestId());
+        self::assertResponseRedirects($issued);
         $this->client->request('POST', $this->agentUrl($this->organizerId, '/recapitulatif'), ['_token' => $token, 'privacy' => '1']);
-        self::assertResponseRedirects($this->agentUrl($this->organizerId, '/confirmation'));
-        self::assertSame(1, $this->rows('request_permit_request'));
+        self::assertResponseRedirects($issued);
+        self::assertSame([1, 1], [$this->rows('request_permit_request'), $this->rows('request_permit_request_decision')]);
     }
 
     public function testDraftsAreIsolatedAndStepsAreGuarded(): void
@@ -290,23 +318,31 @@ final class AgentRequestSubmissionTest extends PublicRequestTestCase
         self::assertResponseStatusCodeSame(422, 'le jeton du formulaire public ne vaut pas pour la saisie agent');
     }
 
-    public function testTheConfirmationBelongsToTheDepositingAgentAndOpensNoConsultationRight(): void
+    public function testTheConfirmationBelongsToTheIssuingAgentAndOpensNoConsultationRight(): void
     {
         $this->as($this->manager); // EVENT_MANAGER sans INSTRUCTOR
         $this->toRecap($this->organizerId, withPdf: false);
         $this->agentPost($this->organizerId, 'recapitulatif', ['privacy' => '1']);
-        self::assertResponseRedirects($this->agentUrl($this->organizerId, '/confirmation'));
-        self::assertSame(200, $this->code($this->agentUrl($this->organizerId, '/confirmation')));
+        $requestId = $this->onlyRequestId();
+        $issued = $this->issuedUrl($this->organizerId, $requestId);
+        self::assertResponseRedirects($issued);
+        self::assertSame(200, $this->code($issued));
+        self::assertSame(200, $this->code($issued), 'le rafraîchissement relit la base : même résultat');
         self::assertSelectorNotExists('a[href$="/demandes"]');
+        self::assertSelectorNotExists('a[href$="/demandes/'.$requestId.'"]');
 
-        $requestId = Uuid::fromBinary((string) $this->em()->getConnection()->fetchOne('SELECT id FROM request_permit_request'))->toRfc4122();
         self::assertSame(403, $this->code('/communes/'.$this->organizerId.'/demandes'));
         self::assertSame(403, $this->code('/communes/'.$this->organizerId.'/demandes/'.$requestId));
 
+        // Un autre agent de la commune (même instructeur) n'est pas l'émetteur : refus uniforme ; il consulte la fiche par son propre rôle.
         $this->as($this->otherInstructor);
-        self::assertSame(404, $this->code($this->agentUrl($this->organizerId, '/confirmation')), 'la confirmation est propre à l\'agent');
+        self::assertSame(404, $this->code($issued), 'la confirmation est propre à l\'agent émetteur');
+        self::assertSame(200, $this->code('/communes/'.$this->organizerId.'/demandes/'.$requestId));
+        // Un administrateur de la commune, non émetteur, ne la voit pas non plus.
+        $this->as($this->adminOnly);
+        self::assertSame(404, $this->code($issued));
         $this->client->getCookieJar()->clear();
-        $this->client->request('GET', $this->agentUrl($this->organizerId, '/confirmation'));
+        $this->client->request('GET', $issued);
         self::assertResponseRedirects();
     }
 

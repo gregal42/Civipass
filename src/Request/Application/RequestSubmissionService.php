@@ -18,7 +18,10 @@ use App\Municipality\Domain\Municipality;
 use App\Municipality\Domain\PhoneNumberNormalizer;
 use App\Request\Application\Command\SubmitRequestCommand;
 use App\Request\Application\Result\InspectedDocument;
+use App\Request\Application\Result\IssuedDecision;
 use App\Request\Application\Result\SubmittedRequest;
+use App\Request\Domain\ApprovalDuration;
+use App\Request\Domain\DecisionPath;
 use App\Request\Domain\PermitRequest;
 use App\Request\Domain\PermitRequestAttachment;
 use App\Request\Domain\PermitRequestRepository;
@@ -42,7 +45,8 @@ use Psr\Clock\ClockInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Dépôt atomique d'une demande de laissez-passer (DM-099, DM-101, DM-104), public ou saisi par un agent.
+ * Dépôt atomique d'une demande de laissez-passer (DM-099, DM-101, DM-104), public (en attente d'instruction), ou DÉLIVRANCE DIRECTE par un
+ * agent de la commune (DM-108, DT-043) : dossier créé et approuvé dans la même transaction, jamais de part PENDING pour un agent.
  *
  * Aucun identifiant du client n'est cru : l'événement est relu sous verrou, les communes se déduisent des zones, chaque
  * zone est relue sous verrou et son appartenance à sa participation vérifiée. Tout est écrit dans UNE transaction :
@@ -52,6 +56,11 @@ use Symfony\Component\Uid\Uuid;
  * participations concernées, par identifiant croissant (exclusif : ni suspension de participation ni modification de
  * zone en parallèle) → zones → compteur de références, en dernier. Les invariants du dossier restent ceux de
  * `PermitRequest::submit()` ; ce service n'ajoute que ce qui exige les dépôts (créneaux, droits, verrous, idempotence).
+ *
+ * Délivrance directe : la décision est appliquée par MunicipalDecisionApplier (même moteur que l'instruction) APRÈS la création des entités
+ * et AVANT le premier flush, donc sous les mêmes verrous et dans la même transaction ; toute validation métier qui échoue (durée, zone
+ * suspendue ou sans période dans la fenêtre) annule tout, référence comprise. Idempotence : la clé de tentative du brouillon (empreinte
+ * distincte de celle d'un dépôt) ; un rejeu, y compris concurrent, retrouve la décision d'origine sans la réappliquer.
  */
 final readonly class RequestSubmissionService
 {
@@ -74,6 +83,7 @@ final readonly class RequestSubmissionService
         private FileStorageInterface $files,
         private UploadedDocumentInspector $documents,
         private ProposableZones $proposable,
+        private MunicipalDecisionApplier $decisions,
     ) {
     }
 
@@ -89,19 +99,22 @@ final readonly class RequestSubmissionService
     }
 
     /**
-     * Saisie par un agent (instructeur ou gestionnaire d'événement) de la commune `$municipalityId` (déterminée et vérifiée côté serveur) pour un tiers.
-     * Les zones d'autres communes participantes peuvent être demandées ; l'agent n'y acquiert aucun droit d'instruction.
+     * DÉLIVRANCE DIRECTE (DM-108, DT-043) : un agent (administrateur communal, gestionnaire d'événement ou instructeur) de la commune
+     * `$municipalityId` (déterminée et vérifiée côté serveur) saisit une demande pour un tiers ET l'approuve immédiatement, dans UNE seule
+     * transaction : dossier, part, décision, audit, référence et empreinte d'idempotence s'écrivent ensemble ou pas du tout. Aucune part
+     * `PENDING` n'est jamais écrite : la décision est appliquée avant le premier flush, par le moteur commun (MunicipalDecisionApplier).
+     * L'agent n'agit que pour SA commune : toute zone d'une autre commune est refusée, même participante. Elle n'envoie aucun accusé.
      *
      * @throws OperationNotAllowed commune inaccessible, rôle insuffisant ou participation de la commune non opérationnelle
-     * @throws DomainRuleViolation refus métier
+     * @throws DomainRuleViolation refus métier (saisie, zone inutilisable ou sans période dans la durée, durée invalide)
      * @throws OperationConflict   conflit technique ou tentative identique concurrente : réessayer
      */
-    public function submitByAgent(User $agent, string $municipalityId, SubmitRequestCommand $command, string $idempotencyKey): SubmittedRequest
+    public function issueDirectly(User $agent, string $municipalityId, SubmitRequestCommand $command, ApprovalDuration $duration, string $idempotencyKey): SubmittedRequest
     {
-        return $this->submit(RequestOrigin::Agent, $agent, $municipalityId, $command, $idempotencyKey);
+        return $this->submit(RequestOrigin::Agent, $agent, $municipalityId, $command, $idempotencyKey, $duration);
     }
 
-    private function submit(RequestOrigin $origin, ?User $agent, ?string $municipalityId, SubmitRequestCommand $command, string $idempotencyKey): SubmittedRequest
+    private function submit(RequestOrigin $origin, ?User $agent, ?string $municipalityId, SubmitRequestCommand $command, string $idempotencyKey, ?ApprovalDuration $duration = null): SubmittedRequest
     {
         if (1 !== preg_match(self::IDEMPOTENCY_KEY_PATTERN, $idempotencyKey)) {
             throw new DomainRuleViolation('Clé d\'idempotence invalide.');
@@ -117,12 +130,16 @@ final readonly class RequestSubmissionService
         $phoneNumber = null === $phone ? null : $this->phones->normalize($phone);
         $category = $this->referentials->findCategoryByCode($command->categoryCode) ?? throw new DomainRuleViolation('Catégorie de bénéficiaire inconnue.');
         $motif = $this->referentials->findMotifByCode($command->motifCode) ?? throw new DomainRuleViolation('Motif inconnu.');
-        $keyHash = hash('sha256', $origin->value.'|'.($agent?->id()->toRfc4122() ?? '').'|'.$idempotencyKey);
+        if ((RequestOrigin::Agent === $origin) !== (null !== $duration)) {
+            throw new \LogicException('Une saisie par un agent est toujours une délivrance directe (durée obligatoire) ; un dépôt public n\'a pas de durée.');
+        }
+        // Le marqueur DIRECT sépare l'espace des clés d'une délivrance de celui d'un dépôt : une même clé ne peut jamais rejouer l'une pour l'autre.
+        $keyHash = hash('sha256', $origin->value.(null === $duration ? '' : '+DIRECT').'|'.($agent?->id()->toRfc4122() ?? '').'|'.$idempotencyKey);
         $eventId = Uuid::fromString($command->eventId);
 
         // Une tentative déjà enregistrée se rejoue SANS toucher aux fichiers (les temporaires ont pu être supprimés depuis).
         if ([] !== $command->attachments && null !== ($existing = $this->requests->findByIdempotencyKey($eventId, $keyHash))) {
-            return new SubmittedRequest($existing->id()->toRfc4122(), $existing->reference()->value, true);
+            return $this->replayed($existing);
         }
         // Fichiers contrôlés sur leur contenu réel AVANT tout verrou : les verrous ne couvrent jamais de lecture de fichier.
         $inspected = $this->inspectAttachments($command);
@@ -130,7 +147,7 @@ final readonly class RequestSubmissionService
         // Fichiers rattachés pendant la transaction : à supprimer si elle échoue (le système de fichiers n'est pas transactionnel).
         $promoted = [];
         try {
-            $result = $this->persist($origin, $agent, $municipalityId, $command, $zoneIds, $emailAddress, $phoneNumber, $category, $motif, $keyHash, $eventId, $inspected, $promoted);
+            $result = $this->persist($origin, $agent, $municipalityId, $command, $zoneIds, $emailAddress, $phoneNumber, $category, $motif, $keyHash, $eventId, $inspected, $promoted, $duration);
         } catch (\Throwable $e) {
             foreach ($promoted as $key) {
                 $this->files->delete($key);
@@ -155,9 +172,9 @@ final readonly class RequestSubmissionService
      * @param list<array{string, InspectedDocument}> $inspected
      * @param list<string>                           $promoted  clés définitives créées (renseigné au fil de la transaction)
      */
-    private function persist(RequestOrigin $origin, ?User $agent, ?string $municipalityId, SubmitRequestCommand $command, array $zoneIds, ?EmailAddress $emailAddress, ?\App\Municipality\Domain\PhoneNumber $phoneNumber, BeneficiaryCategory $category, RequestMotif $motif, string $keyHash, Uuid $eventId, array $inspected, array &$promoted): SubmittedRequest
+    private function persist(RequestOrigin $origin, ?User $agent, ?string $municipalityId, SubmitRequestCommand $command, array $zoneIds, ?EmailAddress $emailAddress, ?\App\Municipality\Domain\PhoneNumber $phoneNumber, BeneficiaryCategory $category, RequestMotif $motif, string $keyHash, Uuid $eventId, array $inspected, array &$promoted, ?ApprovalDuration $duration): SubmittedRequest
     {
-        return $this->transactions->run(function () use ($origin, $agent, $municipalityId, $command, $zoneIds, $emailAddress, $phoneNumber, $category, $motif, $keyHash, $eventId, $inspected, &$promoted): SubmittedRequest {
+        return $this->transactions->run(function () use ($origin, $agent, $municipalityId, $command, $zoneIds, $emailAddress, $phoneNumber, $category, $motif, $keyHash, $eventId, $inspected, &$promoted, $duration): SubmittedRequest {
             // Première instruction : verrou partagé de l'événement (relu sous verrou, jamais l'instantané).
             $event = $this->locker->sharedEvent($eventId);
 
@@ -165,13 +182,19 @@ final readonly class RequestSubmissionService
 
             $existing = $this->requests->findByIdempotencyKey($event->id(), $keyHash);
             if (null !== $existing) {
-                return new SubmittedRequest($existing->id()->toRfc4122(), $existing->reference()->value, true);
+                return $this->replayed($existing);
             }
             if (!$event->isOperational()) {
                 throw new DomainRuleViolation('Les demandes ne sont pas ouvertes pour cet événement.');
             }
 
             $territories = $this->lockTerritories($event, $zoneIds, $own);
+            // Verrous de participation acquis : une tentative concurrente de MÊME clé a pu valider pendant l'attente. L'instantané de la transaction
+            // (REPEATABLE READ) ne la voit pas : relecture verrouillante, pour rejouer son résultat plutôt que buter sur l'unicité.
+            $concurrent = $this->requests->findByIdempotencyKey($event->id(), $keyHash, locking: true);
+            if (null !== $concurrent) {
+                return $this->replayed($concurrent, current: true);
+            }
             // Saisie municipale : uniquement les zones de la commune de l'agent (jamais celles d'une autre commune, même valides).
             if (null !== $own) {
                 foreach ($territories as $territory) {
@@ -213,11 +236,38 @@ final readonly class RequestSubmissionService
                 $promoted[] = $permanentKey;
                 $request->attach($document->originalName, $document->mimeType, $document->sizeBytes, $permanentKey, $now);
             }
+            // Délivrance directe : la décision est appliquée AVANT l'écriture (aucun flush n'a eu lieu : la part n'est jamais écrite PENDING),
+            // par le moteur commun, sur la part de la commune de l'agent — la seule du dossier, les zones étrangères ayant été refusées plus haut.
+            $decision = null;
+            if (null !== $duration && null !== $agent && null !== $own) {
+                $parts = $request->municipalities();
+                if (1 !== \count($parts)) {
+                    throw new \LogicException('Une délivrance directe porte sur la seule part de la commune de l\'agent.');
+                }
+                $decision = IssuedDecision::of($this->decisions->approve($parts[0], $own, $agent, $duration, DecisionPath::DirectIssuance, $now));
+            }
             $this->requests->add($request, new RequestIdempotencyKey($event, $keyHash, $request, $now));
             $this->recordAudit($request, $agent, $enteredBy, $now);
 
-            return new SubmittedRequest($request->id()->toRfc4122(), $request->reference()->value, false);
+            return new SubmittedRequest($request->id()->toRfc4122(), $request->reference()->value, false, $decision);
         }, ['uniq_request_idempotency_event_key']);
+    }
+
+    /** Résultat d'une tentative déjà enregistrée : la décision d'origine (délivrance directe) est relue, jamais réappliquée. */
+    private function replayed(PermitRequest $existing, bool $current = false): SubmittedRequest
+    {
+        $decision = null;
+        // `$current` : tentative validée PENDANT notre attente, hors de notre instantané : ses décisions se relisent sous verrou.
+        $decisions = $current
+            ? $this->requests->lockDecisions($existing->id())
+            : array_values(array_filter(array_map(static fn ($part) => $part->decision(), $existing->municipalities())));
+        foreach ($decisions as $found) {
+            if (DecisionPath::DirectIssuance === $found->path()) {
+                $decision = IssuedDecision::of($found);
+            }
+        }
+
+        return new SubmittedRequest($existing->id()->toRfc4122(), $existing->reference()->value, true, $decision);
     }
 
     /**

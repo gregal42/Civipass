@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\Session\SessionInterface;
  */
 final class PublicRequestDraft
 {
-    private const FIELDS = ['last', 'first', 'address', 'email', 'phone', 'category', 'motif', 'detail', 'mode', 'privacy'];
+    private const FIELDS = ['last', 'first', 'address', 'email', 'phone', 'category', 'motif', 'detail', 'mode', 'privacy', 'duration_mode', 'duration_date', 'duration_time', 'duration_occurrence'];
 
     public function __construct(
         private readonly SessionInterface $session,
@@ -23,7 +23,7 @@ final class PublicRequestDraft
     }
 
     /**
-     * @return array{last: string, first: string, address: string, email: string, phone: string, category: string, motif: string, detail: string, mode: string, privacy: string, plates: list<string>, zones: list<string>}
+     * @return array{last: string, first: string, address: string, email: string, phone: string, category: string, motif: string, detail: string, mode: string, privacy: string, duration_mode: string, duration_date: string, duration_time: string, duration_occurrence: string, plates: list<string>, zones: list<string>}
      */
     public function values(): array
     {
@@ -98,7 +98,7 @@ final class PublicRequestDraft
      * Dépôt réussi : le brouillon (saisies, fichiers, clé de tentative) est effacé ; seule subsiste la confirmation, lisible par
      * cette session uniquement.
      *
-     * @param array{reference: string, event: string, email: string, beneficiary?: string} $confirmation
+     * @param array{reference: string, event: string, email: string, beneficiary?: string, request_id?: string} $confirmation
      */
     public function confirm(array $confirmation): void
     {
@@ -106,13 +106,13 @@ final class PublicRequestDraft
     }
 
     /**
-     * @return array{reference: string, event: string, email: string, beneficiary: string}|null
+     * @return array{reference: string, event: string, email: string, beneficiary: string, request_id: string}|null
      */
     public function confirmation(): ?array
     {
         $c = $this->read()['confirmation'] ?? null;
         if (\is_array($c) && \is_string($c['reference'] ?? null) && \is_string($c['event'] ?? null) && \is_string($c['email'] ?? null)) {
-            return ['reference' => $c['reference'], 'event' => $c['event'], 'email' => $c['email'], 'beneficiary' => \is_string($c['beneficiary'] ?? null) ? $c['beneficiary'] : ''];
+            return ['reference' => $c['reference'], 'event' => $c['event'], 'email' => $c['email'], 'beneficiary' => \is_string($c['beneficiary'] ?? null) ? $c['beneficiary'] : '', 'request_id' => \is_string($c['request_id'] ?? null) ? $c['request_id'] : ''];
         }
 
         return null;

@@ -1,0 +1,47 @@
+{% extends 'layouts/app.html.twig' %}
+{% import 'municipal/request/_macros.html.twig' as m %}
+
+{#
+  Confirmation d'une délivrance directe (LOT 04.3) : relue en base pour l'agent émetteur, jamais d'après la session. Statut APPROVED.
+  Variables : confirmation (IssuedConfirmation), new_request_url, request_url (vide si l'agent n'est pas instructeur).
+#}
+{% block content %}
+  {% set c = confirmation %}
+  {% set tz = c.timezone %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+  {% include 'components/alert.html.twig' with { variant: 'success', title: 'Autorisation délivrée', text: 'L’autorisation est approuvée pour toutes les zones indiquées. Aucune instruction ultérieure n’est nécessaire.', focus: true } only %}
+
+  <header class="cp-dossier-head">
+    <p class="cp-eyebrow cp-mono">{{ c.reference }}</p>
+    <h1 class="cp-dossier-head__title">{{ c.beneficiary }} {% include 'components/status_pill.html.twig' with { status: 'approved', label: 'Approuvée', size: 'l' } only %}</h1>
+    <div class="cp-dossier-head__meta">
+      <span>{% include 'components/icon.html.twig' with { name: 'flag', size: 's' } only %} {{ c.eventName }}</span>
+      <span>{% include 'components/icon.html.twig' with { name: 'clock', size: 's' } only %} Délivrée le {{ c.decidedAt|cp_datetime(tz) }}</span>
+    </div>
+  </header>
+
+  <div class="cp-dossier__grid" style="margin-top: 20px">
+    <div class="cp-dossier__main">
+      {% set items = [
+        { label: 'Statut', value: 'Approuvée (délivrance directe)' },
+        { label: 'Référence', html: '<span class="cp-mono">' ~ c.reference|e ~ '</span>' },
+        { label: 'Événement', value: c.eventName },
+        { label: 'Commune émettrice', value: c.municipalityName },
+        { label: 'Bénéficiaire', value: c.beneficiary },
+        { label: 'Zones autorisées', value: c.zones|join(' ; ') },
+        { label: 'Durée choisie', value: m.duration(c.durationMode.value)|trim },
+        { label: 'Période d’autorisation', value: m.period(c.validFrom, c.validUntil, tz)|trim, note: 'Les accès restent limités aux périodes propres à chaque zone.' },
+        { label: 'Décidée le', value: c.decidedAt|cp_datetime(tz) },
+        { label: 'Agent émetteur', value: c.agent },
+      ] %}
+      {% embed 'components/panel.html.twig' with { id: 'iss-h', title: 'Autorisation délivrée', items: items } only %}
+        {% block body %}{% include 'components/facts.html.twig' with { items: items } only %}{% endblock %}
+      {% endembed %}
+      <div class="cp-form-actions">
+        {% include 'components/button.html.twig' with { label: 'Délivrer une autre autorisation', variant: 'primary', icon: 'plus', href: new_request_url } only %}
+        {% if identity_url %}{% include 'components/button.html.twig' with { label: 'Corriger les informations du bénéficiaire', variant: 'secondary', href: identity_url } only %}{% endif %}
+        {% if request_url %}{% include 'components/button.html.twig' with { label: 'Ouvrir la fiche de la demande', variant: 'secondary', href: request_url } only %}{% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -106,6 +106,7 @@ final class MunicipalRequestController extends AbstractController
             'detail' => $detail,
             'can_decide' => $page->canDecide(),
             'unavailable_reason' => $page->unavailableReason,
+            'identity_url' => $this->generateUrl('app_municipal_request_identity', $route + ['requestId' => $requestId]),
             'approve_url' => $this->generateUrl('app_municipal_request_approve', $route + ['requestId' => $requestId]),
             'refuse_url' => $this->generateUrl('app_municipal_request_refuse', $route + ['requestId' => $requestId]),
             'requests_url' => $this->generateUrl('app_municipal_requests', $route),

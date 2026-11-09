@@ -141,7 +141,7 @@ Les points P1 à P6, DT-020 et DT-022 sont **validés** (DM-062, DM-070, DM-071,
 | Q5 | « Zone ouverte aux demandes » non définie | `mayOpenRights()` | DM-104 |
 | Q6 | SFD SCR-022 et REC-02 : commune invitée ciblable, instruction différée | **Sans objet** : une commune invitée n'a aucune zone proposable ; elle n'instruit que les demandes déposées après être devenue opérationnelle | DM-104, DM-101 |
 | Q7 | CDC §7.2 : création directe d'un dossier **et** d'un laissez-passer | Dossier au LOT 03, laissez-passer reporté | DM-099 |
-| Q8 | Dossier « figé » (roadmap) / correction d'identité par les agents (SFD §6.3) | Figé au LOT 03 ; corrections historisées au LOT 04 | lot-03-schema §4.3 |
+| Q8 | Dossier « figé » (roadmap) / correction d'identité par les agents (SFD §6.3) | Figé au LOT 03 ; **résolue au LOT 04.4** (DM-111, DT-045) : correction des seuls champs d'identité et de contact, tracée dans l'audit par commune (noms des champs, jamais les valeurs ; pas de table d'historique des valeurs, arbitrage du 9 novembre 2026) | lot-03-schema §4.3, lot-04-schema §9 |
 | Q9 | Plaques étrangères | Hors V1 (conséquence de DM-103), risque accepté | DM-103 |
 
 Arbitrages S1 à S8 validés le 5 novembre 2026 ([lot-03-schema.md](../lot-03-schema.md) §15). Reste à valider : textes juridiques de confidentialité (avant production).
@@ -153,6 +153,6 @@ Arbitrages S1 à S8 validés le 5 novembre 2026 ([lot-03-schema.md](../lot-03-sc
 |---|---|---|
 | L4-1 | DM-099 §2 (« aucune délivrance automatique ») et §5 (délivrance directe reportée) contre la délivrance directe du LOT 04 | **DM-108** remplace ces deux points ; DM-099 annotée, texte conservé |
 | L4-2 | `lot-03-schema.md` : décision « totale ou partielle » contre décision binaire V1 | **DM-106** ; mention annotée |
-| L4-3 | Docblock de `RequestSubmissionService::submitByAgent` : zones d'autres communes demandables ; le code les refuse | DM-108 §5 tranche (zones de sa commune seulement) ; docblock à corriger avec la délivrance directe (04.3) |
+| L4-3 | Docblock de `RequestSubmissionService::submitByAgent` : zones d'autres communes demandables ; le code les refuse | DM-108 §5 tranche (zones de sa commune seulement) ; docblock remplacé au 04.3 (`issueDirectly`) |
 | L4-4 | Roadmap : durées 24/48/72 h rattachées au LOT 05 ; brief LOT 04 : choix de durée à l'approbation | **DM-109** : calcul au LOT 04, cycle de vie au LOT 05 ; roadmap mise à jour |
 | L4-5 | Roadmap, `lot-03-schema.md`, STD §2.2 : notes privées et verrou métier de 15 min au LOT 04 | **Retirés de la V1** (DM-106/lot-04-schema §1) ; mentions annotées, STD non modifié |

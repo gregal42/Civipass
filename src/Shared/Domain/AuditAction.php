@@ -58,6 +58,9 @@ enum AuditAction: string
     case RequestApproved = 'REQUEST_APPROVED';
     case RequestRefused = 'REQUEST_REFUSED';
 
+    // Correction d'identité du bénéficiaire (LOT 04.4, DM-111) : noms des champs modifiés seulement, jamais les valeurs. Une ligne par commune concernée.
+    case RequestIdentityCorrected = 'REQUEST_IDENTITY_CORRECTED';
+
     // Accès commerciaux CWS (DM-076, DT-030) : écrits par le lot Administration CWS.
     case CommercialAccessGranted = 'COMMERCIAL_ACCESS_GRANTED';
     case CommercialAccessRevoked = 'COMMERCIAL_ACCESS_REVOKED';

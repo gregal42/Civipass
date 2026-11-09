@@ -128,6 +128,36 @@ abstract class MunicipalDecisionTestCase extends RequestDepositTestCase
         );
     }
 
+    /** Service de dépôt à horloge figée (12 juin 2026 09:00 UTC), pour la délivrance directe. */
+    protected function issuer(?AuditTrail $audit = null, ?ApprovedPartListener $listener = null): RequestSubmissionService
+    {
+        return DirectIssuanceFactory::create(self::getContainer(), $this->clock, $audit, $listener);
+    }
+
+    /**
+     * Commande de saisie d'un bénéficiaire pour les zones données (à pied, e-mail).
+     *
+     * @param list<EventZone> $zones
+     */
+    protected function command(array $zones): SubmitRequestCommand
+    {
+        return new SubmitRequestCommand(
+            $this->event->id()->toRfc4122(),
+            'Martin',
+            'Camille',
+            null,
+            'camille@exemple.fr',
+            null,
+            'private_person',
+            'home',
+            null,
+            TravelMode::FootBike,
+            [],
+            array_map(static fn (EventZone $z): string => $z->id()->toRfc4122(), $zones),
+            true,
+        );
+    }
+
     /**
      * Dépose une demande publique ; sans argument : les deux communes. Retourne l'identifiant du dossier.
      *
@@ -153,6 +183,11 @@ abstract class MunicipalDecisionTestCase extends RequestDepositTestCase
         );
 
         return $this->service(RequestSubmissionService::class)->submitPublic($command, sprintf('decision-test-%016d', ++$this->keys))->requestId;
+    }
+
+    protected function key(): string
+    {
+        return sprintf('decision-test-%016d', ++$this->keys);
     }
 
     protected function rows(string $table): int

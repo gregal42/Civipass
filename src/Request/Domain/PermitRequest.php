@@ -66,6 +66,10 @@ class PermitRequest
     #[ORM\Column(type: Types::STRING, length: 16, nullable: true)]
     private ?string $phone;
 
+    /** Compteur des corrections d'identité (DM-111) : le formulaire embarque la version lue, la correction concurrente est refusée si elle a changé. */
+    #[ORM\Column(type: Types::INTEGER, options: ['default' => 0])]
+    private int $identityVersion = 0;
+
     #[ORM\ManyToOne(targetEntity: BeneficiaryCategory::class, fetch: 'LAZY')]
     #[ORM\JoinColumn(name: 'category_id', nullable: false, onDelete: 'RESTRICT')]
     private BeneficiaryCategory $category;
@@ -339,6 +343,54 @@ class PermitRequest
         }
 
         return $value;
+    }
+
+    /**
+     * Corrige l'identité et les coordonnées du bénéficiaire (DM-111), avec les règles de normalisation du dépôt. Ne touche NI aux parts, NI aux
+     * décisions, NI à la référence, NI à la catégorie ou aux zones : une correction n'est jamais une décision ni un transfert. Sans changement
+     * effectif, rien n'est modifié et la version est conservée.
+     *
+     * @return list<string> noms des champs réellement modifiés (`lastName`, `firstName`, `address`, `email`, `phone`), jamais leurs valeurs
+     *
+     * @throws DomainRuleViolation nom ou prénom vide ou trop long, adresse trop longue, aucun moyen de contact
+     */
+    public function correctIdentity(string $lastName, string $firstName, ?string $address, ?EmailAddress $email, ?PhoneNumber $phone): array
+    {
+        $lastName = self::requiredName($lastName, 'Le nom');
+        $firstName = self::requiredName($firstName, 'Le prénom');
+        $address = self::optionalText($address, self::ADDRESS_MAX_LENGTH, 'L\'adresse');
+        if (null === $email && null === $phone) {
+            throw new DomainRuleViolation('Renseignez au moins un moyen de contact : adresse e-mail ou téléphone.');
+        }
+
+        $changed = [];
+        foreach ([
+            'lastName' => [$this->lastName, $lastName],
+            'firstName' => [$this->firstName, $firstName],
+            'address' => [$this->address, $address],
+            'email' => [$this->email, $email?->value],
+            'phone' => [$this->phone, $phone?->e164],
+        ] as $field => [$before, $after]) {
+            if ($before !== $after) {
+                $changed[] = $field;
+            }
+        }
+        if ([] === $changed) {
+            return [];
+        }
+        $this->lastName = $lastName;
+        $this->firstName = $firstName;
+        $this->address = $address;
+        $this->email = $email?->value;
+        $this->phone = $phone?->e164;
+        ++$this->identityVersion;
+
+        return $changed;
+    }
+
+    public function identityVersion(): int
+    {
+        return $this->identityVersion;
     }
 
     public function id(): Uuid

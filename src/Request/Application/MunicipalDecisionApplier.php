@@ -120,18 +120,49 @@ final readonly class MunicipalDecisionApplier
      */
     private function zoneProblems(PermitRequestMunicipality $part, EventParticipation $participation, GrantWindow $window): array
     {
+        return $this->problemsOf(array_map(static fn (PermitRequestZone $requested): array => [$requested->zoneLabel(), $requested->zone()], $part->zones()), $participation, $window);
+    }
+
+    /**
+     * @param list<array{string, \App\Event\Domain\EventZone}> $zones libellé et zone, sans dépendre d'une demande déjà persistée
+     *
+     * @return list<ZoneProblem>
+     */
+    private function problemsOf(array $zones, EventParticipation $participation, GrantWindow $window): array
+    {
         $event = $participation->event();
         $period = new EventPeriod($event->startsAt(), $event->endsAt());
         $problems = [];
-        foreach ($part->zones() as $requested) {
-            if (!$requested->zone()->mayOpenRights()) {
-                $problems[] = new ZoneProblem($requested->zoneLabel(), ZoneProblem::SUSPENDED);
-            } elseif ($this->windows->effectivePeriods($window, $this->zonePeriods($requested, $period), $participation)->isEmpty()) {
-                $problems[] = new ZoneProblem($requested->zoneLabel(), ZoneProblem::NO_PERIOD);
+        foreach ($zones as [$label, $zone]) {
+            if (!$zone->mayOpenRights()) {
+                $problems[] = new ZoneProblem($label, ZoneProblem::SUSPENDED);
+            } elseif ($this->windows->effectivePeriods($window, $this->zonePeriods($zone, $period), $participation)->isEmpty()) {
+                $problems[] = new ZoneProblem($label, ZoneProblem::NO_PERIOD);
             }
         }
 
         return $problems;
+    }
+
+    /**
+     * Prévisualise une délivrance directe AVANT toute demande : mêmes règles que `approve()`, sur des zones choisies et non encore
+     * demandées. Lecture seule, informatif : la délivrance revalide tout sous verrou, dans sa transaction.
+     *
+     * @param list<\App\Event\Domain\EventZone> $zones
+     *
+     * @throws OperationNotAllowed participation ou événement non opérationnel
+     * @throws DomainRuleViolation durée invalide
+     */
+    public function previewZones(EventParticipation $participation, array $zones, ApprovalDuration $duration, \DateTimeImmutable $now): ApprovalPreview
+    {
+        $now = self::wholeSeconds($now);
+        if (!$participation->isOperational()) {
+            throw new OperationNotAllowed('Décision impossible : la participation de la commune ou l\'événement n\'est pas opérationnel.');
+        }
+        $event = $participation->event();
+        $window = $this->windows->window($duration, $now, $event->timezone(), $event->endsAt());
+
+        return new ApprovalPreview($window, $this->problemsOf(array_map(static fn ($zone): array => [$zone->label(), $zone], $zones), $participation, $window));
     }
 
     /**
@@ -151,9 +182,8 @@ final readonly class MunicipalDecisionApplier
         return new ApprovalPreview($window, $this->zoneProblems($part, $participation, $window));
     }
 
-    private function zonePeriods(PermitRequestZone $requested, EventPeriod $period): EffectivePeriods
+    private function zonePeriods(\App\Event\Domain\EventZone $zone, EventPeriod $period): EffectivePeriods
     {
-        $zone = $requested->zone();
         $slots = array_map(static fn ($validity) => $validity->toSlot(), $this->validities->findActiveByZone($zone->id()));
         try {
             return $this->zoneCalculator->compute($zone->validityMode(), $period, $zone->participation()->event()->timezone(), $slots);

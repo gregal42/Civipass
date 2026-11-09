@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Request\UI\Http;
 
+use App\Request\Application\DirectIssuancePreview;
 use App\Request\Application\ProposableZones;
 use App\Request\Application\ReceiptNotifier;
 use App\Request\Application\RequestSubmissionService;
@@ -34,6 +35,7 @@ final readonly class RequestFormServices
         public string $privacyPolicyUrl,
         #[Autowire(service: 'limiter.public_request_upload_ip')]
         public RateLimiterFactory $uploadLimiter,
+        public DirectIssuancePreview $issuance,
     ) {
     }
 }

@@ -20,7 +20,11 @@ DM-099 §2 : saisie agent « sans délivrance automatique » ; CDC §7.2 : créa
 
 ## Conséquences fonctionnelles ou techniques
 
-- Implémentation : LOT 04.3 (non réalisée au 04.1). Le chemin `DIRECT_ISSUANCE` existe déjà dans `DecisionPath`.
+- **Implémentée au LOT 04.3** : le formulaire agent du LOT 03 est conservé ; il gagne l'étape « Durée de l'autorisation » (cinq modes de DM-109), un récapitulatif en lecture seule et la validation « Délivrer l'autorisation ». Plus aucune demande saisie par un agent n'est écrite `PENDING`.
+- **Agents habilités** : `MUNICIPALITY_ADMIN`, `EVENT_MANAGER`, `INSTRUCTOR` (cumulables), d'après l'adhésion effective à la commune de l'URL (écriture : commune active) ; participation `ACTIVE` et événement opérationnel. Une commune ou une zone forgée est refusée.
+- **Compatibilité des zones** : CHAQUE zone choisie doit avoir au moins une période d'accès effective dans la fenêtre choisie (DM-109 §6) ; une seule zone incompatible refuse toute la délivrance, à la saisie de la durée, au récapitulatif et, sous verrou, à la validation.
+- **Confirmation** : page serveur `/communes/{m}/delivrances/{demande}`, relue en base à chaque affichage. Règle explicite : adhésion à la commune avec un rôle habilité à délivrer, part de CETTE commune décidée par délivrance directe, et utilisateur = agent émetteur de la décision. Un autre agent (même administrateur ou instructeur) reçoit le refus uniforme 404 ; le lien vers la fiche n'est proposé qu'aux instructeurs. Elle n'élargit jamais la consultation des demandes (réservée à `INSTRUCTOR`).
+- Aucun e-mail, QR code ni document n'est produit (accusé de réception public supprimé pour la délivrance directe).
 - Le laissez-passer lui-même reste du LOT 05.
 
 ## Documents concernés
@@ -30,4 +34,4 @@ DM-099 §2 : saisie agent « sans délivrance automatique » ; CDC §7.2 : créa
 ## Écarts documentaires signalés
 
 - DM-099 §2 et §5 : remplacés (fiche DM-099 annotée, texte d'origine conservé).
-- Docblock de `RequestSubmissionService::submitByAgent` (zones d'autres communes) obsolète : le code les refuse déjà.
+- Docblock de `RequestSubmissionService::submitByAgent` (zones d'autres communes) obsolète : remplacé au LOT 04.3 (la méthode devient `issueDirectly`).

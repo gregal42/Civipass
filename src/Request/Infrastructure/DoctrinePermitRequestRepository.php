@@ -6,6 +6,7 @@ namespace App\Request\Infrastructure;
 
 use App\Request\Domain\PartLocator;
 use App\Request\Domain\PermitRequest;
+use App\Request\Domain\PermitRequestDecision;
 use App\Request\Domain\PermitRequestMunicipality;
 use App\Request\Domain\PermitRequestRepository;
 use App\Request\Domain\RequestIdempotencyKey;
@@ -28,9 +29,9 @@ final readonly class DoctrinePermitRequestRepository implements PermitRequestRep
         $this->entityManager->persist($key);
     }
 
-    public function findByIdempotencyKey(Uuid $eventId, string $keyHash): ?PermitRequest
+    public function findByIdempotencyKey(Uuid $eventId, string $keyHash, bool $locking = false): ?PermitRequest
     {
-        $request = $this->entityManager->createQueryBuilder()
+        $query = $this->entityManager->createQueryBuilder()
             ->select('r')
             ->from(PermitRequest::class, 'r')
             ->join(RequestIdempotencyKey::class, 'k', 'WITH', 'k.request = r')
@@ -39,10 +40,30 @@ final readonly class DoctrinePermitRequestRepository implements PermitRequestRep
             ->setParameter('event', $eventId, 'uuid')
             ->setParameter('hash', $keyHash)
             ->setMaxResults(1)
-            ->getQuery()
-            ->getOneOrNullResult();
+            ->getQuery();
+        if ($locking) {
+            $query->setLockMode(LockMode::PESSIMISTIC_READ);
+            $query->setHint(Query::HINT_REFRESH, true);
+        }
+        $request = $query->getOneOrNullResult();
 
         return $request instanceof PermitRequest ? $request : null;
+    }
+
+    public function lockDecisions(Uuid $requestId): array
+    {
+        $query = $this->entityManager->createQueryBuilder()
+            ->select('d')
+            ->from(PermitRequestDecision::class, 'd')
+            ->join('d.requestMunicipality', 'm')
+            ->where('IDENTITY(m.request) = :request')
+            ->setParameter('request', $requestId, 'uuid')
+            ->getQuery();
+        $query->setLockMode(LockMode::PESSIMISTIC_READ);
+        $query->setHint(Query::HINT_REFRESH, true);
+
+        /* @var list<PermitRequestDecision> */
+        return $query->getResult();
     }
 
     public function locatePart(Uuid $requestId, Uuid $municipalityId): ?PartLocator
@@ -92,6 +113,38 @@ final readonly class DoctrinePermitRequestRepository implements PermitRequestRep
             ->where('m.id = :id')
             ->andWhere('IDENTITY(m.municipality) = :municipality')
             ->setParameter('id', $partId, 'uuid')
+            ->setParameter('municipality', $municipalityId, 'uuid')
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        return $part instanceof PermitRequestMunicipality ? $part : null;
+    }
+
+    public function lockRequest(Uuid $requestId): ?PermitRequest
+    {
+        $query = $this->entityManager->createQueryBuilder()
+            ->select('r')
+            ->from(PermitRequest::class, 'r')
+            ->where('r.id = :id')
+            ->setParameter('id', $requestId, 'uuid')
+            ->getQuery();
+        $query->setLockMode(LockMode::PESSIMISTIC_WRITE);
+        $query->setHint(Query::HINT_REFRESH, true); // la version d'identité est relue sous verrou, pas depuis l'instantané
+
+        $request = $query->getOneOrNullResult();
+
+        return $request instanceof PermitRequest ? $request : null;
+    }
+
+    public function findPartByReference(string $reference, Uuid $municipalityId): ?PermitRequestMunicipality
+    {
+        $part = $this->entityManager->createQueryBuilder()
+            ->select('m')
+            ->from(PermitRequestMunicipality::class, 'm')
+            ->join('m.request', 'r')
+            ->where('r.publicReference = :reference')
+            ->andWhere('IDENTITY(m.municipality) = :municipality')
+            ->setParameter('reference', $reference)
             ->setParameter('municipality', $municipalityId, 'uuid')
             ->getQuery()
             ->getOneOrNullResult();

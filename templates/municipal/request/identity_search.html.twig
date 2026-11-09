@@ -1,0 +1,42 @@
+{% extends 'layouts/app.html.twig' %}
+
+{#
+  Point d'entrée « Corrections d'identité » (LOT 04.5) : recherche d'une demande de la commune par sa référence, puis accès à la seule route de
+  correction. Ni liste, ni fiche d'instruction, ni zones, ni décision. Variables : reference, searched, found (IdentityLookupResult), result_url, search_url.
+#}
+{% block content %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Corrections d’identité', sub: 'Corriger une erreur sur le nom ou les coordonnées d’un bénéficiaire' } only %}
+
+  <form class="cp-form" id="identity-search" action="{{ search_url }}" method="get" role="search" aria-label="Rechercher une demande par sa référence" data-controller="cp--submit-state">
+    {% include 'components/field.html.twig' with { id: 'f-reference', name: 'reference', label: 'Référence de la demande', value: reference, mono: true, autocomplete: 'off', help: 'Exemple : DEM-2026-0043. Seules les demandes concernant ' ~ active_municipality_name ~ ' peuvent être retrouvées.', attrs: 'maxlength="40" spellcheck="false" autocapitalize="characters"' } only %}
+    <div class="cp-form-actions" style="margin-top: 14px">
+      {% include 'components/button.html.twig' with { label: 'Rechercher', variant: 'primary', icon: 'search', type: 'submit' } only %}
+    </div>
+  </form>
+
+  {% if searched %}
+    <section aria-labelledby="identity-result-title" style="margin-top: 20px">
+      {% if found %}
+        {% set status_label = { PENDING: 'En attente', APPROVED: 'Approuvée', REFUSED: 'Refusée' }[found.status.value] %}
+        {% set items = [
+          { label: 'Référence', value: found.reference },
+          { label: 'Événement', value: found.eventName },
+          { label: 'Bénéficiaire', value: found.firstName ~ ' ' ~ found.lastName|upper },
+          { label: 'Statut pour ' ~ active_municipality_name, value: status_label },
+        ] %}
+        {% embed 'components/panel.html.twig' with { id: 'identity-result-title', title: 'Demande trouvée', items: items, result_url: result_url } only %}
+          {% block body %}
+            {% include 'components/facts.html.twig' with { items: items } only %}
+            <div class="cp-form-actions" style="margin-top: 14px">
+              {% include 'components/button.html.twig' with { label: 'Corriger l’identité', variant: 'primary', icon: 'check', href: result_url } only %}
+            </div>
+          {% endblock %}
+        {% endembed %}
+      {% else %}
+        <h2 class="cp-sr-only" id="identity-result-title">Résultat de la recherche</h2>
+        {% include 'components/alert.html.twig' with { variant: 'warning', title: 'Aucune demande trouvée', text: 'Aucune demande de ' ~ active_municipality_name ~ ' ne porte cette référence. Vérifiez la référence ; une demande qui ne concerne pas votre commune ne peut pas être retrouvée.' } only %}
+      {% endif %}
+    </section>
+  {% endif %}
+{% endblock %}

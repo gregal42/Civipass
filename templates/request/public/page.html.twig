@@ -1,23 +1,25 @@
 {#
   Formulaire public de demande de laissez-passer (SCR-020 à SCR-025), adapté de public_request.html.twig du prototype UI-03.
   Une page serveur par étape ; aucun compte ; brouillon en session.
-  Saisie par un agent (agent = vrai) : même formulaire dans la mise en page municipale (layout), libellés « pour le compte d'un bénéficiaire »
-  et attestation d'information de l'agent à la place de la prise de connaissance du bénéficiaire.
+  Saisie par un agent (agent = vrai) = DÉLIVRANCE DIRECTE (DM-108) : même formulaire dans la mise en page municipale (layout), libellés « pour le
+  compte d'un bénéficiaire », étape « Durée », récapitulatif de la délivrance et attestation d'information de l'agent à la place de la
+  prise de connaissance du bénéficiaire.
   Variables : request_event{ name, communes[] }, step, steps[] (Stepper), action, prev_href, csrf_id, f (valeurs), err (erreurs par champ ou bloc),
               errors[] (résumé si plusieurs), categories[], motifs[], zone_communes[], files[], recap[].
 #}
 {% extends layout|default('layouts/public.html.twig') %}
+{% import 'municipal/request/_macros.html.twig' as m %}
 {# Titre du document : préfixé « Erreur — » quand la page contient des erreurs de validation (titre visible inchangé). #}
 {% block title %}{% if err|length %}Erreur — {% endif %}{{ page_title }} · Civipass{% endblock %}
 {% block content %}
 <div class="cp-reqform">
   <div class="cp-reqform__head">
     <p class="cp-eyebrow">{{ request_event.name }}</p>
-    <h1 class="cp-reqform__title">{{ agent ? 'Nouvelle demande de laissez-passer' : 'Demande de laissez-passer' }}</h1>
+    <h1 class="cp-reqform__title">{{ agent ? 'Délivrer une autorisation' : 'Demande de laissez-passer' }}</h1>
     {%- if agent %}
     <p class="cp-muted"><b>Événement :</b> {{ request_event.name }} · <b>Commune :</b> {{ active_municipality_name }}</p>
-    <p class="cp-muted">Vous effectuez cette saisie pour un bénéficiaire. Votre identité sera enregistrée comme agent à l’origine du dossier.</p>
-    {% include 'components/alert.html.twig' with { variant: 'warning', title: 'Saisie préparatoire : la délivrance immédiate n’est pas encore disponible', text: 'Cette saisie enregistre une demande en attente. Elle ne délivre aucun laissez-passer et ne vaut pas autorisation.' } only %}
+    <p class="cp-muted">Vous effectuez cette saisie pour un bénéficiaire. Votre identité sera enregistrée comme agent émetteur.</p>
+    {% include 'components/alert.html.twig' with { variant: 'info', title: 'Délivrance directe', text: 'Votre validation vaut approbation immédiate pour les zones de votre commune : aucune instruction ultérieure. Rien n’est enregistré avant la validation finale.' } only %}
     {%- endif %}
     {% include 'components/stepper.html.twig' with { label: 'Étapes de la demande', steps: steps } only %}
   </div>
@@ -25,6 +27,7 @@
   <div class="cp-reqform__main">
     {%- if errors|length > 1 %}{% include 'components/error_summary.html.twig' with { errors: errors } only %}{% endif %}
     {%- for message in notice|default([]) %}{% include 'components/alert.html.twig' with { variant: 'error', title: 'Votre demande n’a pas pu être envoyée', text: message ~ ' Votre saisie est conservée : vous pouvez corriger puis réessayer.', focus: loop.first } only %}{% endfor %}
+    {%- for message in hints|default([]) %}{% include 'components/alert.html.twig' with { variant: 'warning', title: 'À vérifier avant de continuer', text: message, focus: loop.first } only %}{% endfor %}
     {%- if err.form|default('') %}{% include 'components/alert.html.twig' with { variant: 'error', title: err.form, focus: true } only %}{% endif %}
     <form class="cp-reqform__form" action="{{ action }}" method="post" novalidate{% if step == 'justificatifs' %} enctype="multipart/form-data"{% endif %}
       data-controller="cp--reveal cp--unsaved-guard cp--submit-state" data-action="change->cp--reveal#update">
@@ -34,6 +37,7 @@
       {%- elseif step == 'zones' %}{% include 'request/public/_zones.html.twig' with { err: err, zone_communes: zone_communes, agent: agent } only %}
       {%- elseif step == 'deplacement' %}{% include 'request/public/_travel.html.twig' with { f: f, err: err, agent: agent } only %}
       {%- elseif step == 'justificatifs' %}{% include 'request/public/_documents.html.twig' with { err: err, files: files, agent: agent } only %}
+      {%- elseif step == 'duree' %}{% include 'request/public/_duration.html.twig' with { f: f, err: err, event_tz: event_tz, event_ends_at: event_ends_at } only %}
       {%- elseif step == 'recapitulatif' %}
         <p class="cp-muted">{{ agent ? 'Vérifiez les informations du bénéficiaire.' : 'Vérifiez vos informations.' }} Après l’envoi, la demande ne pourra plus être modifiée.</p>
         {%- for s in recap %}
@@ -51,6 +55,35 @@
           {% endblock %}
         {% endembed %}
         {%- endfor %}
+        {%- if agent and issuance %}
+        {%- set preview = issuance.preview %}
+        {%- set period_text = preview ? m.period(preview.window.from, preview.window.until, event_tz)|trim : '' %}
+        {% embed 'components/panel.html.twig' with { id: 'recap-duration', title: 'Durée de l’autorisation', issuance: issuance, preview: preview, period_text: period_text } only %}
+          {% block head_end %}<a class="cp-reqform__edit" href="{{ issuance.edit_url }}">Modifier<span class="cp-sr-only"> : durée de l’autorisation</span></a>{% endblock %}
+          {% block body %}
+            {%- if preview %}
+              {%- set modes = { H24: '24 heures', H48: '48 heures', H72: '72 heures', CUSTOM: 'Jusqu’à une date de fin choisie', UNTIL_CLOSURE: 'Jusqu’à la clôture de l’événement' } %}
+              {% include 'components/facts.html.twig' with { items: [
+                { label: 'Durée choisie', value: modes[preview.window.mode.value] },
+                { label: 'Période globale prévisionnelle', value: period_text, note: 'Calculée maintenant ; le début exact est celui de la validation.' },
+                { label: 'Limites d’accès', value: 'Propres à chaque zone : les accès restent limités à leurs périodes' },
+              ] } only %}
+              {%- if not preview.approvable %}
+                {% embed 'components/alert.html.twig' with { variant: 'error', title: 'Délivrance impossible avec cette durée', focus: true, preview: preview } only %}
+                  {% block content %}
+                    <p>La délivrance porte sur toutes les zones ou sur aucune. Chaque zone doit avoir au moins une période d’accès dans la durée choisie :</p>
+                    <ul>{% for p in preview.problems %}<li><b>{{ p.label }}</b> — {{ p.explanation }}</li>{% endfor %}</ul>
+                    <p>Modifiez la durée ou la sélection de zones.</p>
+                  {% endblock %}
+                {% endembed %}
+              {%- endif %}
+            {%- else %}
+              {% include 'components/alert.html.twig' with { variant: 'error', title: 'Durée à corriger', text: issuance.error, focus: true } only %}
+            {%- endif %}
+          {% endblock %}
+        {% endembed %}
+        {% include 'components/alert.html.twig' with { variant: 'warning', title: 'Vous délivrez directement cette autorisation', text: 'Dès la validation, l’autorisation est approuvée pour toutes les zones de ' ~ active_municipality_name ~ ', sans instruction ultérieure. Elle ne pourra être ni modifiée ni annulée dans cette version.' } only %}
+        {%- endif %}
         {%- if agent %}
         <fieldset class="cp-panel cp-reqform__card" id="privacy" tabindex="-1"{% if err.privacy|default('') %} aria-describedby="privacy-error"{% endif %}>
           <legend class="cp-reqform__legend">Information du bénéficiaire</legend>
@@ -70,7 +103,11 @@
 
       <div class="cp-reqform__nav">
         {%- if step == 'recapitulatif' %}
-        {% include 'components/button.html.twig' with { label: agent ? 'Déposer la demande' : 'Envoyer ma demande', icon: 'check', type: 'submit', loading_label: 'Vérification en cours…' } only %}
+        {%- if agent and (not issuance.preview or not issuance.preview.approvable) %}
+        {% include 'components/button.html.twig' with { label: 'Délivrer l’autorisation', variant: 'approve', icon: 'check', disabled: true, unavailable_reason: 'Corrigez la durée ou les zones avant de délivrer.' } only %}
+        {%- else %}
+        {% include 'components/button.html.twig' with { label: agent ? 'Délivrer l’autorisation' : 'Envoyer ma demande', variant: agent ? 'approve' : 'primary', icon: 'check', type: 'submit', loading_label: agent ? 'Délivrance en cours…' : 'Vérification en cours…' } only %}
+        {%- endif %}
         {%- else %}
         {% include 'components/button.html.twig' with { label: 'Continuer', icon_after: 'right', type: 'submit' } only %}
         {%- endif %}
@@ -91,7 +128,7 @@
       <ul class="cp-reqform__list">
         <li>Saisissez les coordonnées du <b>bénéficiaire</b>, jamais les vôtres.</li>
         <li>Seules les zones de <b>{{ active_municipality_name }}</b> peuvent être choisies.</li>
-        <li>Déposer la demande ne vaut pas autorisation et ne donne aucun droit d’instruction.</li>
+        <li>Votre validation <b>délivre l’autorisation immédiatement</b> ; elle ne donne aucun droit d’instruction ni d’accès aux autres demandes.</li>
       </ul>
     </section>
     <section class="cp-panel cp-reqform__card">

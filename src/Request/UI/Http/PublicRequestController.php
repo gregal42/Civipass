@@ -9,6 +9,7 @@ use App\Event\Domain\EventStatus;
 use App\Event\Domain\PublicReference;
 use App\Request\Application\Command\SubmitRequestCommand;
 use App\Request\Application\Result\SubmittedRequest;
+use App\Request\Domain\ApprovalDuration;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -48,7 +49,7 @@ final class PublicRequestController extends AbstractRequestFormController
         return $this->step($request, $this->context($request, $eventReference), $step);
     }
 
-    protected function deposit(RequestFormContext $c, SubmitRequestCommand $command): SubmittedRequest
+    protected function deposit(RequestFormContext $c, SubmitRequestCommand $command, ?ApprovalDuration $duration): SubmittedRequest
     {
         return $this->s->submission->submitPublic($command, $c->draft->attemptKey());
     }

@@ -25,6 +25,7 @@ use App\Identity\Domain\User;
 use App\Municipality\Domain\Municipality;
 use App\Municipality\Domain\MunicipalityRole as Role;
 use App\Request\Application\Command\AttachmentReference;
+use App\Request\Domain\ApprovalDuration;
 use App\Request\Application\Command\SubmitRequestCommand;
 use App\Request\Application\RequestReferentialInitializer;
 use App\Request\Application\RequestSubmissionService;
@@ -194,9 +195,18 @@ final class RequestSubmissionServiceTest extends RequestDepositTestCase
         }
     }
 
+    /** La délivrance directe approuve : l'événement doit avoir des périodes d'accès à venir (l'application utilise la vraie horloge). */
+    private function eventAroundNow(): void
+    {
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $this->em->getConnection()->executeStatement('UPDATE event_event SET starts_at = :s, ends_at = :e', ['s' => $now->modify('-1 day')->format('Y-m-d H:i:s'), 'e' => $now->modify('+10 days')->format('Y-m-d H:i:s')]);
+        $this->em->refresh($this->event); // les agents du décor restent gérés (ils sont rattachés à la décision)
+    }
+
     public function testAgentDepositRecordsTheAgentAndOnlyConcernsHisOwnMunicipality(): void
     {
-        $this->deposit()->submitByAgent($this->instructor, $this->organizer->id()->toRfc4122(), $this->command(['zoneIds' => [$this->organizerZone->id()->toRfc4122()]]), $this->key());
+        $this->eventAroundNow();
+        $this->deposit()->issueDirectly($this->instructor, $this->organizer->id()->toRfc4122(), $this->command(['zoneIds' => [$this->organizerZone->id()->toRfc4122()]]), ApprovalDuration::untilClosure(), $this->key());
 
         $row = $this->em->getConnection()->fetchAssociative('SELECT origin, LOWER(HEX(entered_by_user_id)) AS u, LOWER(HEX(entered_by_municipality_id)) AS m FROM request_permit_request');
         self::assertSame('AGENT', $row['origin']);
@@ -218,7 +228,7 @@ final class RequestSubmissionServiceTest extends RequestDepositTestCase
     {
         foreach ([[$this->partnerZone], [$this->organizerZone, $this->partnerZone]] as $zones) {
             try {
-                $this->deposit()->submitByAgent($this->instructor, $this->organizer->id()->toRfc4122(), $this->command(['zoneIds' => array_map(static fn ($z): string => $z->id()->toRfc4122(), $zones)]), $this->key());
+                $this->deposit()->issueDirectly($this->instructor, $this->organizer->id()->toRfc4122(), $this->command(['zoneIds' => array_map(static fn ($z): string => $z->id()->toRfc4122(), $zones)]), ApprovalDuration::untilClosure(), $this->key());
                 self::fail('une zone d\'une autre commune est acceptée');
             } catch (DomainRuleViolation) {
                 $this->addToAssertionCount(1);
@@ -235,7 +245,7 @@ final class RequestSubmissionServiceTest extends RequestDepositTestCase
         ];
         foreach ($cases as $label => [$agent, $municipality]) {
             try {
-                $this->deposit()->submitByAgent($agent, $municipality?->id()->toRfc4122() ?? Uuid::v7()->toRfc4122(), $this->command(), $this->key());
+                $this->deposit()->issueDirectly($agent, $municipality?->id()->toRfc4122() ?? Uuid::v7()->toRfc4122(), $this->command(), ApprovalDuration::untilClosure(), $this->key());
                 self::fail($label);
             } catch (OperationNotAllowed) {
                 $this->addToAssertionCount(1);
@@ -246,7 +256,8 @@ final class RequestSubmissionServiceTest extends RequestDepositTestCase
 
     public function testTheCommunalAdministratorMayEnterARequestForHisOwnMunicipality(): void
     {
-        $result = $this->deposit()->submitByAgent($this->adminOnly, $this->organizer->id()->toRfc4122(), $this->command(['zoneIds' => [$this->organizerZone->id()->toRfc4122()]]), $this->key());
+        $this->eventAroundNow();
+        $result = $this->deposit()->issueDirectly($this->adminOnly, $this->organizer->id()->toRfc4122(), $this->command(['zoneIds' => [$this->organizerZone->id()->toRfc4122()]]), ApprovalDuration::untilClosure(), $this->key());
 
         self::assertFalse($result->replayed);
         self::assertSame(1, $this->rows('request_permit_request'));
@@ -257,7 +268,7 @@ final class RequestSubmissionServiceTest extends RequestDepositTestCase
         $this->sql('UPDATE event_participation SET status = \'SUSPENDED\' WHERE id = UNHEX(:id)', $this->partnerParticipation->id()->toRfc4122());
 
         $this->expectException(OperationNotAllowed::class);
-        $this->deposit()->submitByAgent($this->partnerInstructor, $this->partner->id()->toRfc4122(), $this->command(['zoneIds' => [$this->partnerZone->id()->toRfc4122()]]), $this->key());
+        $this->deposit()->issueDirectly($this->partnerInstructor, $this->partner->id()->toRfc4122(), $this->command(['zoneIds' => [$this->partnerZone->id()->toRfc4122()]]), ApprovalDuration::untilClosure(), $this->key());
     }
 
     public function testAClosedOrSuspendedEventRefusesTheDepositAndAnUnknownEventIsUniform(): void
@@ -416,9 +427,10 @@ final class RequestSubmissionServiceTest extends RequestDepositTestCase
 
     public function testAnIdempotencyKeyIsScopedToItsOriginAndActor(): void
     {
+        $this->eventAroundNow();
         $key = $this->key();
         $public = $this->deposit()->submitPublic($this->command(), $key);
-        $agent = $this->deposit()->submitByAgent($this->instructor, $this->organizer->id()->toRfc4122(), $this->command(), $key);
+        $agent = $this->deposit()->issueDirectly($this->instructor, $this->organizer->id()->toRfc4122(), $this->command(), ApprovalDuration::untilClosure(), $key);
 
         self::assertFalse($agent->replayed);
         self::assertNotSame($public->requestId, $agent->requestId);
@@ -521,6 +533,7 @@ final class RequestSubmissionServiceTest extends RequestDepositTestCase
             $this->storage(),
             $this->service(UploadedDocumentInspector::class),
             $this->service(ProposableZones::class),
+            new \App\Request\Application\MunicipalDecisionApplier($this->service(AuditTrail::class), $this->service(\App\Event\Domain\EventZoneValidityRepository::class), new \App\Request\Infrastructure\NullApprovedPartListener()),
         );
 
         try {

@@ -40,6 +40,7 @@ final readonly class PublicRequestStepValidator
             PublicRequestStep::Zones => $this->zones($f, $proposableZoneIds),
             PublicRequestStep::Travel => $this->travel($f),
             PublicRequestStep::Documents => [],
+            PublicRequestStep::Duration => [], // validée par le formulaire (durée, fenêtre, zones) : elle exige l'événement et la commune de l'agent
             PublicRequestStep::Recap => '1' === ($f['privacy'] ?? '') ? [] : ['privacy' => $agent
                 ? 'Cochez la case pour attester que vous avez informé le bénéficiaire.'
                 : 'Cochez la case pour confirmer que vous avez pris connaissance de la politique de confidentialité.'],

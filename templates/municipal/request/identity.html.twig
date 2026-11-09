@@ -1,0 +1,58 @@
+{% extends 'layouts/app.html.twig' %}
+
+{#
+  Correction de l'identité du bénéficiaire (LOT 04.4, DM-111) : cinq champs, attestation « même personne », avertissement multicommunal.
+  Variables : page (IdentityCorrectionPage), form{last,first,address,email,phone,version,same}, errors, summary, stored (valeurs enregistrées après conflit), action_url, csrf_id, request_url, requests_url.
+#}
+{% block content %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+  {% if request_url %}
+    {% include 'components/breadcrumb.html.twig' with { items: [ { label: 'Demandes', href: requests_url }, { label: page.reference, href: request_url, mono: true }, { label: 'Corriger le bénéficiaire' } ], back: { label: 'Dossier ' ~ page.reference, href: request_url } } only %}
+  {% endif %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Demande ' ~ page.reference ~ ' · ' ~ active_municipality_name, title: 'Corriger les informations du bénéficiaire', sub: page.eventName } only %}
+
+  {% for message in app.flashes('success') %}{% include 'components/alert.html.twig' with { variant: 'success', title: message, focus: true } only %}{% endfor %}
+  {% for message in app.flashes('info') %}{% include 'components/alert.html.twig' with { variant: 'info', title: message, focus: true } only %}{% endfor %}
+  {% if summary|length %}{% include 'components/error_summary.html.twig' with { errors: summary } only %}{% endif %}
+
+  {% set status_label = { PENDING: 'En attente de décision', APPROVED: 'Approuvée', REFUSED: 'Refusée' }[page.status.value] %}
+  {% include 'components/alert.html.twig' with { variant: 'info', title: 'Corriger une erreur, pas changer de bénéficiaire', text: 'Cette correction ne modifie ni la décision, ni les droits, ni la durée, ni la référence ' ~ page.reference ~ ' (statut de ' ~ active_municipality_name ~ ' : ' ~ status_label ~ '). Elle ne permet pas de transférer l’autorisation à une autre personne.' } only %}
+  {% if page.otherMunicipalities > 0 %}
+    {% include 'components/alert.html.twig' with { variant: 'warning', id: 'identity-multi', title: 'Cette demande concerne plusieurs communes', text: page.otherMunicipalities == 1 ? 'Une autre commune est concernée par cette demande : elle verra aussi cette correction.' : page.otherMunicipalities ~ ' autres communes sont concernées par cette demande : elles verront aussi cette correction.' } only %}
+  {% endif %}
+
+  {% if stored %}
+    {% embed 'components/panel.html.twig' with { id: 'stored-h', title: 'Valeurs actuellement enregistrées', items: [
+      { label: 'Nom', value: stored.last }, { label: 'Prénom', value: stored.first }, { label: 'Adresse', value: stored.address ?: '—' },
+      { label: 'E-mail', value: stored.email ?: '—' }, { label: 'Téléphone', value: stored.phone ?: '—' },
+    ] } only %}
+      {% block body %}{% include 'components/facts.html.twig' with { items: items } only %}{% endblock %}
+    {% endembed %}
+  {% endif %}
+
+  <form class="cp-decision" id="identity-form" action="{{ action_url }}" method="post" data-turbo="false" novalidate aria-labelledby="identity-form-title" data-controller="cp--submit-state">
+    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+    <input type="hidden" name="version" value="{{ form.version }}">
+    <div class="cp-decision__head">{% include 'components/icon.html.twig' with { name: 'user' } only %}<h2 class="cp-decision__title" id="identity-form-title">Informations du bénéficiaire</h2>
+      <p class="cp-decision__intro">Seuls le nom, le prénom, l’adresse et les coordonnées se corrigent. Ces informations seront modifiées pour la demande entière.</p></div>
+    <div class="cp-decision__body">
+      {% include 'components/field.html.twig' with { id: 'f-last', name: 'last', label: 'Nom', required: true, value: form.last, error: errors.last|default(''), autocomplete: 'off', attrs: 'maxlength="120"' } only %}
+      {% include 'components/field.html.twig' with { id: 'f-first', name: 'first', label: 'Prénom', required: true, value: form.first, error: errors.first|default(''), autocomplete: 'off', attrs: 'maxlength="120"' } only %}
+      {% include 'components/field.html.twig' with { id: 'f-address', name: 'address', label: 'Adresse postale', optional: true, value: form.address, error: errors.address|default(''), autocomplete: 'off', attrs: 'maxlength="255"' } only %}
+      {% include 'components/field.html.twig' with { id: 'f-email', name: 'email', type: 'email', label: 'Adresse e-mail', optional: true, value: form.email, error: errors.email|default(''), autocomplete: 'off' } only %}
+      {% include 'components/field.html.twig' with { id: 'f-phone', name: 'phone', type: 'tel', label: 'Téléphone', optional: true, value: form.phone, error: errors.phone|default(''), autocomplete: 'off', help: 'Au moins une adresse e-mail ou un numéro de téléphone est nécessaire.' } only %}
+      {% if errors.contact is defined %}<p class="cp-field-error" id="f-contact-error">{{ errors.contact }}</p>{% endif %}
+
+      <fieldset class="cp-fieldset" id="f-same"{% if errors.same is defined %} aria-describedby="f-same-error"{% endif %}>
+        <legend class="cp-fieldset__legend">Confirmation *</legend>
+        {% include 'components/choice.html.twig' with { type: 'checkbox', name: 'same', value: '1', id: 'f-same-box', label: 'Je confirme qu’il s’agit bien de la même personne : je corrige une erreur de saisie, je ne change pas de bénéficiaire.', checked: form.same == '1' } only %}
+        {% if errors.same is defined %}<p class="cp-field-error" id="f-same-error">{{ errors.same }}</p>{% endif %}
+      </fieldset>
+
+      <div class="cp-form-actions">
+        {% include 'components/button.html.twig' with { label: 'Enregistrer la correction', variant: 'primary', icon: 'check', type: 'submit', loading_label: 'Enregistrement…' } only %}
+        {% if request_url %}{% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', href: request_url } only %}{% endif %}
+      </div>
+    </div>
+  </form>
+{% endblock %}

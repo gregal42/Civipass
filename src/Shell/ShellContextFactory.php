@@ -61,6 +61,9 @@ final readonly class ShellContextFactory
         if (AgentRequestAccess::mayEnter($membership)) {
             $nav[] = ['label' => 'Nouvelle demande', 'icon' => 'plus', 'href' => $this->urls->generate('app_municipal_request_new', ['municipalityId' => $municipality->id()->toRfc4122()]), 'current' => 'new_request' === $section];
         }
+        if ($membership->hasRole(MunicipalityRole::Instructor) || $membership->hasRole(MunicipalityRole::MunicipalityAdmin)) {
+            $nav[] = ['label' => 'Corrections d’identité', 'icon' => 'user', 'href' => $this->urls->generate('app_municipal_identity_corrections', ['municipalityId' => $municipality->id()->toRfc4122()]), 'current' => 'identity' === $section];
+        }
         $options = [];
         foreach ($this->readableMemberships($user) as $candidate) {
             $options[] = [

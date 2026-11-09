@@ -1,0 +1,30 @@
+{#- Étape « Durée de l'autorisation » (délivrance directe par un agent, DM-108) : jamais de date de début, l'autorisation commence à la validation.
+    Variables : f{ duration_mode, duration_date, duration_time, duration_occurrence }, err{ duration, occurrence, form }, event_tz, event_ends_at. Parent : cp--reveal. -#}
+{% set mode = f.duration_mode %}
+<fieldset class="cp-panel cp-reqform__card" id="duration" tabindex="-1"{% if err.duration|default('') %} aria-describedby="duration-error"{% endif %}>
+  <legend class="cp-reqform__legend">Durée de l’autorisation</legend>
+  <p>Vous délivrez l’autorisation directement : elle commence à la validation. Elle porte sur toutes les zones choisies, ou sur aucune ; chaque zone doit avoir au moins une période d’accès dans la durée choisie. Les accès restent limités aux périodes propres à chaque zone.</p>
+  {%- if err.duration|default('') %}<p class="cp-field-error" id="duration-error">{% include 'components/icon.html.twig' with { name: 'alert', size: 's' } only %}{{ err.duration }}</p>{% endif %}
+  <div class="cp-choices">
+    {% set options = [
+      { value: 'H24', label: '24 heures', note: 'À compter de la validation.' },
+      { value: 'H48', label: '48 heures', note: 'À compter de la validation.' },
+      { value: 'H72', label: '72 heures', note: 'À compter de la validation.' },
+      { value: 'CUSTOM', label: 'Date et heure de fin personnalisées', note: 'Vous choisissez la fin ; le début est la validation.' },
+      { value: 'UNTIL_CLOSURE', label: 'Jusqu’à la clôture de l’événement', note: 'Aucune date n’est figée : la fin dépend de l’événement.' },
+    ] %}
+    {% for o in options %}
+      {% include 'components/choice.html.twig' with { type: 'radio', name: 'duration_mode', value: o.value, id: 'duration-' ~ o.value, label: o.label, note: o.note, checked: mode == o.value or (mode == '' and o.value == 'H24') } only %}
+    {% endfor %}
+  </div>
+  <div class="cp-stack" data-cp--reveal-target="section" data-when="duration_mode=CUSTOM" style="gap: var(--space-3); margin-top: var(--space-4)"{% if mode != 'CUSTOM' %} hidden{% endif %}>
+    <div class="cp-row" style="gap: var(--space-3); flex-wrap: wrap">
+      {% include 'components/field.html.twig' with { id: 'duration_date', name: 'duration_date', type: 'date', label: 'Date de fin *', value: f.duration_date, required: true } only %}
+      {% include 'components/field.html.twig' with { id: 'duration_time', name: 'duration_time', type: 'time', label: 'Heure de fin *', value: f.duration_time, required: true } only %}
+      {% if err.occurrence|default('') or f.duration_occurrence %}
+        {% include 'components/select.html.twig' with { id: 'duration_occurrence', name: 'duration_occurrence', label: 'Cette heure se produit deux fois', options: [{ value: '', label: 'Choisir…' }, { value: 'first', label: 'Première fois' }, { value: 'second', label: 'Seconde fois' }], value: f.duration_occurrence, error: err.occurrence|default('') } only %}
+      {% endif %}
+    </div>
+    <p class="cp-help">Heure de l’événement ({{ event_tz }}). {% if event_ends_at %}La fin ne peut pas dépasser la fin prévue de l’événement : {{ event_ends_at|cp_datetime(event_tz) }}.{% else %}Cet événement n’a pas de fin prévue.{% endif %} La fin doit être postérieure à maintenant.</p>
+  </div>
+</fieldset>

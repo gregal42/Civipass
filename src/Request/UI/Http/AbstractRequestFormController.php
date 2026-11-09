@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace App\Request\UI\Http;
 
+use App\Event\Domain\Time\AmbiguousLocalTime;
+use App\Event\Domain\Time\Occurrence;
+use App\Request\Application\AgentRequestDenied;
 use App\Request\Application\Command\AttachmentReference;
 use App\Request\Application\Command\SubmitRequestCommand;
 use App\Request\Application\Result\ProposableCommune;
 use App\Request\Application\Result\SubmittedRequest;
+use App\Request\Application\Result\ApprovalPreview;
+use App\Request\Domain\ApprovalDuration;
 use App\Request\Domain\PermitRequestAttachment;
 use App\Request\Domain\TravelMode;
 use App\Shared\Domain\DomainRuleViolation;
@@ -27,7 +32,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 abstract class AbstractRequestFormController extends AbstractController
 {
-    protected const STEPS_REQUIREMENT = 'identite|situation|zones|deplacement|justificatifs|recapitulatif';
+    protected const STEPS_REQUIREMENT = 'identite|situation|zones|deplacement|justificatifs|duree|recapitulatif';
     /** Version de l'attestation d'information de l'agent (distincte de la prise de connaissance du bénéficiaire public). */
     protected const AGENT_NOTICE_VERSION = 'agent-information-1';
 
@@ -36,13 +41,13 @@ abstract class AbstractRequestFormController extends AbstractController
     }
 
     /**
-     * Appelle le service de dépôt du contexte (public ou agent).
+     * Appelle le service de dépôt du contexte : dépôt public, ou délivrance directe par un agent (`$duration` obligatoire, nulle en public).
      *
      * @throws OperationNotAllowed
      * @throws DomainRuleViolation
      * @throws OperationConflict
      */
-    abstract protected function deposit(RequestFormContext $c, SubmitRequestCommand $command): SubmittedRequest;
+    abstract protected function deposit(RequestFormContext $c, SubmitRequestCommand $command, ?ApprovalDuration $duration): SubmittedRequest;
 
     protected function step(Request $request, RequestFormContext $c, string $step): Response
     {
@@ -56,6 +61,9 @@ abstract class AbstractRequestFormController extends AbstractController
         }
 
         $current = PublicRequestStep::from($step);
+        if (!\in_array($current, PublicRequestStep::sequence($c->agent), true)) {
+            throw new NotFoundHttpException(); // « Durée » n'existe que pour la délivrance directe
+        }
         $proposable = $this->zoneIds($communes);
 
         if ($request->isMethod('POST')) {
@@ -64,11 +72,17 @@ abstract class AbstractRequestFormController extends AbstractController
 
         // Une étape n'est accessible que si les précédentes sont valides (le brouillon est revérifié : une zone a pu cesser d'être proposée).
         $values = $this->pruneZones($c->draft, $proposable);
-        foreach (PublicRequestStep::cases() as $before) {
+        foreach (PublicRequestStep::sequence($c->agent) as $before) {
             if ($before === $current) {
                 break;
             }
-            if ([] !== $this->s->validator->validate($before, $values, $proposable, $c->agent)) {
+            $errors = $this->validateStep($c, $before, $values, $proposable);
+            if ([] !== $errors) {
+                if (PublicRequestStep::Duration === $before) {
+                    // La durée a cessé d'être valable depuis sa saisie (zone suspendue, période écoulée) : on l'explique, jamais de redirection muette.
+                    $this->addFlash('request_notice', $errors['duration'] ?? $errors['form'] ?? 'Vérifiez la durée de l\'autorisation.');
+                }
+
                 return $this->redirect(($c->stepUrl)($before));
             }
         }
@@ -77,8 +91,8 @@ abstract class AbstractRequestFormController extends AbstractController
     }
 
     /**
-     * Confirmation du dépôt : lisible UNIQUEMENT par la session (et l'utilisateur, pour un agent) qui l'a réalisé, jamais mise en cache.
-     * Aucun QR code, aucun suivi en ligne.
+     * Confirmation du dépôt PUBLIC : lisible UNIQUEMENT par la session qui l'a réalisé, jamais mise en cache. Aucun QR code, aucun suivi en
+     * ligne. (La confirmation d'une délivrance directe est une page serveur distincte, relue en base : DirectIssuanceController.).
      */
     protected function confirmationPage(RequestFormContext $c): Response
     {
@@ -86,7 +100,7 @@ abstract class AbstractRequestFormController extends AbstractController
         if (null === $confirmation) {
             throw new NotFoundHttpException();
         }
-        $response = $this->render($c->agent ? 'municipal/request/new_confirmation.html.twig' : 'request/public/confirmation.html.twig', [
+        $response = $this->render('request/public/confirmation.html.twig', [
             'page_title' => 'Demande envoyée',
             'request_event' => ['name' => $confirmation['event']],
             'reference' => $confirmation['reference'],
@@ -125,7 +139,7 @@ abstract class AbstractRequestFormController extends AbstractController
         } else {
             $draft->merge($this->submittedValues($request, $current));
             $values = $this->pruneZones($draft, $proposable, PublicRequestStep::Zones === $current);
-            $errors = $this->s->validator->validate($current, $values, $proposable, $c->agent);
+            $errors = $this->validateStep($c, $current, $values, $proposable);
         }
 
         if ([] === $errors) {
@@ -136,7 +150,7 @@ abstract class AbstractRequestFormController extends AbstractController
                 return $this->redirect(($c->stepUrl)($current), Response::HTTP_SEE_OTHER);
             }
 
-            return $this->redirect(($c->stepUrl)($current->next() ?? $current), Response::HTTP_SEE_OTHER);
+            return $this->redirect(($c->stepUrl)($current->next($c->agent) ?? $current), Response::HTTP_SEE_OTHER);
         }
 
         return $this->form($c, $current, $communes, $errors, $status);
@@ -154,8 +168,8 @@ abstract class AbstractRequestFormController extends AbstractController
     {
         $draft = $c->draft;
         $values = $this->pruneZones($draft, $proposable);
-        foreach (PublicRequestStep::cases() as $step) {
-            $errors = $this->s->validator->validate($step, $values, $proposable, $c->agent);
+        foreach (PublicRequestStep::sequence($c->agent) as $step) {
+            $errors = $this->validateStep($c, $step, $values, $proposable);
             if ([] !== $errors) {
                 return $this->form($c, $step, $communes, $errors, Response::HTTP_UNPROCESSABLE_ENTITY);
             }
@@ -191,7 +205,7 @@ abstract class AbstractRequestFormController extends AbstractController
             array_map(static fn (array $f): AttachmentReference => new AttachmentReference($f['key'], $f['name']), $draft->files()),
         );
         try {
-            $result = $this->deposit($c, $command);
+            $result = $this->deposit($c, $command, $c->agent ? $this->durationOf($values) : null);
         } catch (OperationNotAllowed) {
             return $this->failed($c, $c->agent ? 'Le dépôt n\'est plus possible : vos droits, l\'événement ou la participation de votre commune ont changé.' : 'Le dépôt n\'est plus possible pour cet événement.');
         } catch (DomainRuleViolation $e) {
@@ -204,7 +218,8 @@ abstract class AbstractRequestFormController extends AbstractController
             return $this->failed($c, 'Une erreur technique est survenue : la demande n\'a pas été enregistrée.');
         }
 
-        if (!$result->replayed && '' !== trim($values['email'])) {
+        // Aucun accusé de réception pour une délivrance directe : le message du dépôt public annonce une demande à instruire (hors périmètre : e-mails).
+        if (!$c->agent && !$result->replayed && '' !== trim($values['email'])) {
             try {
                 $this->s->receipts->sendReceipt(trim($values['email']), $result->reference, $c->event->name());
             } catch (\Throwable $e) {
@@ -212,7 +227,7 @@ abstract class AbstractRequestFormController extends AbstractController
                 $this->s->logger->warning('Accusé de réception de demande non envoyé.', ['exception' => $e::class]);
             }
         }
-        $draft->confirm(['reference' => $result->reference, 'event' => $c->event->name(), 'email' => trim($values['email']), 'beneficiary' => trim($values['first'].' '.$values['last'])]);
+        $draft->confirm(['reference' => $result->reference, 'event' => $c->event->name(), 'email' => trim($values['email']), 'beneficiary' => trim($values['first'].' '.$values['last']), 'request_id' => $result->requestId]);
 
         return $this->redirect(($c->confirmationUrl)(), Response::HTTP_SEE_OTHER);
     }
@@ -284,6 +299,7 @@ abstract class AbstractRequestFormController extends AbstractController
             PublicRequestStep::Situation => ['category' => $text('category'), 'motif' => $text('motif'), 'detail' => $text('detail')],
             PublicRequestStep::Zones => ['zones' => $this->submittedZones($request)],
             PublicRequestStep::Travel => ['mode' => $text('mode'), 'plates' => $this->submittedPlates($request)],
+            PublicRequestStep::Duration => ['duration_mode' => $text('duration_mode'), 'duration_date' => $text('duration_date'), 'duration_time' => $text('duration_time'), 'duration_occurrence' => $text('duration_occurrence')],
             PublicRequestStep::Recap => ['privacy' => '1' === $text('privacy') ? '1' : ''],
             PublicRequestStep::Documents => [],
         };
@@ -356,15 +372,15 @@ abstract class AbstractRequestFormController extends AbstractController
     {
         $values = $c->draft->values();
         $steps = [];
-        foreach (PublicRequestStep::cases() as $step) {
-            $before = $this->index($step) < $this->index($current);
+        foreach (PublicRequestStep::sequence($c->agent) as $step) {
+            $before = $this->index($step, $c->agent) < $this->index($current, $c->agent);
             $steps[] = [
                 'label' => $step->label(),
                 'href' => $before ? ($c->stepUrl)($step) : '',
                 'state' => $step === $current ? ([] !== $errors ? 'error' : 'current') : ($before ? 'done' : 'todo'),
             ];
         }
-        $previous = $current->previous();
+        $previous = $current->previous($c->agent);
         $summary = [];
         foreach ($errors as $field => $message) {
             if ('form' !== $field) {
@@ -398,15 +414,19 @@ abstract class AbstractRequestFormController extends AbstractController
             'files' => $c->draft->files(),
             'privacy_url' => $this->s->privacyPolicyUrl,
             'notice' => PublicRequestStep::Recap === $current ? $this->consumeFlash() : [],
+            'hints' => $this->consumeFlash('request_notice'),
             'recap' => PublicRequestStep::Recap === $current ? $this->recap($c, $values, $communes) : [],
+            'issuance' => $c->agent && PublicRequestStep::Recap === $current ? $this->issuance($c, $values) : null,
+            'event_tz' => $c->event->timezone()->identifier(),
+            'event_ends_at' => $c->event->endsAt(),
         ] + $c->view, new Response(status: $status));
     }
 
     /**
      * Sections du récapitulatif (texte échappé par Twig ; rien n'est passé en HTML).
      *
-     * @param array{last: string, first: string, address: string, email: string, phone: string, category: string, motif: string, detail: string, mode: string, privacy: string, plates: list<string>, zones: list<string>} $values
-     * @param list<ProposableCommune>                                                                                                                                                                                      $communes
+     * @param array{last: string, first: string, address: string, email: string, phone: string, category: string, motif: string, detail: string, mode: string, privacy: string, duration_mode: string, duration_date: string, duration_time: string, duration_occurrence: string, plates: list<string>, zones: list<string>} $values
+     * @param list<ProposableCommune>                                                                                                                                                                                                                                                                                        $communes
      *
      * @return list<array{title: string, href: string, items: list<array<string, mixed>>}>
      */
@@ -466,9 +486,9 @@ abstract class AbstractRequestFormController extends AbstractController
     /**
      * @return list<string>
      */
-    private function consumeFlash(): array
+    private function consumeFlash(string $key = 'request_error'): array
     {
-        return array_values(array_filter($this->container->get('request_stack')->getSession()->getFlashBag()->get('request_error'), '\is_string'));
+        return array_values(array_filter($this->container->get('request_stack')->getSession()->getFlashBag()->get($key), '\is_string'));
     }
 
     /** Taille lisible : Ko sous 1 Mo (1 Ko au minimum), Mo avec une décimale au-delà. */
@@ -479,9 +499,96 @@ abstract class AbstractRequestFormController extends AbstractController
             : max(1, (int) round($bytes / 1024)).' Ko';
     }
 
-    private function index(PublicRequestStep $step): int
+    private function index(PublicRequestStep $step, bool $agent): int
     {
-        return (int) array_search($step, PublicRequestStep::cases(), true);
+        return (int) array_search($step, PublicRequestStep::sequence($agent), true);
+    }
+
+    /**
+     * Validation d'une étape. « Durée » (délivrance directe) exige l'événement et la commune de l'agent : la durée est lue, sa fenêtre
+     * calculée et CHAQUE zone choisie vérifiée par la prévisualisation du moteur de décision (lecture seule) ; les autres étapes passent
+     * par le validateur commun.
+     *
+     * @param array<string, string|list<string>> $values
+     * @param list<string>                       $proposable
+     *
+     * @return array<string, string>
+     */
+    private function validateStep(RequestFormContext $c, PublicRequestStep $step, array $values, array $proposable): array
+    {
+        if (PublicRequestStep::Duration !== $step) {
+            return $this->s->validator->validate($step, $values, $proposable, $c->agent);
+        }
+        try {
+            $preview = $this->preview($c, $values);
+        } catch (AmbiguousLocalTime $e) {
+            return ['duration' => $e->getMessage(), 'occurrence' => 'Choisissez la première ou la seconde occurrence de cette heure.'];
+        } catch (AgentRequestDenied|OperationNotAllowed) {
+            return ['form' => 'La délivrance n\'est plus possible : vos droits, l\'événement ou la participation de votre commune ont changé.'];
+        } catch (DomainRuleViolation $e) {
+            return ['duration' => $e->getMessage()];
+        }
+        if (!$preview->isApprovable()) {
+            return ['duration' => 'Délivrance impossible avec cette durée : '.implode(' ', array_map(static fn ($p): string => sprintf('« %s » : %s', $p->label, $p->explanation()), $preview->problems))];
+        }
+
+        return [];
+    }
+
+    /**
+     * @param array<string, string|list<string>> $values
+     *
+     * @throws OperationNotAllowed
+     * @throws AgentRequestDenied
+     * @throws DomainRuleViolation
+     */
+    private function preview(RequestFormContext $c, array $values): ApprovalPreview
+    {
+        \assert(null !== $c->user && null !== $c->municipalityId);
+
+        return $this->s->issuance->preview($c->user, $c->municipalityId, $c->event->id()->toRfc4122(), \is_array($values['zones']) ? $values['zones'] : [], $this->durationOf($values));
+    }
+
+    /**
+     * Durée du brouillon. Le mode est obligatoire ; la fin n'est lue que pour la durée personnalisée.
+     *
+     * @param array<string, string|list<string>> $values
+     *
+     * @throws DomainRuleViolation
+     */
+    private function durationOf(array $values): ApprovalDuration
+    {
+        $text = static fn (string $key): string => \is_string($values[$key] ?? null) ? $values[$key] : '';
+        if ('' === $text('duration_mode')) {
+            throw new DomainRuleViolation('Choisissez la durée de l\'autorisation.');
+        }
+
+        return ApprovalDuration::fromInput($text('duration_mode'), $text('duration_date'), $text('duration_time'), Occurrence::tryFrom($text('duration_occurrence')));
+    }
+
+    /**
+     * Récapitulatif de la délivrance directe : fenêtre prévisionnelle et zones incompatibles (lecture seule), ou raison pour laquelle
+     * elle n'est pas calculable. Sans zone bloquante et sans erreur, seulement, la confirmation est proposée.
+     *
+     * @param array<string, string|list<string>> $values
+     *
+     * @return array{preview: ?ApprovalPreview, error: string, edit_url: string}
+     */
+    private function issuance(RequestFormContext $c, array $values): array
+    {
+        $preview = null;
+        $error = '';
+        try {
+            $preview = $this->preview($c, $values);
+        } catch (AmbiguousLocalTime $e) {
+            $error = $e->getMessage();
+        } catch (AgentRequestDenied|OperationNotAllowed) {
+            $error = 'La délivrance n\'est plus possible : vos droits, l\'événement ou la participation de votre commune ont changé.';
+        } catch (DomainRuleViolation $e) {
+            $error = $e->getMessage();
+        }
+
+        return ['preview' => $preview, 'error' => $error, 'edit_url' => ($c->stepUrl)(PublicRequestStep::Duration)];
     }
 
     /**

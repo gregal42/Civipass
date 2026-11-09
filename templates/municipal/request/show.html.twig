@@ -17,6 +17,7 @@
       <span>{% include 'components/icon.html.twig' with { name: 'flag', size: 's' } only %} {{ detail.eventName }}</span>
       <span>{% include 'components/icon.html.twig' with { name: 'clock', size: 's' } only %} Déposée le {{ detail.submittedAt|cp_datetime(tz) }}</span>
     </div>
+    <p class="cp-dossier-head__actions">{% include 'components/button.html.twig' with { label: 'Corriger les informations du bénéficiaire', variant: 'secondary', size: 's', href: identity_url } only %}</p>
     {% if detail.participationStatus.value == 'SUSPENDED' %}
       {% include 'components/banner.html.twig' with { variant: 'warning', text: 'La participation de ' ~ active_municipality_name ~ ' est suspendue : ce dossier reste consultable, en lecture seule.' } only %}
     {% elseif detail.participationStatus.value == 'CLOSED' %}
