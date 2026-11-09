@@ -1,0 +1,10 @@
+<p>Bonjour {{ firstName }},</p>
+<p>Votre laissez-passer <strong>{{ reference }}</strong> pour l'événement « {{ eventName }} » est disponible.</p>
+<p>Il est valable dans les communes et zones suivantes :</p>
+<ul>
+{% for commune in communes %}
+  <li><strong>{{ commune.municipality }}</strong> : {{ commune.zones|join(', ') }}</li>
+{% endfor %}
+</ul>
+<p>Ouvrez votre laissez-passer, avec son QR code, depuis ce lien personnel :<br><a href="{{ url }}">{{ url }}</a></p>
+<p>Ce lien est personnel : ne le partagez pas. Les droits réels sont vérifiés à chaque contrôle.<br>Si vous perdez ce lien, contactez la commune qui a instruit votre demande.</p>

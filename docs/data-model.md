@@ -31,18 +31,19 @@
 - `ApplicationInstruction` : instruction communale rattachée à ApplicationMunicipality ; état et notes internes **visibles uniquement par commune concernée**.
 - `ApplicationDecision` : décision historisée, auteur, date, justification, périmètre communal ; acceptation/refus/demande d'information selon workflow final. Ne jamais écraser les décisions passées.
 
-## Permis (5)
-- `Permit` : au plus un par Application, identifiant QR opaque stable non prédictible, état.
-- `PermitAuthorization` : lien Permit + EventParticipation, validité, statut ; une autorisation par commune et par demande (unicité à confirmer pour réexamens). Chaque commune est indépendante.
-- `PermitAuthorizationZone` : lien autorisation + EventZone, unicité, vérification même commune/événement.
-- `PermitAuthorizationRevision` : révisions immuables de durée, zones, véhicules, révocation ; auteur, date, ancien/nouvel état ou snapshot.
-- `AuthorizationVehicle` : véhicule effectivement autorisé, plaque snapshot ; indépendant des véhicules initialement déclarés.
+## Permis (révisé LOT 05.0 ; mise en œuvre LOT 05.1, [lot-05-schema.md](lot-05-schema.md))
+- `Permit` : au plus un par demande (`UNIQUE(request_id)`), référence `LP-AAAA-NNNN` (jamais un secret), première décision d'approbation. **Aucun état de validité n'est stocké** : il est calculé (DM-112).
+- `VerificationToken` : jeton opaque (≥ 160 bits) du QR, stocké en clair, un seul actif par laissez-passer, retrait pour le remplacement exceptionnel (LOT 05.5).
+- `PermitAccessToken` (LOT 05.2) : lien bénéficiaire, empreinte SHA-256 seule.
+- `PermitAuthorization` : une par participation communale approuvée (`UNIQUE(permit, participation)`, `UNIQUE(decision)`), fenêtre copiée de la décision, révocation.
+- `PermitAuthorizationZone` : zones copiées (libellé copié), retrait logique.
+- `PermitVehicle` : plaques copiées de la demande à la première émission, **partagées au niveau du laissez-passer**, retrait logique.
+- `PermitAuthorizationRevision` (LOT 05.5) : révisions immuables (prolongation, zones, plaques, révocation, remplacement de jeton).
 
-Validité : `DURATION_24H`, `DURATION_48H`, `DURATION_72H`, `CUSTOM_DATE`, `EVENT_END`. Début à délivrance pour durées relatives ; date/heure de fin pour CUSTOM_DATE ; EVENT_END lié à clôture. Prolongations, modifications de zones/véhicules et révocations ne changent pas le QR. Une autorisation sans zone active n'accorde aucun accès. Sortie d'une commune ou clôture de l'événement invalide les droits correspondants. Historique conservé.
+Validité : fenêtre globale de la décision (DM-109 : H24, H48, H72, CUSTOM, UNTIL_CLOSURE), copiée dans l'autorisation ; droits par zone **calculés** (fenêtre ∩ événement ∩ périodes de zone, état de la commune, de la participation et de la zone). Prolongations, modifications de zones/plaques et révocations ne changent pas le QR. Historique conservé. *(Version précédente : états `DURATION_24H`… et état stocké sur `Permit` : remplacés.)*
 
-## Contrôle (2)
-- `ControllerActivation` : accès d'activation temporaire pour événement, jeton à usage limité, expiration/révocation, émetteur.
-- `ControllerDevice` : événement, activation, identifiant, empreinte de secret d'appareil, statut, dernière synchronisation, expiration/révocation. Aucun User requis, aucun quota d'appareils.
+## Contrôle
+Aucune entité en V1 : le scan public n'exige ni activation ni appareil (DM-115). `ControllerActivation` et `ControllerDevice` sont **retirés du périmètre** du LOT 05 ; leur reprise éventuelle relève du LOT 06 (PWA).
 
 ## Transverse (3)
 - `AuditLog` : actions sensibles, acteur/contexte, timestamp, données minimales.

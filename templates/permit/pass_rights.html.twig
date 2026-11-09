@@ -1,0 +1,24 @@
+{#
+  Droits par commune et par zone, avec l'état de CHAQUE zone (jamais un statut global).
+  Variables : pass (BeneficiaryPass), pdf (bool : mise en page du PDF, sans composants interactifs).
+#}
+{% for authorization in pass.rights.authorizations %}
+  <section class="pp-auth" aria-labelledby="auth-{{ loop.index }}">
+    <h3 class="pp-auth__commune" id="auth-{{ loop.index }}">{{ authorization.municipalityName }}</h3>
+    <p class="pp-auth__period">{{ cp_authorization_period(authorization, pass.timezone) }}</p>
+    <ul class="pp-zones">
+      {% for zone in authorization.zones %}
+        {% set state = cp_zone_state(zone, pass.timezone) %}
+        <li class="pp-zone pp-zone--{{ state.status }}">
+          <span class="pp-zone__label">{{ zone.label }}</span>
+          {% include 'components/status_pill.html.twig' with { status: state.status, label: state.label } only %}
+          <span class="pp-zone__detail">{{ state.detail }}</span>
+        </li>
+      {% else %}
+        <li class="pp-zone"><span class="pp-zone__detail">Aucune zone active dans cette autorisation.</span></li>
+      {% endfor %}
+    </ul>
+  </section>
+{% else %}
+  <p class="app-note">Aucune autorisation enregistrée.</p>
+{% endfor %}

@@ -34,9 +34,11 @@ final class DirectIssuanceConcurrencyTest extends MunicipalDecisionTestCase
     /**
      * @return array{resource, array<int, resource>, string}
      */
-    private function start(string $key, string $mode = 'H24', bool $hold = false): array
+    private function start(string $key, string $mode = 'H24', bool $hold = false, bool $partner = false): array
     {
-        $arguments = [$this->instructor->id()->toRfc4122(), $this->organizer->id()->toRfc4122(), $this->event->id()->toRfc4122(), $this->organizerZone->id()->toRfc4122(), $key, $mode];
+        $arguments = $partner
+            ? [$this->partnerInstructor->id()->toRfc4122(), $this->partner->id()->toRfc4122(), $this->event->id()->toRfc4122(), $this->partnerZone->id()->toRfc4122(), $key, $mode]
+            : [$this->instructor->id()->toRfc4122(), $this->organizer->id()->toRfc4122(), $this->event->id()->toRfc4122(), $this->organizerZone->id()->toRfc4122(), $key, $mode];
         $marker = null;
         if ($hold) {
             $marker = tempnam(sys_get_temp_dir(), 'civipass-hold-');
@@ -51,7 +53,7 @@ final class DirectIssuanceConcurrencyTest extends MunicipalDecisionTestCase
             while (!is_file($marker) && microtime(true) < $deadline) {
                 usleep(20_000);
             }
-            self::assertFileExists($marker, 'l\'opération tenante doit prendre ses verrous');
+            self::assertFileExists($marker, 'l\'opération tenante doit prendre ses verrous : '.(is_file($marker) ? '' : json_encode(ParallelPhp::finish($process))));
         }
 
         return $process;
@@ -107,5 +109,24 @@ final class DirectIssuanceConcurrencyTest extends MunicipalDecisionTestCase
         }
         self::assertSame([1, 1, 1, 1], [$this->rows('request_permit_request'), $this->rows('request_permit_request_municipality'), $this->rows('request_permit_request_decision'), $this->rows('request_idempotency_key')]);
         self::assertSame('APPROVED', $this->em->getConnection()->fetchOne('SELECT status FROM request_permit_request_municipality'));
+        self::assertSame([1, 1, 1], [$this->rows('permit_permit'), $this->rows('permit_authorization'), $this->rows('permit_verification_token')], 'un seul laissez-passer, même sous délivrances simultanées');
+    }
+
+    /**
+     * Deux communes distinctes (verrous de participation disjoints) délivrent en même temps avec des clés DIFFÉRENTES : les deux relectures
+     * verrouillantes de l'empreinte (clé absente) puis les deux insertions ne doivent jamais s'interbloquer.
+     */
+    public function testTwoCommunesIssuingAtTheSameTimeWithDifferentKeysNeverDeadlock(): void
+    {
+        $first = $this->start(self::KEY.'c', hold: true);
+        $second = $this->start(self::KEY.'d', hold: true, partner: true);
+
+        $results = [$this->outcome($first), $this->outcome($second)];
+
+        foreach ($results as $r) {
+            self::assertTrue($r['ok'], 'aucun interblocage : '.json_encode($r));
+        }
+        self::assertSame([2, 2, 2], [$this->rows('request_permit_request'), $this->rows('request_permit_request_decision'), $this->rows('request_idempotency_key')]);
+        self::assertSame(2, $this->rows('permit_permit'));
     }
 }

@@ -27,6 +27,15 @@ final class TestDatabase
      */
     private const REQUEST_TABLES = ['request_idempotency_key', 'request_permit_request_decision', 'request_permit_request_zone', 'request_permit_request_attachment', 'request_permit_request_vehicle', 'request_permit_request_municipality', 'request_permit_request', 'request_motif', 'request_beneficiary_category', 'request_refusal_reason', 'request_reference_counter'];
 
+    /**
+     * Tables du LOT 05 (module Permit), purgées dès qu'elles existent. Le compteur de références `LP-` est entièrement vidé (une ligne par
+     * année, créée à la première émission).
+     */
+    private const PERMIT_TABLES = ['permit_access_token', 'permit_authorization_zone', 'permit_authorization', 'permit_vehicle', 'permit_verification_token', 'permit_permit', 'permit_reference_counter'];
+
+    /** Tables du LOT 05.3 (module Notification), purgées dès qu'elles existent. */
+    private const NOTIFICATION_TABLES = ['notification_secret', 'notification_outbox'];
+
     public static function reset(EntityManagerInterface $em): void
     {
         $connection = $em->getConnection();
@@ -40,7 +49,7 @@ final class TestDatabase
             Assert::fail(sprintf('Base "%s" refusée : les tests destructifs exigent une base de test (_test).', $database));
         }
 
-        $existing = array_filter([...self::REQUEST_TABLES, ...self::EVENT_TABLES], static fn (string $table): bool => $connection->createSchemaManager()->tablesExist([$table]));
+        $existing = array_filter([...self::NOTIFICATION_TABLES, ...self::PERMIT_TABLES, ...self::REQUEST_TABLES, ...self::EVENT_TABLES], static fn (string $table): bool => $connection->createSchemaManager()->tablesExist([$table]));
         $connection->executeStatement('SET FOREIGN_KEY_CHECKS = 0');
         foreach ([...$existing, ...self::TABLES] as $table) {
             $connection->executeStatement('DELETE FROM '.$table);

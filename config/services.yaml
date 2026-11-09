@@ -46,6 +46,8 @@ services:
             - '../src/Event/Application/Result/'
             - '../src/Event/Application/Support/ParsedValidity.php'
             - '../src/Event/Application/Support/ZoneValidityPlan.php'
+            - '../src/Permit/Application/Result/'
+            - '../src/Permit/Application/Read/'
             - '../src/Request/Application/Command/'
             - '../src/Request/Application/Read/'
             - '../src/Request/Application/Result/'

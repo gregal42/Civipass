@@ -42,6 +42,21 @@ final class RequestReferenceGeneratorTest extends RequestSchemaTestCase
         self::assertCount(12, array_unique($references));
     }
 
+    public function testLockingTheCounterConsumesNoNumberAndIsRolledBackWithTheTransaction(): void
+    {
+        $this->em->wrapInTransaction(fn () => $this->generator()->lock(self::at('2026-06-01 10:00:00'), EventTimezone::fromIdentifier('Europe/Paris')));
+        self::assertSame('DEM-2026-0001', $this->next('2026-06-01 10:00:00'), 'le verrou seul ne consomme aucun numéro');
+
+        $connection = $this->em->getConnection();
+        $connection->beginTransaction();
+        $this->generator()->lock(self::at('2026-06-01 10:00:00'), EventTimezone::fromIdentifier('Europe/Paris'));
+        $connection->rollBack();
+        $this->next('2026-06-01 10:00:00'); // DEM-2026-0002
+        self::assertSame('DEM-2026-0003', $this->next('2026-06-01 10:00:00'));
+        $this->expectException(\LogicException::class);
+        $this->generator()->lock(self::at('2026-06-01 10:00:00'), EventTimezone::fromIdentifier('Europe/Paris'));
+    }
+
     public function testEachYearHasItsOwnCounterStartingAtOne(): void
     {
         $this->next('2026-06-01 10:00:00');

@@ -19,7 +19,6 @@ use App\Request\Application\UploadedDocumentInspector;
 use App\Request\Domain\PermitRequestRepository;
 use App\Request\Domain\RequestReferenceGenerator;
 use App\Request\Domain\RequestReferentialRepository;
-use App\Request\Infrastructure\NullApprovedPartListener;
 use App\Shared\Application\AuditTrail;
 use App\Shared\Application\FileStorageInterface;
 use Psr\Clock\ClockInterface;
@@ -51,7 +50,7 @@ final class DirectIssuanceFactory
             $c->get(FileStorageInterface::class),
             $c->get(UploadedDocumentInspector::class),
             $c->get(ProposableZones::class),
-            new MunicipalDecisionApplier($audit, $c->get(EventZoneValidityRepository::class), $listener ?? new NullApprovedPartListener()),
+            new MunicipalDecisionApplier($audit, $c->get(EventZoneValidityRepository::class), $listener ?? PermitIssuerFactory::create($c, $audit)),
         );
     }
 }

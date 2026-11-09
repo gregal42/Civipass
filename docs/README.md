@@ -12,6 +12,8 @@
 | [`lot-02-schema.md`](lot-02-schema.md) | **Schéma de données LOT 02 proposé (en attente de validation)** |
 | [`lot-03-schema.md`](lot-03-schema.md) | **Schéma de données LOT 03 (demandes) proposé, en attente de validation** |
 | [`lot-04-schema.md`](lot-04-schema.md) | Modèle de décision municipale LOT 04.1 (DM-106 à DM-111, DT-040 à DT-045) |
+| [`exploitation-notifications.md`](exploitation-notifications.md) | Exploitation des notifications du bénéficiaire : clés, rotation, SMTP, distributeur, cron (exemple), supervision, purges, diagnostic, reprise, points ouverts avant production |
+| [`lot-05-schema.md`](lot-05-schema.md) | Laissez-passer LOT 05 : modèle, création atomique, droits calculés, scan public (DM-112 à DM-118, DT-046 à DT-051) |
 | [`ux/`](ux/README.md) | Référentiel UX, brief UI, architecture LOT UI-02 |
 | [`archive/`](archive/README.md) | Vide : rien n'est archivé à ce jour |
 | `tools/verify-docs.sh` | Vérifie les SHA-256 et les liens relatifs |

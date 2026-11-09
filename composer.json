@@ -12,6 +12,8 @@
         "doctrine/doctrine-bundle": "^3.3",
         "doctrine/doctrine-migrations-bundle": "^4.0",
         "doctrine/orm": "^3.7",
+        "dompdf/dompdf": "^3.1",
+        "endroid/qr-code": "^6.1",
         "giggsey/libphonenumber-for-php-lite": "^9.0",
         "sonata-project/admin-bundle": "^4.43",
         "sonata-project/doctrine-orm-admin-bundle": "^4.21",

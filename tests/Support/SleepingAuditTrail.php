@@ -16,13 +16,14 @@ final class SleepingAuditTrail implements AuditTrail
 {
     private bool $held = false;
 
-    public function __construct(private readonly AuditTrail $inner, private readonly string $markerFile, private readonly float $seconds)
+    /** @param string|null $onlyOnAction n'attend qu'à l'écriture d'un audit de cette action (valeur d'AuditAction) ; nul : le premier audit */
+    public function __construct(private readonly AuditTrail $inner, private readonly string $markerFile, private readonly float $seconds, private readonly ?string $onlyOnAction = null)
     {
     }
 
     public function record(AuditEvent $event): void
     {
-        if (!$this->held) {
+        if (!$this->held && (null === $this->onlyOnAction || $event->action->value === $this->onlyOnAction)) {
             $this->held = true;
             file_put_contents($this->markerFile, 'holding');
             usleep((int) ($this->seconds * 1_000_000));

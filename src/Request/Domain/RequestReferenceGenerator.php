@@ -14,6 +14,15 @@ use App\Event\Domain\Time\EventTimezone;
 interface RequestReferenceGenerator
 {
     /**
+     * Prend le verrou de la ligne du compteur de l'année SANS l'incrémenter (la ligne est créée si besoin). Sert à sérialiser les créateurs AVANT la
+     * relecture verrouillante de l'empreinte d'idempotence (clé absente : verrou d'intervalle) : sans lui, deux dépôts de participations différentes
+     * tiennent chacun un verrou d'intervalle puis s'interbloquent à l'insertion de l'empreinte. Même verrou que `next()` : aucun nouvel ordre.
+     *
+     * @throws \LogicException hors transaction
+     */
+    public function lock(\DateTimeImmutable $now, EventTimezone $eventTimezone): void;
+
+    /**
      * @throws \LogicException hors transaction
      */
     public function next(\DateTimeImmutable $now, EventTimezone $eventTimezone): RequestReference;

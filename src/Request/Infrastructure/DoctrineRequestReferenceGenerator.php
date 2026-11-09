@@ -23,6 +23,17 @@ final readonly class DoctrineRequestReferenceGenerator implements RequestReferen
     {
     }
 
+    public function lock(\DateTimeImmutable $now, EventTimezone $eventTimezone): void
+    {
+        if (!$this->connection->isTransactionActive()) {
+            throw new \LogicException('Le compteur des références se verrouille dans la transaction du dépôt.');
+        }
+        $this->connection->executeStatement(
+            'INSERT INTO request_reference_counter (year, last_number) VALUES (:year, 0) ON DUPLICATE KEY UPDATE last_number = last_number',
+            ['year' => RequestReference::yearOf($now, $eventTimezone)],
+        );
+    }
+
     public function next(\DateTimeImmutable $now, EventTimezone $eventTimezone): RequestReference
     {
         if (!$this->connection->isTransactionActive()) {

@@ -1,0 +1,9 @@
+<p>Bonjour {{ firstName }},</p>
+<p>Une commune supplémentaire a autorisé votre laissez-passer <strong>{{ reference }}</strong> pour l'événement « {{ eventName }} » : vos droits sont étendus.</p>
+<p>Vos communes et zones aujourd'hui :</p>
+<ul>
+{% for commune in communes %}
+  <li><strong>{{ commune.municipality }}</strong> : {{ commune.zones|join(', ') }}</li>
+{% endfor %}
+</ul>
+<p>Votre lien et votre QR code restent ceux que vous avez déjà reçus : aucun nouveau lien n'est envoyé.<br>Si vous avez perdu votre lien, contactez la commune qui a instruit votre demande.</p>

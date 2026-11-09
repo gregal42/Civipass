@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Laissez-passer {{ pass.reference }}</title>
+<style>
+  @page { margin: 18mm 16mm; }
+  body { font-family: 'DejaVu Sans', sans-serif; font-size: 10.5pt; color: #0f1e36; }
+  .head { border-bottom: 2px solid #1d3f73; padding-bottom: 8px; margin-bottom: 14px; }
+  .logo { font-size: 18pt; font-weight: bold; color: #1d3f73; }
+  .logo small { font-size: 9pt; font-weight: normal; color: #56637a; margin-left: 8px; }
+  h1 { font-size: 17pt; margin: 0 0 2px; }
+  h2 { font-size: 12pt; margin: 16px 0 6px; color: #1d3f73; border-bottom: 1px solid #d2d9e2; padding-bottom: 3px; }
+  .ref { font-family: 'DejaVu Sans Mono', monospace; font-weight: bold; font-size: 13pt; }
+  table.top { width: 100%; border-collapse: collapse; }
+  table.top td { vertical-align: top; }
+  td.qr { width: 52mm; text-align: center; }
+  td.qr img { width: 48mm; height: 48mm; }
+  .muted { color: #56637a; font-size: 9pt; }
+  .plate { display: inline-block; border: 1.5px solid #0f1e36; border-radius: 3px; padding: 2px 8px; margin-right: 6px; font-family: 'DejaVu Sans Mono', monospace; font-weight: bold; }
+  .auth { margin-bottom: 10px; page-break-inside: avoid; }
+  .auth h3 { margin: 0; font-size: 11pt; }
+  table.zones { width: 100%; border-collapse: collapse; margin-top: 4px; }
+  table.zones td { border-top: 1px solid #d2d9e2; padding: 4px 4px; vertical-align: top; font-size: 9.5pt; }
+  .state { font-weight: bold; white-space: nowrap; }
+  .notice { margin-top: 16px; padding: 8px 10px; border: 1px solid #d2d9e2; background: #f4f6f9; font-size: 9pt; }
+</style>
+</head>
+<body>
+  <div class="head"><span class="logo">Civipass<small>Laissez-passer</small></span></div>
+
+  <table class="top"><tr>
+    <td>
+      <div class="ref">{{ pass.reference }}</div>
+      <h1>{{ pass.firstName }} {{ pass.lastName|upper }}</h1>
+      <p>{{ pass.eventName }}</p>
+      <p class="muted">{{ pass.category }} · {{ pass.travelMode == 'vehicle' ? 'Véhicule' : 'À pied / à vélo' }}</p>
+      {% if pass.plates|length %}<p>{% for plate in pass.plates %}<span class="plate">{{ plate }}</span>{% endfor %}</p>{% endif %}
+    </td>
+    <td class="qr"><img src="{{ qr }}" alt="QR code du laissez-passer {{ pass.reference }}"><div class="muted">À présenter lors d’un contrôle</div></td>
+  </tr></table>
+
+  <h2>Communes et zones autorisées</h2>
+  {% for authorization in pass.rights.authorizations %}
+    <div class="auth">
+      <h3>{{ authorization.municipalityName }}</h3>
+      <div class="muted">{{ cp_authorization_period(authorization, pass.timezone) }}</div>
+      <table class="zones">
+        {% for zone in authorization.zones %}
+          {% set state = cp_zone_state(zone, pass.timezone) %}
+          <tr><td>{{ zone.label }}</td><td class="state">{{ state.label }}</td><td class="muted">{{ state.detail }}</td></tr>
+        {% else %}
+          <tr><td class="muted">Aucune zone active dans cette autorisation.</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  {% endfor %}
+
+  <div class="notice">
+    <b>Les droits sont vérifiés au moment du contrôle.</b> Ce document est une photographie de vos droits au {{ generated_at|cp_datetime(pass.timezone) }} (heure de l’événement).
+    Si une commune modifie, suspend ou retire des droits ensuite, ce document imprimé ne change pas : le QR code, lui, renvoie toujours vers vos droits actuels.
+    Le QR code ne contient ni votre nom ni vos plaques. Dates et heures : fuseau de l’événement ({{ pass.timezone }}).
+  </div>
+</body>
+</html>

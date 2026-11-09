@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Request\Application;
 
 use App\Event\Domain\EventParticipation;
+use App\Event\Application\Service\ZoneEffectivePeriodsResolver;
 use App\Event\Domain\EventZoneValidityRepository;
 use App\Event\Domain\Validity\EffectivePeriods;
 use App\Event\Domain\Validity\EventPeriod;
-use App\Event\Domain\Validity\InvalidValiditySlot;
 use App\Event\Domain\Validity\ZoneValidityCalculator;
 use App\Identity\Domain\User;
 use App\Request\Application\Result\ApprovalPreview;
@@ -42,13 +42,17 @@ use App\Shared\Domain\OperationNotAllowed;
  */
 final readonly class MunicipalDecisionApplier
 {
+    private ZoneEffectivePeriodsResolver $periods;
+
     public function __construct(
         private AuditTrail $audit,
         private EventZoneValidityRepository $validities,
         private ApprovedPartListener $approved,
         private GrantWindowCalculator $windows = new GrantWindowCalculator(),
-        private ZoneValidityCalculator $zoneCalculator = new ZoneValidityCalculator(),
+        ZoneValidityCalculator $zoneCalculator = new ZoneValidityCalculator(),
     ) {
+        // Même moteur de périodes de zone que l'évaluation des droits du laissez-passer (LOT 05.1, DT-047).
+        $this->periods = new ZoneEffectivePeriodsResolver($validities, $zoneCalculator);
     }
 
     /**
@@ -184,12 +188,7 @@ final readonly class MunicipalDecisionApplier
 
     private function zonePeriods(\App\Event\Domain\EventZone $zone, EventPeriod $period): EffectivePeriods
     {
-        $slots = array_map(static fn ($validity) => $validity->toSlot(), $this->validities->findActiveByZone($zone->id()));
-        try {
-            return $this->zoneCalculator->compute($zone->validityMode(), $period, $zone->participation()->event()->timezone(), $slots);
-        } catch (InvalidValiditySlot) {
-            return new EffectivePeriods([]); // donnée incohérente : aucun droit n'est accordé
-        }
+        return $this->periods->periods($zone, $period);
     }
 
     /**

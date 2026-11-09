@@ -24,7 +24,6 @@ use App\Request\Application\RequestSubmissionService;
 use App\Request\Domain\PermitRequestRepository;
 use App\Request\Domain\TravelMode;
 use App\Request\Infrastructure\DoctrineRefusalReasonRepository;
-use App\Request\Infrastructure\NullApprovedPartListener;
 use App\Shared\Application\AuditTrail;
 use App\Tests\Support\EventFixtures as F;
 use Psr\Clock\ClockInterface;
@@ -109,10 +108,11 @@ abstract class MunicipalDecisionTestCase extends RequestDepositTestCase
     protected function instruction(?AuditTrail $audit = null, ?ApprovedPartListener $listener = null, ?ClockInterface $clock = null): MunicipalInstructionService
     {
         $container = self::getContainer();
+        $audit ??= $container->get(AuditTrail::class);
         $applier = new MunicipalDecisionApplier(
-            $audit ?? $container->get(AuditTrail::class),
+            $audit,
             $container->get(EventZoneValidityRepository::class),
-            $listener ?? new NullApprovedPartListener(),
+            $listener ?? PermitIssuerFactory::create($container, $audit), // le VRAI créateur de laissez-passer (LOT 05.1) : les tests du LOT 04 le traversent
         );
 
         // Les agents des tests sont relus à l'usage (les assertions SQL vident l'EntityManager) : en production le

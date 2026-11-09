@@ -1,0 +1,46 @@
+{% extends 'layouts/pass.html.twig' %}
+
+{#
+  Page du bénéficiaire (LOT 05.2) : identité, déplacement, plaques, QR de vérification (jamais le secret du lien), droits par commune et par zone.
+  Variables : pass (BeneficiaryPass), qr_svg (SVG de confiance généré par le serveur), pdf_url, generated_at.
+#}
+{% block content %}
+  <div class="pp-col">
+    <section class="cp-box pp-id" aria-labelledby="pp-name">
+      <p class="cp-eyebrow">Laissez-passer · <span class="cp-mono">{{ pass.reference }}</span></p>
+      <h1 class="pp-id__name" id="pp-name">{{ pass.firstName }} {{ pass.lastName|upper }}</h1>
+      <p class="pp-id__event">{% include 'components/icon.html.twig' with { name: 'flag', size: 's' } only %} {{ pass.eventName }}</p>
+      <p class="pp-id__meta">{{ pass.category }}</p>
+      <div class="cp-plates">
+        {% include 'components/mode_chip.html.twig' with { mode: pass.travelMode } only %}
+        {% for plate in pass.plates %}{% include 'components/plate.html.twig' with { number: plate } only %}{% endfor %}
+      </div>
+    </section>
+
+    <section class="cp-box pp-qr" id="qr" aria-labelledby="pp-qr-title">
+      <h2 class="cp-box__title" id="pp-qr-title">Votre QR code</h2>
+      <div class="pp-qr__figure">
+        {% include 'components/qr_code.html.twig' with { svg: qr_svg, ref: pass.reference, size: 'l', caption: 'À présenter lors d’un contrôle' } only %}
+      </div>
+      <p class="pp-qr__help">Ce QR code ne change pas : il affiche toujours vos droits du moment, même si une commune en ajoute, les modifie ou les retire.</p>
+      <a class="cp-btn cp-btn--secondary pp-qr__open" href="#qr">{% include 'components/icon.html.twig' with { name: 'search' } only %}<span>Agrandir le QR code</span></a>
+      <a class="cp-btn cp-btn--secondary pp-qr__close" href="#main">{% include 'components/icon.html.twig' with { name: 'x' } only %}<span>Fermer</span></a>
+    </section>
+  </div>
+
+  <div class="pp-col">
+    <section class="cp-box" aria-labelledby="pp-rights-title">
+      <div class="cp-box__head"><h2 class="cp-box__title" id="pp-rights-title">Vos autorisations</h2></div>
+      <div class="pp-rights">{% include 'permit/pass_rights.html.twig' with { pass: pass, pdf: false } only %}</div>
+      <p class="pp-note">Situation au {{ generated_at|cp_datetime(pass.timezone) }} (heure de l’événement). Un droit peut être valide pour une zone et pas pour une autre : vérifiez chaque zone.</p>
+    </section>
+
+    <section class="cp-box" aria-labelledby="pp-pdf-title">
+      <div class="cp-box__head"><h2 class="cp-box__title" id="pp-pdf-title">Document imprimable</h2></div>
+      <div class="pp-body">
+        <p class="pp-note">Le PDF est une photographie de vos droits à l’instant du téléchargement. Si une commune modifie vos droits ensuite, le PDF déjà téléchargé ne change pas ; en revanche le QR imprimé affiche toujours vos droits actuels.</p>
+        {% include 'components/button.html.twig' with { label: 'Télécharger le PDF', variant: 'primary', icon: 'download', href: pdf_url } only %}
+      </div>
+    </section>
+  </div>
+{% endblock %}

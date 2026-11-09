@@ -18,4 +18,5 @@ enum AuditSubjectType: string
     case EventZoneValidity = 'EVENT_ZONE_VALIDITY';
     case EventType = 'EVENT_TYPE';
     case PermitRequest = 'PERMIT_REQUEST';
+    case Permit = 'PERMIT';
 }

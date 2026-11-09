@@ -1,0 +1,114 @@
+{% extends 'layouts/app.html.twig' %}
+
+{#
+  Remise du lien bénéficiaire par un agent (LOT 05.2, DM-114). Variables : overview (AccessOverview), new_link (URL du lien émis, UNE seule fois, ou null),
+  new_expires, issue_url, revoke_url (gabarit avec l'UUID factice à remplacer), csrf_issue_id, csrf_revoke_id, back_url.
+  Le secret d'un lien déjà émis n'est PAS récupérable (seule son empreinte est conservée) : en cas de perte, on en émet un nouveau.
+#}
+{% block content %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Laissez-passer ' ~ overview.reference, sub: 'Remettre un accès sécurisé au bénéficiaire' } only %}
+
+  {% for variant in ['success', 'info', 'error'] %}{% for message in app.flashes(variant) %}{% include 'components/alert.html.twig' with { variant: variant, title: message, focus: loop.first } only %}{% endfor %}{% endfor %}
+
+  {% if new_link %}
+    {% embed 'components/alert.html.twig' with { variant: 'success', title: 'Nouveau lien créé', id: 'new-link', focus: true, new_link: new_link, new_expires: new_expires, tz: overview.timezone } only %}
+      {% block content %}
+        <p>Copiez-le maintenant et transmettez-le au bénéficiaire : <b>il ne sera plus jamais affiché</b>. Il ne peut pas être retrouvé ; en cas de perte, créez-en un nouveau.</p>
+        <div class="pp-copy" data-controller="copy">
+          <input class="cp-input cp-mono" type="text" readonly value="{{ new_link }}" data-copy-target="source" aria-label="Lien à transmettre au bénéficiaire" id="new-link-value">
+          <button class="cp-btn cp-btn--primary" type="button" data-action="copy#copy" data-copy-target="button">{% include 'components/icon.html.twig' with { name: 'check' } only %}<span>Copier le lien</span></button>
+        </div>
+        {% if new_expires %}<p class="app-note">Ce lien cessera de fonctionner le {{ new_expires|cp_datetime(tz) }} (fin de l’événement + 30 jours).</p>{% endif %}
+      {% endblock %}
+    {% endembed %}
+  {% endif %}
+
+  {% set items = [
+    { label: 'Bénéficiaire', value: overview.firstName ~ ' ' ~ overview.lastName|upper },
+    { label: 'Événement', value: overview.eventName },
+    { label: 'Demande', value: overview.requestReference },
+    { label: 'Liens actifs', value: overview.activeCount },
+  ] %}
+  {% embed 'components/panel.html.twig' with { id: 'permit-facts', title: 'Laissez-passer', items: items } only %}
+    {% block body %}{% include 'components/facts.html.twig' with { items: items } only %}{% endblock %}
+  {% endembed %}
+
+  {% embed 'components/panel.html.twig' with { id: 'links-title', title: 'Liens du bénéficiaire', overview: overview, issue_url: issue_url, revoke_url: revoke_url, csrf_issue_id: csrf_issue_id, csrf_revoke_id: csrf_revoke_id } only %}
+    {% block body %}
+      <p class="app-note">Le lien donne accès, sans compte, à la page personnelle du bénéficiaire et au PDF. Plusieurs liens peuvent coexister ; en créer un nouveau ne révoque pas les précédents. Un secret déjà émis n’est conservé que sous forme d’empreinte : il ne peut pas être affiché de nouveau.</p>
+      {% if overview.canManage %}
+        <form method="post" action="{{ issue_url }}" class="cp-form-actions" data-turbo="false">
+          <input type="hidden" name="_token" value="{{ csrf_token(csrf_issue_id) }}">
+          {% include 'components/button.html.twig' with { label: 'Générer un nouveau lien', variant: 'primary', icon: 'plus', type: 'submit' } only %}
+        </form>
+      {% else %}
+        <p class="cp-facts__plain" id="links-readonly">{{ overview.readOnlyReason }}</p>
+      {% endif %}
+      {% if overview.links|length %}
+        <ul class="pp-links">
+          {% for link in overview.links %}
+            <li class="pp-link pp-link--{{ link.state }}">
+              <div>
+                <b>Lien créé le {{ link.createdAt|cp_datetime(overview.timezone) }}</b>{% if link.issuedBySystem %} <span class="app-note">· automatique (notification)</span>{% elseif link.issuedByOwnMunicipality %} <span class="app-note">· par votre commune</span>{% else %} <span class="app-note">· par une autre commune</span>{% endif %}
+                <div class="app-note">
+                  {% if link.state == 'revoked' %}Révoqué le {{ link.revokedAt|cp_datetime(overview.timezone) }}
+                  {% elseif link.state == 'expired' %}Expiré le {{ link.expiresAt|cp_datetime(overview.timezone) }}
+                  {% elseif link.expiresAt %}Valable jusqu’au {{ link.expiresAt|cp_datetime(overview.timezone) }}
+                  {% else %}Valable jusqu’à la fin de l’événement (+ 30 jours){% endif %}
+                </div>
+              </div>
+              {% include 'components/status_pill.html.twig' with { status: link.state == 'active' ? 'active' : (link.state == 'revoked' ? 'revoked' : 'closed'), label: link.state == 'active' ? 'Actif' : (link.state == 'revoked' ? 'Révoqué' : 'Expiré') } only %}
+              {% if link.state == 'active' and overview.canManage %}
+                <form method="post" data-turbo="false" action="{{ revoke_url|replace({'00000000-0000-7000-8000-000000000000': link.id}) }}">
+                  <input type="hidden" name="_token" value="{{ csrf_token(csrf_revoke_id) }}">
+                  {% include 'components/button.html.twig' with { label: 'Révoquer', variant: 'danger-ghost', type: 'submit' } only %}
+                </form>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="app-note">Aucun lien n’a encore été créé pour ce laissez-passer.</p>
+      {% endif %}
+    {% endblock %}
+  {% endembed %}
+
+  {% embed 'components/panel.html.twig' with { id: 'notifications-title', title: 'Notification par e-mail', overview: overview, notify_url: notify_url, csrf_notify_id: csrf_notify_id, notify_request_id: notify_request_id } only %}
+    {% block body %}
+      <p class="app-note">Le bénéficiaire reçoit par e-mail son lien personnel. « Envoyé » signifie que le serveur de messagerie a accepté le message : sa réception n’est pas garantie.</p>
+      {% if overview.notifications.lines|length %}
+        <ul class="pp-links" id="notification-lines">
+          {% for line in overview.notifications.lines %}
+            <li class="pp-link pp-link--{{ line.state }}">
+              <div>
+                <b>{{ line.title }}</b>
+                <div class="app-note">{{ line.detail }}{% if line.at %} · {{ line.at|cp_datetime(overview.timezone) }}{% endif %}</div>
+              </div>
+              {% include 'components/status_pill.html.twig' with { status: line.state == 'sent' ? 'valid' : (line.state == 'failed' ? 'invalid' : (line.state == 'pending' ? 'pending' : 'neutral')), label: line.stateLabel } only %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="app-note" id="notification-none">Aucune notification automatique n’a été programmée pour ce laissez-passer.</p>
+      {% endif %}
+      {% if overview.notifications.manualDeliveryPossible %}
+        <p class="cp-facts__plain" id="manual-delivery">Remise manuelle possible : aucun message de mise à disposition n’a atteint le bénéficiaire. Vous pouvez lui transmettre un lien (section « Liens du bénéficiaire ») ou programmer un nouvel envoi.</p>
+      {% endif %}
+      {% if overview.canManage and overview.hasRecipient %}
+        <form method="post" action="{{ notify_url }}" class="cp-form-actions" data-turbo="false" id="notify-form">
+          <input type="hidden" name="_token" value="{{ csrf_token(csrf_notify_id) }}">
+          <input type="hidden" name="request_id" value="{{ notify_request_id }}">
+          {% include 'components/button.html.twig' with { label: 'Renvoyer par e-mail', variant: 'secondary', icon: 'plus', type: 'submit' } only %}
+        </form>
+        <p class="app-note">Un nouveau message de mise à disposition contenant un nouveau lien sera envoyé sous peu. Les liens existants ne sont pas révoqués. Pour éviter les envois répétés : un seul message en attente à la fois, 5 minutes d’écart minimum, 3 renvois au plus par 24 heures ; la remise du lien par un agent (ci-dessus) n’est jamais limitée.</p>
+      {% elseif overview.canManage %}
+        <p class="app-note" id="notify-no-address">Aucune adresse e-mail n’est enregistrée pour ce bénéficiaire : seule la remise manuelle du lien est possible.</p>
+      {% endif %}
+    {% endblock %}
+  {% endembed %}
+
+  <div class="cp-form-actions">
+    {% include 'components/button.html.twig' with { label: 'Retour à la demande', variant: 'secondary', href: back_url } only %}
+  </div>
+{% endblock %}

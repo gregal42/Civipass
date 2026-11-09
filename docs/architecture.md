@@ -14,16 +14,15 @@ PHP 8.4, Symfony 8.1, Doctrine ORM, MySQL 8.4, Twig, AssetMapper, Stimulus, UX T
 - `Event` : événement, type, participation, zones et validités temporelles (créneaux supprimés logiquement), référence publique globale. *(Révision LOT 02 : plus d'instantanés de zones.)*
 - `Request` : demande citoyenne, contacts, véhicules, pièces, communes et zones demandées.
 - `Instruction` : instruction et décisions par commune.
-- `Permit` : QR, autorisations par commune, zones/véhicules autorisés, révisions.
-- `Control` : activation PWA, appareils, synchronisation, vérification.
+- `Permit` : laissez-passer unique par demande, jeton QR, autorisations par commune, zones/plaques copiées, droits effectifs calculés (LOT 05.1, [lot-05-schema.md](lot-05-schema.md)) ; révisions au LOT 05.5. Implémente le port `ApprovedPartListener` de `Request` ; `Request` ne dépend pas de `Permit`.
+- `Control` : réservé (PWA hors ligne, LOT 06 à redéfinir) ; le scan public V1 est servi par le LOT 05.4.
 - `Shared` : audit, notifications, stockage privé et abstractions communes.
 - `Admin` : intégration Sonata réservée à CWS.
 
 Dans chaque domaine, organiser pragmatiquement `Domain/`, `Application/`, `Infrastructure/`, `UI/`. Les contrôleurs HTTP restent fins ; logique métier dans services/cas d'usage ; persistence Doctrine en infrastructure. Les échanges entre modules passent par interfaces/services applicatifs explicites, pas par des accès directs aux tables d'autres modules.
 
-## Deux modes de contrôle
-1. **Scan public connecté** : QR lu avec appareil photo → page de vérification en ligne, sans compte ni activation ; affiche statut, événement, communes, zones, dates, et **plaques autorisées** ; aucune coordonnée, pièce ou note interne. Les plaques sont potentiellement des données personnelles : limiter exposition, indexation, scraping et volume de requêtes.
-2. **PWA activée** : accès événementiel temporaire sans compte personnel, activation individuelle d'appareil, synchronisation des données minimales, contrôle en ligne/hors ligne. Aucun quota fonctionnel d'appareils. Révocation individuelle, authentification par secret propre à l'appareil, durée de vie bornée.
+## Contrôle (révisé LOT 05.0)
+**Scan public connecté (V1, LOT 05.4)** : QR lu avec l'appareil photo → page de vérification en ligne, **sans compte, sans activation ni habilitation** ; affiche nom, prénom, plaques (si des véhicules sont associés), zones, dates et périodes, **état par zone calculé en temps réel**, référence `LP-` et événement ; jamais adresse, e-mail, téléphone, justificatifs ni informations de la demande. Nom et plaques sont des données personnelles exposées à toute personne qui dispose du QR : risque assumé et documenté (DM-115, [security.md](security.md)). Le calcul des droits est unique (`PermitRightsEvaluator`, DT-047). **PWA activée (LOT 06, à redéfinir)** : l'ancien mode « accès événementiel temporaire par appareil » n'est pas développé au LOT 05 ; `Control` ne porte aucune habilitation en V1.
 
 ## Hors ligne
 Synchronisation cible toutes les 15 minutes si réseau disponible ; avertissement à partir de 12 heures sans synchronisation ; blocage au-delà de 24 heures. Indiquer explicitement « contrôle hors ligne / données du ... » ; ne jamais afficher une confirmation « temps réel » sans connexion. Révocations et clôtures ne peuvent être connues hors ligne qu'après synchronisation ; documenter ce risque et minimiser les données stockées. Pas de géolocalisation ni journal systématique des scans. Stockage local chiffré si techniquement pertinent, mais ne pas supposer qu'IndexedDB assure un chiffrement applicatif. Définir le modèle de menace et le mécanisme d'effacement avant implémentation.

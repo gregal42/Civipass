@@ -1,0 +1,8 @@
+{% extends 'layouts/pass.html.twig' %}
+
+{#
+  Réponse UNIQUE pour un lien inconnu, mal formé, révoqué ou expiré : rien ne permet de distinguer ces cas ni de déduire l'existence d'un laissez-passer.
+#}
+{% block content %}
+  {% include 'components/alert.html.twig' with { variant: 'warning', title: 'Ce lien n’est pas valide', text: 'Il est peut-être expiré, retiré ou mal recopié. Demandez un nouveau lien à la mairie qui a délivré votre laissez-passer.', role: 'alert' } only %}
+{% endblock %}

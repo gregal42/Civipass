@@ -1,0 +1,24 @@
+{#
+  Gabarit de la page bénéficiaire (LOT 05.2) : écran public SANS compte, SANS JavaScript et sans aucune ressource tierce (feuilles de style
+  locales uniquement, aucune police ni image distante). La page est servie avec une politique de sécurité de contenu stricte (voir le contrôleur).
+  Variables : page_title.
+#}
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>{{ page_title }} · Civipass</title>
+  <link rel="stylesheet" href="{{ asset('styles/civipass/tokens.css') }}">
+  <link rel="stylesheet" href="{{ asset('styles/civipass/civipass.css') }}">
+  <link rel="stylesheet" href="{{ asset('styles/civipass-app.css') }}">
+</head>
+<body class="cp-root">
+  <div class="cp-public">
+    {% include 'components/public_header.html.twig' with { title: page_title } only %}
+    <main id="main" class="pp-main">{% block content %}{% endblock %}</main>
+  </div>
+</body>
+</html>

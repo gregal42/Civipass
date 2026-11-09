@@ -156,3 +156,21 @@ Arbitrages S1 à S8 validés le 5 novembre 2026 ([lot-03-schema.md](../lot-03-sc
 | L4-3 | Docblock de `RequestSubmissionService::submitByAgent` : zones d'autres communes demandables ; le code les refuse | DM-108 §5 tranche (zones de sa commune seulement) ; docblock remplacé au 04.3 (`issueDirectly`) |
 | L4-4 | Roadmap : durées 24/48/72 h rattachées au LOT 05 ; brief LOT 04 : choix de durée à l'approbation | **DM-109** : calcul au LOT 04, cycle de vie au LOT 05 ; roadmap mise à jour |
 | L4-5 | Roadmap, `lot-03-schema.md`, STD §2.2 : notes privées et verrou métier de 15 min au LOT 04 | **Retirés de la V1** (DM-106/lot-04-schema §1) ; mentions annotées, STD non modifié |
+
+
+## I. LOT 05.0 — contradictions relevées et traitement
+
+| Réf. | Contradiction | Traitement |
+|---|---|---|
+| L5-1 | `security.md`, `architecture.md`, roadmap et STD : page publique du scan **sans nom**, plaques seules ; brief 05.0 : identité réservée à un contrôleur habilité ; **rectificatif final** : nom, prénom, plaques, zones et validité par zone **publics**, sans habilitation | **DM-115** (arbitrage du 9 novembre 2026) : les anciens textes sont réécrits avec mention de la version précédente ; risque RGPD résiduel documenté |
+| L5-2 | Roadmap : contrôle au LOT 06 (PWA, activation d'appareils) ; `data-model.md` : `ControllerActivation`, `ControllerDevice` | **DM-115** : contrôle public en ligne au **LOT 05.4** ; habilitation et appareils **retirés** de la V1 ; le LOT 06 ne garde que la PWA hors ligne, à redéfinir |
+| L5-3 | Roadmap : notifications et outbox au LOT 07 | **DM-117 / DT-049** : notifications indispensables au LOT 05.3 ; le LOT 07 garde les évolutions de communication |
+| L5-4 | `data-model.md` : état stocké sur `Permit` ; `PermitAuthorization` « statut » | **DM-112** : modèle hybride, validité **calculée** et jamais persistée ; faits administratifs seuls persistés |
+| L5-5 | `GrantWindowCalculator::effectivePeriods()` ignore le statut administratif de la commune ; DM-035 l'exige au contrôle | **DT-047** : évalué par `PermitRightsEvaluator` (commune non ACTIVE : `COMMUNE_INACTIVE`) |
+| L5-6 | Risque de confusion entre la référence `LP-` et un secret d'accès | **DM-105 / DM-112** : `LP-` est une référence d'affichage, jamais un secret ni un moyen de recherche |
+| L5-7 | Texte de confidentialité du dépôt (LOT 03) : ne mentionne pas l'exposition publique du nom et des plaques par le scan | **Non traité au 05.1** : à mettre à jour avant la production (DM-115 §7, DM-117) |
+| L5-8 | DM-114 §2 : « révocation globale » des liens | **DM-118** : révocation **individuelle**, explicite et auditée ; plusieurs liens actifs coexistent |
+| L5-9 | DM-114 §2 : fin effective = clôture « si elle précède la fin prévue » (silencieux sur une clôture postérieure) | **Résolu le 9 novembre 2026** (DM-118 §4, `AccessExpiry`) : fin effective = le **plus tôt** de la fin planifiée et de la clôture ; clôture tardive sans effet ; fin planifiée repoussée prise en compte ; conforme à `GrantWindowCalculator` |
+| L5-10 | Le QR du 05.2 encode `/v/{jeton}` alors que la page de contrôle est au 05.4 | Route absente d'ici là (404) ; QR conforme DM-113/DM-115 ; aucun QR n'est à distribuer en production avant le 05.4 |
+| L5-11 | Masquage des jetons dans les journaux du serveur web | **Toujours non appliqué** (proposition nginx, `lot-05-schema.md` § 10) : le journal applicatif est purgé (DT-051), pas ceux de nginx/Traefik |
+| L5-12 | `framework.yaml` : `trusted_proxies: private_ranges` (dev) | **Résolu le 9 novembre 2026** (LOT 05.2 bis) : Symfony 8.1.11 (avis corrigés) et proxy de confiance **Traefik seul** via `SYMFONY_TRUSTED_PROXIES` ; XFF falsifié par un conteneur voisin désormais ignoré ; production inchangée (aucun proxy de confiance) |

@@ -40,6 +40,7 @@
       <div class="cp-form-actions">
         {% include 'components/button.html.twig' with { label: 'Délivrer une autre autorisation', variant: 'primary', icon: 'plus', href: new_request_url } only %}
         {% if identity_url %}{% include 'components/button.html.twig' with { label: 'Corriger les informations du bénéficiaire', variant: 'secondary', href: identity_url } only %}{% endif %}
+        {% include 'components/button.html.twig' with { label: 'Laissez-passer et lien du bénéficiaire', variant: 'secondary', icon: 'pass', href: path('app_municipal_permit_access', { municipalityId: app.request.attributes.get('municipalityId'), requestId: app.request.attributes.get('requestId') }) } only %}
         {% if request_url %}{% include 'components/button.html.twig' with { label: 'Ouvrir la fiche de la demande', variant: 'secondary', href: request_url } only %}{% endif %}
       </div>
     </div>

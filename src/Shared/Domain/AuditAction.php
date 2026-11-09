@@ -61,6 +61,16 @@ enum AuditAction: string
     // Correction d'identité du bénéficiaire (LOT 04.4, DM-111) : noms des champs modifiés seulement, jamais les valeurs. Une ligne par commune concernée.
     case RequestIdentityCorrected = 'REQUEST_IDENTITY_CORRECTED';
 
+    // Laissez-passer (LOT 05.1, DM-112) : jamais le jeton ni une donnée personnelle ; une ligne par commune qui approuve.
+    case PermitIssued = 'PERMIT_ISSUED';
+    case PermitAuthorizationAdded = 'PERMIT_AUTHORIZATION_ADDED';
+    case PermitAccessLinkIssued = 'PERMIT_ACCESS_LINK_ISSUED';
+    case PermitAccessLinkRevoked = 'PERMIT_ACCESS_LINK_REVOKED';
+
+    // Notifications du bénéficiaire (LOT 05.3.4) : identifiants et codes seulement, jamais d'adresse ni de secret.
+    case PermitNotificationRequested = 'PERMIT_NOTIFICATION_REQUESTED';
+    case NotificationSuppressed = 'NOTIFICATION_SUPPRESSED';
+
     // Accès commerciaux CWS (DM-076, DT-030) : écrits par le lot Administration CWS.
     case CommercialAccessGranted = 'COMMERCIAL_ACCESS_GRANTED';
     case CommercialAccessRevoked = 'COMMERCIAL_ACCESS_REVOKED';

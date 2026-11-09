@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * Processus de test (concurrence des décisions municipales) : une approbation ou un refus ; imprime le résultat ou le refus en
- * JSON. Arguments : userId municipalityId requestId action(approve|refuse) [json] [marqueur:secondes]. Base de TEST uniquement.
+ * JSON. Arguments : userId municipalityId requestId action(approve|refuse) [json] [marqueur:secondes] [action d'audit à attendre]. Base de TEST uniquement.
  * L'horloge est figée au 12 juin 2026 09:00 UTC (événement du 10 au 20 juin). Avec `marqueur:secondes`, l'opération tient ses
  * verrous (attente à l'écriture d'audit, avant le commit) et dépose le fichier marqueur dès qu'elle les tient.
  */
@@ -20,7 +20,7 @@ use App\Request\Domain\ApprovalDuration;
 use App\Request\Domain\DurationMode;
 use App\Request\Domain\PermitRequestRepository;
 use App\Request\Infrastructure\DoctrineRefusalReasonRepository;
-use App\Request\Infrastructure\NullApprovedPartListener;
+use App\Tests\Support\PermitIssuerFactory;
 use App\Shared\Application\AuditTrail;
 use App\Tests\Support\SleepingAuditTrail;
 use Symfony\Component\Clock\MockClock;
@@ -44,7 +44,7 @@ try {
     $audit = $container->get(AuditTrail::class);
     if (isset($argv[6])) {
         [$marker, $seconds] = explode(':', $argv[6]);
-        $audit = new SleepingAuditTrail($audit, $marker, (float) $seconds);
+        $audit = new SleepingAuditTrail($audit, $marker, (float) $seconds, $argv[7] ?? null);
     }
     $service = new MunicipalInstructionService(
         $container->get(EventTransactions::class),
@@ -53,7 +53,7 @@ try {
         $container->get(MunicipalityContext::class),
         $container->get(PermitRequestRepository::class),
         new DoctrineRefusalReasonRepository($em),
-        new MunicipalDecisionApplier($audit, $container->get(EventZoneValidityRepository::class), new NullApprovedPartListener()),
+        new MunicipalDecisionApplier($audit, $container->get(EventZoneValidityRepository::class), PermitIssuerFactory::create($container, $audit)),
     );
     $result = match ($argv[4]) {
         'approve' => $service->approve($actor, $argv[2], $argv[3], ApprovalDuration::fixed(DurationMode::from($payload['mode'] ?? 'H24'))),

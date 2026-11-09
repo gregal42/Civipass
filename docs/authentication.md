@@ -77,7 +77,7 @@ Pas de table de jetons persistants en V1 : **la révocation de tous les appareil
 
 | Environnement | Proxys de confiance | Fichier |
 |---|---|---|
-| **Développement local** (Docker, derrière Traefik) | Réseaux privés (`private_ranges`) ; en-têtes `x-forwarded-for`, `-proto`, `-port` seulement (jamais `-host`) | `config/packages/framework.yaml`, bloc `when@dev` |
+| **Développement local** (Docker, derrière Traefik) | **Traefik seul**, déclaré par `SYMFONY_TRUSTED_PROXIES` dans `.env.local` (adresse de Traefik sur le réseau Docker `reverse_proxy` : `docker inspect traefik`) ; en-têtes `x-forwarded-for`, `-proto`, `-port` seulement (jamais `-host`). **`private_ranges` n'est plus utilisé** (LOT 05.2 bis) : un conteneur voisin du même réseau n'est pas un proxy et ne peut plus falsifier l'adresse IP. Variable absente ou adresse de Traefik changée : échec fermé (l'IP vue est celle de Traefik, limiteurs plus stricts) | `config/packages/framework.yaml` (bloc `when@dev`), `.env.local`, `.env` (exemple commenté) |
 | **Test** | Aucun | — |
 | **Production cible** (Nginx + PHP-FPM, sans Traefik ni Redis) | **Aucun** : `REMOTE_ADDR` est l'adresse réelle du client | rien à configurer ; ne pas définir `SYMFONY_TRUSTED_PROXIES` |
 

@@ -1,0 +1,14 @@
+Bonjour {{ firstName }},
+
+Votre laissez-passer {{ reference }} pour l'événement « {{ eventName }} » est disponible.
+
+Il est valable dans les communes et zones suivantes :
+{% for commune in communes %}
+- {{ commune.municipality }} : {{ commune.zones|join(', ') }}
+{% endfor %}
+
+Ouvrez votre laissez-passer, avec son QR code, depuis ce lien personnel :
+{{ url }}
+
+Ce lien est personnel : ne le partagez pas. Les droits réels sont vérifiés à chaque contrôle.
+Si vous perdez ce lien, contactez la commune qui a instruit votre demande.

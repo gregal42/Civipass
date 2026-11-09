@@ -8,7 +8,7 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 - Statuts : **Proposée** (recommandation non validée), **Validée**, **Remplacée**, **Abandonnée**.
 - Une fiche indique l'identifiant, le titre, la validation (date), le contexte, la décision, les conséquences, les documents concernés et les décisions remplacées.
 - Les dates de validation ne sont pas connues pour les décisions antérieures à cette mission : elles sont marquées « date de validation non renseignée » et ne sont jamais inventées.
-- Une recommandation d'agent n'est **jamais** une décision validée. Arbitrages **validés** : A1 à A14, R1 à R9, P1 à P6, DT-020, DT-022, DT-023, DT-030, T1 (DM-076), DRAFT → CLOSED (DM-077) et administration des accès commerciaux depuis Sonata (DM-078), `revoked_by` (DM-079), type de zone immuable (DM-080), historique de suspension (DM-081), T2 (DM-082), limite de 3 660 jours (DM-083) : DM-051 à DM-066, DM-068 à DM-111 (DM-097 à DM-105 : LOT 03, 5 novembre 2026 ; DM-106 à DM-110 : LOT 04, 8 novembre 2026 ; DM-111 : LOT 04.4, 9 novembre 2026) ; DT-024, DT-035 à DT-045. `DM-067` n'est pas attribué. Points résiduels de détail (T2 à T6) : [`../revisions/CONTRADICTIONS.md`](../revisions/CONTRADICTIONS.md). Les fiches techniques `Proposée` (DT-021, DT-025 à DT-029, DT-031) sont des propositions en attente de validation.
+- Une recommandation d'agent n'est **jamais** une décision validée. Arbitrages **validés** : A1 à A14, R1 à R9, P1 à P6, DT-020, DT-022, DT-023, DT-030, T1 (DM-076), DRAFT → CLOSED (DM-077) et administration des accès commerciaux depuis Sonata (DM-078), `revoked_by` (DM-079), type de zone immuable (DM-080), historique de suspension (DM-081), T2 (DM-082), limite de 3 660 jours (DM-083) : DM-051 à DM-066, DM-068 à DM-117 (DM-097 à DM-105 : LOT 03, 5 novembre 2026 ; DM-106 à DM-110 : LOT 04, 8 novembre 2026 ; DM-111 : LOT 04.4, 9 novembre 2026 ; DM-112 à DM-117 : LOT 05.0, 9 novembre 2026) ; DT-024, DT-035 à DT-050. `DM-067` n'est pas attribué. Points résiduels de détail (T2 à T6) : [`../revisions/CONTRADICTIONS.md`](../revisions/CONTRADICTIONS.md). Les fiches techniques `Proposée` (DT-021, DT-025 à DT-029, DT-031) sont des propositions en attente de validation.
 - Une contradiction entre un document et une décision validée est signalée dans la fiche (« Écarts documentaires signalés »), sans modifier silencieusement le document.
 - Les décisions D1–D20 de [`../lot-01-schema.md`](../lot-01-schema.md) et D1–D8 de [`../ux/UX-LOT-UI-02-architecture.md`](../ux/UX-LOT-UI-02-architecture.md) gardent leur numérotation d'origine dans leurs documents (collision connue, écart N4) ; ce registre les reprend sous des identifiants DM/DT.
 
@@ -113,6 +113,13 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DM-109](metier/DM-109-durees-et-periodes-effectives.md) | Durées d'autorisation et périodes d'accès effectives | LOT 04 — Instruction | Validée |
 | [DM-110](metier/DM-110-motifs-de-refus.md) | Référentiel des motifs de refus | LOT 04 — Instruction | Validée |
 | [DM-111](metier/DM-111-correction-d-identite-du-beneficiaire.md) | Correction d'identité du bénéficiaire (identité unique, option A multicommunale) | LOT 04 — Instruction | Validée |
+| [DM-112](metier/DM-112-laissez-passer-unique-par-demande-et-statut-calcule.md) | Laissez-passer unique par demande ; validité calculée, jamais persistée | LOT 05 — Laissez-passer | Validée |
+| [DM-113](metier/DM-113-jeton-de-verification-du-qr-stable-et-remplacement-exceptionnel.md) | Jeton de vérification du QR : opaque, stable, remplaçable exceptionnellement | LOT 05 — Laissez-passer | Validée |
+| [DM-114](metier/DM-114-lien-beneficiaire-distinct-du-qr.md) | Lien bénéficiaire distinct du QR de contrôle | LOT 05 — Laissez-passer | Validée |
+| [DM-115](metier/DM-115-scan-public-integral-sans-habilitation.md) | Scan public intégral : nom, plaques, zones et validité, sans compte ni habilitation | LOT 05 — Contrôle | Validée |
+| [DM-116](metier/DM-116-modifications-de-droits-plaques-partagees-et-revocation-communale.md) | Modifications des droits : plaques partagées, révocation communale irréversible | LOT 05 — Laissez-passer | Validée |
+| [DM-117](metier/DM-117-notifications-du-beneficiaire-et-conservation-des-donnees.md) | Notifications du bénéficiaire et conservation des données | LOT 05 — Laissez-passer | Validée |
+| [DM-118](metier/DM-118-liens-d-acces-beneficiaire-cycle-de-vie-et-remise-par-l-agent.md) | Liens d'accès bénéficiaire : cycle de vie, expiration, remise par l'agent | LOT 05 — Laissez-passer | Validée |
 
 ## Décisions techniques
 
@@ -163,6 +170,12 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DT-043](technique/DT-043-delivrance-directe-dans-le-service-de-depot.md) | Délivrance directe : raccordement dans le service de dépôt (LOT 04.3) | LOT 04 — Architecture | Validée |
 | [DT-044](technique/DT-044-point-d-integration-du-lot-05.md) | Point d'intégration du LOT 05 : port transactionnel, effets après commit | LOT 04 — Architecture | Validée |
 | [DT-045](technique/DT-045-correction-d-identite-verrou-version-et-audit.md) | Correction d'identité : verrou de la demande, version et audit par commune | LOT 04 — Architecture | Validée |
+| [DT-046](technique/DT-046-module-permit-et-creation-atomique-par-le-port.md) | Module Permit et création atomique par le port ApprovedPartListener | LOT 05 — Architecture | Validée |
+| [DT-047](technique/DT-047-evaluateur-de-droits-effectifs.md) | Évaluateur de droits effectifs (PermitRightsEvaluator) | LOT 05 — Architecture | Validée |
+| [DT-048](technique/DT-048-jetons-journaux-et-en-tetes-de-protection.md) | Jetons, journaux d'accès et en-têtes de protection | LOT 05 — Architecture | Validée |
+| [DT-049](technique/DT-049-outbox-transactionnelle-des-notifications.md) | Outbox transactionnelle et distributeur périodique des notifications | LOT 05 — Architecture | Validée |
+| [DT-050](technique/DT-050-qr-et-pdf-bibliotheques-et-rendu-a-la-demande.md) | QR code et PDF : bibliothèques et rendu à la demande | LOT 05 — Architecture | Validée |
+| [DT-051](technique/DT-051-page-beneficiaire-pdf-et-protection-des-secrets.md) | Page bénéficiaire, PDF, rendu du QR et protection des secrets | LOT 05 — Architecture | Validée |
 
 ## Modèle de fiche
 

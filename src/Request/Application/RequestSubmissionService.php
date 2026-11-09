@@ -191,6 +191,10 @@ final readonly class RequestSubmissionService
             $territories = $this->lockTerritories($event, $zoneIds, $own);
             // Verrous de participation acquis : une tentative concurrente de MÊME clé a pu valider pendant l'attente. L'instantané de la transaction
             // (REPEATABLE READ) ne la voit pas : relecture verrouillante, pour rejouer son résultat plutôt que buter sur l'unicité.
+            // Le compteur de l'année est verrouillé AVANT cette relecture (clé absente = verrou d'intervalle) : les créateurs sont ainsi sérialisés et
+            // jamais deux verrous d'intervalle ne coexistent (interblocage à l'insertion de l'empreinte). Même verrou que `next()` : l'ordre ne change pas.
+            $now = $this->clock->now(); // pris sous verrou (DT-038)
+            $this->references->lock($now, $event->timezone());
             $concurrent = $this->requests->findByIdempotencyKey($event->id(), $keyHash, locking: true);
             if (null !== $concurrent) {
                 return $this->replayed($concurrent, current: true);
@@ -207,8 +211,7 @@ final readonly class RequestSubmissionService
                 throw new OperationNotAllowed('Saisie non autorisée : la participation de votre commune n\'est pas active.');
             }
 
-            // Horodatage pris sous verrou (DT-038) ; compteur de références en dernier (D2).
-            $now = $this->clock->now();
+            // Compteur de références en dernier (D2) ; horodatage déjà pris sous verrou plus haut (DT-038).
             $this->assertPeriodZonesAreUsable($territories, $event, $now);
             $request = PermitRequest::submit(
                 $this->references->next($now, $event->timezone()),
