@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Support;
 
+use App\Event\Application\Support\EventLocker;
 use App\Event\Application\Support\EventTransactions;
 use App\Municipality\Application\MunicipalityContext;
 use App\Municipality\Domain\PhoneNumberNormalizer;
@@ -20,6 +21,7 @@ final class IdentityCorrectionFactory
     {
         return new RequestIdentityCorrectionService(
             $c->get(EventTransactions::class),
+            $c->get(EventLocker::class),
             $clock,
             $c->get(MunicipalityContext::class),
             $c->get(PermitRequestRepository::class),

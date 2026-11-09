@@ -483,4 +483,69 @@ final class RequestIdentityFlowTest extends PublicRequestTestCase
         }
         self::assertSame(0, $this->rows('request_permit_request_decision'));
     }
+
+    // ------------------------------------------------------------------ Participation non ACTIVE : lecture seule
+
+    private function setParticipation(string $status): void
+    {
+        $this->sql('UPDATE event_participation SET status = :s WHERE id = UNHEX(:id)', ['s' => $status, 'id' => str_replace('-', '', $this->organizerParticipation->id()->toRfc4122())]);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function nonActive(): iterable
+    {
+        yield 'invitée' => ['INVITED'];
+        yield 'suspendue' => ['SUSPENDED'];
+        yield 'clôturée' => ['CLOSED'];
+    }
+
+    #[DataProvider('nonActive')]
+    public function testANonActiveParticipationGivesAReadOnlyPageAndRefusesThePostWithoutWriting(string $status): void
+    {
+        $this->as($this->admin);
+        $form = $this->form($this->url(), ['last' => 'Interdit']);
+        $this->setParticipation($status);
+
+        $crawler = $this->client->request('GET', $this->url());
+        self::assertResponseIsSuccessful();
+        self::assertCount(0, $crawler->filter('#identity-form'), 'aucun formulaire');
+        self::assertStringContainsString('Correction impossible', $crawler->filter('#identity-readonly')->text());
+        self::assertStringContainsString('Martin', $crawler->filter('main')->text(), 'identité actuelle en lecture seule');
+
+        $this->client->request('POST', $this->url(), $form);
+        self::assertResponseStatusCodeSame(409, 'formulaire ouvert avant le changement de statut : refusé à l\'envoi');
+        self::assertSame('Martin', $this->row()['last_name']);
+        self::assertSame(0, $this->audits());
+    }
+
+    public function testTheSearchResultAndTheFicheOfferNoCorrectionWhenTheParticipationIsSuspended(): void
+    {
+        $reference = $this->referenceOf($this->requestId);
+        $this->setParticipation('SUSPENDED');
+
+        $this->as($this->admin);
+        $crawler = $this->client->request('GET', $this->entry().'?reference='.$reference);
+        self::assertResponseIsSuccessful();
+        self::assertCount(0, $crawler->selectLink('Corriger l’identité'));
+        self::assertStringContainsString('suspendue', $crawler->filter('#identity-unavailable')->text());
+
+        $this->as($this->instructor);
+        $crawler = $this->client->request('GET', '/communes/'.$this->organizerId.'/demandes/'.$this->requestId);
+        self::assertResponseIsSuccessful();
+        self::assertCount(0, $crawler->selectLink('Corriger les informations du bénéficiaire'), 'fiche en lecture seule : aucune action');
+    }
+
+    public function testAnActiveCommuneStillCorrectsWhileTheOtherCommuneIsSuspended(): void
+    {
+        $this->sql('UPDATE event_participation SET status = \'SUSPENDED\' WHERE id = UNHEX(:id)', ['id' => str_replace('-', '', $this->partnerParticipation->id()->toRfc4122())]);
+        $this->as($this->admin);
+
+        $this->client->request('POST', $this->url(), $this->form($this->url(), ['last' => 'Dupont']));
+
+        self::assertResponseRedirects($this->url());
+        self::assertSame('Dupont', $this->row()['last_name']);
+        self::assertSame(2, $this->audits());
+    }
 }

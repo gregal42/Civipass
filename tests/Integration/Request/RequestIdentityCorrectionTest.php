@@ -395,4 +395,82 @@ final class RequestIdentityCorrectionTest extends MunicipalDecisionTestCase
 
         self::assertSame($before, $counts());
     }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function nonActive(): iterable
+    {
+        yield 'invitée' => ['INVITED'];
+        yield 'suspendue' => ['SUSPENDED'];
+        yield 'clôturée' => ['CLOSED'];
+    }
+
+    #[DataProvider('nonActive')]
+    public function testACommuneWhoseParticipationIsNotActiveCannotCorrectAndNothingIsWritten(string $status): void
+    {
+        $id = $this->submit();
+        $before = $this->row($id);
+        $this->sql('UPDATE event_participation SET status = :s WHERE id = :id', ['s' => $status, 'id' => $this->organizerParticipation->id()->toBinary()]);
+
+        try {
+            $this->correctAs($this->instructor, $this->organizer, $id, $this->correction(0, 'Interdit'));
+            self::fail('Participation non active : correction interdite.');
+        } catch (\App\Request\Application\IdentityCorrectionUnavailable $e) {
+            self::assertSame($status, $e->getMessage());
+        }
+
+        self::assertSame($before, $this->row($id));
+        self::assertSame([], $this->correctionAudits());
+    }
+
+    #[DataProvider('nonActive')]
+    public function testThePageIsReadOnlyAndExplainsWhyWhenTheParticipationIsNotActive(string $status): void
+    {
+        $id = $this->submit();
+        $this->sql('UPDATE event_participation SET status = :s WHERE id = :id', ['s' => $status, 'id' => $this->organizerParticipation->id()->toBinary()]);
+        $agent = $this->em->find(User::class, $this->adminOnly->id()) ?? self::fail('Agent absent.');
+
+        $page = $this->corrector()->page($agent, $this->mid($this->organizer), $id);
+        $found = $this->corrector()->find($agent, $this->mid($this->organizer), $this->row($id)['public_reference']);
+
+        self::assertFalse($page->correctable);
+        self::assertNotSame('', $page->unavailableReason);
+        self::assertNotNull($found);
+        self::assertFalse($found->correctable);
+        self::assertSame($page->unavailableReason, $found->unavailableReason);
+    }
+
+    public function testAStatusChangeBetweenTheFormAndItsSubmissionCannotBypassTheRestriction(): void
+    {
+        $id = $this->submit([$this->organizerZone]);
+        $version = $this->corrector()->page($this->instructor, $this->mid($this->organizer), $id);
+        self::assertTrue($version->correctable, 'le formulaire était proposé');
+        $this->sql('UPDATE event_participation SET status = \'SUSPENDED\' WHERE id = :id', ['id' => $this->organizerParticipation->id()->toBinary()]);
+
+        try {
+            $this->correctAs($this->em->find(User::class, $this->instructor->id()) ?? self::fail('Agent absent.'), $this->organizer, $id, $this->correction($version->version, 'Contournement'));
+            self::fail('Le statut relu sous verrou doit refuser la correction.');
+        } catch (\App\Request\Application\IdentityCorrectionUnavailable) {
+        }
+
+        self::assertSame('Martin', $this->row($id)['last_name']);
+    }
+
+    public function testInAMulticommunalRequestTheActiveCommuneStillCorrectsWhileTheNonActiveOneCannot(): void
+    {
+        $id = $this->submit();
+        $this->sql('UPDATE event_participation SET status = \'SUSPENDED\' WHERE id = :id', ['id' => $this->partnerParticipation->id()->toBinary()]);
+        $organizerAgent = $this->em->find(User::class, $this->instructor->id()) ?? self::fail('Agent absent.');
+        $partnerAgent = $this->em->find(User::class, $this->partnerInstructor->id()) ?? self::fail('Agent absent.');
+
+        self::assertTrue($this->correctAs($organizerAgent, $this->organizer, $id, $this->correction(0, 'ParCommuneActive'))->changed());
+        self::assertCount(2, $this->correctionAudits(), 'visible et auditée dans les deux communes, dont la suspendue');
+        try {
+            $this->correctAs($partnerAgent, $this->partner, $id, $this->correction(1, 'ParCommuneSuspendue'));
+            self::fail('La commune suspendue ne corrige pas.');
+        } catch (\App\Request\Application\IdentityCorrectionUnavailable) {
+        }
+        self::assertSame('ParCommuneActive', $this->row($id)['last_name']);
+    }
 }

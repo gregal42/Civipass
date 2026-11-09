@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Request\Application;
 
+use App\Event\Application\Support\EventLocker;
 use App\Event\Application\Support\EventTransactions;
+use App\Event\Domain\EventParticipation;
+use App\Event\Domain\ParticipationStatus;
 use App\Identity\Domain\EmailAddress;
 use App\Identity\Domain\User;
 use App\Municipality\Application\MunicipalityContext;
@@ -17,6 +20,7 @@ use App\Request\Application\Read\IdentityLookupResult;
 use App\Request\Application\Result\IdentityCorrectionResult;
 use App\Request\Domain\PartLocator;
 use App\Request\Domain\PermitRequest;
+use App\Request\Domain\PermitRequestMunicipality;
 use App\Request\Domain\PermitRequestRepository;
 use App\Shared\Application\AuditEvent;
 use App\Shared\Application\AuditTrail;
@@ -40,14 +44,16 @@ use Symfony\Component\Uid\Uuid;
  * statut de sa part, pas la fiche.
  *
  * Identité UNIQUE par demande (option A) : la correction est vue de toutes les communes concernées ; une ligne d'audit est écrite pour CHACUNE
- * (champs modifiés, commune auteure, jamais les valeurs). Verrou : la ligne de la demande SEULE, en exclusif, sans autre verrou : aucun cycle avec
- * l'ordre DT-024. Concurrence : la version lue à l'ouverture du formulaire est comparée sous verrou (StaleState si changée) ; une soumission sans
+ * (champs modifiés, commune auteure, jamais les valeurs). Participation de la commune : doit être ACTIVE (invitée, suspendue ou clôturée : lecture
+ * seule), relue sous verrou. Verrous, dans l'ordre DT-024 : événement (partagé) → participation → ligne de la demande (exclusif), sans autre verrou ensuite : aucun
+ * cycle, y compris avec le futur find-or-create du LOT 05. Concurrence : la version lue à l'ouverture du formulaire est comparée sous verrou (StaleState si changée) ; une soumission sans
  * changement n'écrit ni version ni audit.
  */
 final readonly class RequestIdentityCorrectionService
 {
     public function __construct(
         private EventTransactions $transactions,
+        private EventLocker $locker,
         private ClockInterface $clock,
         private MunicipalityContext $context,
         private PermitRequestRepository $requests,
@@ -78,7 +84,7 @@ final readonly class RequestIdentityCorrectionService
         }
         $request = $part->request();
 
-        return new IdentityLookupResult($request->id()->toRfc4122(), $request->reference()->value, $request->event()->name(), $part->status(), $request->lastName(), $request->firstName());
+        return new IdentityLookupResult($request->id()->toRfc4122(), $request->reference()->value, $request->event()->name(), $part->status(), $request->lastName(), $request->firstName(), ParticipationStatus::Active === $part->participation()->status(), self::reason($part->participation(), $part));
     }
 
     /**
@@ -105,18 +111,21 @@ final readonly class RequestIdentityCorrectionService
             $request->identityVersion(),
             \count($request->municipalities()) - 1,
             $membership->hasRole(MunicipalityRole::Instructor),
+            ParticipationStatus::Active === $part->participation()->status(),
+            self::reason($part->participation(), $part),
         );
     }
 
     /**
-     * @throws OperationNotAllowed      commune ou demande inaccessible
-     * @throws IdentityCorrectionDenied rôle absent
-     * @throws DomainRuleViolation      attestation manquante, nom/prénom/adresse/coordonnées invalides (rien n'est écrit)
-     * @throws OperationConflict        identité corrigée entre-temps (StaleState) ou conflit technique
+     * @throws OperationNotAllowed           commune ou demande inaccessible
+     * @throws IdentityCorrectionDenied      rôle absent
+     * @throws DomainRuleViolation           attestation manquante, nom/prénom/adresse/coordonnées invalides (rien n'est écrit)
+     * @throws IdentityCorrectionUnavailable participation de la commune non ACTIVE (relue sous verrou)
+     * @throws OperationConflict             identité corrigée entre-temps (StaleState) ou conflit technique
      */
     public function correct(User $agent, string $municipalityId, string $requestId, CorrectIdentityCommand $command): IdentityCorrectionResult
     {
-        [$membership] = $this->authorize($agent, $municipalityId, $requestId);
+        [$membership, $locator] = $this->authorize($agent, $municipalityId, $requestId);
         if (!$command->sameBeneficiary) {
             throw new DomainRuleViolation('Confirmez qu\'il s\'agit bien de la même personne : une correction ne permet pas de changer de bénéficiaire.');
         }
@@ -124,7 +133,13 @@ final readonly class RequestIdentityCorrectionService
         $phone = '' === trim($command->phone) ? null : $this->phones->normalize($command->phone);
         $own = $membership->municipality()->id();
 
-        return $this->transactions->run(function () use ($agent, $municipalityId, $requestId, $own, $command, $email, $phone): IdentityCorrectionResult {
+        return $this->transactions->run(function () use ($agent, $municipalityId, $requestId, $locator, $own, $command, $email, $phone): IdentityCorrectionResult {
+            // Ordre DT-024 : événement (partagé) → participation → ligne de la demande (jamais l'inverse). Le statut de la participation est relu
+            // SOUS ce verrou : INVITED, SUSPENDED et CLOSED interdisent la correction, quelle que soit la page que l'agent avait ouverte.
+            $participation = $this->locker->participation($locator->participationId, $this->locker->sharedEvent($locator->eventId));
+            if (ParticipationStatus::Active !== $participation->status()) {
+                throw new IdentityCorrectionUnavailable($participation->status()->value);
+            }
             $request = $this->requests->lockRequest(Uuid::fromString($requestId)) ?? throw new OperationNotAllowed('Ressource inaccessible.');
             // Droits relus SOUS verrou (adhésion ou rôles modifiés depuis le contrôle initial).
             $this->assertRole($this->context->requireMembership($agent, $municipalityId, write: true));
@@ -195,5 +210,18 @@ final readonly class RequestIdentityCorrectionService
         if (!$membership->hasRole(MunicipalityRole::Instructor) && !$membership->hasRole(MunicipalityRole::MunicipalityAdmin)) {
             throw new IdentityCorrectionDenied('Rôle INSTRUCTOR ou MUNICIPALITY_ADMIN requis.');
         }
+    }
+
+    /** Raison de la lecture seule (vide si la participation est ACTIVE). */
+    private static function reason(EventParticipation $participation, PermitRequestMunicipality $part): string
+    {
+        $commune = $part->municipality()->name();
+
+        return match ($participation->status()) {
+            ParticipationStatus::Active => '',
+            ParticipationStatus::Suspended => sprintf('La participation de %s à cet événement est suspendue : la correction d’identité est en lecture seule.', $commune),
+            ParticipationStatus::Closed => sprintf('La participation de %s à cet événement est clôturée : historique en lecture seule, correction impossible.', $commune),
+            ParticipationStatus::Invited => sprintf('La participation de %s à cet événement n’est pas encore active : correction impossible.', $commune),
+        };
     }
 }

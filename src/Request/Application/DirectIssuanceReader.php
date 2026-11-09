@@ -6,6 +6,7 @@ namespace App\Request\Application;
 
 use App\Identity\Domain\User;
 use App\Municipality\Application\MunicipalityContext;
+use App\Event\Domain\ParticipationStatus;
 use App\Municipality\Domain\MunicipalityRole;
 use App\Request\Application\Read\IssuedConfirmation;
 use App\Request\Domain\DecisionPath;
@@ -67,7 +68,7 @@ final readonly class DirectIssuanceReader
             $decision->validUntil(),
             trim($decision->decidedBy()->firstName().' '.$decision->decidedBy()->lastName()),
             $membership->hasRole(MunicipalityRole::Instructor),
-            $membership->hasRole(MunicipalityRole::Instructor) || $membership->hasRole(MunicipalityRole::MunicipalityAdmin),
+            ($membership->hasRole(MunicipalityRole::Instructor) || $membership->hasRole(MunicipalityRole::MunicipalityAdmin)) && ParticipationStatus::Active === $part->participation()->status(),
         );
     }
 }

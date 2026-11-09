@@ -19,6 +19,8 @@ final readonly class IdentityLookupResult
         public MunicipalRequestStatus $status,
         public string $lastName,
         public string $firstName,
+        public bool $correctable,
+        public string $unavailableReason,
     ) {
     }
 }

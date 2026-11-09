@@ -25,11 +25,15 @@
           { label: 'Bénéficiaire', value: found.firstName ~ ' ' ~ found.lastName|upper },
           { label: 'Statut pour ' ~ active_municipality_name, value: status_label },
         ] %}
-        {% embed 'components/panel.html.twig' with { id: 'identity-result-title', title: 'Demande trouvée', items: items, result_url: result_url } only %}
+        {% embed 'components/panel.html.twig' with { id: 'identity-result-title', title: 'Demande trouvée', items: items, result_url: result_url, found: found } only %}
           {% block body %}
             {% include 'components/facts.html.twig' with { items: items } only %}
             <div class="cp-form-actions" style="margin-top: 14px">
-              {% include 'components/button.html.twig' with { label: 'Corriger l’identité', variant: 'primary', icon: 'check', href: result_url } only %}
+              {% if found.correctable %}
+                {% include 'components/button.html.twig' with { label: 'Corriger l’identité', variant: 'primary', icon: 'check', href: result_url } only %}
+              {% else %}
+                <p class="cp-facts__plain" id="identity-unavailable">{{ found.unavailableReason }}</p>
+              {% endif %}
             </div>
           {% endblock %}
         {% endembed %}

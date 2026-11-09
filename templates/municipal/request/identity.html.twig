@@ -17,6 +17,15 @@
 
   {% set status_label = { PENDING: 'En attente de décision', APPROVED: 'Approuvée', REFUSED: 'Refusée' }[page.status.value] %}
   {% include 'components/alert.html.twig' with { variant: 'info', title: 'Corriger une erreur, pas changer de bénéficiaire', text: 'Cette correction ne modifie ni la décision, ni les droits, ni la durée, ni la référence ' ~ page.reference ~ ' (statut de ' ~ active_municipality_name ~ ' : ' ~ status_label ~ '). Elle ne permet pas de transférer l’autorisation à une autre personne.' } only %}
+  {% if not page.correctable %}
+    {% include 'components/alert.html.twig' with { variant: 'warning', id: 'identity-readonly', title: 'Correction impossible', text: page.unavailableReason, role: 'alert' } only %}
+    {% embed 'components/panel.html.twig' with { id: 'identity-current-h', title: 'Informations actuelles du bénéficiaire', items: [
+      { label: 'Nom', value: form.last }, { label: 'Prénom', value: form.first }, { label: 'Adresse', value: form.address ?: '—' },
+      { label: 'E-mail', value: form.email ?: '—' }, { label: 'Téléphone', value: form.phone ?: '—' },
+    ] } only %}
+      {% block body %}{% include 'components/facts.html.twig' with { items: items } only %}{% endblock %}
+    {% endembed %}
+  {% else %}
   {% if page.otherMunicipalities > 0 %}
     {% include 'components/alert.html.twig' with { variant: 'warning', id: 'identity-multi', title: 'Cette demande concerne plusieurs communes', text: page.otherMunicipalities == 1 ? 'Une autre commune est concernée par cette demande : elle verra aussi cette correction.' : page.otherMunicipalities ~ ' autres communes sont concernées par cette demande : elles verront aussi cette correction.' } only %}
   {% endif %}
@@ -55,4 +64,5 @@
       </div>
     </div>
   </form>
+  {% endif %}
 {% endblock %}

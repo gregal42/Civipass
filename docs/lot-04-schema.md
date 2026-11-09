@@ -74,7 +74,7 @@ Routes (toutes sous `/communes/{municipalityId}/demandes`, GET sauf mention) : `
 - **Champs** : nom, prénom, adresse, e-mail, téléphone, rien d'autre ; mêmes validations que le dépôt (`PublicRequestStepValidator`, `PermitRequest::correctIdentity`). Migration `Version20261109120000` : `request_permit_request.identity_version`.
 - **Droits** : INSTRUCTOR ou MUNICIPALITY_ADMIN d'une commune ayant une part ; EVENT_MANAGER seul 403 ; commune sans part, étrangère ou demande inconnue 404 uniforme. Aucun droit d'instruction n'en découle : l'administrateur voit identité, référence et statut de sa part, pas la fiche.
 - **Multicommunal (option A)** : identité unique, correction visible de toutes les communes ; avertissement avec le nombre d'**autres** communes ; **une ligne d'audit par commune** (`REQUEST_IDENTITY_CORRECTED` : noms de champs, commune auteure, agent, date ; jamais de valeur).
-- **Concurrence** : verrou exclusif de la seule ligne de la demande (aucun autre verrou, pas de cycle avec DT-024) + comparaison de `identity_version` ; périmée : 409, saisie conservée, valeurs enregistrées affichées.
+- **Concurrence** : verrous événement (partagé) → participation → ligne de la demande (ordre DT-024, pas de cycle) + comparaison de `identity_version` ; périmée : 409, saisie conservée, valeurs enregistrées affichées.
 - **Aucun effet sur les droits** : parts, décisions, fenêtres, référence et point d'intégration LOT 05 inchangés (testé). Sans changement effectif : ni version ni audit.
 - **Route** : `app_municipal_request_identity`, `GET|POST /communes/{m}/demandes/{id}/identite` ; actions sur la fiche et sur la confirmation de délivrance directe.
 - Tests : `RequestIdentityCorrectionTest`, `RequestIdentityConcurrencyTest`, `RequestIdentityFlowTest`, `Lot04TransversalTest` (04.5).
@@ -95,7 +95,7 @@ Routes (toutes sous `/communes/{municipalityId}/demandes`, GET sauf mention) : `
 | Approuver / refuser (sa part, participation active) | oui | non | non | 404 |
 | Délivrer directement (sa commune) | oui | oui | oui | 404 |
 | Confirmation d'une délivrance directe | si émetteur | si émetteur | si émetteur | 404 |
-| Corriger l'identité (demande ayant une part dans sa commune) | oui | oui | non (403) | 404 |
+| Corriger l'identité (demande ayant une part dans sa commune, **participation ACTIVE**) | oui | oui | non (403) | 404 |
 | Point d'entrée « Corrections d'identité » | oui | oui | non (403) | 404 |
 
 Toute écriture exige une adhésion active à la commune de l'URL (relue sous verrou) ; commune, demande, zones et événements de l'URL ne sont jamais crus.
@@ -104,13 +104,13 @@ Toute écriture exige une adhésion active à la commune de l'URL (relue sous ve
 
 - **Audit** : `REQUEST_APPROVED` / `REQUEST_REFUSED` (une ligne par décision, sans commentaire libre) ; `REQUEST_IDENTITY_CORRECTED` (une ligne par commune ayant une part : noms des champs, commune auteure ; jamais d'ancienne ni de nouvelle valeur). Même transaction que l'opération ; un échec d'audit annule tout.
 - **Décision** : ordre DT-024 / DT-041 ; décision immuable, unique par part. **Délivrance directe** : création et approbation dans une seule transaction, jamais de part `PENDING` écrite ; idempotente (clé + marqueur `+DIRECT`, relecture verrouillante). **Correction** : verrou de la seule ligne de la demande + `identity_version`.
-- **Verrous partagés avec le LOT 05** : la correction et le futur find-or-create du laissez-passer verrouillent la ligne du dossier ; la correction ne prend **aucun autre** verrou, aucun cycle n'est possible tant que cette règle est tenue.
-- **Participations non actives** (testé) : l'identité est une donnée de la demande ; la correction par une commune active reste possible quand la participation de l'autre commune est SUSPENDED ou CLOSED, et l'audit lui est écrit ; l'instruction d'une participation non active reste refusée (lecture seule, DM-107).
+- **Verrous partagés avec le LOT 05** : la correction et le futur find-or-create du laissez-passer verrouillent la ligne du dossier ; la correction prend l'événement (partagé) et la participation **avant** la ligne du dossier (même ordre que le LOT 05) : aucun cycle tant que cet ordre est tenu.
+- **Participations non actives** (testé) : la correction exige une participation **ACTIVE** de la commune qui corrige (INVITED, SUSPENDED, CLOSED : lecture seule), relue **sous verrou** (événement partagé → participation → demande, DT-024) ; une commune ACTIVE corrige toujours l'identité globale quand l'autre est SUSPENDED ou CLOSED, et l'audit est écrit dans chacune ; l'instruction d'une participation non active reste refusée (DM-107). Correction et décision d'une même commune se sérialisent par le verrou de participation.
 
 ## 13. Limites connues du LOT 04
 
 - Aucun laissez-passer, QR, PDF, e-mail ni SMS (LOT 05 / 07) ; pas de prolongation, de révocation, de réexamen ni d'approbation partielle ; pas de début futur ni de délivrance pour une autre commune.
-- La correction d'identité ne tient pas compte du statut de la participation de la commune qui corrige (arbitrage à confirmer au LOT 05) ; pas de récapitulatif avant/après, pas d'historique des valeurs, pas de notification de l'intéressé.
+- Pas de récapitulatif avant/après, pas d'historique des valeurs, pas de notification de l'intéressé.
 - Les droits effectifs par zone sont recalculés à l'évaluation : la décision ne stocke que la fenêtre globale (DT-042).
 - Heure inexistante ou ambiguë (changement d'heure Europe/Paris) : couverte par des tests automatisés (unitaires et fonctionnels), pas par une recette navigateur, la date du jour n'étant pas à proximité d'un changement d'heure.
 

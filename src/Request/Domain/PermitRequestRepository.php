@@ -47,8 +47,9 @@ interface PermitRequestRepository
     public function findPart(Uuid $partId, Uuid $municipalityId): ?PermitRequestMunicipality;
 
     /**
-     * Relit le dossier SOUS VERROU exclusif (état courant, jamais l'instantané) pour une correction d'identité (DM-111). Ne prend AUCUN autre verrou et
-     * doit être le seul verrou de sa transaction : l'identité n'est lue ni écrite par la décision, aucun cycle avec l'ordre DT-024 n'est possible.
+     * Relit le dossier SOUS VERROU exclusif (état courant, jamais l'instantané) pour une correction d'identité (DM-111). À prendre APRÈS l'événement
+     * (partagé) et la participation de la commune, jamais avant (ordre DT-024, puis ligne du dossier comme le futur find-or-create du LOT 05) ;
+     * aucun autre verrou ne doit suivre.
      * L'appelant a déjà vérifié par `locatePart()` que le dossier concerne SA commune.
      */
     public function lockRequest(Uuid $requestId): ?PermitRequest;

@@ -67,7 +67,7 @@ final class RequestIdentityConcurrencyTest extends MunicipalDecisionTestCase
         $decoded = json_decode($raw['stdout'], true, 512, \JSON_THROW_ON_ERROR);
         self::assertIsArray($decoded, $raw['stderr']);
         if (false === $decoded['ok']) {
-            self::assertSame(OperationConflict::class, $decoded['error'], 'refus contrôlé, jamais une erreur technique : '.json_encode($decoded));
+            self::assertContains($decoded['error'], [OperationConflict::class, \App\Request\Application\IdentityCorrectionUnavailable::class], 'refus contrôlé, jamais une erreur technique : '.json_encode($decoded));
         }
 
         return $decoded;
@@ -94,18 +94,30 @@ final class RequestIdentityConcurrencyTest extends MunicipalDecisionTestCase
         self::assertSame(1, $this->rows('audit_log WHERE action = \'REQUEST_IDENTITY_CORRECTED\''));
     }
 
-    public function testACorrectionDoesNotBlockNorDeadlockWithADecisionOnTheSameRequest(): void
+    public function testACorrectionAndADecisionOnTheSameRequestAreSerializedByTheSharedLockOrderWithoutDeadlock(): void
     {
         $id = $this->submit([$this->organizerZone]);
         $first = $this->start($id, 'PendantDecision', hold: true);
 
-        // Une décision sur la même demande ne prend pas le verrou de la demande : elle ne doit pas attendre la correction.
-        $started = microtime(true);
+        // La correction tient l'événement (partagé) et la participation : la décision de la même commune attend (même ordre DT-024), puis passe.
         $this->instruction()->approve($this->instructor, $this->organizer->id()->toRfc4122(), $id, \App\Request\Domain\ApprovalDuration::fixed(\App\Request\Domain\DurationMode::H24));
-        self::assertLessThan(self::HOLD_SECONDS - 0.5, microtime(true) - $started, 'la décision ne doit pas attendre la correction (aucun verrou commun)');
 
         self::assertTrue($this->outcome($first)['ok']);
         self::assertSame('APPROVED', $this->partStatus($id, $this->organizer));
         self::assertSame('PendantDecision', $this->em->getConnection()->fetchOne('SELECT last_name FROM request_permit_request'));
+    }
+
+    public function testASuspensionOfTheParticipationWhileACorrectionHoldsItsLocksWaitsThenTheCorrectionAlreadyDone(): void
+    {
+        $id = $this->submit([$this->organizerZone]);
+        $first = $this->start($id, 'AvantSuspension', hold: true);
+
+        $this->sql('UPDATE event_participation SET status = \'SUSPENDED\' WHERE id = :id', ['id' => $this->organizerParticipation->id()->toBinary()]);
+
+        self::assertTrue($this->outcome($first)['ok'], 'la correction avait pris ses verrous quand la participation était active');
+        $second = $this->outcome($this->start($id, 'ApresSuspension'));
+        self::assertFalse($second['ok']);
+        self::assertSame(\App\Request\Application\IdentityCorrectionUnavailable::class, $second['error'] ?? null);
+        self::assertSame('AvantSuspension', $this->em->getConnection()->fetchOne('SELECT last_name FROM request_permit_request'));
     }
 }

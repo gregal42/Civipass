@@ -7,6 +7,7 @@ namespace App\Request\UI\Http;
 use App\Identity\Domain\User;
 use App\Request\Application\Command\CorrectIdentityCommand;
 use App\Request\Application\IdentityCorrectionDenied;
+use App\Request\Application\IdentityCorrectionUnavailable;
 use App\Request\Application\Read\IdentityCorrectionPage;
 use App\Request\Application\RequestIdentityCorrectionService;
 use App\Shared\Domain\ConflictCause;
@@ -27,7 +28,7 @@ use Symfony\Component\Routing\Requirement\Requirement;
  * verrou. Commune et demande sont des identifiants non fiables ; la saisie ne transite jamais par l'URL ; l'écriture est un POST protégé par un
  * jeton CSRF propre à la demande ; la page n'est jamais mise en cache.
  *
- * Réponses : 403 rôle INSTRUCTOR/MUNICIPALITY_ADMIN absent ; 404 uniforme hors périmètre ; 422 saisie refusée (saisie conservée) ; 409 identité
+ * Réponses : 403 rôle INSTRUCTOR/MUNICIPALITY_ADMIN absent ; 200 (GET) ou 409 (POST) en lecture seule quand la participation de la commune n'est pas ACTIVE ; 404 uniforme hors périmètre ; 422 saisie refusée (saisie conservée) ; 409 identité
  * corrigée entre-temps (saisie conservée, valeurs enregistrées affichées) ; 303 après succès ou absence de changement.
  */
 final class RequestIdentityController extends AbstractController
@@ -83,6 +84,10 @@ final class RequestIdentityController extends AbstractController
         if ($request->hasSession()) {
             $request->getSession()->set(CommuneSelectionController::SESSION_KEY, $municipalityId);
         }
+        if (!$page->correctable) {
+            // Participation non ACTIVE (invitée, suspendue, clôturée) : lecture seule, aucune correction ; le POST est refusé sans rien écrire.
+            return $this->view($user, $municipalityId, $requestId, $page, $this->current($page), false, [], $request->isMethod('POST') ? Response::HTTP_CONFLICT : Response::HTTP_OK);
+        }
         if (!$request->isMethod('POST')) {
             return $this->view($user, $municipalityId, $requestId, $page, $this->current($page), false, [], Response::HTTP_OK);
         }
@@ -104,6 +109,11 @@ final class RequestIdentityController extends AbstractController
             $result = $this->identity->correct($user, $municipalityId, $requestId, new CorrectIdentityCommand((int) $values['version'], $values['last'], $values['first'], $values['address'], $values['email'], $values['phone'], true));
         } catch (IdentityCorrectionDenied) {
             throw new AccessDeniedHttpException('Action non autorisée.');
+        } catch (IdentityCorrectionUnavailable) {
+            // Le statut de la participation a changé entre l'affichage et l'envoi (relu sous verrou) : rien n'est écrit, écran en lecture seule.
+            $fresh = $this->page($user, $municipalityId, $requestId);
+
+            return $this->view($user, $municipalityId, $requestId, $fresh, $this->current($fresh), false, [], Response::HTTP_CONFLICT);
         } catch (OperationConflict $conflict) {
             if (ConflictCause::StaleState === $conflict->cause) {
                 // Corrigée entre-temps : la saisie est conservée, les valeurs ENREGISTRÉES sont montrées, la version est celle d'aujourd'hui (renvoyer est un choix délibéré).
