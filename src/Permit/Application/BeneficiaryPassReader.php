@@ -8,7 +8,6 @@ use App\Permit\Application\Read\BeneficiaryPass;
 use App\Permit\Domain\AccessSecret;
 use App\Permit\Domain\PermitAccessTokenRepository;
 use App\Permit\Domain\PermitVehicle;
-use App\Request\Domain\PlateFormat;
 use App\Request\Domain\TravelMode;
 
 /**
@@ -47,19 +46,9 @@ final readonly class BeneficiaryPassReader
             $request->firstName(),
             $request->category()->label(),
             TravelMode::Vehicle === $request->travelMode() ? 'vehicle' : 'foot_bike',
-            array_map(static fn (PermitVehicle $v): string => self::plate($v), $permit->activeVehicles()),
+            array_map(static fn (PermitVehicle $v): string => PlateFormatter::format($v), $permit->activeVehicles()),
             $this->evaluator->evaluate($permit, $now),
             $permit->activeToken()->value(),
         );
-    }
-
-    private static function plate(PermitVehicle $vehicle): string
-    {
-        $registration = $vehicle->registration();
-        if (PlateFormat::Siv === $vehicle->format() && 1 === preg_match('/^([A-Z]{2})(\d{3})([A-Z]{2})$/', $registration, $m)) {
-            return $m[1].'-'.$m[2].'-'.$m[3];
-        }
-
-        return $registration;
     }
 }

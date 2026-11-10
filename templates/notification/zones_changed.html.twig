@@ -1,0 +1,12 @@
+<p>Bonjour {{ firstName }},</p>
+<p>La commune de <strong>{{ municipality }}</strong> a modifié les zones de votre autorisation sur votre laissez-passer <strong>{{ reference }}</strong> (événement « {{ eventName }} »).</p>
+{% if addedZones|length %}<p>Zones ajoutées : <strong>{{ addedZones|join(', ') }}</strong>.</p>{% endif %}
+{% if reinstatedZones|length %}<p>Zones réintégrées : <strong>{{ reinstatedZones|join(', ') }}</strong>.</p>{% endif %}
+{% if zonesChangedSince %}<p>La liste a encore évolué depuis cette modification : voici la situation d'aujourd'hui.</p>{% endif %}
+<p>Vos communes et zones aujourd'hui :</p>
+<ul>
+{% for commune in communes %}
+  <li><strong>{{ commune.municipality }}</strong> : {{ commune.zones|join(', ') }}</li>
+{% endfor %}
+</ul>
+<p>Un droit dans une zone dépend aussi de la période de votre autorisation et des créneaux de la zone. Votre lien et votre QR code restent ceux que vous avez déjà reçus : le QR code affiche toujours votre situation du moment. Seul le contrôle du QR code fait foi.</p>

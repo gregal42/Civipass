@@ -6,6 +6,7 @@ namespace App\Permit\Domain;
 
 use App\Event\Domain\Event;
 use App\Request\Domain\PermitRequest;
+use App\Request\Domain\PlateFormat;
 use App\Request\Domain\PermitRequestDecision;
 use App\Request\Domain\PermitRequestMunicipality;
 use App\Shared\Domain\DomainRuleViolation;
@@ -76,7 +77,7 @@ class Permit
         $this->vehicles = new ArrayCollection();
         $this->tokens->add(new VerificationToken($this, $verificationToken, $now));
         foreach ($request->vehicles() as $declared) {
-            $this->vehicles->add(new PermitVehicle($this, $declared));
+            $this->vehicles->add(new PermitVehicle($this, $declared->registration(), $declared->format(), $declared->position()));
         }
     }
 
@@ -170,11 +171,34 @@ class Permit
     }
 
     /**
+     * Ajoute le NOUVEAU jeton actif d'un remplacement du QR (LOT 05.5.5) ; l'ancien doit avoir été retiré et écrit AVANT (un seul jeton actif : index unique).
+     *
+     * @internal appelé par PermitTokenReplacementService
+     */
+    public function addToken(string $token, \DateTimeImmutable $now): VerificationToken
+    {
+        $new = new VerificationToken($this, $token, $now);
+        $this->tokens->add($new);
+
+        return $new;
+    }
+
+    /**
      * @return list<PermitAuthorization>
      */
     public function authorizations(): array
     {
         return array_values($this->authorizations->toArray());
+    }
+
+    /**
+     * TOUTES les plaques (actives et retirées), dans l'ordre de saisie : lecture seule, sans verrou (aperçu). Les écritures relisent les plaques sous verrou.
+     *
+     * @return list<PermitVehicle>
+     */
+    public function vehicles(): array
+    {
+        return array_values($this->vehicles->toArray());
     }
 
     /**
@@ -185,5 +209,18 @@ class Permit
     public function activeVehicles(): array
     {
         return array_values(array_filter($this->vehicles->toArray(), static fn (PermitVehicle $v): bool => $v->isActive()));
+    }
+
+    /**
+     * Ajoute une plaque NOUVELLE (LOT 05.5.4). Les règles (mode, plafond, doublon) sont celles de `VehicleChangePlanner`, appliquées sous verrou par le service.
+     *
+     * @internal appelé par PermitVehicleService
+     */
+    public function addVehicle(string $registration, PlateFormat $format, int $position): PermitVehicle
+    {
+        $vehicle = new PermitVehicle($this, $registration, $format, $position);
+        $this->vehicles->add($vehicle);
+
+        return $vehicle;
     }
 }

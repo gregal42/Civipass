@@ -1,0 +1,25 @@
+Bonjour {{ firstName }},
+
+La commune de {{ municipality }} a modifié les zones de votre autorisation sur votre laissez-passer {{ reference }} (événement « {{ eventName }} »).
+{% if removedZones|length %}
+Zones retirées (vous n'avez plus de droit dans ces zones) : {{ removedZones|join(', ') }}.
+{% endif %}
+{% if addedZones|length %}
+Zones ajoutées : {{ addedZones|join(', ') }}.
+{% endif %}
+{% if reinstatedZones|length %}
+Zones réintégrées : {{ reinstatedZones|join(', ') }}.
+{% endif %}
+{% if zonesChangedSince %}
+La liste a encore évolué depuis cette modification : voici la situation d'aujourd'hui.
+{% endif %}
+
+Vos communes et zones aujourd'hui :
+{% for commune in communes %}
+- {{ commune.municipality }} : {{ commune.zones|join(', ') }}
+{% else %}
+- aucune zone avec un droit aujourd'hui
+{% endfor %}
+
+Votre lien et votre QR code restent ceux que vous avez déjà reçus : le QR code affiche toujours votre situation du moment. Seul le contrôle du QR code fait foi.
+Pour toute question, contactez la commune concernée.

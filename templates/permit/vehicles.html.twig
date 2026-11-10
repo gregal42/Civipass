@@ -1,0 +1,127 @@
+{% extends 'layouts/app.html.twig' %}
+
+{#
+  Modifier les plaques d'un laissez-passer (LOT 05.5.4, DM-119 §4.4). Variables : overview, blocked, form{add[],remove[],reinstate[],replace{id:plaque},add_reason,remove_reason,replace_reason,
+  reinstate_reason,comment,confirm}, errors, plan (VehiclePlan d'aperçu ou nul), plan_lines, kinds, *_reasons, comment_max, action_url, csrf_id, rights_url.
+  Les plaques sont COMMUNES à toutes les communes du laissez-passer : la portée est annoncée et sa confirmation est obligatoire. Le motif n'est jamais affiché hors de l'historique.
+#}
+{% block content %}
+  {% set v = overview.vehicles %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Modifier les plaques', sub: 'Laissez-passer ' ~ overview.reference } only %}
+
+  {% if errors.form is defined %}{% include 'components/alert.html.twig' with { variant: 'error', title: errors.form, focus: true } only %}{% endif %}
+  {% if blocked %}
+    {% include 'components/alert.html.twig' with { variant: 'info', title: blocked } only %}
+    <p>{% include 'components/button.html.twig' with { label: 'Retour aux droits', variant: 'secondary', href: rights_url } only %}</p>
+  {% else %}
+    {% include 'components/alert.html.twig' with { variant: 'info', title: 'Les plaques sont communes à toutes les communes de ce laissez-passer.' ~ (v.otherMunicipalities|length ? ' Cette modification s’appliquera aussi aux communes : ' ~ v.otherMunicipalities|join(', ') ~ '.' : ' Aucune autre commune n’a d’autorisation en cours sur ce laissez-passer.'), id: 'vehicles-scope' } only %}
+    {% if plan %}
+      <section class="cp-box" id="vehicles-preview" aria-labelledby="vehicles-preview-title">
+        <h2 class="cp-box__title" id="vehicles-preview-title">Ce qui changerait</h2>
+        <ul class="cp-consequences">
+          {% for c in plan_lines %}<li><b>{{ kinds[c.kind] }}</b> : {{ c.plate }}{% if c.pair is not null %} (remplacement n° {{ c.pair + 1 }}){% endif %}</li>{% endfor %}
+        </ul>
+        <p class="app-note">Plaques actives après l’opération : <b>{{ plan.activeAfter }}</b>. {% if plan.hasRemoval %}Le bénéficiaire sera prévenu sans attendre (retrait ou remplacement de plaque).{% else %}Le bénéficiaire sera prévenu par e-mail si une adresse est enregistrée.{% endif %}
+          Les zones, les périodes et le QR code ne sont pas touchés. Le message au bénéficiaire ne contient aucune plaque.</p>
+      </section>
+    {% endif %}
+
+    <form class="cp-decision" id="vehicles-form" action="{{ action_url }}" method="post" novalidate aria-labelledby="vehicles-form-title" data-turbo="false">
+      <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+      <div class="cp-decision__head"><h2 class="cp-decision__title" id="vehicles-form-title">Plaques du laissez-passer</h2></div>
+      <div class="cp-decision__body">
+        {% set active = v.rows|filter(r => not r.isRemoved) %}
+        {% set removed = v.rows|filter(r => r.isRemoved) %}
+        <fieldset class="cp-fieldset" id="f-remove">
+          <legend class="cp-fieldset__legend">Retirer des plaques</legend>
+          <div class="cp-choices">
+            {% for r in active %}
+              {% include 'components/choice.html.twig' with { type: 'checkbox', name: 'remove[]', value: r.id, id: 'f-remove-' ~ r.id, label: r.plate, checked: r.id in form.remove } only %}
+            {% endfor %}
+          </div>
+          {% if active|length < 2 %}<p class="app-note" id="vehicles-last">Une seule plaque reste active : elle ne peut pas être retirée, seulement remplacée. Pour retirer tous les droits de votre commune, révoquez l’autorisation.</p>{% endif %}
+        </fieldset>
+
+        {% if v.canAdd %}
+        <fieldset class="cp-fieldset" id="f-replace">
+          <legend class="cp-fieldset__legend">Remplacer une plaque</legend>
+          {% for r in active %}
+            {% include 'components/field.html.twig' with { id: 'f-replace-' ~ r.id, name: 'replace[' ~ r.id ~ ']', type: 'text', label: 'Remplacer ' ~ r.plate ~ ' par', optional: true, value: form.replace[r.id]|default(''), error: '', attrs: 'autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="14"' } only %}
+          {% endfor %}
+        </fieldset>
+        {% endif %}
+
+        {% if removed|length and v.canAdd %}
+        <fieldset class="cp-fieldset" id="f-reinstate">
+          <legend class="cp-fieldset__legend">Réactiver des plaques retirées</legend>
+          <div class="cp-choices">
+            {% for r in removed %}
+              {% include 'components/choice.html.twig' with { type: 'checkbox', name: 'reinstate[]', value: r.id, id: 'f-reinstate-' ~ r.id, label: r.plate, checked: r.id in form.reinstate } only %}
+            {% endfor %}
+          </div>
+        </fieldset>
+        {% endif %}
+
+        {% if v.canAdd %}
+        <fieldset class="cp-fieldset" id="f-add">
+          <legend class="cp-fieldset__legend">Ajouter des plaques</legend>
+          {% set slots = form.add|length > 3 ? form.add|length + 1 : 3 %}
+          {% for i in 0..(slots - 1) %}
+            {% include 'components/field.html.twig' with { id: 'f-add-' ~ i, name: 'add[]', type: 'text', label: 'Plaque ' ~ (i + 1), optional: true, value: form.add[i]|default(''), error: (i == 0 ? errors.add|default('') : ''), attrs: 'autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="14"', help: i == 0 ? 'Plaque française SIV (AB-123-CD) ou FNI (1234 AB 56). Dix plaques actives au plus.' : '' } only %}
+          {% endfor %}
+        </fieldset>
+        {% else %}
+          <p class="app-note" id="vehicles-add-blocked">{{ v.addBlockedReason }}</p>
+        {% endif %}
+
+        <fieldset class="cp-fieldset" id="f-remove-reason"{% if errors.remove_reason is defined %} aria-describedby="f-remove-reason-error"{% endif %}>
+          <legend class="cp-fieldset__legend">Motif du retrait (obligatoire si vous retirez une plaque)</legend>
+          <div class="cp-choices">
+            {% for r in remove_reasons %}{% include 'components/choice.html.twig' with { type: 'radio', name: 'remove_reason', value: r.code, id: 'f-remove-reason-' ~ r.code, label: r.label, note: r.needsComment ? 'Un commentaire est obligatoire.' : '', checked: form.remove_reason == r.code } only %}{% endfor %}
+          </div>
+          {% if errors.remove_reason is defined %}<p class="cp-field__error" id="f-remove-reason-error">{{ errors.remove_reason }}</p>{% endif %}
+        </fieldset>
+        {% if v.canAdd %}
+        <fieldset class="cp-fieldset" id="f-replace-reason"{% if errors.replace_reason is defined %} aria-describedby="f-replace-reason-error"{% endif %}>
+          <legend class="cp-fieldset__legend">Motif du remplacement (obligatoire si vous remplacez une plaque)</legend>
+          <div class="cp-choices">
+            {% for r in replace_reasons %}{% include 'components/choice.html.twig' with { type: 'radio', name: 'replace_reason', value: r.code, id: 'f-replace-reason-' ~ r.code, label: r.label, note: r.needsComment ? 'Un commentaire est obligatoire.' : '', checked: form.replace_reason == r.code } only %}{% endfor %}
+          </div>
+          {% if errors.replace_reason is defined %}<p class="cp-field__error" id="f-replace-reason-error">{{ errors.replace_reason }}</p>{% endif %}
+        </fieldset>
+        {% if removed|length %}
+        <fieldset class="cp-fieldset" id="f-reinstate-reason"{% if errors.reinstate_reason is defined %} aria-describedby="f-reinstate-reason-error"{% endif %}>
+          <legend class="cp-fieldset__legend">Motif de la réactivation (obligatoire si vous réactivez une plaque)</legend>
+          <div class="cp-choices">
+            {% for r in reinstate_reasons %}{% include 'components/choice.html.twig' with { type: 'radio', name: 'reinstate_reason', value: r.code, id: 'f-reinstate-reason-' ~ r.code, label: r.label, note: r.needsComment ? 'Un commentaire est obligatoire.' : '', checked: form.reinstate_reason == r.code } only %}{% endfor %}
+          </div>
+          {% if errors.reinstate_reason is defined %}<p class="cp-field__error" id="f-reinstate-reason-error">{{ errors.reinstate_reason }}</p>{% endif %}
+        </fieldset>
+        {% endif %}
+        <fieldset class="cp-fieldset" id="f-add-reason">
+          <legend class="cp-fieldset__legend">Motif de l’ajout (facultatif)</legend>
+          <div class="cp-choices">
+            {% for r in add_reasons %}{% include 'components/choice.html.twig' with { type: 'radio', name: 'add_reason', value: r.code, id: 'f-add-reason-' ~ r.code, label: r.label, note: r.needsComment ? 'Un commentaire est obligatoire.' : '', checked: form.add_reason == r.code } only %}{% endfor %}
+          </div>
+        </fieldset>
+        {% endif %}
+        {% include 'components/field.html.twig' with { id: 'f-comment', name: 'comment', type: 'textarea', label: 'Commentaire', optional: true, value: form.comment, error: errors.comment|default(''), attrs: 'maxlength="' ~ comment_max ~ '"', help: comment_max ~ ' caractères au plus. Interne : jamais public ni envoyé au bénéficiaire. Ne saisissez ni nom, ni plaque, ni coordonnées : une plaque dans le commentaire est refusée.' } only %}
+
+        <fieldset class="cp-fieldset" id="f-confirm"{% if errors.confirm is defined %} aria-describedby="f-confirm-error"{% endif %}>
+          <legend class="cp-fieldset__legend">Portée de la modification</legend>
+          <div class="cp-choices">
+            {% include 'components/choice.html.twig' with { type: 'checkbox', name: 'confirm_global', value: '1', id: 'f-confirm-global', label: 'Je confirme que cette modification s’applique à toutes les communes de ce laissez-passer', checked: form.confirm } only %}
+          </div>
+          {% if errors.confirm is defined %}<p class="cp-field__error" id="f-confirm-error">{{ errors.confirm }}</p>{% endif %}
+        </fieldset>
+
+        <div class="cp-form-actions">
+          {% include 'components/button.html.twig' with { label: 'Voir ce qui changerait', variant: 'secondary', type: 'submit', attrs: 'name="step" value="preview"' } only %}
+          {% if plan %}{% include 'components/button.html.twig' with { label: 'Confirmer la modification des plaques', variant: 'primary', type: 'submit', attrs: 'name="step" value="apply"' } only %}{% endif %}
+          {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', href: rights_url } only %}
+        </div>
+      </div>
+    </form>
+  {% endif %}
+{% endblock %}

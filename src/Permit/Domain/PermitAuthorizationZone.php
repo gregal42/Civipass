@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Permit\Domain;
 
 use App\Event\Domain\EventZone;
+use App\Shared\Domain\DomainRuleViolation;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
@@ -24,7 +25,6 @@ class PermitAuthorizationZone
     private Uuid $id;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
-    // @phpstan-ignore property.unusedType (assigné par les révisions du LOT 05.5 ; hydraté par Doctrine)
     private ?\DateTimeImmutable $removedAt = null;
 
     /**
@@ -63,8 +63,50 @@ class PermitAuthorizationZone
         return $this->zoneLabel;
     }
 
+    public function removedAt(): ?\DateTimeImmutable
+    {
+        return $this->removedAt;
+    }
+
     public function isActive(): bool
     {
         return null === $this->removedAt;
+    }
+
+    /**
+     * Retrait LOGIQUE (LOT 05.5.3) : la ligne n'est jamais supprimée ; l'historique vit dans les révisions.
+     *
+     * @internal appelé par PermitAuthorization::retireZone()
+     */
+    public function retire(\DateTimeImmutable $at): void
+    {
+        if (null !== $this->removedAt) {
+            throw new DomainRuleViolation('Cette zone est déjà retirée de l\'autorisation.');
+        }
+        $this->removedAt = $at;
+    }
+
+    /**
+     * Réintégration d'une zone retirée : efface l'état « retiré » et recopie le libellé courant (l'historique des retraits est conservé par les révisions).
+     *
+     * @internal appelé par PermitAuthorization::reinstateZone()
+     */
+    public function reinstate(string $currentLabel): void
+    {
+        if (null === $this->removedAt) {
+            throw new DomainRuleViolation('Cette zone n\'est pas retirée : il n\'y a rien à réintégrer.');
+        }
+        $this->removedAt = null;
+        $this->zoneLabel = $currentLabel;
+    }
+
+    /**
+     * Correction de libellé : ne se fait QUE par synchronisation avec le libellé courant de la même zone (jamais un texte libre).
+     *
+     * @internal appelé par PermitAuthorization::relabelZone()
+     */
+    public function synchronizeLabel(string $currentLabel): void
+    {
+        $this->zoneLabel = $currentLabel;
     }
 }

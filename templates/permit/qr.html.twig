@@ -1,0 +1,59 @@
+{% extends 'layouts/app.html.twig' %}
+
+{#
+  Remplacer le QR code d'un laissez-passer (LOT 05.5.5, DM-113 §4, DM-119 §4.5). Variables : overview, blocked, form{operation,reason,comment,reference,confirm}, errors, reasons,
+  comment_max, action_url, csrf_id, ask_reference, rights_url. Le QR est COMMUN à toutes les communes : effet annoncé et confirmé. L'identifiant d'opération (champ caché) rend un
+  double envoi sans effet. Aucun jeton n'est jamais affiché ici.
+#}
+{% block content %}
+  {% set q = overview.qr %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Remplacer le QR code', sub: 'Laissez-passer ' ~ overview.reference } only %}
+
+  {% if errors.form is defined %}{% include 'components/alert.html.twig' with { variant: 'error', title: errors.form, focus: true } only %}{% endif %}
+  {% if blocked %}
+    {% include 'components/alert.html.twig' with { variant: 'info', title: blocked } only %}
+    <p>{% include 'components/button.html.twig' with { label: 'Retour aux droits', variant: 'secondary', href: rights_url } only %}</p>
+  {% else %}
+    {% include 'components/alert.html.twig' with { variant: 'info', title: 'Le QR code est commun à toutes les communes de ce laissez-passer.' ~ (q.otherMunicipalities|length ? ' Ce remplacement s’appliquera aussi aux communes : ' ~ q.otherMunicipalities|join(', ') ~ '.' : ' Aucune autre commune n’a d’autorisation en cours sur ce laissez-passer.'), id: 'qr-scope' } only %}
+    <section class="cp-box" id="qr-effect" aria-labelledby="qr-effect-title">
+      <h2 class="cp-box__title" id="qr-effect-title">Ce qui se passera</h2>
+      <ul class="cp-consequences">
+        <li>L’<b>ancien QR code cesse définitivement de fonctionner</b> (QR imprimés et PDF déjà téléchargés compris) : il répondra « QR remplacé ».</li>
+        <li>Un <b>nouveau QR code</b> est créé ; le lien personnel du bénéficiaire l’affiche et permet de télécharger un PDF à jour.</li>
+        <li>La référence du laissez-passer, les autorisations, les zones, les périodes et les plaques ne changent pas.</li>
+        <li>Le bénéficiaire est prévenu sans attendre. Le message ne contient aucun QR code ni lien de contrôle.</li>
+      </ul>
+    </section>
+
+    <form class="cp-decision" id="qr-form" action="{{ action_url }}" method="post" novalidate aria-labelledby="qr-form-title" data-turbo="false">
+      <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+      <input type="hidden" name="operation_id" value="{{ form.operation }}">
+      <div class="cp-decision__head"><h2 class="cp-decision__title" id="qr-form-title">Remplacement du QR code</h2></div>
+      <div class="cp-decision__body">
+        <fieldset class="cp-fieldset" id="f-reason"{% if errors.reason is defined %} aria-describedby="f-reason-error"{% endif %}>
+          <legend class="cp-fieldset__legend">Motif du remplacement (obligatoire)</legend>
+          <div class="cp-choices">
+            {% for r in reasons %}{% include 'components/choice.html.twig' with { type: 'radio', name: 'reason', value: r.code, id: 'f-reason-' ~ r.code, label: r.label, note: r.needsComment ? 'Un commentaire est obligatoire.' : '', checked: form.reason == r.code } only %}{% endfor %}
+          </div>
+          {% if errors.reason is defined %}<p class="cp-field__error" id="f-reason-error">{{ errors.reason }}</p>{% endif %}
+        </fieldset>
+        {% include 'components/field.html.twig' with { id: 'f-comment', name: 'comment', type: 'textarea', label: 'Commentaire', optional: true, value: form.comment, error: errors.comment|default(''), attrs: 'maxlength="' ~ comment_max ~ '"', help: comment_max ~ ' caractères au plus. Interne : jamais public ni envoyé au bénéficiaire. N’y écrivez jamais un QR code, un jeton ou une adresse de contrôle.' } only %}
+        {% if ask_reference %}
+          {% include 'components/field.html.twig' with { id: 'f-reference', name: 'reference', type: 'text', label: 'Référence du laissez-passer (ressaisie)', value: form.reference, error: errors.reference|default(''), attrs: 'autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40"', help: 'Un remplacement a déjà eu lieu il y a moins d’une heure : ressaisissez la référence ' ~ overview.reference ~ ' pour confirmer. L’opération n’est pas bloquée.' } only %}
+        {% endif %}
+        <fieldset class="cp-fieldset" id="f-confirm"{% if errors.confirm is defined %} aria-describedby="f-confirm-error"{% endif %}>
+          <legend class="cp-fieldset__legend">Portée du remplacement</legend>
+          <div class="cp-choices">
+            {% include 'components/choice.html.twig' with { type: 'checkbox', name: 'confirm_global', value: '1', id: 'f-confirm-global', label: 'Je confirme que le QR code de toutes les communes et tous les QR imprimés ou téléchargés cesseront de fonctionner', checked: form.confirm } only %}
+          </div>
+          {% if errors.confirm is defined %}<p class="cp-field__error" id="f-confirm-error">{{ errors.confirm }}</p>{% endif %}
+        </fieldset>
+        <div class="cp-form-actions">
+          {% include 'components/button.html.twig' with { label: 'Remplacer le QR code', variant: 'refuse', type: 'submit' } only %}
+          {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', href: rights_url } only %}
+        </div>
+      </div>
+    </form>
+  {% endif %}
+{% endblock %}

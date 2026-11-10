@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Permit\Domain;
 
-use App\Request\Domain\PermitRequestVehicle;
 use App\Request\Domain\PlateFormat;
+use App\Shared\Domain\DomainRuleViolation;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
@@ -35,7 +35,6 @@ class PermitVehicle
     private int $position;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
-    // @phpstan-ignore property.unusedType (assigné par les révisions du LOT 05.5 ; hydraté par Doctrine)
     private ?\DateTimeImmutable $removedAt = null;
 
     /**
@@ -45,12 +44,14 @@ class PermitVehicle
         #[ORM\ManyToOne(targetEntity: Permit::class, inversedBy: 'vehicles', fetch: 'LAZY')]
         #[ORM\JoinColumn(name: 'permit_id', nullable: false, onDelete: 'RESTRICT')]
         private Permit $permit,
-        PermitRequestVehicle $declared,
+        string $registration,
+        PlateFormat $format,
+        int $position,
     ) {
         $this->id = Uuid::v7();
-        $this->registration = $declared->registration();
-        $this->format = $declared->format();
-        $this->position = $declared->position();
+        $this->registration = $registration;
+        $this->format = $format;
+        $this->position = $position;
     }
 
     public function id(): Uuid
@@ -78,8 +79,39 @@ class PermitVehicle
         return $this->position;
     }
 
+    public function removedAt(): ?\DateTimeImmutable
+    {
+        return $this->removedAt;
+    }
+
     public function isActive(): bool
     {
         return null === $this->removedAt;
+    }
+
+    /**
+     * Retrait LOGIQUE (LOT 05.5.4) : la ligne n'est jamais supprimée ; l'historique vit dans les révisions.
+     *
+     * @internal appelé par PermitVehicleService
+     */
+    public function retire(\DateTimeImmutable $at): void
+    {
+        if (null !== $this->removedAt) {
+            throw new DomainRuleViolation('Cette plaque est déjà retirée.');
+        }
+        $this->removedAt = $at;
+    }
+
+    /**
+     * Réactivation d'une plaque retirée : la ligne est réutilisée (unicité `(laissez-passer, plaque)`), ses révisions passées restent.
+     *
+     * @internal appelé par PermitVehicleService
+     */
+    public function reinstate(): void
+    {
+        if (null === $this->removedAt) {
+            throw new DomainRuleViolation('Cette plaque n\'est pas retirée : il n\'y a rien à réactiver.');
+        }
+        $this->removedAt = null;
     }
 }

@@ -1,0 +1,100 @@
+{% extends 'layouts/app.html.twig' %}
+
+{#
+  Modifier les zones de l'autorisation d'une commune (LOT 05.5.3, DM-119 §4.3). Variables : overview, blocked, form{add[],remove[],reinstate[],add_reason,remove_reason,reinstate_reason,comment},
+  errors, plan (ZonePlan d'aperçu ou nul), kinds, add_reasons, remove_reasons, reinstate_reasons, comment_max, action_url, csrf_id, rights_url. Deux temps : aperçu, puis confirmation.
+  Une opération peut grouper plusieurs ajouts, retraits et réintégrations ; l'autorisation garde toujours au moins une zone. Le motif n'est jamais affiché hors de l'historique.
+#}
+{% block content %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Modifier les zones', sub: 'Laissez-passer ' ~ overview.reference } only %}
+
+  {% if errors.form is defined %}{% include 'components/alert.html.twig' with { variant: 'error', title: errors.form, focus: true } only %}{% endif %}
+  {% if blocked %}
+    {% include 'components/alert.html.twig' with { variant: 'info', title: blocked } only %}
+    <p>{% include 'components/button.html.twig' with { label: 'Retour aux droits', variant: 'secondary', href: rights_url } only %}</p>
+  {% else %}
+    {% if plan %}
+      <section class="cp-box" id="zones-preview" aria-labelledby="zones-preview-title">
+        <h2 class="cp-box__title" id="zones-preview-title">Ce qui changerait</h2>
+        <ul class="cp-consequences">
+          {% for c in plan.changes %}<li><b>{{ kinds[c.kind.value] }}</b> : {{ c.label }}{% if c.previousLabel and c.previousLabel != c.label %} (ancien libellé : {{ c.previousLabel }}){% endif %}</li>{% endfor %}
+        </ul>
+        <p class="app-note">Zones rattachées après l’opération : <b>{{ plan.attachedAfter }}</b>. {% if plan.hasRemoval %}Le bénéficiaire sera prévenu sans attendre (retrait de zone).{% else %}Le bénéficiaire sera prévenu par e-mail si une adresse est enregistrée.{% endif %}
+          Un droit dans une zone dépend aussi de la période de l’autorisation et des créneaux de la zone ; le QR code et les autres communes ne sont pas touchés.</p>
+      </section>
+    {% endif %}
+
+    <form class="cp-decision" id="zones-form" action="{{ action_url }}" method="post" novalidate aria-labelledby="zones-form-title" data-turbo="false">
+      <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+      <div class="cp-decision__head"><h2 class="cp-decision__title" id="zones-form-title">Zones de votre autorisation</h2></div>
+      <div class="cp-decision__body">
+        <fieldset class="cp-fieldset" id="f-remove">
+          <legend class="cp-fieldset__legend">Retirer des zones</legend>
+          {% set attached = overview.zoneRows|filter(r => not r.isRemoved) %}
+          <div class="cp-choices">
+            {% for r in attached %}
+              {% include 'components/choice.html.twig' with { type: 'checkbox', name: 'remove[]', value: r.id, id: 'f-remove-' ~ r.id, label: r.label, note: r.state ? 'Actuellement : ' ~ r.state.value|lower|replace({'_': ' '}) : '', checked: r.id in form.remove } only %}
+            {% endfor %}
+          </div>
+          {% if attached|length < 2 %}<p class="app-note" id="zones-last">Une seule zone reste rattachée : elle ne peut pas être retirée. Pour retirer tous les droits de votre commune, révoquez l’autorisation.</p>{% endif %}
+        </fieldset>
+
+        {% if overview.reinstatableZones|length %}
+        <fieldset class="cp-fieldset" id="f-reinstate">
+          <legend class="cp-fieldset__legend">Réintégrer des zones retirées</legend>
+          <div class="cp-choices">
+            {% for z in overview.reinstatableZones %}
+              {% include 'components/choice.html.twig' with { type: 'checkbox', name: 'reinstate[]', value: z.id, id: 'f-reinstate-' ~ z.id, label: z.label, checked: z.id in form.reinstate } only %}
+            {% endfor %}
+          </div>
+        </fieldset>
+        {% endif %}
+
+        {% if overview.addableZones|length %}
+        <fieldset class="cp-fieldset" id="f-add">
+          <legend class="cp-fieldset__legend">Ajouter des zones</legend>
+          <div class="cp-choices">
+            {% for z in overview.addableZones %}
+              {% include 'components/choice.html.twig' with { type: 'checkbox', name: 'add[]', value: z.id, id: 'f-add-' ~ z.id, label: z.label, checked: z.id in form.add } only %}
+            {% endfor %}
+          </div>
+        </fieldset>
+        {% endif %}
+        {% if not overview.canAddZones and overview.addZonesBlockedReason %}<p class="app-note" id="zones-add-blocked">{{ overview.addZonesBlockedReason }}</p>{% endif %}
+
+        <fieldset class="cp-fieldset" id="f-remove-reason"{% if errors.remove_reason is defined %} aria-describedby="f-remove-reason-error"{% endif %}>
+          <legend class="cp-fieldset__legend">Motif du retrait (obligatoire si vous retirez une zone)</legend>
+          <div class="cp-choices">
+            {% for r in remove_reasons %}{% include 'components/choice.html.twig' with { type: 'radio', name: 'remove_reason', value: r.code, id: 'f-remove-reason-' ~ r.code, label: r.label, note: r.needsComment ? 'Un commentaire est obligatoire.' : '', checked: form.remove_reason == r.code } only %}{% endfor %}
+          </div>
+          {% if errors.remove_reason is defined %}<p class="cp-field__error" id="f-remove-reason-error">{{ errors.remove_reason }}</p>{% endif %}
+        </fieldset>
+        {% if overview.reinstatableZones|length %}
+        <fieldset class="cp-fieldset" id="f-reinstate-reason"{% if errors.reinstate_reason is defined %} aria-describedby="f-reinstate-reason-error"{% endif %}>
+          <legend class="cp-fieldset__legend">Motif de la réintégration (obligatoire si vous réintégrez une zone)</legend>
+          <div class="cp-choices">
+            {% for r in reinstate_reasons %}{% include 'components/choice.html.twig' with { type: 'radio', name: 'reinstate_reason', value: r.code, id: 'f-reinstate-reason-' ~ r.code, label: r.label, note: r.needsComment ? 'Un commentaire est obligatoire.' : '', checked: form.reinstate_reason == r.code } only %}{% endfor %}
+          </div>
+          {% if errors.reinstate_reason is defined %}<p class="cp-field__error" id="f-reinstate-reason-error">{{ errors.reinstate_reason }}</p>{% endif %}
+        </fieldset>
+        {% endif %}
+        {% if overview.addableZones|length %}
+        <fieldset class="cp-fieldset" id="f-add-reason">
+          <legend class="cp-fieldset__legend">Motif de l’ajout (facultatif)</legend>
+          <div class="cp-choices">
+            {% for r in add_reasons %}{% include 'components/choice.html.twig' with { type: 'radio', name: 'add_reason', value: r.code, id: 'f-add-reason-' ~ r.code, label: r.label, note: r.needsComment ? 'Un commentaire est obligatoire.' : '', checked: form.add_reason == r.code } only %}{% endfor %}
+          </div>
+        </fieldset>
+        {% endif %}
+        {% include 'components/field.html.twig' with { id: 'f-comment', name: 'comment', type: 'textarea', label: 'Commentaire', optional: true, value: form.comment, error: errors.comment|default(''), attrs: 'maxlength="' ~ comment_max ~ '"', help: comment_max ~ ' caractères au plus. Interne : jamais public ni envoyé au bénéficiaire. Ne saisissez ni nom, ni plaque, ni coordonnées.' } only %}
+
+        <div class="cp-form-actions">
+          {% include 'components/button.html.twig' with { label: 'Voir ce qui changerait', variant: 'secondary', type: 'submit', attrs: 'name="step" value="preview"' } only %}
+          {% if plan %}{% include 'components/button.html.twig' with { label: 'Confirmer la modification des zones', variant: 'primary', type: 'submit', attrs: 'name="step" value="apply"' } only %}{% endif %}
+          {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', href: rights_url } only %}
+        </div>
+      </div>
+    </form>
+  {% endif %}
+{% endblock %}

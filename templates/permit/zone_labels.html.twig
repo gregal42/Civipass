@@ -1,0 +1,47 @@
+{% extends 'layouts/app.html.twig' %}
+
+{#
+  Corriger le libellé d'une ou plusieurs zones de l'autorisation (LOT 05.5.3, D9) : par SYNCHRONISATION avec le libellé courant de la même zone (jamais un texte libre),
+  après confirmation que le périmètre géographique est inchangé. Aucune notification. Variables : overview, blocked, form{zone[],reason,confirmed}, errors, reasons, action_url, csrf_id, rights_url.
+#}
+{% block content %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Corriger un libellé de zone', sub: 'Laissez-passer ' ~ overview.reference } only %}
+
+  {% if errors.form is defined %}{% include 'components/alert.html.twig' with { variant: 'error', title: errors.form, focus: true } only %}{% endif %}
+  {% if blocked %}
+    {% include 'components/alert.html.twig' with { variant: 'info', title: blocked } only %}
+    <p>{% include 'components/button.html.twig' with { label: 'Retour aux droits', variant: 'secondary', href: rights_url } only %}</p>
+  {% else %}
+    <form class="cp-decision" id="labels-form" action="{{ action_url }}" method="post" novalidate aria-labelledby="labels-form-title" data-turbo="false">
+      <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+      <div class="cp-decision__head"><h2 class="cp-decision__title" id="labels-form-title">Libellés à mettre à jour</h2>
+        <p class="cp-decision__intro">Le libellé copié dans l’autorisation est remplacé par le libellé actuel de la même zone. Aucun texte libre n’est possible.</p></div>
+      <div class="cp-decision__body">
+        <fieldset class="cp-fieldset" id="f-zone">
+          <legend class="cp-fieldset__legend">Zones *</legend>
+          <div class="cp-choices">
+            {% for r in overview.zoneRows|filter(r => r.isLabelOutdated) %}
+              {% include 'components/choice.html.twig' with { type: 'checkbox', name: 'zone[]', value: r.id, id: 'f-zone-' ~ r.id, label: r.label ~ ' → ' ~ r.currentLabel, note: r.isRemoved ? 'Zone retirée' : '', checked: r.id in form.zone } only %}
+            {% endfor %}
+          </div>
+        </fieldset>
+        <fieldset class="cp-fieldset" id="f-reason"{% if errors.reason is defined %} aria-describedby="f-reason-error"{% endif %}>
+          <legend class="cp-fieldset__legend">Motif *</legend>
+          <div class="cp-choices">
+            {% for r in reasons %}{% include 'components/choice.html.twig' with { type: 'radio', name: 'reason', value: r.code, id: 'f-reason-' ~ r.code, label: r.label, checked: form.reason == r.code } only %}{% endfor %}
+          </div>
+          {% if errors.reason is defined %}<p class="cp-field__error" id="f-reason-error">{{ errors.reason }}</p>{% endif %}
+        </fieldset>
+        <div class="cp-field{% if errors.confirmed is defined %} cp-field--error{% endif %}">
+          {% include 'components/check.html.twig' with { id: 'f-confirmed', name: 'confirmed', value: '1', label: 'Je confirme que le périmètre géographique est inchangé : seul le libellé est corrigé.', checked: form.confirmed } only %}
+          {% if errors.confirmed is defined %}<p class="cp-field__error" id="f-confirmed-error">{{ errors.confirmed }}</p>{% endif %}
+        </div>
+        <div class="cp-form-actions">
+          {% include 'components/button.html.twig' with { label: 'Corriger les libellés', variant: 'primary', type: 'submit' } only %}
+          {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', href: rights_url } only %}
+        </div>
+      </div>
+    </form>
+  {% endif %}
+{% endblock %}

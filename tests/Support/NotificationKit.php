@@ -86,7 +86,7 @@ final class NotificationKit
             self::vault($c, $keys),
             self::purger($c, $clock, $audit),
             $links,
-            new NotificationFactsReader($c->get(PermitRepository::class), $c->get(PermitRightsEvaluator::class), $links),
+            new NotificationFactsReader($c->get(PermitRepository::class), $c->get(PermitRightsEvaluator::class), $links, $c->get(\App\Permit\Domain\PermitRevisionRepository::class)),
             null === $baseUrl ? $c->get(MessageComposer::class) : new MessageComposer($c->get(Environment::class), $c->get(RouterInterface::class), $baseUrl, 'no-reply@civipass.invalid'),
             $mailer,
             new SmtpFailureClassifier(),
