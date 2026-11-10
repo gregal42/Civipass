@@ -11,7 +11,7 @@
 | 05.2 | Jeton et page bénéficiaire, QR (SVG), PDF, écran agent « remettre le lien » | **terminé** (DM-118, DT-051), migration `Version20261109150000` appliquée sur test et sur `civipass` (LOT 05.2 bis) |
 | 05.3 | Outbox, distributeur périodique, notifications (première approbation, nouvelle commune), cas sans e-mail | **TERMINÉ — clôture prononcée le 9 novembre 2026** (§23). Détail : **05.3.1 livré** (outbox, migration appliquée sur `civipass` le 9 novembre 2026) ; **05.3.2 livré** (chiffrement, lien système, purge ; migration appliquée sur `civipass` le 9 novembre 2026) ; **05.3.3 livré** (distributeur, supervision ; migration appliquée sur `civipass` le 9 novembre 2026) ; **05.3.4 livré** (ordre, regroupement, suivi agent, envoi manuel ; migration appliquée sur `civipass` le 9 novembre 2026) ; **05.3.5 livré** (anti-abus du renvoi, purge de l'outbox, recette interactive, documentation d'exploitation ; aucune nouvelle migration) |
 | **05.4** | **Page publique de contrôle** (scan sans compte) : nom, prénom, plaques, zones, validité par zone, limitation de débit, en-têtes de protection. **L'habilitation temporaire des contrôleurs est retirée du périmètre** (DM-115) | **non commencé** |
-| 05.5 | Révisions : prolongation, zones, plaques, révocation, remplacement exceptionnel du QR, notifications associées | **non commencé** |
+| 05.5 | Révisions : prolongation, raccourcissement, zones, plaques, révocation, remplacement exceptionnel du QR, notifications associées | **en cours** : sous-lots 05.5.1 à 05.5.6 ([DM-119](decisions/metier/DM-119-revisions-des-droits-d-un-laissez-passer.md), Proposée). **05.5.1 (socle et révocation) : validé le 10 novembre 2026** (développement et recette automatisée) ; migration `Version20261110150151` appliquée aux bases `civipass_test` et `civipass` (développement). **05.5.2 : cadrage rédigé, en attente de validation** ([lot-05-5-2-cadrage.md](lot-05-5-2-cadrage.md)) |
 | 05.6 | Recette transversale et clôture | à faire |
 
 **Hors périmètre V1 du contrôle** : `ControllerActivation`, `ControllerDevice`, comptes ou sessions de contrôleur, PWA. La PWA hors ligne (LOT 06) est une évolution distincte, à redéfinir.
@@ -86,21 +86,9 @@ Outbox transactionnelle (ligne écrite dans la transaction métier, clé de déd
 
 `endroid/qr-code` en direct, `dompdf` derrière une interface, PDF à la demande sans stockage, mention « droits vérifiés au scan », ressources distantes désactivées. Versions à vérifier avant installation.
 
-## 10. Protection des journaux nginx (préparée, non appliquée)
+## 10. Protection des journaux nginx
 
-Les jetons figurent dans des chemins d'URL. Adaptation proposée pour `docker/nginx/nginx.conf` (**à valider avant application ; aucune modification faite**) :
-
-```nginx
-map $request_uri $civipass_logged_uri {
-    ~^(?<prefix>/(?:v|laissez-passer)/)[^/?]+(?<rest>.*)$  "${prefix}[masqué]${rest}";
-    default                                               $request_uri;
-}
-log_format civipass '$remote_addr - $remote_user [$time_local] "$request_method $civipass_logged_uri $server_protocol" '
-                    '$status $body_bytes_sent "-" "$http_user_agent"';
-access_log /var/log/nginx/access.log civipass;
-```
-
-À vérifier aussi : `error_log` (peut citer l'URI d'une requête en erreur), les journaux d'accès de Traefik (hors dépôt), `Referer` neutralisé par `Referrer-Policy: no-referrer`. Les chemins `/v/` et `/laissez-passer/` sont provisoires (définitifs aux 05.2 et 05.4).
+**Remplacé** : la proposition initiale (un `map` sur `$request_uri`) ne masquait pas les chemins réécrits par `try_files` ni les variantes encodées, et ne couvrait pas le journal d'erreur. La solution testée (nginx 1.30 et 1.31, vrai logrotate) est dans [`ops/nginx/`](../ops/nginx/README.md) : journal d'accès sans secret ni requête (`log_format civipass`), journal d'erreur brut tourné chaque heure et filtré (le fichier actif reste brut jusqu'à la rotation : risque documenté), hôtes inconnus refusés, redirection vers le domaine configuré. Préparée et testée, **pas encore appliquée à un serveur**.
 
 ## 11. Matrice de conservation (durées à fixer avant la production)
 
@@ -311,3 +299,75 @@ Conservées provisoirement dans la base de développement, **sans modification**
 5. **SMTP de production et supervision** : choix du fournisseur, expéditeur, SPF/DKIM/DMARC, TLS, test HTTPS de bout en bout, planification effective du distributeur, de la supervision et des purges, et supervision de ces commandes planifiées ([`exploitation-notifications.md`](exploitation-notifications.md) §13).
 6. **Nettoyage contrôlé des comptes de recette avant production**, sans supprimer indûment les audits : définir une procédure spécifique (par exemple désactivation des comptes et conservation de l'audit, ou anonymisation) validée préalablement ; ne pas utiliser `var/recette/cleanup.sql` en l'état.
 
+## 24. LOT 05.5.1 — socle des révisions et révocation d'une autorisation (DM-119)
+
+**Statut : VALIDÉ le 10 novembre 2026 sur le plan technique et fonctionnel automatisé** (2 554 tests, 17 021 assertions, 3 recettes manuelles restantes). Migration appliquée à `civipass_test` puis à `civipass` (développement) le 10 novembre 2026 ; aucune autre base.
+
+### Socle commun
+- **Historique immuable** `PermitRevision` (`permit_revision`) : permit, autorisation (nulle pour plaques et QR), commune qui agit, auteur, type, date UTC, `batch_id`, `reason_code`, `reason_text` (200 caractères, anonymisable), états `before_state` / `after_state` (JSON structurés, sans donnée personnelle ni jeton), `anonymized_at`. Constructeur fermé, aucun mutateur, dépôt limité à `add` et `forPermit` (test d'architecture). `PermitRevisionVehicle` (`permit_revision_vehicle`) : table préparée pour le 05.5.4 (valeur de plaque nullable, anonymisable).
+- **Garde commun** `PermitRevisionGuard` : `locate` (adhésion effective, rôle INSTRUCTOR ou MUNICIPALITY_ADMIN, autorisation de SA commune ; refus uniforme sinon ; EVENT_MANAGER refusé) et `lock` (dans la transaction : participation ACTIVE relue sous verrou, rôles relus, verrou du laissez-passer, autorisation relue sous verrou). Ordre des verrous : événement → participation → laissez-passer → autorisation. Réutilisé par toutes les révisions suivantes.
+- **Écran agent « Droits du laissez-passer »** (`/communes/{id}/demandes/{id}/droits`, `PermitRightsController`) : l'autorisation de la commune et ses zones, les actions, l'historique (détail pour les révisions de SA commune ; **ligne neutre** — type, date, commune — pour celles des autres : ni motif, ni commentaire, ni auteur lus). `no-store`, CSRF sur toute écriture.
+
+### Révocation
+`AuthorizationRevocationService` : motif codé obligatoire (`RevocationReason`, 8 codes validés, libellés français), commentaire de 200 caractères au plus (obligatoire pour `OTHER`, blanc = nul), **confirmation explicite** ; dans UNE transaction : autorisation révoquée (`PermitAuthorization::revoke`, sans méthode inverse), révision immuable, audit `PERMIT_AUTHORIZATION_REVOKED` (code du motif, **jamais** le commentaire), intention de notification prioritaire. **Idempotente** (seconde demande : `AlreadyRevoked`, rien d'écrit) et **irréversible** (toute nouvelle approbation de la même commune est refusée : part terminale, DM-106). Les autres communes et le QR ne changent pas ; la page publique reflète la révocation au scan suivant ; le motif n'y figure jamais.
+
+### Notification `AUTHORIZATION_REVOKED`
+Prioritaire (jamais regroupée ni retardée). Gabarits texte et HTML : nomment la commune qui retire son autorisation, listent les autres communes (ou disent qu'il ne reste aucun droit), ne contiennent ni motif, ni commentaire, ni lien. **Le distributeur ne l'écarte plus comme « inexacte »** quand le laissez-passer n'a plus aucun droit : pour une révocation, l'exactitude est « l'autorisation visée est bien révoquée » (`NotificationDispatcher::accurate`).
+
+### Couverture des révisions dans l'outbox (DM-119 C5)
+`notification_outbox.revision_id` (révision qui a produit la ligne) et `covered_revisions` (révisions annoncées par un message envoyé). `NotificationOrdering` : la suppression « déjà incluse » d'une **nouvelle commune** se prouve toujours par les autorisations listées ; celle d'une **révision** se prouve **uniquement** par un message envoyé qui a annoncé cette révision. Une modification n'est donc jamais supprimée parce que son autorisation avait déjà été notifiée. Un message de révocation couvre sa seule révision et aucune autorisation.
+
+### Lien bénéficiaire et PDF après révocation (D8)
+- Le lien reste consultable dans sa période de validité (accès inchangé) ; la page affiche « **Droits révoqués** » quand toutes les autorisations le sont, « Droits terminés » quand il ne reste aucun droit actif ni à venir.
+- **PDF** : plus aucun état, date ni mention de validité (« Valide actuellement », périodes…) ; liste des communes et des zones, plaques, QR, et bandeau « **Seul le contrôle du QR code fait foi** ». **Aucun nouveau PDF** quand il ne reste aucun droit actif ni à venir : réponse 409 lisible (« Droits révoqués : aucun PDF » ou « Droits terminés : aucun PDF »).
+- **Anciens PDF** (non rappelables) : leur QR renvoie à l'état courant (`/v/{jeton}` recalcule à chaque scan) ; si le QR a été remplacé (05.5.5) il répond « QR remplacé » (410) ; leur texte imprimé ne vaut pas preuve (il ne contient plus de validité).
+
+### Migration `Version20261110150151` (appliquée aux bases de test et de développement)
+Tables `permit_revision` et `permit_revision_vehicle` ; colonnes `notification_outbox.revision_id` et `covered_revisions` (facultatives). Aucune donnée existante lue ni modifiée ; aucune suppression physique. **Retour arrière** : `down()` refuse (`abortIf`) dès qu'une révision existe — supprimer la table détruirait un historique immuable ; on restaure alors une sauvegarde. Générée par `doctrine:migrations:diff --env=test`, inspectée, puis appliquée à `civipass_test` (9 requêtes, schéma en phase avec le mapping), puis à `civipass` (développement, local, `APP_ENV=dev`) après sauvegarde complète (mysqldump, 35 tables) : version Doctrine à jour, schéma conforme, **aucune donnée perdue** (779 lignes avant, 780 après : la seule différence est la ligne de version ; les deux tables neuves sont vides ; les 2 lignes de `notification_outbox` ont `revision_id` et `covered_revisions` nuls). Aucune autre base migrée.
+
+### Tests (tous exécutés, verts)
+`PermitRevisionFoundationTest` (unitaire) ; `AuthorizationRevocationTest`, `RevocationNotificationTest` (intégration) ; `RevocationConcurrencyTest` (processus PHP concurrents sur MySQL) ; `PermitRightsScreenTest` (fonctionnel) ; `BeneficiaryPdfTest` (**PDF réellement généré**, lu par `tests/Support/PdfInspector` : texte écrit, absence de mention figée de validité, QR intégré identique pixel pour pixel à celui de l'URL de vérification avec contrôle négatif, refus de génération 409 sans droit actif ni à venir, autorisation révoquée non listée). Le nettoyage de `TestDatabase` purge les deux tables de révisions. Le PDF ne liste plus une autorisation révoquée.
+
+### Contrôles restant avant mise en production (LOT 05.5.1)
+- **Recettes manuelles** : les 3 tests ignorés (navigateur, MailCatcher) ; lecture réelle d'un QR (caméra iOS et Android, DM-115) ; consultation de l'écran « Droits » et du formulaire de révocation à 390 px ; ouverture d'un PDF téléchargé dans un lecteur réel ; réception réelle du message de révocation (MailCatcher puis SMTP de recette).
+- **Risques résiduels** : le commentaire de révocation est un texte libre (avertissement à l'écran, visible de la seule commune qui l'a saisi, anonymisable) ; un PDF déjà téléchargé garde son texte d'origine et ne peut pas être rappelé (son QR renvoie à l'état courant) ; le QR du PDF est vérifié par égalité de pixels avec le rendu de l'URL de vérification, pas par un décodeur ; `PdfInspector` ne comprend que ce que dompdf produit (un changement de version se verra par un échec de test).
+- **Notification de révocation** (décision du 10 novembre 2026) : elle **peut nommer la commune concernée** ; elle ne doit **jamais exposer le motif** ni le commentaire (garanti par test).
+- Conservation et anonymisation (DM-119 §9) : hypothèses à valider avant la production (LOT 05.6).
+
+## 25. LOT 05.5.2 — périodes d'autorisation (B2) : prolongation, reprise, raccourcissement
+
+**Statut : LIVRÉ (validé le 10 novembre 2026 sur le plan du développement et de la recette automatisée) ; migration `Version20261110155643` appliquée aux bases `civipass_test` et `civipass` (développement), aucune autre. Contrôle complémentaire des notifications : [lot-05-5-2-cadrage.md](lot-05-5-2-cadrage.md) §14. Prochain : [cadrage du LOT 05.5.3](lot-05-5-3-cadrage.md) (en attente de validation).**
+
+- **Modèle B2** : `PermitAuthorization` porte la période COURANTE (colonnes) et `windows()` renvoie toutes les périodes (closes puis courante) ; `PermitAuthorizationPeriod` (table `permit_authorization_period`) conserve les périodes closes, immuables. `GrantWindowCalculator` calcule `créneaux ∩ période ∩ événement` pour chaque période puis fusionne : l'interruption ne donne aucun droit. Seule `windows()` lit les périodes closes (test d'architecture).
+- **Règles** : `AuthorizationPeriodPlanner` (pure, aperçu et écriture identiques) ; `AuthorizationPeriodService` (verrous événement → participation → laissez-passer → autorisation, une transaction : période, éventuelle période archivée, révision, audit sans motif, intention de notification).
+- **Écrans** : « Prolonger / Reprendre » et « Raccourcir » depuis « Droits du laissez-passer » : aperçu sans écriture puis confirmation, historique avec l'ancienne et la nouvelle période pour la commune, ligne neutre pour les autres.
+- **Notifications** : trois messages distincts — `PERMIT_EXTENDED` (prolongation d'une autorisation en cours), `PERMIT_RESUMED` (réactivation après expiration : nouveau début et nouvelle échéance), `PERMIT_SHORTENED` (prioritaire, jamais regroupé, exact même sans droit restant). Couverture par révision ET par autorisation ; un raccourcissement obsolète après une révocation est conservé `SUPPRESSED` / `SUPERSEDED_BY_REVOCATION` avec audit (voir cadrage §13).
+- **Migration** (présentée avant exécution) : une table, deux clés étrangères `RESTRICT`, unicité `(authorization_id, position)` ; aucune donnée existante touchée ; `down()` refusé dès qu'une période close existe.
+- **Plafond** : aucun (arbitrage du 10 novembre 2026) ; détection d'usage inhabituel (seuil 20) et protections de performance ; limite physique du type `SMALLINT UNSIGNED` (65 535) documentée (cadrage §12).
+- **Tests** : unitaires, intégration MySQL, notifications, concurrence réelle et fonctionnels exécutés (voir le rapport du LOT).
+
+### Contrôles restant avant mise en production (LOT 05.5.2)
+Recettes manuelles (3 tests ignorés ; réception réelle des trois messages ; QR après une reprise ; écrans à 390 px ; horaire ambigu dans le navigateur) et risques résiduels : voir [lot-05-5-2-cadrage.md](lot-05-5-2-cadrage.md) §15. Ils s'ajoutent à ceux du 05.5.1 (§24).
+
+## 26. LOT 05.5.3 — zones d'une autorisation (ajout, retrait, réintégration, correction de libellé)
+
+**Statut : LIVRÉ (développé, testé et documenté le 10 novembre 2026) ; AUCUNE migration.** Cadrage, arbitrages, ordre global des verrous et validations préproduction : [lot-05-5-3-cadrage.md](lot-05-5-3-cadrage.md) §15 à §17.
+
+- **Règles** (`ZoneChangePlanner`, pure) : ajout limité aux zones proposables de la participation de la commune et non déjà rattachées (une zone retirée se réintègre) ; retrait logique (`removed_at`), jamais la dernière zone rattachée (une zone suspendue compte comme rattachée mais ne donne aucun droit utilisable) ; ajout et réintégration refusés pendant la suspension de l'événement, retrait et correction permis ; correction de libellé par SYNCHRONISATION avec le libellé courant de la zone, sans texte libre, après confirmation « périmètre inchangé ».
+- **Opérations groupées** : une transaction, état final contrôlé, une révision par zone (`batch_id` commun), un audit par zone, UNE intention de notification ; un refus (zone forgée, dernière zone, événement suspendu pour une opération mixte) annule tout.
+- **Sécurité** : zones relues sous verrou (appartenance, proposabilité) ; identifiants forgés, étrangers, inexistants ou mal formés : refus uniforme (404) ; une zone d'une autre commune n'est jamais montrée ni nommée dans l'historique d'une autre commune (ligne neutre « Zones modifiées »).
+- **Notifications** : `ZONES_CHANGED` (ajout ou réintégration, ordinaire, regroupée) ; `ZONES_REMOVED` (au moins un retrait, prioritaire, décrit aussi les ajouts et réintégrations de l'opération) ; correction de libellé : aucune ; couverture par révision et par autorisation ; un retrait couvre les ajouts en attente, un ajout attend (au plus 24 h) un retrait en attente ; retrait obsolète après révocation : `SUPPRESSED` / `SUPERSEDED_BY_REVOCATION` avec audit ; message neutre (« a encore évolué ») et liste d'aujourd'hui si les zones ont changé avant l'envoi.
+- **Public** : le contrôle reflète aussitôt les droits (zone ajoutée comptée, zone retirée à part et hors compteur) ; aucun motif exposé ; QR, décision et demande citoyenne inchangés ; autres communes inchangées.
+
+### Recette transversale (LOT 05.5.6) : éléments conservés du LOT 05.5.3
+Validé le 10 novembre 2026 (développement et recette automatisée). Restent à couvrir en recette : la reconstitution d'une succession ajout / retrait / réintégration / retrait d'une même zone ; le comportement de plusieurs révisions à la même seconde (ordre `occurred_at` puis `id`, voir [lot-05-5-3-cadrage.md](lot-05-5-3-cadrage.md) §18) ; la distinction visuelle entre zone rattachée et zone effectivement accessible ; les contrôles sur téléphone réel (QR, PDF) ; la réception réelle des notifications.
+
+## 27. LOT 05.5.4 — véhicules d'un laissez-passer (livré, **aucune migration**)
+
+Arbitrages validés le 10 novembre 2026 : [lot-05-5-4-cadrage.md](lot-05-5-4-cadrage.md) §16 ; réalisation et choix à relire : §17. Ajout, retrait, réactivation et remplacement de plaques (communes au laissez-passer), opérations groupées atomiques validées sur l'état final, maximum de dix, doublons interdits sur un même laissez-passer, dernière plaque non retirable mais remplaçable, mode pied/vélo refusé, suspension de l'événement (retrait seul), confirmation de la portée globale, ligne neutre pour les autres communes, deux révisions liées par `batch_id` pour un remplacement. Les plaques vivent dans `permit_revision_vehicle` (jamais dans l'audit ni les états de révision) : **anonymisation par le LOT 05.6, bloquante avant la production**.
+
+Validé le 10 novembre 2026 (développement et recette automatisée). Recette transversale (05.5.6) conservée : historique neutre d'une commune révoquée, référence du laissez-passer dans les notifications `VEHICLES_*`, lecture réelle des plaques au scan, réception réelle des messages, parcours multicommunal de retrait, faux positifs du détecteur de plaques ([lot-05-5-4-cadrage.md](lot-05-5-4-cadrage.md) §18).
+
+## 28. LOT 05.5.5 — remplacement du QR compromis (livré, **aucune migration**)
+
+Arbitrages validés le 10 novembre 2026 : [lot-05-5-5-cadrage.md](lot-05-5-5-cadrage.md) §14 ; réalisation, constat sur la page publique après clôture et choix à relire : §15. Remplacement atomique du jeton actif (ancien jeton retiré définitivement, HTTP 410 ; nouveau jeton unique ; jamais deux QR valides), MUNICIPALITY_ADMIN seul, idempotence persistante par identifiant d'opération (`batch_id`), remplacement rapproché (référence ressaisie), signalement sans blocage, notification prioritaire `QR_REPLACED` (fusion des seules notifications en attente), ligne neutre pour les autres communes. Aucun jeton dans l'audit, les révisions, l'outbox ni les journaux. **Jetons retirés conservés (410) : durée de conservation par le LOT 05.6, bloquante avant la production.** **Correctif du 10 novembre 2026 (décision définitive)** : événement définitivement clos = la vérification publique n'affiche qu'un statut neutre « Événement terminé », côté serveur dans le lecteur métier ([lot-05-5-5-cadrage.md](lot-05-5-5-cadrage.md) §16, DM-115 amendé).

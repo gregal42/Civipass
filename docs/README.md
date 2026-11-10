@@ -13,7 +13,15 @@
 | [`lot-03-schema.md`](lot-03-schema.md) | **Schéma de données LOT 03 (demandes) proposé, en attente de validation** |
 | [`lot-04-schema.md`](lot-04-schema.md) | Modèle de décision municipale LOT 04.1 (DM-106 à DM-111, DT-040 à DT-045) |
 | [`exploitation-notifications.md`](exploitation-notifications.md) | Exploitation des notifications du bénéficiaire : clés, rotation, SMTP, distributeur, cron (exemple), supervision, purges, diagnostic, reprise, points ouverts avant production |
-| [`lot-05-schema.md`](lot-05-schema.md) | Laissez-passer LOT 05 : modèle, création atomique, droits calculés, scan public (DM-112 à DM-118, DT-046 à DT-051) |
+| [`../ops/nginx/README.md`](../ops/nginx/README.md) | nginx de production (V1 mono-instance) : journaux sans secret, rotation et filtrage, TLS/HSTS, installation et contrôles |
+| [`exploitation-verification-publique.md`](exploitation-verification-publique.md) | Exploitation du contrôle public `/v/{jeton}` : interrupteur, pare-feu sans session, limitation de débit, panne du stockage, journaux, conditions d'activation |
+| [`lot-05-schema.md`](lot-05-schema.md) | Laissez-passer LOT 05 : modèle, création atomique, droits calculés, scan public (DM-112 à DM-119, DT-046 à DT-051) |
+| [`lot-05-5-2-cadrage.md`](lot-05-5-2-cadrage.md) | LOT 05.5.2 : périodes d'autorisation (prolongation, reprise, raccourcissement, B2), livré ; contrôle des notifications et validations préproduction |
+| [`lot-05-git-decoupage.md`](lot-05-git-decoupage.md) | Plan de découpage en 4 commits (manifeste, script non exécuté, stratégie de vérification) : proposition, aucun commit réalisé |
+| [`lot-05-git-inventaire.md`](lot-05-git-inventaire.md) | Inventaire des modifications non commitées depuis le LOT 05.4.1 et proposition de découpage en commits (aucun commit réalisé) |
+| [`lot-05-5-5-cadrage.md`](lot-05-5-5-cadrage.md) | LOT 05.5.5 : remplacement du QR compromis : arbitrages validés le 10 novembre 2026, développé, sans migration |
+| [`lot-05-5-4-cadrage.md`](lot-05-5-4-cadrage.md) | LOT 05.5.4 : véhicules d'un laissez-passer (ajout, retrait, réactivation, remplacement de plaques) : arbitrages validés le 10 novembre 2026, développé, sans migration |
+| [`lot-05-5-3-cadrage.md`](lot-05-5-3-cadrage.md) | LOT 05.5.3 : zones d'une autorisation (ajout, retrait, réintégration, dernière zone, correction de libellé), livré (aucune migration) |
 | [`ux/`](ux/README.md) | Référentiel UX, brief UI, architecture LOT UI-02 |
 | [`archive/`](archive/README.md) | Vide : rien n'est archivé à ce jour |
 | `tools/verify-docs.sh` | Vérifie les SHA-256 et les liens relatifs |

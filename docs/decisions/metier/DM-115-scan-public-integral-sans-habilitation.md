@@ -4,7 +4,7 @@
 - **Thème** : LOT 05 — Contrôle
 - **Statut** : Validée
 - **Validation** : Validé par le commanditaire (arbitrages du LOT 05.0 et rectificatif Q5/Q6, 9 novembre 2026)
-- **Décisions remplacées** : Aucune.
+- **Décisions remplacées** : Aucune. **Amendée le 10 novembre 2026** (événement clos : voir « Amendement du 10 novembre 2026 » ci-dessous).
 
 ## Contexte
 
@@ -33,3 +33,11 @@
 ## Écarts documentaires signalés
 
 - `security.md`, `architecture.md`, `data-model.md` et la feuille de route prévoyaient d'autres comportements : mis à jour (CONTRADICTIONS, section I).
+
+## Amendement du 10 novembre 2026 : événement définitivement clos
+
+**Décision du commanditaire (définitive)** : lorsqu'un événement est **définitivement clos**, la vérification publique `/v/{jeton}` n'affiche **qu'un statut neutre « Événement terminé »** (HTTP 200). Elle n'expose plus ni le nom ni le prénom du bénéficiaire, ni les plaques, ni les zones autorisées, ni la référence du laissez-passer, ni le nom de l'événement, ni les communes. La règle est appliquée **côté serveur, dans le lecteur métier** (`PublicVerificationReader`, avant toute lecture des droits) : aucune représentation publique (HTML, JSON demandé, suffixe, barre finale, négociation de contenu) ne peut donc la contourner ; il n'existe aucune représentation JSON.
+
+**Inchangé** : jeton retiré (QR remplacé) = HTTP 410 sans donnée, y compris après la clôture ; jeton inconnu ou mal formé = 404 neutre ; événement **suspendu** = statut « Droits suspendus », aucun droit présenté comme utilisable.
+
+**Hors périmètre** : les règles de conservation administrative (durées, anonymisation) restent au **LOT 05.6**. Le calcul interne des droits (page du bénéficiaire, PDF) est inchangé. Voir [lot-05-5-5-cadrage.md](../../lot-05-5-5-cadrage.md) §15 et §16.

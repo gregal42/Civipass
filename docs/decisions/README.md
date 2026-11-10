@@ -120,6 +120,7 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DM-116](metier/DM-116-modifications-de-droits-plaques-partagees-et-revocation-communale.md) | Modifications des droits : plaques partagées, révocation communale irréversible | LOT 05 — Laissez-passer | Validée |
 | [DM-117](metier/DM-117-notifications-du-beneficiaire-et-conservation-des-donnees.md) | Notifications du bénéficiaire et conservation des données | LOT 05 — Laissez-passer | Validée |
 | [DM-118](metier/DM-118-liens-d-acces-beneficiaire-cycle-de-vie-et-remise-par-l-agent.md) | Liens d'accès bénéficiaire : cycle de vie, expiration, remise par l'agent | LOT 05 — Laissez-passer | Validée |
+| [DM-119](metier/DM-119-revisions-des-droits-d-un-laissez-passer.md) | Révisions des droits : révocation, périodes, zones, plaques, remplacement du QR (arbitrages validés ; règles de détail et schéma à valider) | LOT 05 — Laissez-passer | Proposée |
 
 ## Décisions techniques
 
