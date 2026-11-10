@@ -7,6 +7,7 @@ namespace App\Notification\Application;
 use App\Notification\Domain\ChangeCategory;
 use App\Notification\Domain\NotificationOutbox;
 use App\Notification\Domain\NotificationOutboxRepository;
+use App\Notification\Domain\NotificationType;
 use App\Notification\Domain\OutboxErrorCode;
 use App\Notification\Domain\OutboxStatus;
 use App\Permit\Application\NotificationStatusProvider;
@@ -59,12 +60,23 @@ final readonly class AgentNotificationStatus implements NotificationStatusProvid
     private function line(NotificationOutbox $row, bool $firstPending): NotificationLine
     {
         $first = ChangeCategory::FirstIssuance === $row->category();
-        $title = $first ? ($row->isManualRequest() ? 'Nouvel envoi de la mise à disposition (demandé par un agent)' : 'Mise à disposition du laissez-passer') : 'Extension des droits (commune supplémentaire)';
+        $title = $first ? ($row->isManualRequest() ? 'Nouvel envoi de la mise à disposition (demandé par un agent)' : 'Mise à disposition du laissez-passer') : match ($row->type()) {
+            NotificationType::PermitExtended => 'Prolongation d’une autorisation en cours',
+            NotificationType::PermitResumed => 'Reprise d’une autorisation après expiration (réactivation)',
+            NotificationType::PermitShortened => 'Raccourcissement d’une autorisation',
+            NotificationType::AuthorizationRevoked => 'Révocation d’une autorisation',
+            NotificationType::ZonesChanged => 'Ajout ou réintégration de zones',
+            NotificationType::ZonesRemoved => 'Retrait de zones',
+            NotificationType::VehiclesChanged => 'Ajout ou réactivation de plaques',
+            NotificationType::VehiclesRemoved => 'Retrait ou remplacement de plaques',
+            NotificationType::QrReplaced => 'Remplacement du QR code',
+            default => 'Extension des droits (commune supplémentaire)',
+        };
         $code = $row->lastErrorCode();
 
         return match ($row->status()) {
             OutboxStatus::Pending, OutboxStatus::Reserved => new NotificationLine($title, NotificationLine::PENDING, 'En attente d’envoi', match (true) {
-                !$first && $firstPending => 'Part après le message de mise à disposition.',
+                ChangeCategory::Ordinary === $row->category() && $firstPending => 'Part après le message de mise à disposition.',
                 OutboxErrorCode::SmtpTemporary->value === $code => 'Le dernier essai a échoué : une nouvelle tentative est prévue automatiquement.',
                 OutboxErrorCode::CryptoUnavailable->value === $code => 'L’envoi reprendra automatiquement dès que possible.',
                 default => 'Le message sera envoyé sous peu.',
@@ -74,6 +86,7 @@ final readonly class AgentNotificationStatus implements NotificationStatusProvid
             OutboxStatus::Abandoned => new NotificationLine($title, NotificationLine::FAILED, 'Échec d’envoi', self::failure($code).' Remise manuelle possible.', $row->processedAt()),
             OutboxStatus::Suppressed => new NotificationLine($title, NotificationLine::SKIPPED, 'Non envoyé', match ($code) {
                 OutboxErrorCode::AlreadyIncluded->value => 'Ces droits figuraient déjà dans le message de mise à disposition.',
+                OutboxErrorCode::SupersededByRevocation->value => 'Cette autorisation a été révoquée depuis : ce message est devenu sans objet et la révocation est annoncée à la place.',
                 OutboxErrorCode::FirstNotDelivered->value => 'Le message de mise à disposition n’a pas été remis : annoncer une extension serait trompeur. Remise manuelle possible.',
                 default => 'Ces droits ont changé avant l’envoi : le message aurait été inexact.',
             }, $row->processedAt()),

@@ -18,6 +18,7 @@ final readonly class NotificationIntent
         public ?Uuid $authorizationId,
         public \DateTimeImmutable $occurredAt,
         public bool $hasRecipient,
+        public ?Uuid $revisionId = null,
     ) {
     }
 
@@ -27,6 +28,15 @@ final readonly class NotificationIntent
         return match ($this->kind) {
             NotificationKind::PermitIssued => 'PERMIT_ISSUED:'.$this->permitId->toRfc4122(),
             NotificationKind::AuthorizationAdded => 'AUTHORIZATION_ADDED:'.($this->authorizationId ?? throw new \LogicException('Autorisation requise.'))->toRfc4122(),
+            NotificationKind::AuthorizationRevoked,
+            NotificationKind::PermitExtended,
+            NotificationKind::PermitResumed,
+            NotificationKind::ZonesChanged,
+            NotificationKind::ZonesRemoved,
+            NotificationKind::VehiclesChanged,
+            NotificationKind::VehiclesRemoved,
+            NotificationKind::QrReplaced,
+            NotificationKind::PermitShortened => $this->kind->value.':'.($this->revisionId ?? throw new \LogicException('Révision requise.'))->toRfc4122(),
         };
     }
 }

@@ -63,4 +63,31 @@ final readonly class PermitRights
 
         return [] !== $found ? $found : [new ZoneRight($zoneId, '', RightState::ZoneNotAuthorized)];
     }
+
+    /** Reste-t-il un droit actif ou à venir (y compris suspendu) dans au moins une zone ? Faux : plus rien à présenter comme valide. */
+    public function hasLiveRights(): bool
+    {
+        foreach ($this->zones() as $zone) {
+            if (!$zone->state->isFinal()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Toutes les autorisations (au moins une) sont révoquées. */
+    public function isEntirelyRevoked(): bool
+    {
+        if ([] === $this->authorizations) {
+            return false;
+        }
+        foreach ($this->authorizations as $authorization) {
+            if (null === $authorization->revokedAt) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

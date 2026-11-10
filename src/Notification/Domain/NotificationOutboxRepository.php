@@ -62,6 +62,22 @@ interface NotificationOutboxRepository
     public function lockPendingOrdinary(\Symfony\Component\Uid\Uuid $permitId): array;
 
     /**
+     * Lignes de ce type, en attente ou en cours d'envoi, pour ce laissez-passer (et cette autorisation si elle est donnée) ; lecture simple.
+     *
+     * @return list<NotificationOutbox>
+     */
+    public function activeOfType(\Symfony\Component\Uid\Uuid $permitId, NotificationType $type, ?\Symfony\Component\Uid\Uuid $authorizationId = null): array;
+
+    /**
+     * Identifiants des RÉVISIONS des lignes encore en attente d'un type donné pour ce laissez-passer (lecture simple, sans verrou). Un message qui annonce
+     * l'état courant d'UNE autorisation couvre celles de CETTE autorisation seulement (`$authorizationId`) : jamais celles d'une autre commune : un groupe de prolongations ne produit ainsi qu'UN message. Une révision commise pendant la composition n'y figure
+     * pas : elle reste éligible, jamais perdue.
+     *
+     * @return list<string>
+     */
+    public function pendingRevisionIds(\Symfony\Component\Uid\Uuid $permitId, NotificationType $type, ?\Symfony\Component\Uid\Uuid $authorizationId = null): array;
+
+    /**
      * Demandes manuelles de renvoi déjà enregistrées pour ce laissez-passer (tous états), lues sous verrou partagé : une lecture simple, sous
      * REPEATABLE READ, ne verrait pas la demande qu'une transaction concurrente vient de valider. Précondition : verrou du laissez-passer tenu.
      *

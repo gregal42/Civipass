@@ -55,6 +55,22 @@ class NotificationOutbox
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $coveredAuthorizations = null;
 
+    /**
+     * Révision qui a produit cette ligne (LOT 05.5.1, DM-119 §10) : identifiant seulement. Nul pour les lignes produites par une approbation
+     * (mise à disposition, nouvelle commune) : leur couverture se prouve par les autorisations (`coveredAuthorizations`).
+     */
+    #[ORM\Column(type: UuidType::NAME, nullable: true)]
+    private ?Uuid $revisionId = null;
+
+    /**
+     * Pour un message ENVOYÉ qui annonce des RÉVISIONS : identifiants des révisions dont il décrit l'effet. Preuve distincte de la couverture des
+     * autorisations : une révision n'est jamais jugée redondante parce que son autorisation figurait dans un message déjà envoyé.
+     *
+     * @var list<string>|null
+     */
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $coveredRevisions = null;
+
     /** Code court (`OutboxErrorCode`, jamais un message ni une exception). */
     #[ORM\Column(type: Types::STRING, length: 40, nullable: true)]
     private ?string $lastErrorCode = null;
@@ -79,9 +95,9 @@ class NotificationOutbox
         $this->processedAt = OutboxStatus::NoRecipient === $status ? $occurredAt : null;
     }
 
-    public static function record(string $deduplicationKey, NotificationType $type, Uuid $permitId, ?Uuid $authorizationId, \DateTimeImmutable $occurredAt, bool $hasRecipient): self
+    public static function record(string $deduplicationKey, NotificationType $type, Uuid $permitId, ?Uuid $authorizationId, \DateTimeImmutable $occurredAt, bool $hasRecipient, ?Uuid $revisionId = null): self
     {
-        return new self(
+        $row = new self(
             $deduplicationKey,
             $type,
             $permitId,
@@ -90,6 +106,9 @@ class NotificationOutbox
             SchedulePolicy::availableAt($type, $occurredAt),
             $hasRecipient ? OutboxStatus::Pending : OutboxStatus::NoRecipient,
         );
+        $row->revisionId = $revisionId;
+
+        return $row;
     }
 
     /**
@@ -115,6 +134,17 @@ class NotificationOutbox
     public function coveredAuthorizations(): array
     {
         return $this->coveredAuthorizations ?? [];
+    }
+
+    public function revisionId(): ?Uuid
+    {
+        return $this->revisionId;
+    }
+
+    /** @return list<string> */
+    public function coveredRevisions(): array
+    {
+        return $this->coveredRevisions ?? [];
     }
 
     /** Regroupement : nouvelle échéance commune d'un changement ordinaire encore en attente. */
@@ -247,11 +277,15 @@ class NotificationOutbox
         return OutboxStatus::Reserved === $this->status && null !== $this->leasedUntil && $this->leasedUntil->getTimestamp() === $leaseUntil->getTimestamp();
     }
 
-    /** @param list<string> $coveredAuthorizations autorisations listées dans le message envoyé */
-    public function completeSent(\DateTimeImmutable $now, array $coveredAuthorizations = []): void
+    /**
+     * @param list<string> $coveredAuthorizations autorisations listées dans le message envoyé
+     * @param list<string> $coveredRevisions      révisions dont le message décrit l'effet
+     */
+    public function completeSent(\DateTimeImmutable $now, array $coveredAuthorizations = [], array $coveredRevisions = []): void
     {
         $this->assertReserved();
         $this->coveredAuthorizations = $coveredAuthorizations;
+        $this->coveredRevisions = [] === $coveredRevisions ? null : $coveredRevisions;
         $this->status = OutboxStatus::Sent;
         $this->processedAt = $now;
         $this->leasedUntil = null;

@@ -215,4 +215,68 @@ final class GrantWindowCalculatorTest extends TestCase
 
         self::assertTrue($this->calculator->effectivePeriods($window, $zone, $participation)->isEmpty());
     }
+
+    // ------------------------------------------------------------------ périodes successives (LOT 05.5.2, B2)
+
+    public function testSeveralWindowsGiveTheUnionOfTheirIntersectionsAndNothingInTheGap(): void
+    {
+        $event = F::active();
+        $zone = new EffectivePeriods([new UtcInterval($event->startsAt(), $event->endsAt())]); // zone ouverte toute la durée de l'événement
+        $first = new GrantWindow(DurationMode::Custom, T::utc('2026-06-12 09:00:00'), T::utc('2026-06-13 09:00:00'));
+        $second = new GrantWindow(DurationMode::Custom, T::utc('2026-06-15 09:00:00'), T::utc('2026-06-16 09:00:00'));
+
+        $periods = $this->calculator->scheduledPeriods([$first, $second], $zone, $event);
+
+        self::assertEquals(
+            [[T::utc('2026-06-12 09:00:00'), T::utc('2026-06-13 09:00:00')], [T::utc('2026-06-15 09:00:00'), T::utc('2026-06-16 09:00:00')]],
+            array_map(static fn (UtcInterval $i): array => [$i->start, $i->end], $periods->intervals()),
+        );
+        self::assertTrue($periods->isEffectiveAt(T::utc('2026-06-12 09:00:00')), 'début inclus');
+        self::assertFalse($periods->isEffectiveAt(T::utc('2026-06-13 09:00:00')), 'fin exclue');
+        self::assertFalse($periods->isEffectiveAt(T::utc('2026-06-14 12:00:00')), 'aucun droit pendant l\'interruption');
+        self::assertTrue($periods->isEffectiveAt(T::utc('2026-06-15 09:00:00')));
+    }
+
+    public function testAZoneSlotInTheGapGivesNoRightAndSlotsInEachWindowAreKept(): void
+    {
+        $event = F::active();
+        $zone = new EffectivePeriods([
+            new UtcInterval(T::utc('2026-06-12 10:00:00'), T::utc('2026-06-12 12:00:00')), // dans la première période
+            new UtcInterval(T::utc('2026-06-14 10:00:00'), T::utc('2026-06-14 12:00:00')), // pendant l'interruption
+            new UtcInterval(T::utc('2026-06-15 10:00:00'), T::utc('2026-06-15 12:00:00')), // dans la seconde
+        ]);
+        $windows = [
+            new GrantWindow(DurationMode::Custom, T::utc('2026-06-12 09:00:00'), T::utc('2026-06-13 09:00:00')),
+            new GrantWindow(DurationMode::Custom, T::utc('2026-06-15 09:00:00'), T::utc('2026-06-16 09:00:00')),
+        ];
+
+        $periods = $this->calculator->scheduledPeriods($windows, $zone, $event)->intervals();
+
+        self::assertCount(2, $periods, 'le créneau de l\'interruption disparaît');
+        self::assertEquals(T::utc('2026-06-12 10:00:00'), $periods[0]->start);
+        self::assertEquals(T::utc('2026-06-15 10:00:00'), $periods[1]->start);
+    }
+
+    public function testASingleWindowAndAListOfOneAreStrictlyEquivalent(): void
+    {
+        $event = F::active();
+        $zone = new EffectivePeriods([new UtcInterval(T::utc('2026-06-12 10:00:00'), T::utc('2026-06-14 12:00:00'))]);
+        $window = new GrantWindow(DurationMode::Custom, T::utc('2026-06-12 09:00:00'), T::utc('2026-06-13 09:00:00'));
+
+        self::assertEquals($this->calculator->scheduledPeriods($window, $zone, $event), $this->calculator->scheduledPeriods([$window], $zone, $event));
+    }
+
+    public function testAnOpenEndedLastWindowFollowsTheEventClosure(): void
+    {
+        $event = F::active();
+        $zone = new EffectivePeriods([new UtcInterval($event->startsAt(), $event->endsAt())]);
+        $windows = [
+            new GrantWindow(DurationMode::Custom, T::utc('2026-06-11 09:00:00'), T::utc('2026-06-12 09:00:00')),
+            new GrantWindow(DurationMode::UntilClosure, T::utc('2026-06-14 09:00:00'), null),
+        ];
+
+        $periods = $this->calculator->scheduledPeriods($windows, $zone, $event)->intervals();
+
+        self::assertEquals($event->endsAt(), $periods[1]->end, 'la dernière période, sans fin propre, s\'arrête à la fin de l\'événement');
+    }
 }

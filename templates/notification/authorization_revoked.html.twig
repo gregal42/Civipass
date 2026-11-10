@@ -1,0 +1,13 @@
+<p>Bonjour {{ firstName }},</p>
+<p>La commune de <strong>{{ revokedMunicipality }}</strong> a retiré son autorisation pour votre laissez-passer <strong>{{ reference }}</strong> (événement « {{ eventName }} ») : vous n'avez plus de droit dans les zones de cette commune.</p>
+{% if communes|length %}
+<p>Vos autres communes et zones aujourd'hui :</p>
+<ul>
+{% for commune in communes %}
+  <li><strong>{{ commune.municipality }}</strong> : {{ commune.zones|join(', ') }}</li>
+{% endfor %}
+</ul>
+{% else %}
+<p>Vous n'avez plus aucun droit actif sur ce laissez-passer.</p>
+{% endif %}
+<p>Votre lien et votre QR code restent ceux que vous avez déjà reçus : le QR code affiche toujours votre situation du moment. Ne comptez pas sur un document imprimé : seul le contrôle du QR code fait foi.<br>Pour toute question, contactez la commune concernée.</p>

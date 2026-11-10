@@ -35,6 +35,7 @@ final class PermitExtension
             RightState::EventNotActive => ['status' => 'suspended', 'label' => 'Événement suspendu', 'detail' => 'Les accès sont fermés tant que l’événement n’est pas rouvert'],
             RightState::EventClosed => ['status' => 'closed', 'label' => 'Événement terminé', 'detail' => 'L’événement est clôturé'],
             RightState::Revoked => ['status' => 'revoked', 'label' => 'Révoquée', 'detail' => 'Cette autorisation a été retirée'],
+            RightState::Removed => ['status' => 'revoked', 'label' => 'Retirée', 'detail' => null === $zone->removedAt ? 'Cette zone a été retirée du laissez-passer' : 'Retirée le '.$at($zone->removedAt)],
             RightState::ZoneNotAuthorized => ['status' => 'invalid', 'label' => 'Non autorisée', 'detail' => 'Zone non comprise dans ce laissez-passer'],
         };
     }

@@ -66,6 +66,25 @@ enum AuditAction: string
     case PermitAuthorizationAdded = 'PERMIT_AUTHORIZATION_ADDED';
     case PermitAccessLinkIssued = 'PERMIT_ACCESS_LINK_ISSUED';
     case PermitAccessLinkRevoked = 'PERMIT_ACCESS_LINK_REVOKED';
+    // Révisions des droits (LOT 05.5, DM-119) : identifiants et codes de motif seulement, jamais le commentaire, un jeton ni une plaque.
+    case PermitAuthorizationRevoked = 'PERMIT_AUTHORIZATION_REVOKED';
+    case PermitPeriodExtended = 'PERMIT_PERIOD_EXTENDED';
+    case PermitPeriodResumed = 'PERMIT_PERIOD_RESUMED';
+    case PermitPeriodShortened = 'PERMIT_PERIOD_SHORTENED';
+    case PermitZoneAdded = 'PERMIT_ZONE_ADDED';
+    case PermitZoneRemoved = 'PERMIT_ZONE_REMOVED';
+    case PermitZoneReinstated = 'PERMIT_ZONE_REINSTATED';
+    case PermitZoneLabelCorrected = 'PERMIT_ZONE_LABEL_CORRECTED';
+    // Plaques (LOT 05.5.4) : jamais la plaque ni le commentaire. Une ligne par plaque pour la commune qui agit ; une ligne NEUTRE par autre commune titulaire.
+    case PermitVehicleAdded = 'PERMIT_VEHICLE_ADDED';
+    case PermitVehicleRemoved = 'PERMIT_VEHICLE_REMOVED';
+    case PermitVehicleReinstated = 'PERMIT_VEHICLE_REINSTATED';
+    case PermitVehicleReplacedOut = 'PERMIT_VEHICLE_REPLACED_OUT';
+    case PermitVehicleReplacedIn = 'PERMIT_VEHICLE_REPLACED_IN';
+    case PermitVehiclesChangedByOtherMunicipality = 'PERMIT_VEHICLES_CHANGED_BY_OTHER';
+    // Remplacement du QR code (LOT 05.5.5) : identifiants, numéro d'ordre et code de motif ; JAMAIS un jeton ni le commentaire. Une ligne NEUTRE par autre commune titulaire.
+    case PermitTokenReplaced = 'PERMIT_TOKEN_REPLACED';
+    case PermitTokenReplacedByOtherMunicipality = 'PERMIT_TOKEN_REPLACED_BY_OTHER';
 
     // Notifications du bénéficiaire (LOT 05.3.4) : identifiants et codes seulement, jamais d'adresse ni de secret.
     case PermitNotificationRequested = 'PERMIT_NOTIFICATION_REQUESTED';

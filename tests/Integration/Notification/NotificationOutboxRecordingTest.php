@@ -234,7 +234,9 @@ final class NotificationOutboxRecordingTest extends MunicipalDecisionTestCase
         $token = (string) $this->em->getConnection()->fetchOne('SELECT token FROM permit_verification_token');
         self::assertStringNotContainsString($token, $dump);
         $columns = array_column($this->em->getConnection()->fetchAllAssociative('SHOW COLUMNS FROM notification_outbox'), 'Field');
-        self::assertEqualsCanonicalizing(['id', 'status', 'attempts', 'leased_until', 'processed_at', 'last_error_code', 'deduplication_key', 'type', 'permit_id', 'authorization_id', 'occurred_at', 'available_at', 'first_attempt_at', 'covered_authorizations'], $columns);
+        self::assertSame([null, null], array_values($this->em->getConnection()->fetchAssociative('SELECT revision_id, covered_revisions FROM notification_outbox LIMIT 1') ?: []), 'une approbation ne produit aucune référence de révision');
+        // LOT 05.5.1 : `revision_id` et `covered_revisions` ne portent que des identifiants (UUID) de révisions, jamais une donnée personnelle ni un motif.
+        self::assertEqualsCanonicalizing(['id', 'status', 'attempts', 'leased_until', 'processed_at', 'last_error_code', 'deduplication_key', 'type', 'permit_id', 'authorization_id', 'occurred_at', 'available_at', 'first_attempt_at', 'covered_authorizations', 'covered_revisions', 'revision_id'], $columns);
     }
 
     public function testTheUniqueKeyIsEnforcedBySql(): void

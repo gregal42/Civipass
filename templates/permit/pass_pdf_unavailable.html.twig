@@ -1,0 +1,15 @@
+{% extends 'layouts/pass.html.twig' %}
+
+{#
+  Aucun nouveau PDF quand il ne reste ni droit actif ni droit à venir (LOT 05.5.1, DM-119 §6). Variables : pass (BeneficiaryPass). Aucun secret, aucun motif.
+#}
+{% block content %}
+  <div class="pp-col">
+    {% include 'components/alert.html.twig' with {
+      variant: pass.isEntirelyRevoked ? 'error' : 'warning',
+      title: pass.isEntirelyRevoked ? 'Droits révoqués : aucun PDF' : 'Droits terminés : aucun PDF',
+      text: (pass.isEntirelyRevoked ? 'Toutes les autorisations de ce laissez-passer ont été retirées.' : 'Ce laissez-passer ne donne plus aucun droit actif ni à venir.') ~ ' Un document ne peut pas être présenté comme un laissez-passer valide. Seul le contrôle du QR code fait foi ; il affiche votre situation actuelle.',
+      id: 'pdf-unavailable'
+    } only %}
+  </div>
+{% endblock %}

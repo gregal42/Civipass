@@ -38,6 +38,7 @@ final readonly class OutboxIntentRecorder implements NotificationIntentRecorder
             $intent->authorizationId,
             $intent->occurredAt,
             $intent->hasRecipient,
+            $intent->revisionId,
         );
         if (!$this->outbox->addIfAbsent($row) || ChangeCategory::Ordinary !== $row->category() || $row->status()->isFinal()) {
             return;

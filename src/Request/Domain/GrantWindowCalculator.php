@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Request\Domain;
 
+use App\Event\Domain\Event;
 use App\Event\Domain\EventParticipation;
 use App\Event\Domain\Time\EventTimezone;
 use App\Event\Domain\Time\LocalTimeResolver;
@@ -42,20 +43,40 @@ final readonly class GrantWindowCalculator
         return new GrantWindow($duration->mode, $from, $until);
     }
 
-    public function effectivePeriods(GrantWindow $window, EffectivePeriods $zonePeriods, EventParticipation $participation): EffectivePeriods
+    /**
+     * @param GrantWindow|list<GrantWindow> $window une période, ou les périodes successives d'une autorisation (LOT 05.5.2)
+     */
+    public function effectivePeriods(GrantWindow|array $window, EffectivePeriods $zonePeriods, EventParticipation $participation): EffectivePeriods
     {
         if (!$participation->isOperational()) {
             return new EffectivePeriods([]);
         }
-        $event = $participation->event();
+
+        return $this->scheduledPeriods($window, $zonePeriods, $participation->event());
+    }
+
+    /**
+     * Périodes PRÉVUES d'une zone : fenêtre ∩ période de l'événement (clôture comprise) ∩ périodes de la zone, SANS tenir compte de l'état
+     * opérationnel de la participation. `effectivePeriods()` en est le cas opérationnel (même calcul, un seul moteur) ; la vérification
+     * publique s'en sert pour montrer ce qui était prévu même quand un droit est révoqué ou suspendu.
+     */
+    /**
+     * @param GrantWindow|list<GrantWindow> $window une période, ou les périodes successives d'une autorisation (LOT 05.5.2) : le résultat est la réunion de
+     *                                              « créneaux de la zone ∩ période ∩ événement » pour chaque période ; l'interruption entre deux périodes ne donne aucun droit
+     */
+    public function scheduledPeriods(GrantWindow|array $window, EffectivePeriods $zonePeriods, Event $event): EffectivePeriods
+    {
         $operational = new UtcInterval($event->startsAt(), $event->endsAt());
         $closedAt = $event->closedAt();
         if (null !== $closedAt && $closedAt > $event->startsAt()) {
             $operational = $operational->intersect(new UtcInterval($event->startsAt(), $closedAt));
         }
-        $bound = null === $operational ? null : $window->toInterval()->intersect($operational);
         $intervals = [];
-        if (null !== $bound) {
+        foreach (\is_array($window) ? $window : [$window] as $period) {
+            $bound = null === $operational ? null : $period->toInterval()->intersect($operational);
+            if (null === $bound) {
+                continue;
+            }
             foreach ($zonePeriods->intervals() as $interval) {
                 $effective = $interval->intersect($bound);
                 if (null !== $effective) {

@@ -24,6 +24,7 @@
   table.zones td { border-top: 1px solid #d2d9e2; padding: 4px 4px; vertical-align: top; font-size: 9.5pt; }
   .state { font-weight: bold; white-space: nowrap; }
   .notice { margin-top: 16px; padding: 8px 10px; border: 1px solid #d2d9e2; background: #f4f6f9; font-size: 9pt; }
+.notice--top{margin:10px 0 14px;border:2px solid #14213d;padding:8px 10px;font-size:12px}
 </style>
 </head>
 <body>
@@ -40,26 +41,30 @@
     <td class="qr"><img src="{{ qr }}" alt="QR code du laissez-passer {{ pass.reference }}"><div class="muted">À présenter lors d’un contrôle</div></td>
   </tr></table>
 
-  <h2>Communes et zones autorisées</h2>
-  {% for authorization in pass.rights.authorizations %}
+  <div class="notice notice--top">
+    <b>Seul le contrôle du QR code fait foi.</b> Ce document ne prouve pas, à lui seul, que vos droits sont valables : ils sont vérifiés au moment du contrôle,
+    en scannant le QR code. Un agent qui ne contrôle que ce papier ne peut pas savoir si les droits sont valables, suspendus ou retirés.
+  </div>
+
+  <h2>Communes et zones concernées</h2>
+  {# Une autorisation révoquée n'est pas listée : un document ne doit pas présenter comme « concernée » une commune qui a retiré son autorisation. #}
+  {% for authorization in pass.rights.authorizations|filter(a => a.revokedAt is null) %}
     <div class="auth">
       <h3>{{ authorization.municipalityName }}</h3>
-      <div class="muted">{{ cp_authorization_period(authorization, pass.timezone) }}</div>
       <table class="zones">
         {% for zone in authorization.zones %}
-          {% set state = cp_zone_state(zone, pass.timezone) %}
-          <tr><td>{{ zone.label }}</td><td class="state">{{ state.label }}</td><td class="muted">{{ state.detail }}</td></tr>
+          <tr><td>{{ zone.label }}</td></tr>
         {% else %}
-          <tr><td class="muted">Aucune zone active dans cette autorisation.</td></tr>
+          <tr><td class="muted">Aucune zone dans cette autorisation.</td></tr>
         {% endfor %}
       </table>
     </div>
   {% endfor %}
 
   <div class="notice">
-    <b>Les droits sont vérifiés au moment du contrôle.</b> Ce document est une photographie de vos droits au {{ generated_at|cp_datetime(pass.timezone) }} (heure de l’événement).
-    Si une commune modifie, suspend ou retire des droits ensuite, ce document imprimé ne change pas : le QR code, lui, renvoie toujours vers vos droits actuels.
-    Le QR code ne contient ni votre nom ni vos plaques. Dates et heures : fuseau de l’événement ({{ pass.timezone }}).
+    Photographie de la liste des communes et des zones au {{ generated_at|cp_datetime(pass.timezone) }} (heure de l’événement) : aucune validité, aucune date ni aucune heure
+    de droit n’est écrite ici. Si une commune modifie, suspend ou retire des droits ensuite, ce document imprimé ne change pas ; le QR code, lui, renvoie toujours
+    vers vos droits actuels. Le QR code ne contient ni votre nom ni vos plaques. Si votre QR code est remplacé (perte, compromission), celui de ce document ne fonctionnera plus : téléchargez un nouveau PDF avec votre lien personnel.
   </div>
 </body>
 </html>

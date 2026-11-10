@@ -8,6 +8,7 @@ use App\Event\Application\Service\ZoneEffectivePeriodsResolver;
 use App\Event\Domain\EventStatus;
 use App\Event\Domain\ParticipationStatus;
 use App\Event\Domain\Validity\EventPeriod;
+use App\Event\Domain\Validity\UtcInterval;
 use App\Municipality\Domain\MunicipalityStatus;
 use App\Permit\Domain\AuthorizationRights;
 use App\Permit\Domain\Permit;
@@ -37,21 +38,36 @@ final readonly class PermitRightsEvaluator
     ) {
     }
 
-    public function evaluate(Permit $permit, \DateTimeImmutable $at): PermitRights
+    /**
+     * @param bool $forVerification mode de la vérification publique (LOT 05.4) : ajoute les périodes PRÉVUES de chaque zone et les zones retirées
+     *                              (état REMOVED). Faux (défaut, tous les autres appelants) : résultat strictement inchangé.
+     */
+    public function evaluate(Permit $permit, \DateTimeImmutable $at, bool $forVerification = false): PermitRights
     {
-        $authorizations = array_map(fn (PermitAuthorization $a): AuthorizationRights => $this->authorization($a, $at), $permit->authorizations());
+        $authorizations = array_map(fn (PermitAuthorization $a): AuthorizationRights => $this->authorization($a, $at, $forVerification), $permit->authorizations());
         usort($authorizations, static fn (AuthorizationRights $a, AuthorizationRights $b): int => [$a->municipalityName, $a->authorizationId->toRfc4122()] <=> [$b->municipalityName, $b->authorizationId->toRfc4122()]);
 
         return new PermitRights($permit->id(), $permit->reference()->value, $permit->event()->timezone()->identifier(), $at, $authorizations);
     }
 
-    private function authorization(PermitAuthorization $authorization, \DateTimeImmutable $at): AuthorizationRights
+    private function authorization(PermitAuthorization $authorization, \DateTimeImmutable $at, bool $forVerification): AuthorizationRights
     {
         $window = $authorization->window();
         $common = $this->commonState($authorization);
         $rights = [];
         foreach ($authorization->activeZones() as $zone) {
-            $rights[] = null !== $common ? new ZoneRight($zone->zone()->id(), $zone->zoneLabel(), $common) : $this->zone($authorization, $zone, $at);
+            if (null !== $common) {
+                $right = new ZoneRight($zone->zone()->id(), $zone->zoneLabel(), $common);
+                $rights[] = $forVerification ? $right->withPeriods($this->scheduled($authorization, $zone)) : $right;
+            } else {
+                $rights[] = $this->zone($authorization, $zone, $at, $forVerification);
+            }
+        }
+        if ($forVerification) {
+            // Retrait d'une zone : fait distinct de la révocation de l'autorisation, conservé même si celle-ci est révoquée ensuite.
+            foreach ($authorization->removedZones() as $removed) {
+                $rights[] = new ZoneRight($removed->zone()->id(), $removed->zoneLabel(), RightState::Removed, removedAt: $removed->removedAt());
+            }
         }
 
         return new AuthorizationRights(
@@ -82,22 +98,51 @@ final readonly class PermitRightsEvaluator
         };
     }
 
-    private function zone(PermitAuthorization $authorization, PermitAuthorizationZone $copied, \DateTimeImmutable $at): ZoneRight
+    /**
+     * Périodes PRÉVUES d'une zone (fenêtre ∩ événement ∩ créneaux de la zone), sans égard à l'état : même moteur que les périodes effectives.
+     *
+     * @return list<UtcInterval>
+     */
+    private function scheduled(PermitAuthorization $authorization, PermitAuthorizationZone $copied): array
+    {
+        $event = $authorization->participation()->event();
+
+        // Périodes PRÉVUES affichées au contrôle : celles de la période COURANTE seulement (l'historique des reprises n'est pas exposé).
+        return $this->windows->scheduledPeriods($authorization->window(), $this->periods->periods($copied->zone(), new EventPeriod($event->startsAt(), $event->endsAt())), $event)->intervals();
+    }
+
+    private function zone(PermitAuthorization $authorization, PermitAuthorizationZone $copied, \DateTimeImmutable $at, bool $forVerification): ZoneRight
     {
         $zone = $copied->zone();
         if (!$zone->mayOpenRights()) {
-            return new ZoneRight($zone->id(), $copied->zoneLabel(), RightState::ZoneSuspended);
+            $suspended = new ZoneRight($zone->id(), $copied->zoneLabel(), RightState::ZoneSuspended);
+
+            return $forVerification ? $suspended->withPeriods($this->scheduled($authorization, $copied)) : $suspended;
         }
         $participation = $authorization->participation();
         $event = $participation->event();
         $window = $authorization->window();
-        $effective = $this->windows->effectivePeriods($window, $this->periods->periods($zone, new EventPeriod($event->startsAt(), $event->endsAt())), $participation);
-
+        $zonePeriods = $this->periods->periods($zone, new EventPeriod($event->startsAt(), $event->endsAt()));
+        // Période COURANTE : c'est la seule listée au contrôle public (l'historique des reprises n'est pas exposé) et, tant qu'elle a commencé, la seule où le droit
+        // peut être valide maintenant (les périodes closes finissent avant son début). Dans ce cas courant, les périodes closes ne sont jamais lues : le coût d'un
+        // contrôle ne dépend pas de la taille de l'historique.
+        $current = $this->windows->effectivePeriods($window, $zonePeriods, $participation);
+        $periods = $forVerification ? $current->intervals() : [];
+        if ($at >= $window->from) {
+            foreach ($current->intervals() as $interval) {
+                if ($interval->contains($at)) {
+                    return new ZoneRight($zone->id(), $copied->zoneLabel(), RightState::Valid, $interval->start, $interval->end, periods: $periods);
+                }
+            }
+        }
+        // Sinon l'ÉTAT (hors période, à venir, expiré) tient compte de TOUTES les périodes : une période passée suffit à distinguer « hors période » de « à venir ».
+        $windows = $authorization->windows();
+        $effective = \count($windows) > 1 ? $this->windows->effectivePeriods($windows, $zonePeriods, $participation) : $current;
         $past = false;
         $next = null;
         foreach ($effective->intervals() as $interval) {
             if ($interval->contains($at)) {
-                return new ZoneRight($zone->id(), $copied->zoneLabel(), RightState::Valid, $interval->start, $interval->end);
+                return new ZoneRight($zone->id(), $copied->zoneLabel(), RightState::Valid, $interval->start, $interval->end, periods: $periods);
             }
             if ($interval->start > $at) {
                 $next ??= $interval->start;
@@ -107,13 +152,14 @@ final readonly class PermitRightsEvaluator
             }
         }
         if (null !== $next) {
-            return new ZoneRight($zone->id(), $copied->zoneLabel(), $past ? RightState::OutsidePeriod : RightState::NotYetValid, nextStart: $next);
+            return new ZoneRight($zone->id(), $copied->zoneLabel(), $past ? RightState::OutsidePeriod : RightState::NotYetValid, nextStart: $next, periods: $periods);
         }
+        // Après la fin de la DERNIÈRE période (la courante) : expiré. Toutes les périodes sont passées.
         if ($past || (null !== $window->until && $at >= $window->until)) {
-            return new ZoneRight($zone->id(), $copied->zoneLabel(), RightState::Expired);
+            return new ZoneRight($zone->id(), $copied->zoneLabel(), RightState::Expired, periods: $periods);
         }
 
         // Dans la fenêtre mais sans aucune période d'accès (créneaux supprimés depuis la décision, par exemple).
-        return new ZoneRight($zone->id(), $copied->zoneLabel(), $at < $window->from ? RightState::NotYetValid : RightState::OutsidePeriod);
+        return new ZoneRight($zone->id(), $copied->zoneLabel(), $at < $windows[0]->from ? RightState::NotYetValid : RightState::OutsidePeriod, periods: $periods);
     }
 }

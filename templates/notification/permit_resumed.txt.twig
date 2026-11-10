@@ -1,0 +1,14 @@
+Bonjour {{ firstName }},
+
+La commune de {{ municipality }} a réactivé votre autorisation sur votre laissez-passer {{ reference }} (événement « {{ eventName }} »), qui avait pris fin.
+{% if changedSince %}La période a évolué depuis cette réactivation : voici la situation d'aujourd'hui, {% if periodFrom %}{% if periodUntil %}du {{ periodFrom|cp_datetime(timezone) }} au {{ periodUntil|cp_datetime(timezone) }}{% else %}depuis le {{ periodFrom|cp_datetime(timezone) }}, jusqu'à la clôture de l'événement{% endif %} (heure de l'événement){% endif %}.
+{% else %}{% if periodFrom %}Vos droits dans les zones de cette commune reprennent le {{ periodFrom|cp_datetime(timezone) }}{% if periodUntil %} et sont valables jusqu'au {{ periodUntil|cp_datetime(timezone) }}{% else %} et sont valables jusqu'à la clôture de l'événement{% endif %} (heure de l'événement).{% endif %}
+{% endif %}
+Aucun droit n'est rétabli pour la période écoulée entre-temps : vos droits n'existaient pas pendant cette interruption.
+
+Vos communes et zones aujourd'hui :
+{% for commune in communes %}
+- {{ commune.municipality }} : {{ commune.zones|join(', ') }}
+{% endfor %}
+
+Votre lien et votre QR code restent ceux que vous avez déjà reçus : le QR code affiche toujours votre situation du moment. Seul le contrôle du QR code fait foi.

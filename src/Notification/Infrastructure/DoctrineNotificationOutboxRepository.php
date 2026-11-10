@@ -167,6 +167,26 @@ final readonly class DoctrineNotificationOutboxRepository implements Notificatio
         ));
     }
 
+    public function activeOfType(Uuid $permitId, NotificationType $type, ?Uuid $authorizationId = null): array
+    {
+        return array_values(array_filter(
+            $this->forPermit($permitId, [$type], null),
+            static fn (NotificationOutbox $row): bool => \in_array($row->status(), [OutboxStatus::Pending, OutboxStatus::Reserved], true) && (null === $authorizationId || ($row->authorizationId()?->equals($authorizationId) ?? false)),
+        ));
+    }
+
+    public function pendingRevisionIds(Uuid $permitId, NotificationType $type, ?Uuid $authorizationId = null): array
+    {
+        $ids = [];
+        foreach ($this->forPermit($permitId, [$type], null) as $row) {
+            if (OutboxStatus::Pending === $row->status() && null !== $row->revisionId() && (null === $authorizationId || ($row->authorizationId()?->equals($authorizationId) ?? false))) {
+                $ids[] = $row->revisionId()->toRfc4122();
+            }
+        }
+
+        return $ids;
+    }
+
     public function findManualRequestsShared(Uuid $permitId): array
     {
         return array_values(array_filter($this->findFirstMessagesShared($permitId), static fn (NotificationOutbox $o): bool => $o->isManualRequest()));

@@ -1,0 +1,52 @@
+{% extends 'layouts/app.html.twig' %}
+
+{#
+  Révocation de l'autorisation d'une commune (LOT 05.5.1, DM-116 §2). Variables : overview, reasons[{code,label,needsComment}], comment_max, form{reason,comment,confirmed},
+  errors{reason,comment,confirmed,form}, action_url, csrf_id, rights_url. Motif obligatoire, commentaire de 200 caractères au plus (obligatoire pour « Autre motif »),
+  confirmation explicite. Le motif n'est jamais affiché publiquement ni envoyé au bénéficiaire.
+#}
+{% block content %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Révoquer l’autorisation', sub: 'Laissez-passer ' ~ overview.reference } only %}
+
+  {% if errors.form is defined %}{% include 'components/alert.html.twig' with { variant: 'error', title: errors.form, focus: true } only %}{% endif %}
+  {% if not overview.canRevoke %}
+    {% include 'components/alert.html.twig' with { variant: 'info', title: overview.readOnlyReason } only %}
+    <p>{% include 'components/button.html.twig' with { label: 'Retour aux droits', variant: 'secondary', href: rights_url } only %}</p>
+  {% else %}
+    <form class="cp-decision cp-decision--refuse" id="revoke-form" action="{{ action_url }}" method="post" novalidate aria-labelledby="revoke-form-title" data-turbo="false">
+      <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+      <div class="cp-decision__head">{% include 'components/icon.html.twig' with { name: 'x' } only %}<h2 class="cp-decision__title" id="revoke-form-title">Révocation définitive</h2>
+        <p class="cp-decision__intro">Elle concerne uniquement l’autorisation de {{ overview.municipalityName }} sur ce laissez-passer. Les autres communes et le QR code ne sont pas touchés.</p></div>
+      <div class="cp-decision__body">
+        <ul class="cp-consequences">
+          {% for z in overview.rights.zones %}<li>{% include 'components/icon.html.twig' with { name: 'right', size: 's' } only %}<span>{{ z.label }} : le droit prend fin immédiatement</span></li>{% endfor %}
+          <li>{% include 'components/icon.html.twig' with { name: 'right', size: 's' } only %}<span>Le bénéficiaire est prévenu par e-mail (sans le motif), si une adresse est enregistrée.</span></li>
+          <li>{% include 'components/icon.html.twig' with { name: 'right', size: 's' } only %}<span>Aucune réactivation n’est possible : une nouvelle autorisation relèverait d’un nouveau processus.</span></li>
+        </ul>
+
+        <fieldset class="cp-fieldset" id="f-reason"{% if errors.reason is defined %} aria-describedby="f-reason-error"{% endif %}>
+          <legend class="cp-fieldset__legend">Motif *</legend>
+          <div class="cp-choices">
+            {% for r in reasons %}
+              {% include 'components/choice.html.twig' with { type: 'radio', name: 'reason', value: r.code, id: 'f-reason-' ~ r.code, label: r.label, note: r.needsComment ? 'Un commentaire est obligatoire.' : '', checked: form.reason == r.code } only %}
+            {% endfor %}
+          </div>
+          {% if errors.reason is defined %}<p class="cp-field__error" id="f-reason-error">{{ errors.reason }}</p>{% endif %}
+        </fieldset>
+
+        {% include 'components/field.html.twig' with { id: 'f-comment', name: 'comment', type: 'textarea', label: 'Commentaire', optional: true, value: form.comment, error: errors.comment|default(''), attrs: 'maxlength="' ~ comment_max ~ '"', help: comment_max ~ ' caractères au plus. Obligatoire pour « Autre motif ». Interne : jamais public ni envoyé au bénéficiaire. Ne saisissez ni nom, ni plaque, ni coordonnées.' } only %}
+
+        <div class="cp-field{% if errors.confirmed is defined %} cp-field--error{% endif %}">
+          {% include 'components/check.html.twig' with { id: 'f-confirmed', name: 'confirmed', value: '1', label: 'Je confirme que cette révocation est définitive.', checked: form.confirmed } only %}
+          {% if errors.confirmed is defined %}<p class="cp-field__error" id="f-confirmed-error">{{ errors.confirmed }}</p>{% endif %}
+        </div>
+
+        <div class="cp-form-actions">
+          {% include 'components/button.html.twig' with { label: 'Révoquer l’autorisation', variant: 'refuse', icon: 'x', type: 'submit' } only %}
+          {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', href: rights_url } only %}
+        </div>
+      </div>
+    </form>
+  {% endif %}
+{% endblock %}

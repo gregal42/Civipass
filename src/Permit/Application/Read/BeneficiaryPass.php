@@ -29,4 +29,16 @@ final readonly class BeneficiaryPass
         public string $verificationToken,
     ) {
     }
+
+    /** Reste-t-il un droit actif ou à venir ? Faux : aucun PDF ne peut être généré (DM-119 §6). */
+    public function hasLiveRights(): bool
+    {
+        return $this->rights->hasLiveRights();
+    }
+
+    /** Toutes les autorisations sont révoquées : la page affiche « Droits révoqués ». */
+    public function isEntirelyRevoked(): bool
+    {
+        return $this->rights->isEntirelyRevoked();
+    }
 }

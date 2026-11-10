@@ -1,0 +1,16 @@
+Bonjour {{ firstName }},
+
+La commune de {{ revokedMunicipality }} a retiré son autorisation pour votre laissez-passer {{ reference }} (événement « {{ eventName }} ») : vous n'avez plus de droit dans les zones de cette commune.
+{% if communes|length %}
+
+Vos autres communes et zones aujourd'hui :
+{% for commune in communes %}
+- {{ commune.municipality }} : {{ commune.zones|join(', ') }}
+{% endfor %}
+{% else %}
+
+Vous n'avez plus aucun droit actif sur ce laissez-passer.
+{% endif %}
+
+Votre lien et votre QR code restent ceux que vous avez déjà reçus : le QR code affiche toujours votre situation du moment. Ne comptez pas sur un document imprimé : seul le contrôle du QR code fait foi.
+Pour toute question, contactez la commune concernée.

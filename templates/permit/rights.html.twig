@@ -1,0 +1,166 @@
+{% extends 'layouts/app.html.twig' %}
+
+{#
+  Écran « Droits du laissez-passer » d'une commune (LOT 05.5.1, DM-119). Variables : overview (PermitRightsOverview), revoke_page_url, links_url, back_url.
+  Seule l'autorisation de la commune est montrée ; l'historique détaille ses propres révisions et réduit celles des autres communes à une ligne neutre
+  (type, date, commune). Aucun motif ni commentaire n'est jamais écrit ailleurs que sur les lignes de la commune qui les a saisis.
+#}
+{% block content %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Droits du laissez-passer ' ~ overview.reference, sub: 'Autorisation de votre commune et historique des révisions' } only %}
+
+  {% for variant in ['success', 'info', 'error'] %}{% for message in app.flashes(variant) %}{% include 'components/alert.html.twig' with { variant: variant, title: message, focus: loop.first } only %}{% endfor %}{% endfor %}
+
+  {% if overview.isRevoked %}
+    {% include 'components/alert.html.twig' with { variant: 'error', title: 'Autorisation révoquée le ' ~ overview.rights.revokedAt|cp_datetime(overview.timezone) ~ '. Les droits de votre commune sont inopérants ; la révocation est définitive.', id: 'rights-revoked' } only %}
+  {% endif %}
+
+  {% set items = [
+    { label: 'Bénéficiaire', value: overview.firstName ~ ' ' ~ overview.lastName|upper },
+    { label: 'Événement', value: overview.eventName },
+    { label: 'Demande', value: overview.requestReference },
+    { label: 'Commune', value: overview.municipalityName },
+  ] %}
+  {% embed 'components/panel.html.twig' with { id: 'rights-facts', title: 'Laissez-passer', items: items } only %}
+    {% block body %}{% include 'components/facts.html.twig' with { items: items } only %}{% endblock %}
+  {% endembed %}
+
+  {% embed 'components/panel.html.twig' with { id: 'rights-zones', title: 'Votre autorisation', overview: overview } only %}
+    {% block body %}
+      <p class="pp-auth__period">{{ cp_authorization_period(overview.rights, overview.timezone) }}</p>
+      <ul class="pp-zones">
+        {% for zone in overview.rights.zones %}
+          {% set state = cp_zone_state(zone, overview.timezone) %}
+          <li class="pp-zone pp-zone--{{ state.status }}">
+            <span class="pp-zone__label">{{ zone.label }}</span>
+            {% include 'components/status_pill.html.twig' with { status: state.status, label: state.label } only %}
+            <span class="pp-zone__detail">{{ state.detail }}</span>
+          </li>
+        {% else %}
+          <li class="pp-zone"><span class="pp-zone__detail">Aucune zone dans cette autorisation.</span></li>
+        {% endfor %}
+      </ul>
+      <p class="app-note">Situation au {{ overview.at|cp_datetime(overview.timezone) }} (heure de l’événement).</p>
+    {% endblock %}
+  {% endembed %}
+
+  {% embed 'components/panel.html.twig' with { id: 'rights-zone-list', title: 'Zones de votre autorisation', overview: overview, zones_url: zones_url, labels_url: labels_url } only %}
+    {% block body %}
+      <ul class="pp-zones">
+        {% for r in overview.zoneRows %}
+          <li class="pp-zone{% if r.isRemoved %} pp-zone--removed{% endif %}">
+            <span class="pp-zone__label">{{ r.label }}</span>
+            {% if r.isRemoved %}<span class="pp-zone__detail">Retirée le {{ r.removedAt|cp_datetime(overview.timezone) }}</span>
+            {% else %}<span class="pp-zone__detail">Rattachée{% if r.state %} · {{ r.state.value|lower|replace({'_': ' '}) }}{% endif %}</span>{% endif %}
+            {% if r.isLabelOutdated %}<span class="app-note"> · libellé actuel de la zone : « {{ r.currentLabel }} »</span>{% endif %}
+          </li>
+        {% else %}
+          <li class="pp-zone"><span class="pp-zone__detail">Aucune zone.</span></li>
+        {% endfor %}
+      </ul>
+      {% if overview.canChangeZones %}
+        <p>{% include 'components/button.html.twig' with { label: 'Modifier les zones', variant: 'secondary', icon: 'plus', href: zones_url } only %}</p>
+      {% else %}
+        <p class="app-note" id="rights-zones-blocked">Modification des zones impossible : {{ overview.changeZonesBlockedReason }}</p>
+      {% endif %}
+      {% if overview.canCorrectLabels %}
+        <p>{% include 'components/button.html.twig' with { label: 'Corriger un libellé', variant: 'secondary', size: 's', href: labels_url } only %}</p>
+      {% endif %}
+    {% endblock %}
+  {% endembed %}
+
+  {% if overview.vehicles and overview.vehicles.vehicleMode %}
+  {% embed 'components/panel.html.twig' with { id: 'rights-vehicles', title: 'Plaques du laissez-passer', overview: overview, vehicles_url: vehicles_url } only %}
+    {% block body %}
+      {% set v = overview.vehicles %}
+      <p class="app-note">Les plaques sont <b>communes</b> à toutes les communes qui ont une autorisation sur ce laissez-passer.{% if v.otherMunicipalities|length %} Autres communes concernées : {{ v.otherMunicipalities|join(', ') }}.{% endif %} {{ v.activeCount }} plaque(s) active(s) sur {{ v.max }} au plus.</p>
+      <ul class="pp-zones">
+        {% for r in v.rows %}
+          <li class="pp-zone{% if r.isRemoved %} pp-zone--removed{% endif %}">
+            <span class="pp-zone__label">{{ r.plate }}</span>
+            <span class="pp-zone__detail">{% if r.isRemoved %}Retirée le {{ r.removedAt|cp_datetime(overview.timezone) }}{% else %}Active{% endif %}</span>
+          </li>
+        {% else %}
+          <li class="pp-zone"><span class="pp-zone__detail">Aucune plaque.</span></li>
+        {% endfor %}
+      </ul>
+      {% if v.canChange %}
+        <p>{% include 'components/button.html.twig' with { label: 'Modifier les plaques', variant: 'secondary', icon: 'plus', href: vehicles_url } only %}</p>
+      {% else %}
+        <p class="app-note" id="rights-vehicles-blocked">Modification des plaques impossible : {{ v.blockedReason }}</p>
+      {% endif %}
+    {% endblock %}
+  {% endembed %}
+  {% endif %}
+
+  {% if overview.qr %}
+  {% embed 'components/panel.html.twig' with { id: 'rights-qr', title: 'QR code du laissez-passer', overview: overview, qr_url: qr_url } only %}
+    {% block body %}
+      {% set q = overview.qr %}
+      <p class="app-note">Le QR code est <b>commun</b> à toutes les communes. En cas de compromission, son remplacement invalide définitivement l’ancien QR code (imprimé ou contenu dans un PDF déjà téléchargé) ; la référence, les autorisations et le lien du bénéficiaire sont conservés. {{ q.replacementCount }} remplacement(s) à ce jour.</p>
+      {% if q.canReplace %}
+        <p>{% include 'components/button.html.twig' with { label: 'Remplacer le QR code', variant: 'refuse', icon: 'x', href: qr_url } only %}</p>
+      {% else %}
+        <p class="app-note" id="rights-qr-blocked">Remplacement du QR code impossible : {{ q.blockedReason }}</p>
+      {% endif %}
+    {% endblock %}
+  {% endembed %}
+  {% endif %}
+
+  {% embed 'components/panel.html.twig' with { id: 'rights-actions', title: 'Actions', overview: overview, revoke_page_url: revoke_page_url, links_url: links_url, extend_url: extend_url, shorten_url: shorten_url } only %}
+    {% block body %}
+      {% if overview.extendMode %}
+        <p>{% include 'components/button.html.twig' with { label: overview.extendMode == 'resume' ? 'Reprendre les droits' : 'Prolonger la période', variant: 'secondary', icon: 'plus', href: extend_url } only %}</p>
+      {% else %}
+        <p class="app-note" id="rights-extend-blocked">Prolongation impossible : {{ overview.extendBlockedReason }}</p>
+      {% endif %}
+      {% if overview.canShorten %}
+        <p>{% include 'components/button.html.twig' with { label: 'Raccourcir la période', variant: 'secondary', icon: 'x', href: shorten_url } only %}</p>
+      {% else %}
+        <p class="app-note" id="rights-shorten-blocked">Raccourcissement impossible : {{ overview.shortenBlockedReason }}</p>
+      {% endif %}
+      {% if overview.canRevoke %}
+        <p class="app-note">La révocation retire à votre commune tous ses droits sur ce laissez-passer. Elle est <b>définitive</b> : une nouvelle autorisation relèverait d’un nouveau processus. Les autres communes et le QR code ne sont pas touchés.</p>
+        <p>{% include 'components/button.html.twig' with { label: 'Révoquer l’autorisation de ma commune', variant: 'refuse', icon: 'x', href: revoke_page_url } only %}</p>
+      {% else %}
+        <p class="cp-facts__plain" id="rights-readonly">{{ overview.readOnlyReason }}</p>
+      {% endif %}
+      <p>{% include 'components/button.html.twig' with { label: 'Liens et notification du bénéficiaire', variant: 'secondary', size: 's', icon: 'pass', href: links_url } only %}</p>
+    {% endblock %}
+  {% endembed %}
+
+  {% set timeline = [] %}
+  {% for line in overview.history|reverse %}
+    {% set text = line.label ~ ' · ' ~ line.municipalityName %}
+    {% if line.own %}
+      {% if line.zone %}
+        {% set z = line.zone %}
+        {% set text = text ~ ' · Zone : ' ~ (z.previous and z.previous != z.label ? '« ' ~ z.previous ~ ' » → « ' ~ z.label ~ ' »' : '« ' ~ z.label ~ ' »') %}
+      {% endif %}
+      {% if line.token %}
+        {% set text = text ~ ' · Remplacement n° ' ~ line.token.sequence ~ (line.token.close ? ' (rapproché du précédent)' : '') ~ (line.token.unusual ? ' (signalé comme inhabituel)' : '') %}
+      {% endif %}
+      {% if line.vehicle %}
+        {% set text = text ~ ' · Plaque : ' ~ (line.vehicle.plate ?? 'anonymisée') ~ (line.vehicle.pair is not null ? ' (remplacement n° ' ~ (line.vehicle.pair + 1) ~ ')' : '') %}
+      {% endif %}
+      {% if line.period %}
+        {% set p = line.period %}
+        {% set text = text ~ ' · Période : du ' ~ p.beforeFrom|cp_datetime(overview.timezone) ~ ' ' ~ (p.beforeUntil ? 'au ' ~ p.beforeUntil|cp_datetime(overview.timezone) : 'jusqu’à la clôture') ~ ' → du ' ~ p.afterFrom|cp_datetime(overview.timezone) ~ ' ' ~ (p.afterUntil ? 'au ' ~ p.afterUntil|cp_datetime(overview.timezone) : 'jusqu’à la clôture') ~ (p.immediate ? ' (fin immédiate)' : '') %}
+      {% endif %}
+      {% set text = text ~ (line.reasonLabel ? ' · Motif : ' ~ line.reasonLabel : '') ~ (line.comment ? ' · « ' ~ line.comment ~ ' »' : '') ~ (line.actorName ? ' · par ' ~ line.actorName : '') %}
+    {% endif %}
+    {% set timeline = timeline|merge([{ time: line.occurredAt|cp_datetime(overview.timezone), text: text, kind: (line.label == 'Autorisation révoquée' ? 'bad' : 'agent') }]) %}
+  {% endfor %}
+  {% embed 'components/panel.html.twig' with { id: 'rights-history', title: 'Historique des révisions', items: timeline } only %}
+    {% block body %}
+      {% if items|length %}
+        {% include 'components/timeline.html.twig' with { items: items } only %}
+      {% else %}
+        <p class="app-note" id="rights-history-empty">Aucune révision pour l’instant.</p>
+      {% endif %}
+      <p class="app-note">Les révisions des autres communes apparaissent sous forme d’une ligne neutre (type, date et commune) : leurs motifs et leurs droits ne sont pas communiqués.</p>
+    {% endblock %}
+  {% endembed %}
+
+  <p>{% include 'components/button.html.twig' with { label: 'Retour au dossier', variant: 'secondary', href: back_url } only %}</p>
+{% endblock %}

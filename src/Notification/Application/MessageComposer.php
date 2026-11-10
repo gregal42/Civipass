@@ -49,12 +49,30 @@ final readonly class MessageComposer
             'reference' => $facts->reference,
             'eventName' => $facts->eventName,
             'communes' => $facts->communes,
+            'revokedMunicipality' => $facts->authorizationMunicipality,
+            'municipality' => $facts->authorizationMunicipality,
+            'periodFrom' => $facts->authorizationFrom,
+            'periodUntil' => $facts->authorizationUntil,
+            'changedSince' => $facts->periodChangedSinceDecision(),
+            'addedZones' => $facts->addedZones,
+            'removedZones' => $facts->removedZones,
+            'reinstatedZones' => $facts->reinstatedZones,
+            'zonesChangedSince' => $facts->zonesChangedSince,
+            'timezone' => '' === $facts->timezone ? 'UTC' : $facts->timezone,
             'url' => null === $secret ? null : rtrim($this->baseUrl, '/').$this->urls->generate('app_beneficiary_pass', ['secret' => $secret], UrlGeneratorInterface::ABSOLUTE_PATH),
         ];
         [$name, $subject] = match ($type) {
             NotificationType::PermitIssued => ['permit_issued', sprintf('Votre laissez-passer %s est disponible', $facts->reference)],
             NotificationType::AuthorizationAdded => ['authorization_added', sprintf('Votre laissez-passer %s : droits étendus', $facts->reference)],
-            default => throw new \LogicException('Aucun gabarit pour ce type de message avant le LOT 05.5.'),
+            NotificationType::PermitExtended => ['permit_extended', sprintf('Votre laissez-passer %s : période prolongée', $facts->reference)],
+            NotificationType::ZonesChanged => ['zones_changed', sprintf('Votre laissez-passer %s : zones modifiées', $facts->reference)],
+            NotificationType::ZonesRemoved => ['zones_removed', sprintf('Votre laissez-passer %s : zones retirées', $facts->reference)],
+            NotificationType::VehiclesChanged => ['vehicles_changed', sprintf('Votre laissez-passer %s : véhicules modifiés', $facts->reference)],
+            NotificationType::VehiclesRemoved => ['vehicles_removed', sprintf('Votre laissez-passer %s : véhicules retirés ou remplacés', $facts->reference)],
+            NotificationType::QrReplaced => ['qr_replaced', sprintf('Votre laissez-passer %s : QR code remplacé', $facts->reference)],
+            NotificationType::PermitResumed => ['permit_resumed', sprintf('Votre laissez-passer %s : droits réactivés', $facts->reference)],
+            NotificationType::PermitShortened => ['permit_shortened', sprintf('Votre laissez-passer %s : fin des droits avancée', $facts->reference)],
+            NotificationType::AuthorizationRevoked => ['authorization_revoked', sprintf('Votre laissez-passer %s : une autorisation a été retirée', $facts->reference)],
         };
 
         $email = (new Email())

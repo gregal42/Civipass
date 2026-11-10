@@ -34,11 +34,9 @@ class VerificationToken
     private string $token;
 
     #[ORM\Column(type: UuidType::NAME, nullable: true)]
-    // @phpstan-ignore property.unusedType (mis à NULL au retrait du jeton, LOT 05.5)
     private ?Uuid $activePermitId;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
-    // @phpstan-ignore property.unusedType (assigné par les révisions du LOT 05.5 ; hydraté par Doctrine)
     private ?\DateTimeImmutable $retiredAt = null;
 
     /**
@@ -94,6 +92,17 @@ class VerificationToken
         return 1 === preg_match('/^[a-z2-7]{'.self::LENGTH.'}$/', $segment) ? $segment : null;
     }
 
+    /**
+     * Jeton nu (celui du chemin `/v/{jeton}`) normalisé : espaces retirés, minuscules. `null` s'il n'a pas la forme d'un jeton ; contrairement à
+     * `extract()`, une URL n'est PAS acceptée. Fonction pure, jamais d'exception.
+     */
+    public static function normalize(#[\SensitiveParameter] string $value): ?string
+    {
+        $value = strtolower(trim($value));
+
+        return 1 === preg_match('/^[a-z2-7]{'.self::LENGTH.'}$/', $value) ? $value : null;
+    }
+
     public function id(): Uuid
     {
         return $this->id;
@@ -117,6 +126,20 @@ class VerificationToken
     public function isActive(): bool
     {
         return null === $this->retiredAt && null !== $this->activePermitId;
+    }
+
+    /**
+     * Retrait DÉFINITIF (remplacement du QR, LOT 05.5.5) : le jeton ne redevient jamais actif ; la ligne reste (le retrait sert à répondre 410).
+     *
+     * @internal appelé par PermitTokenReplacementService
+     */
+    public function retire(\DateTimeImmutable $at): void
+    {
+        if (null === $this->activePermitId) {
+            throw new DomainRuleViolation('Ce jeton est déjà retiré.');
+        }
+        $this->activePermitId = null;
+        $this->retiredAt = $at;
     }
 
     public function retiredAt(): ?\DateTimeImmutable

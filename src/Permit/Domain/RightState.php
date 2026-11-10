@@ -26,6 +26,18 @@ enum RightState: string
     case EventNotActive = 'EVENT_NOT_ACTIVE';
     case EventClosed = 'EVENT_CLOSED';
     case Revoked = 'REVOKED';
+    /**
+     * Zone retirée du laissez-passer (retrait logique, LOT 05.5) : distinct de la révocation de l'autorisation communale entière. N'est produit
+     * QUE par l'évaluation de vérification publique (`PermitRightsEvaluator::evaluate(…, forVerification: true)`) ; l'évaluation ordinaire
+     * ignore les zones retirées.
+     */
+    case Removed = 'REMOVED';
     /** La zone interrogée ne figure dans aucune autorisation du laissez-passer. */
     case ZoneNotAuthorized = 'ZONE_NOT_AUTHORIZED';
+
+    /** État qui ne reviendra pas : une zone qui n'a QUE des états définitifs n'ouvre plus et n'ouvrira plus aucun droit. */
+    public function isFinal(): bool
+    {
+        return \in_array($this, [self::Expired, self::Revoked, self::EventClosed, self::ZoneNotAuthorized, self::Removed], true);
+    }
 }

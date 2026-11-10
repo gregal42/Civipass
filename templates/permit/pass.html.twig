@@ -5,6 +5,11 @@
   Variables : pass (BeneficiaryPass), qr_svg (SVG de confiance généré par le serveur), pdf_url, generated_at.
 #}
 {% block content %}
+  {% if pass.isEntirelyRevoked %}
+    {% include 'components/alert.html.twig' with { variant: 'error', title: 'Droits révoqués', text: 'Toutes les autorisations de ce laissez-passer ont été retirées : il ne donne plus aucun droit. Le QR code l’indique à chaque contrôle.', id: 'pass-revoked' } only %}
+  {% elseif not pass.hasLiveRights %}
+    {% include 'components/alert.html.twig' with { variant: 'warning', title: 'Droits terminés', text: 'Ce laissez-passer ne donne plus aucun droit actif ni à venir.', id: 'pass-ended' } only %}
+  {% endif %}
   <div class="pp-col">
     <section class="cp-box pp-id" aria-labelledby="pp-name">
       <p class="cp-eyebrow">Laissez-passer · <span class="cp-mono">{{ pass.reference }}</span></p>
@@ -22,7 +27,7 @@
       <div class="pp-qr__figure">
         {% include 'components/qr_code.html.twig' with { svg: qr_svg, ref: pass.reference, size: 'l', caption: 'À présenter lors d’un contrôle' } only %}
       </div>
-      <p class="pp-qr__help">Ce QR code ne change pas : il affiche toujours vos droits du moment, même si une commune en ajoute, les modifie ou les retire.</p>
+      <p class="pp-qr__help">Ce QR code affiche toujours vos droits du moment, même si une commune en ajoute, les modifie ou les retire. Il n’est remplacé qu’exceptionnellement (perte ou compromission) : vous en êtes alors prévenu, l’ancien QR code ne fonctionne plus et ce lien affiche toujours le QR code en vigueur.</p>
       <a class="cp-btn cp-btn--secondary pp-qr__open" href="#qr">{% include 'components/icon.html.twig' with { name: 'search' } only %}<span>Agrandir le QR code</span></a>
       <a class="cp-btn cp-btn--secondary pp-qr__close" href="#main">{% include 'components/icon.html.twig' with { name: 'x' } only %}<span>Fermer</span></a>
     </section>
@@ -38,8 +43,12 @@
     <section class="cp-box" aria-labelledby="pp-pdf-title">
       <div class="cp-box__head"><h2 class="cp-box__title" id="pp-pdf-title">Document imprimable</h2></div>
       <div class="pp-body">
-        <p class="pp-note">Le PDF est une photographie de vos droits à l’instant du téléchargement. Si une commune modifie vos droits ensuite, le PDF déjà téléchargé ne change pas ; en revanche le QR imprimé affiche toujours vos droits actuels.</p>
+        {% if pass.hasLiveRights %}
+        <p class="pp-note">Le PDF reprend l’identité, les plaques, les communes et les zones, avec votre QR code. Il n’indique aucune validité : <b>seul le contrôle du QR code fait foi</b>, et le QR code affiche toujours vos droits du moment, même si une commune les modifie ou les retire après le téléchargement.</p>
         {% include 'components/button.html.twig' with { label: 'Télécharger le PDF', variant: 'primary', icon: 'download', href: pdf_url } only %}
+        {% else %}
+        <p class="pp-note" id="pdf-unavailable">Aucun PDF n’est disponible : {{ pass.isEntirelyRevoked ? 'les droits de ce laissez-passer ont été révoqués' : 'ce laissez-passer ne donne plus aucun droit actif ni à venir' }}. Un PDF téléchargé auparavant ne vaut rien par lui-même : seul le contrôle du QR code fait foi : le QR code renvoie à l’état actuel.</p>
+        {% endif %}
       </div>
     </section>
   </div>

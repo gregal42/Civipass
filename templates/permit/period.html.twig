@@ -1,0 +1,99 @@
+{% extends 'layouts/app.html.twig' %}
+
+{#
+  Prolonger, reprendre ou raccourcir la période de l'autorisation d'une commune (LOT 05.5.2, DM-119 §4.2). Variables : overview, kind, shortening, resuming, blocked,
+  modes[{value,label}], reasons[{code,label,needsComment}], comment_max, form, errors{form,end,reason,comment,confirmed}, plan (PeriodPlan d'aperçu ou nul), ambiguous,
+  action_url, csrf_id, rights_url. Deux temps : aperçu (« Voir la période résultante »), puis confirmation. Le motif n'est jamais affiché ailleurs que dans l'historique.
+#}
+{% block content %}
+  {% set tz = overview.timezone %}
+  {% set title = shortening ? 'Raccourcir la période' : (resuming ? 'Reprendre les droits' : 'Prolonger la période') %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: title, sub: 'Laissez-passer ' ~ overview.reference ~ ' · heures de l’événement (' ~ tz ~ ')' } only %}
+
+  {% if errors.form is defined %}{% include 'components/alert.html.twig' with { variant: 'error', title: errors.form, focus: true } only %}{% endif %}
+  {% if blocked %}
+    {% include 'components/alert.html.twig' with { variant: 'info', title: blocked } only %}
+    <p>{% include 'components/button.html.twig' with { label: 'Retour aux droits', variant: 'secondary', href: rights_url } only %}</p>
+  {% else %}
+    <section class="cp-box" aria-labelledby="period-now-title">
+      <h2 class="cp-box__title" id="period-now-title">Période actuelle de votre commune</h2>
+      <p class="pp-auth__period" id="period-now">{{ cp_authorization_period(overview.rights, tz) }}</p>
+      {% if resuming %}<p class="app-note">Cette période est terminée. Une reprise ouvre une <b>nouvelle</b> période à partir de maintenant : <b>aucun droit n’est rétabli</b> pour le temps écoulé.</p>{% endif %}
+    </section>
+
+    {% if plan %}
+      <section class="cp-box" id="period-preview" aria-labelledby="period-preview-title">
+        <h2 class="cp-box__title" id="period-preview-title">Période qui en résulterait</h2>
+        {% if plan.until %}
+          <p><b>Du {{ plan.from|cp_datetime(tz) }} au {{ plan.until|cp_datetime(tz) }}</b></p>
+        {% else %}
+          <p><b>Depuis le {{ plan.from|cp_datetime(tz) }}, jusqu’à la clôture de l’événement</b></p>
+        {% endif %}
+        {% if plan.archivesCurrent %}<p class="app-note" id="preview-resume">Reprise : aucun droit entre la fin de la période actuelle ({{ plan.before.until|cp_datetime(tz) }}) et maintenant.</p>{% endif %}
+        {% if plan.immediate %}<p class="app-note" id="preview-immediate"><b>Fin immédiate</b> : la date demandée est passée ; les droits prendront fin maintenant, jamais à une date antérieure.</p>{% endif %}
+        <p class="app-note">Le début de la période est inclus, sa fin est exclue. Le QR code et les autres communes ne sont pas touchés.</p>
+      </section>
+    {% endif %}
+
+    <form class="cp-decision{% if shortening %} cp-decision--refuse{% endif %}" id="period-form" action="{{ action_url }}" method="post" novalidate aria-labelledby="period-form-title" data-turbo="false">
+      <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+      <div class="cp-decision__head"><h2 class="cp-decision__title" id="period-form-title">{{ shortening ? 'Nouvelle fin' : 'Fin de la période' }}</h2></div>
+      <div class="cp-decision__body">
+        {% if shortening %}
+          <input type="hidden" name="mode" value="CUSTOM">
+        {% else %}
+          <fieldset class="cp-fieldset" id="f-mode">
+            <legend class="cp-fieldset__legend">Durée</legend>
+            <div class="cp-choices">
+              {% for m in modes %}
+                {% include 'components/choice.html.twig' with { type: 'radio', name: 'mode', value: m.value, id: 'f-mode-' ~ m.value, label: m.label, checked: form.mode == m.value } only %}
+              {% endfor %}
+            </div>
+          </fieldset>
+        {% endif %}
+
+        <div class="cp-field-row">
+          {% include 'components/field.html.twig' with { id: 'f-end-date', name: 'end_date', type: 'date', label: 'Date de fin', value: form.end_date, error: errors.end|default('') } only %}
+          {% include 'components/field.html.twig' with { id: 'f-end-time', name: 'end_time', type: 'time', label: 'Heure de fin', value: form.end_time } only %}
+        </div>
+        {% if not shortening %}<p class="app-note">La date et l’heure ne servent que pour « Choisir la date et l’heure de fin ».</p>{% endif %}
+        {% if ambiguous %}
+          <fieldset class="cp-fieldset" id="f-occurrence">
+            <legend class="cp-fieldset__legend">Cet horaire se produit deux fois (changement d’heure) *</legend>
+            <div class="cp-choices">
+              {% include 'components/choice.html.twig' with { type: 'radio', name: 'occurrence', value: 'first', id: 'f-occurrence-first', label: 'La première fois', checked: form.occurrence == 'first' } only %}
+              {% include 'components/choice.html.twig' with { type: 'radio', name: 'occurrence', value: 'second', id: 'f-occurrence-second', label: 'La deuxième fois', checked: form.occurrence == 'second' } only %}
+            </div>
+          </fieldset>
+        {% endif %}
+
+        <fieldset class="cp-fieldset" id="f-reason"{% if errors.reason is defined %} aria-describedby="f-reason-error"{% endif %}>
+          <legend class="cp-fieldset__legend">Motif{% if shortening or resuming %} *{% else %} (facultatif){% endif %}</legend>
+          <div class="cp-choices">
+            {% for r in reasons %}
+              {% include 'components/choice.html.twig' with { type: 'radio', name: 'reason', value: r.code, id: 'f-reason-' ~ r.code, label: r.label, note: r.needsComment ? 'Un commentaire est obligatoire.' : '', checked: form.reason == r.code } only %}
+            {% endfor %}
+          </div>
+          {% if errors.reason is defined %}<p class="cp-field__error" id="f-reason-error">{{ errors.reason }}</p>{% endif %}
+        </fieldset>
+        {% include 'components/field.html.twig' with { id: 'f-comment', name: 'comment', type: 'textarea', label: 'Commentaire', optional: true, value: form.comment, error: errors.comment|default(''), attrs: 'maxlength="' ~ comment_max ~ '"', help: comment_max ~ ' caractères au plus. Interne : jamais public ni envoyé au bénéficiaire. Ne saisissez ni nom, ni plaque, ni coordonnées.' } only %}
+
+        {% if shortening %}
+          <div class="cp-field{% if errors.confirmed is defined %} cp-field--error{% endif %}">
+            {% include 'components/check.html.twig' with { id: 'f-confirmed', name: 'confirmed', value: '1', label: 'Je confirme que des droits seront retirés plus tôt.', checked: form.confirmed } only %}
+            {% if errors.confirmed is defined %}<p class="cp-field__error" id="f-confirmed-error">{{ errors.confirmed }}</p>{% endif %}
+          </div>
+        {% endif %}
+
+        <div class="cp-form-actions">
+          {% include 'components/button.html.twig' with { label: 'Voir la période résultante', variant: 'secondary', type: 'submit', attrs: 'name="step" value="preview"' } only %}
+          {% if plan %}
+            {% include 'components/button.html.twig' with { label: shortening ? 'Confirmer le raccourcissement' : (resuming ? 'Confirmer la reprise' : 'Confirmer la prolongation'), variant: shortening ? 'refuse' : 'primary', type: 'submit', attrs: 'name="step" value="apply"' } only %}
+          {% endif %}
+          {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', href: rights_url } only %}
+        </div>
+      </div>
+    </form>
+  {% endif %}
+{% endblock %}

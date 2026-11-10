@@ -1,0 +1,12 @@
+<p>Bonjour {{ firstName }},</p>
+{% if changedSince %}<p>La commune de <strong>{{ municipality }}</strong> a modifié la période de votre autorisation sur votre laissez-passer <strong>{{ reference }}</strong> (événement « {{ eventName }} »). Elle a évolué depuis cette modification : voici la situation d'aujourd'hui, {% if periodFrom %}{% if periodUntil %}du <strong>{{ periodFrom|cp_datetime(timezone) }}</strong> au <strong>{{ periodUntil|cp_datetime(timezone) }}</strong>{% else %}depuis le <strong>{{ periodFrom|cp_datetime(timezone) }}</strong>, jusqu'à la clôture de l'événement{% endif %} (heure de l'événement){% endif %}.</p>
+{% else %}<p>La commune de <strong>{{ municipality }}</strong> a prolongé la période de votre autorisation, qui était encore en cours, sur votre laissez-passer <strong>{{ reference }}</strong> (événement « {{ eventName }} »).<br>
+{% if periodUntil %}Ils sont désormais valables jusqu'au <strong>{{ periodUntil|cp_datetime(timezone) }}</strong> (heure de l'événement).{% else %}Ils sont désormais valables jusqu'à la clôture de l'événement.{% endif %}</p>
+{% endif %}
+<p>Vos communes et zones aujourd'hui :</p>
+<ul>
+{% for commune in communes %}
+  <li><strong>{{ commune.municipality }}</strong> : {{ commune.zones|join(', ') }}</li>
+{% endfor %}
+</ul>
+<p>Votre lien et votre QR code restent ceux que vous avez déjà reçus : le QR code affiche toujours votre situation du moment. Seul le contrôle du QR code fait foi.</p>

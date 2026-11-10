@@ -1,0 +1,14 @@
+Bonjour {{ firstName }},
+
+{% if changedSince %}La commune de {{ municipality }} a modifié la fin de vos droits sur votre laissez-passer {{ reference }} (événement « {{ eventName }} »). La période a évolué depuis : voici la situation d'aujourd'hui, {% if periodFrom %}{% if periodUntil %}du {{ periodFrom|cp_datetime(timezone) }} au {{ periodUntil|cp_datetime(timezone) }}{% else %}depuis le {{ periodFrom|cp_datetime(timezone) }}, jusqu'à la clôture de l'événement{% endif %} (heure de l'événement){% endif %}.{% else %}La commune de {{ municipality }} a avancé la fin de vos droits sur votre laissez-passer {{ reference }} (événement « {{ eventName }} »).
+{% if periodUntil %}Vos droits dans les zones de cette commune prennent fin le {{ periodUntil|cp_datetime(timezone) }} (heure de l'événement).{% endif %}{% endif %}
+{% if communes|length %}
+
+Vos communes et zones aujourd'hui :
+{% for commune in communes %}
+- {{ commune.municipality }} : {{ commune.zones|join(', ') }}
+{% endfor %}
+{% endif %}
+
+Votre lien et votre QR code restent ceux que vous avez déjà reçus : le QR code affiche toujours votre situation du moment. Seul le contrôle du QR code fait foi.
+Pour toute question, contactez la commune concernée.

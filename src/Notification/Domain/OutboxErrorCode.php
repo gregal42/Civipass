@@ -33,6 +33,8 @@ enum OutboxErrorCode: string
     case FirstNotDelivered = 'FIRST_NOT_DELIVERED';
     /** Message d'extension INEXACT : les droits concernés ont été révoqués ou ont expiré avant l'envoi (état `SUPPRESSED`). */
     case Inaccurate = 'INACCURATE';
+    /** Raccourcissement ou retrait de zones DEVENU OBSOLÈTE : l'autorisation a été révoquée avant l'envoi ; la révocation, elle, est annoncée (état `SUPPRESSED`, trace conservée et auditée). */
+    case SupersededByRevocation = 'SUPERSEDED_BY_REVOCATION';
     /** Secret chiffré conservé plus de 48 heures sans traitement définitif : supprimé, lien révoqué. */
     case SecretExpired = 'SECRET_EXPIRED';
 }

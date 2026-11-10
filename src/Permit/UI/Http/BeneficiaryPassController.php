@@ -60,6 +60,10 @@ final class BeneficiaryPassController extends AbstractController
     public function download(#[\SensitiveParameter] string $secret, Request $request): Response
     {
         return $this->guarded($secret, $request, function (BeneficiaryPass $pass): Response {
+            if (!$pass->hasLiveRights()) {
+                // Plus aucun droit actif ni à venir : aucun nouveau PDF (il ne pourrait que dater un laissez-passer sans droit). Réponse métier lisible.
+                return $this->render('permit/pass_pdf_unavailable.html.twig', ['page_title' => 'Aucun PDF disponible', 'pass' => $pass], new Response('', Response::HTTP_CONFLICT));
+            }
             $content = $this->pdf->render($pass, $this->qr->png($this->urls->forToken($pass->verificationToken)), $this->clock->now());
             $response = new Response($content, Response::HTTP_OK, ['Content-Type' => 'application/pdf']);
             $response->headers->set('Content-Disposition', sprintf('attachment; filename="laissez-passer-%s.pdf"', $pass->reference));

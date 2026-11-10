@@ -16,6 +16,7 @@ use App\Notification\Domain\ProvisionOutcome;
 use App\Notification\Domain\RetryPolicy;
 use App\Notification\Domain\SecretDecryptionFailed;
 use App\Permit\Application\NotificationFactsReader;
+use App\Permit\Application\Read\NotificationFacts;
 use App\Permit\Application\SystemAccessLinks;
 use App\Shared\Application\AuditTrail;
 use App\Shared\Application\TransactionRunner;
@@ -114,7 +115,8 @@ final class NotificationDispatcher
         [$type, $permitId, $authorizationId] = [$row->type(), $row->permitId(), $row->authorizationId()];
 
         // (0) Ordre (LOT 05.3.4) : une extension attend la mise à disposition ; redondante ou sans premier message remis, elle est supprimée.
-        if (ChangeCategory::Ordinary === $type->category()) {
+        if (ChangeCategory::Ordinary === $type->category() || NotificationType::QrReplaced === $type) {
+            // (le remplacement du QR est prioritaire : l'ordonnancement ne lui applique que la fusion des remplacements en attente)
             switch ($this->ordering->decide($id)) {
                 case OrderingDecision::Held:
                     return 'held';
@@ -129,9 +131,9 @@ final class NotificationDispatcher
 
         // (1) État courant, avant tout lien : un laissez-passer devenu inutilisable (ou, pour une extension, dont les droits ont été révoqués)
         // ne reçoit rien ; un message inexact n'est jamais envoyé.
-        $facts = $this->facts->read($permitId, $this->clock->now(), $authorizationId);
-        if (null === $facts || !$facts->usable || !$facts->authorizationActive) {
-            return $this->settle($id, $this->inexact(...), $this->inexactLabel($type), lease: null);
+        $facts = $this->facts->read($permitId, $this->clock->now(), $authorizationId, $row->revisionId());
+        if (!self::accurate($type, $facts)) {
+            return $this->settle($id, fn (NotificationOutbox $r, \DateTimeImmutable $n) => $this->inexact($r, $n, true === $facts?->authorizationRevoked), $this->inexactLabel($type), lease: null);
         }
         if (!$facts->hasRecipient()) {
             return $this->settle($id, static fn (NotificationOutbox $r, \DateTimeImmutable $now) => $r->markNoRecipient($now), 'no_recipient', lease: null);
@@ -159,12 +161,30 @@ final class NotificationDispatcher
             return $claim;
         }
 
-        // (4) État courant, relu juste avant l'envoi (jamais d'instance périmée).
+        // (4) État courant, relu juste avant l'envoi (jamais d'instance périmée). Les révisions en attente sont lues AVANT l'état : une révision commise entre
+        // les deux est décrite par le message mais non déclarée couverte (au pire un message de plus, jamais une perte).
         $this->em->clear();
         $now = $this->clock->now();
-        $facts = $this->facts->read($permitId, $now, $authorizationId);
-        if (null === $facts || !$facts->usable || !$facts->authorizationActive) {
-            return $this->settle($id, $this->inexact(...), $this->inexactLabel($type), $claim);
+        // Un message décrit l'état courant d'UNE autorisation (celle de la ligne) : il ne couvre que les révisions en attente de CETTE autorisation, jamais celles
+        // d'une autre commune. Une REPRISE ou un RACCOURCISSEMENT décrit la période courante en entier : il couvre aussi les prolongations en attente (devenues
+        // sans objet) ; une prolongation ne couvre que les siennes. Un raccourcissement ne couvre jamais une reprise (la réactivation resterait inconnue).
+        $siblings = match ($type) {
+            NotificationType::PermitExtended => $this->outbox->pendingRevisionIds($permitId, NotificationType::PermitExtended, $authorizationId),
+            NotificationType::PermitResumed => [...$this->outbox->pendingRevisionIds($permitId, NotificationType::PermitResumed, $authorizationId), ...$this->outbox->pendingRevisionIds($permitId, NotificationType::PermitExtended, $authorizationId)],
+            NotificationType::PermitShortened => $this->outbox->pendingRevisionIds($permitId, NotificationType::PermitExtended, $authorizationId),
+            NotificationType::ZonesChanged => $this->outbox->pendingRevisionIds($permitId, NotificationType::ZonesChanged, $authorizationId),
+            // Un retrait décrit l'état final des zones (et nomme aussi les ajouts de son opération) : il couvre les siens et les ajouts en attente de la MÊME autorisation.
+            NotificationType::ZonesRemoved => [...$this->outbox->pendingRevisionIds($permitId, NotificationType::ZonesRemoved, $authorizationId), ...$this->outbox->pendingRevisionIds($permitId, NotificationType::ZonesChanged, $authorizationId)],
+            // Plaques (niveau LAISSEZ-PASSER, aucune autorisation) : couverture par laissez-passer, toutes communes confondues ; un retrait ou un remplacement décrit l'état final et couvre les ajouts en attente.
+            NotificationType::VehiclesChanged => $this->outbox->pendingRevisionIds($permitId, NotificationType::VehiclesChanged),
+            NotificationType::VehiclesRemoved => [...$this->outbox->pendingRevisionIds($permitId, NotificationType::VehiclesRemoved), ...$this->outbox->pendingRevisionIds($permitId, NotificationType::VehiclesChanged)],
+            // QR code (niveau laissez-passer) : seules les notifications EN ATTENTE du même laissez-passer fusionnent ; un message déjà envoyé ne couvre jamais un nouveau remplacement.
+            NotificationType::QrReplaced => $this->outbox->pendingRevisionIds($permitId, NotificationType::QrReplaced),
+            default => [],
+        };
+        $facts = $this->facts->read($permitId, $now, $authorizationId, $row->revisionId());
+        if (!self::accurate($type, $facts)) {
+            return $this->settle($id, fn (NotificationOutbox $r, \DateTimeImmutable $n) => $this->inexact($r, $n, true === $facts?->authorizationRevoked), $this->inexactLabel($type), $claim);
         }
         if (!$facts->hasRecipient()) {
             return $this->settle($id, static fn (NotificationOutbox $r, \DateTimeImmutable $at) => $r->markNoRecipient($at), 'no_recipient', $claim);
@@ -202,9 +222,17 @@ final class NotificationDispatcher
 
         // (6) État, sous verrou, si le bail est encore le nôtre.
         if (null === $failure) {
-            $covered = $facts->listedAuthorizations; // ce que le message a réellement annoncé (preuve de redondance des extensions)
+            // Ce que le message a réellement annoncé. Mise à disposition et extension : les autorisations listées (preuve de redondance d'une
+            // NOUVELLE COMMUNE). Révocation et raccourcissement : leur seule révision et AUCUNE autorisation (une extension en attente doit toujours
+            // partir). Prolongation : sa révision et celles des prolongations encore en attente (le message décrit l'état courant : un groupe = un message) ;
+            // reprise : les siennes et les prolongations en attente ; jamais les révisions d'un autre type (DM-119 C5).
+            $isRevision = \in_array($type, [NotificationType::AuthorizationRevoked, NotificationType::PermitShortened, NotificationType::PermitExtended, NotificationType::PermitResumed, NotificationType::ZonesChanged, NotificationType::ZonesRemoved, NotificationType::VehiclesChanged, NotificationType::VehiclesRemoved, NotificationType::QrReplaced], true);
+            $covered = $isRevision ? [] : $facts->listedAuthorizations;
 
-            return $this->settle($id, static fn (NotificationOutbox $r, \DateTimeImmutable $at) => $r->completeSent($at, $covered), 'sent', $claim);
+            return $this->settle($id, static function (NotificationOutbox $r, \DateTimeImmutable $at) use ($covered, $isRevision, $siblings): void {
+                $revisions = $isRevision && null !== $r->revisionId() ? array_values(array_unique([$r->revisionId()->toRfc4122(), ...$siblings])) : [];
+                $r->completeSent($at, $covered, $revisions);
+            }, 'sent', $claim);
         }
         $this->logger->warning('notification.dispatch.send_failed', ['outbox' => $id->toRfc4122(), 'kind' => $failure->value]);
 
@@ -219,9 +247,46 @@ final class NotificationDispatcher
         }, 'retry', $claim);
     }
 
-    /** Message devenu INEXACT avant l'envoi : une extension est supprimée (et auditée), une mise à disposition est abandonnée. */
-    private function inexact(NotificationOutbox $row, \DateTimeImmutable $now): void
+    /**
+     * Le message est-il encore exact ? Une extension exige un laissez-passer utilisable ET une autorisation qui donne encore des droits ; une
+     * RÉVOCATION exige l'inverse : que l'autorisation visée soit bien révoquée. Elle ne dépend ni de l'utilisabilité du laissez-passer (il peut ne
+     * plus avoir aucun droit, c'est précisément ce qu'on annonce) ni de la présence de la commune parmi les communes actives.
+     */
+    private static function accurate(NotificationType $type, ?NotificationFacts $facts): bool
     {
+        if (null === $facts) {
+            return false;
+        }
+        if (NotificationType::AuthorizationRevoked === $type) {
+            return $facts->authorizationRevoked;
+        }
+        if (NotificationType::VehiclesChanged === $type || NotificationType::VehiclesRemoved === $type || NotificationType::QrReplaced === $type) {
+            // Les plaques sont communes au laissez-passer : le message reste exact tant qu'AU MOINS UNE autorisation non révoquée figure sur le laissez-passer (la révocation de la
+            // commune qui a agi n'annule pas un retrait de plaque que les autres communes appliquent toujours).
+            return [] !== $facts->listedAuthorizations;
+        }
+        if (NotificationType::PermitShortened === $type || NotificationType::ZonesRemoved === $type) {
+            // Un raccourcissement ou un retrait de zone peut mettre fin à tout droit (fin immédiate) : le laissez-passer n'est alors plus « utilisable », ce qu'on annonce justement.
+            // Seule une révocation survenue depuis le rend inexact (la révocation est annoncée à part).
+            return null !== $facts->authorizationMunicipality && !$facts->authorizationRevoked;
+        }
+
+        return $facts->usable && $facts->authorizationActive;
+    }
+
+    /**
+     * Message devenu INEXACT avant l'envoi : une extension est supprimée (et auditée), une mise à disposition est abandonnée. Un RACCOURCISSEMENT rendu
+     * obsolète par une révocation est SUPPRIMÉ avec un code explicite (`SUPERSEDED_BY_REVOCATION`) et une entrée d'audit : sa trace est conservée, la
+     * non-distribution est justifiée (la révocation, plus grave, est annoncée à part).
+     */
+    private function inexact(NotificationOutbox $row, \DateTimeImmutable $now, bool $revoked = false): void
+    {
+        if (NotificationType::PermitShortened === $row->type() || NotificationType::ZonesRemoved === $row->type() || NotificationType::VehiclesRemoved === $row->type() || NotificationType::QrReplaced === $row->type()) {
+            $row->suppress($revoked ? OutboxErrorCode::SupersededByRevocation : OutboxErrorCode::Inaccurate, $now);
+            NotificationOrdering::auditSuppression($this->audit, $row, $now);
+
+            return;
+        }
         if (ChangeCategory::Ordinary === $row->category()) {
             $row->suppress(OutboxErrorCode::Inaccurate, $now);
             NotificationOrdering::auditSuppression($this->audit, $row, $now);
@@ -233,7 +298,7 @@ final class NotificationDispatcher
 
     private function inexactLabel(NotificationType $type): string
     {
-        return ChangeCategory::Ordinary === $type->category() ? 'suppressed' : 'not_relevant';
+        return ChangeCategory::Ordinary === $type->category() || NotificationType::PermitShortened === $type || NotificationType::ZonesRemoved === $type || NotificationType::VehiclesRemoved === $type || NotificationType::QrReplaced === $type ? 'suppressed' : 'not_relevant';
     }
 
     /**
