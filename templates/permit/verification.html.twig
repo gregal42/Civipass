@@ -1,0 +1,50 @@
+{% extends 'layouts/pass.html.twig' %}
+
+{#
+  Vérification publique d'un laissez-passer (LOT 05.4.2, DM-115) : écran lu sur le terrain après un scan, SANS compte, SANS JavaScript, sans
+  ressource tierce. Une colonne dès 390 px. Ordre : statut global, bénéficiaire, référence et événement, plaques, communes et zones (périodes,
+  zones retirées à part), horodatage, bouton Actualiser. Le jeton n'est écrit nulle part dans la page (le bouton recharge l'URL courante).
+  Variables : verification (PublicVerification).
+#}
+{% block main_class %}vp-main{% endblock %}
+
+{% block content %}
+  {% set verdict = cp_vverdict(verification) %}
+  {% set tz = cp_vtimezone(verification.timezone) %}
+  <div class="vp-col">
+    <section class="cp-verdict cp-verdict--{{ verdict.tone }} vp-verdict" role="status" aria-labelledby="vp-verdict-title">
+      <span class="cp-verdict__badge">{% include 'components/icon.html.twig' with { name: verdict.icon, size: 'xl' } only %}</span>
+      <div>
+        <h1 class="cp-verdict__title" id="vp-verdict-title">{{ verdict.title }}</h1>
+        <p class="vp-verdict__count">{{ verdict.count }}</p>
+        <p class="cp-verdict__text">{{ verdict.text }}</p>
+      </div>
+      <p class="cp-verdict__when">Vérifié le {{ verification.checkedAt|cp_datetime(verification.timezone) }} ({{ tz }}). Droits valables au moment de cette vérification.</p>
+    </section>
+
+    <section class="cp-box pp-id" aria-labelledby="vp-name">
+      <p class="cp-eyebrow">Bénéficiaire</p>
+      <h2 class="pp-id__name" id="vp-name">{{ verification.firstName }} {{ verification.lastName|upper }}</h2>
+      <p class="pp-id__event">Laissez-passer <span class="cp-mono">{{ verification.reference }}</span></p>
+      <p class="pp-id__event">{% include 'components/icon.html.twig' with { name: 'flag', size: 's' } only %} {{ verification.eventName }}</p>
+    </section>
+
+    <section class="cp-box vp-plates" aria-labelledby="vp-plates-title">
+      <h2 class="cp-box__title vp-plates__title" id="vp-plates-title">Plaques autorisées</h2>
+      {% if verification.plates %}
+        <div class="cp-plates">{% for plate in verification.plates %}{% include 'components/plate.html.twig' with { number: plate, size: 'lg' } only %}{% endfor %}</div>
+      {% else %}
+        <p class="vp-none">Aucun véhicule associé.</p>
+      {% endif %}
+    </section>
+
+    {% include 'permit/verification_zones.html.twig' with { verification: verification, tz: tz } only %}
+
+    <section class="cp-box vp-refresh" aria-labelledby="vp-refresh-title">
+      <h2 class="cp-box__title vp-refresh__title" id="vp-refresh-title">Dernière vérification</h2>
+      <p class="vp-refresh__when">{{ verification.checkedAt|cp_datetime(verification.timezone) }} ({{ tz }})</p>
+      <p class="vp-none">Les droits peuvent changer à tout moment : actualisez avant de décider.</p>
+      <a class="cp-btn cp-btn--primary cp-btn--l vp-refresh__button" href="" rel="nofollow">{% include 'components/icon.html.twig' with { name: 'refresh' } only %}<span>Actualiser</span></a>
+    </section>
+  </div>
+{% endblock %}

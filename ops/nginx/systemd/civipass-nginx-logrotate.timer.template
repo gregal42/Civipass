@@ -1,0 +1,10 @@
+[Unit]
+Description=Rotation horaire des journaux nginx de Civipass
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=0
+
+[Install]
+WantedBy=timers.target

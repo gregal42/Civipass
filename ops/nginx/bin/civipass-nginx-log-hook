@@ -1,0 +1,136 @@
+#!/bin/bash
+# Crochet de rotation des journaux nginx de Civipass (appelé par logrotate, en root). Sous-commandes :
+#   error  <fichier-tourné>   après rotation du journal d'erreur BRUT : fait rouvrir le journal par nginx, attend que nginx ait lâché l'ancien fichier, puis le
+#                             FILTRE (secrets masqués). Le fichier brut n'est jamais conservé ni compressé tel quel.
+#   sweep  <fichier-tourné>   avant rotation : refiltre le fichier tourné précédent s'il existe (rattrapage si un passage précédent a été interrompu).
+#   access <fichier-actif>    après rotation du journal d'accès (déjà masqué) : fait rouvrir le journal par nginx et vérifie que l'utilisateur nginx peut y écrire.
+#
+# ÉCHEC DU FILTRE, par ordre de repli, TOUJOURS VISIBLE (journal système, code de sortie non nul, fichier marqueur) :
+#   1. filtre principal (Perl) ;
+#   2. filtre de repli grossier (sed) : les champs `request:` et `referrer:` sont entièrement remplacés ; le reste de la ligne est conservé ;
+#   3. à défaut, le contenu est remplacé par UNE ligne qui dit ce qui s'est passé (nombre de lignes perdues, heure, cause). Un journal brut n'est jamais laissé.
+# Jamais de perte silencieuse : chaque dégradation écrit une alerte dans le journal système (`logger`, étiquette civipass-nginx-log-hook).
+#
+# Variables : CIVIPASS_SANITIZER (défaut /usr/local/sbin/civipass-sanitize-nginx-error), CIVIPASS_NGINX_PID_FILE (défaut /run/nginx.pid),
+#             CIVIPASS_ADMIN_GROUP (défaut adm), CIVIPASS_NGINX_USER (défaut www-data), CIVIPASS_WAIT_SECONDS (défaut 15).
+set -u
+umask 077
+SANITIZER=${CIVIPASS_SANITIZER:-/usr/local/sbin/civipass-sanitize-nginx-error}
+PID_FILE=${CIVIPASS_NGINX_PID_FILE:-/run/nginx.pid}
+GROUP=${CIVIPASS_ADMIN_GROUP:-adm}
+NGINX_USER=${CIVIPASS_NGINX_USER:-www-data}
+WAIT=${CIVIPASS_WAIT_SECONDS:-15}
+TAG=civipass-nginx-log-hook
+
+alert() { # $1 = niveau, $2 = message
+    logger -t "$TAG" -p "daemon.$1" -- "$2" 2>/dev/null || echo "$TAG: $2" >&2
+    echo "$TAG: $2" >&2
+}
+
+# Après le signal de réouverture, chaque worker nginx rouvre le journal PAR SON NOM, avec SON utilisateur : si le dossier ou le fichier ne lui est pas accessible en écriture, il perd
+# son descripteur et ne journalise plus RIEN, sans erreur visible dans le journal du site. On vérifie donc la condition elle-même (l'utilisateur nginx peut-il écrire le
+# fichier actif ?), ce qui ne dépend pas des droits de lecture de /proc (restreints dans un conteneur).
+nginx_can_write() { # $1 = fichier actif
+    if command -v runuser >/dev/null 2>&1; then
+        runuser -u "$NGINX_USER" -- test -w "$1"
+    elif command -v su >/dev/null 2>&1; then
+        su -s /bin/sh -c "test -w '$1'" "$NGINX_USER"
+    else
+        return 0 # vérification impossible : rien n'est affirmé
+    fi
+}
+
+reopen() { # $1 = fichier actif
+    local active=$1
+    if ! { [ -r "$PID_FILE" ] && kill -USR1 "$(cat "$PID_FILE")" 2>/dev/null; }; then
+        alert warning "nginx introuvable (fichier $PID_FILE) : journaux non rouverts"
+        return 1
+    fi
+    sleep 1
+    if ! nginx_can_write "$active"; then
+        alert crit "l'utilisateur $NGINX_USER ne peut pas écrire $active : nginx ne journalisera plus RIEN dans ce fichier. Corriger les permissions du dossier (propriétaire $NGINX_USER) et du fichier, puis rouvrir les journaux (kill -USR1)."
+        return 1
+    fi
+    return 0
+}
+
+# Attend qu'aucun processus ne tienne plus le fichier ouvert (nginx rouvre ses journaux dès le signal ; une requête en cours peut écrire un instant dans l'ancien). Lecture de
+# /proc : effective pour root sur un serveur ; dans un conteneur sans CAP_SYS_PTRACE les descripteurs des workers sont illisibles (attente alors limitée à la pause d'une seconde de reopen).
+wait_released() { # $1 = fichier
+    local f=$1 i=0 busy
+    while [ "$i" -lt "$((WAIT * 4))" ]; do
+        busy=0
+        for fd in /proc/[0-9]*/fd/*; do
+            if [ "$(readlink "$fd" 2>/dev/null)" = "$f" ]; then busy=1; break; fi
+        done
+        [ "$busy" -eq 0 ] && return 0
+        sleep 0.25
+        i=$((i + 1))
+    done
+    return 1
+}
+
+finish() { # $1 = fichier temporaire, $2 = fichier cible
+    chown "root:$GROUP" "$1" 2>/dev/null   # propriétaire et groupe d'administration ; sans effet (non bloquant) si le groupe n'existe pas ou hors root
+    chmod 0640 "$1" && mv -f "$1" "$2"
+}
+
+# Contrôle final du résultat du filtre : aucun segment non masqué derrière un préfixe sensible, aucun jeton opaque de 28 caractères ou plus dans les champs
+# de requête (un UUID est toléré : identifiant interne, pas un secret). Défense en profondeur contre un filtre qui « réussirait » sans rien masquer.
+looks_clean() { # $1 = fichier
+    local f=$1
+    # (les routes fixes /reset-password/done et /invitation/delegation|rejoindre sont lisibles par conception)
+    sed -E 's#/reset-password/+[dD][oO][nN][eE]#/OK#g' "$f" | grep -Eiq '/(v|laissez-passer|reset-password)/+[^*/ ?"]' && return 1
+    grep -Ei '(request|referrer): "[^"]*[0-9A-Za-z_-]{28,}' "$f" \
+        | grep -Eiv '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | grep -q . && return 1
+    return 0
+}
+
+sanitize_file() { # $1 = fichier tourné
+    local f=$1 tmp="$1.tmp" lines out_lines status=0
+    [ -f "$f" ] || return 0
+    lines=$(wc -l < "$f")
+    rm -f "$tmp"
+    if [ -x "$SANITIZER" ] && "$SANITIZER" < "$f" > "$tmp" 2>/dev/null \
+        && out_lines=$(wc -l < "$tmp") && [ "$out_lines" -eq "$lines" ] && looks_clean "$tmp" && finish "$tmp" "$f"; then
+        return 0
+    fi
+    rm -f "$tmp"
+    alert err "filtre principal en échec sur $f : repli grossier (champs request/referrer remplacés)"
+    status=1
+    if sed -E 's#((request|referrer): ")[^"]*(")#\1[masque]\3#g' < "$f" > "$tmp" 2>/dev/null \
+        && out_lines=$(wc -l < "$tmp") && [ "$out_lines" -eq "$lines" ] && finish "$tmp" "$f"; then
+        alert err "repli grossier appliqué sur $f ($lines lignes conservées sans requête ni Referer)"
+        return "$status"
+    fi
+    rm -f "$tmp"
+    # Écrase le contenu EN PLACE (aucun fichier temporaire nécessaire) ; si même cela échoue, le fichier est supprimé : jamais de brut conservé.
+    printf '%s [alert] civipass: contenu de %s SUPPRIME : filtrage impossible (%s lignes perdues). Voir le journal système, etiquette %s.\n' \
+        "$(date '+%Y/%m/%d %H:%M:%S')" "$(basename "$f")" "$lines" "$TAG" > "$f" || rm -f "$f"
+    alert crit "filtrage impossible sur $f : $lines ligne(s) brute(s) supprimée(s) (jamais conservées avec leurs secrets)"
+    return 1
+}
+
+case "${1:-}" in
+    error)
+        f=${2:?fichier tourné attendu}
+        reopen "${f%.1}"; rc=$?
+        wait_released "$f" || alert warning "nginx tient encore $f après ${WAIT}s : filtrage tout de même, puis nouveau filtrage"
+        sanitize_file "$f" || rc=1
+        if ! wait_released "$f"; then sanitize_file "$f" || rc=1; fi
+        exit "$rc"
+        ;;
+    sweep)
+        f=${2:?fichier tourné attendu}
+        sanitize_file "$f"
+        exit $?
+        ;;
+    access)
+        reopen "${2:?fichier actif attendu}"
+        exit $?
+        ;;
+    *)
+        echo "usage: $0 error|sweep <fichier-tourné> | access <fichier-actif>" >&2
+        exit 2
+        ;;
+esac

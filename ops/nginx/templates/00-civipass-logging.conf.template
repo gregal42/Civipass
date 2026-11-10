@@ -1,0 +1,42 @@
+# Journaux de Civipass : AUCUN secret dans le journal d'accès. Généré par ops/nginx/bin/render.sh : NE PAS éditer à la main.
+#
+# Secrets dans les chemins : jeton de vérification (/v/{jeton}, 32 caractères base32), lien bénéficiaire (/laissez-passer/{secret}, 43 caractères base64url),
+# invitation (/invitation/{jeton}, 43) et réinitialisation de mot de passe (/reset-password/{jeton}, 43). Le segment qui suit ces préfixes est TOUJOURS masqué,
+# quelle que soit sa longueur (un secret tronqué reste un secret), sauf les routes fixes listées ci-dessous (liste blanche : /invitation/delegation, /invitation/rejoindre
+# et /reset-password/done). Une route fixe oubliée est masquée par excès de prudence, jamais exposée. La liste est contrôlée contre le routeur Symfony
+# (tests/Integration/Ops/NginxSecretRoutesTest.php).
+#
+# 1) `$civ_path` : `$uri` pris à la PREMIÈRE passe (décodé, `//` fusionnés, `.` et `..` résolus). `try_files` réécrit ensuite `$uri` en /index.php et relance
+#    les directives de rewrite du serveur : la garde `if ($civ_path = "")` (dans chaque server) empêche d'écraser la valeur d'origine.
+# 2) `$request_uri` brut en repli, pour une requête qui n'atteint pas la phase de rewrite.
+map $civ_path $civ_route_decoded {
+    default "";
+    "~*^(?:/index\.php)?/+(?<civ_r1>v(?=/+[^/])|laissez-passer(?=/+[^/])|invitation(?=/+(?!(?:delegation|rejoindre)(?:/|$))[^/])|reset-password(?=/+(?!(?:done)(?:/|$))[^/]))"  $civ_r1;
+}
+map $request_uri $civ_route_raw {
+    default "";
+    "~*^/+(?:index\.php/+)?(?<civ_r2>v(?=/+[^/])|laissez-passer(?=/+[^/])|invitation(?=/+(?!(?:delegation|rejoindre)(?:/|$))[^/])|reset-password(?=/+(?!(?:done)(?:/|$))[^/]))"  $civ_r2;
+}
+# Chemin SANS la requête : `?q=Dupont` (recherche d'une demande par nom, téléphone, e-mail ou plaque) est une donnée personnelle ; la requête n'est jamais journalisée.
+map $request_uri $civ_uri_plain {
+    default $request_uri;
+    "~^(?<civ_p>[^?]*)\?"  "${civ_p}?[requete-omise]";
+}
+map "$civ_route_decoded$civ_route_raw" $civ_log_uri {
+    default $civ_uri_plain;
+    ~*^(?<civ_x>v|laissez-passer|invitation|reset-password)  "/${civ_x}/***";
+}
+# Referer : origine seulement, jamais chemin ni requête.
+map $http_referer $civ_referer {
+    default "-";
+    "~^(?<civ_ro>https?://[^/\s\"]+)"  $civ_ro;
+}
+# Pas de X-Forwarded-For : nginx est le premier saut, un tel en-tête ne peut venir que d'un client (non fiable).
+log_format civipass '$remote_addr - $remote_user [$time_local] "$request_method $civ_log_uri $server_protocol" '
+                    '$status $body_bytes_sent "$civ_referer" "$http_user_agent" $request_time';
+
+# Hérités par TOUS les serveurs (aucun access_log ailleurs).
+access_log __LOG_DIR__/civipass-access.log civipass;
+# Journal d'erreur BRUT : nginx ne sait pas masquer la ligne `request:` ni `referrer:` des erreurs de requête (amont indisponible, corps trop gros…). Fichier
+# réservé à l'administration (voir README), tourné chaque heure et filtré à la rotation. Niveau `error` : les vraies erreurs restent visibles.
+error_log __LOG_DIR__/civipass-error.log error;

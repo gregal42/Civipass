@@ -1,0 +1,12 @@
+{% extends 'layouts/pass.html.twig' %}
+
+{#
+  QR remplacé (DM-113) : AUCUNE donnée du laissez-passer, ni nom, ni référence, ni plaque, ni événement. Réponse 410.
+#}
+{% block main_class %}vp-main{% endblock %}
+
+{% block content %}
+  <div class="vp-col">
+    {% include 'components/alert.html.twig' with { variant: 'warning', title: 'Ce QR code a été remplacé', text: 'Il n’est plus valable. Demandez le nouveau QR code à la mairie qui a délivré le laissez-passer.', role: 'alert' } only %}
+  </div>
+{% endblock %}

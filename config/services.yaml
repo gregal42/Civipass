@@ -20,6 +20,13 @@ parameters:
     env(PRIVACY_POLICY_URL): ''
     env(PRIVATE_STORAGE_DIR): '%kernel.project_dir%/var/storage'
     env(EVENT_MAX_SLOTS_PER_VALIDITY): '500'
+    # Contrôle public `/v/{jeton}` (LOT 05.4.2) : DÉSACTIVÉ par défaut (la route répond 404 sans toucher à la base). Ne l'activer qu'avec l'accord
+    # du responsable, une fois les conditions d'exposition réunies (journaux nginx et Traefik vérifiés, limitation de débit du 05.4.3).
+    env(PUBLIC_VERIFICATION_ENABLED): '0'
+    # Plafonds PROVISOIRES de la limitation de débit du contrôle public (LOT 05.4.3), par IP (IPv6 : /64) : consultations sur 10 minutes ; jetons bien
+    # formés mais inconnus sur 15 minutes.
+    env(VERIFICATION_ACCESS_LIMIT): '300'
+    env(VERIFICATION_FAILURE_LIMIT): '20'
     env(EVENT_MAX_ZONES_PER_BULK_OPERATION): '100'
 
 services:

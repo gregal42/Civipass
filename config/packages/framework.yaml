@@ -2,6 +2,11 @@
 framework:
     secret: '%env(APP_SECRET)%'
 
+    # Proxys de confiance : AUCUN par défaut (en-têtes X-Forwarded-* d'un client ignorés). Seul le développement local, derrière Traefik, en déclare un
+    # (SYMFONY_TRUSTED_PROXIES dans .env.local ; voir docs/authentication.md). SI un proxy est déclaré (aussi en production), seuls l'adresse, le schéma
+    # et le port sont crus par ces en-têtes, jamais `x-forwarded-host` ni `-prefix`. Cette liste ne déclare AUCUN proxy.
+    trusted_headers: ['x-forwarded-for', 'x-forwarded-proto', 'x-forwarded-port']
+
     # Note that the session will be started ONLY if you read or write from it.
     session:
         cookie_secure: auto
@@ -29,6 +34,20 @@ framework:
             policy: sliding_window
             limit: 20
             interval: '15 minutes'
+        # Contrôle public `/v/{jeton}` (LOT 05.4.3) : deux limiteurs INDÉPENDANTS, distincts de ceux du lien bénéficiaire. `verification_access` : toutes
+        # les consultations d'une IP (IPv6 : préfixe /64). `verification_failure` : jetons bien formés mais inconnus (ni mal formés, ni retirés). Plafonds
+        # PROVISOIRES, réglables par VERIFICATION_ACCESS_LIMIT / VERIFICATION_FAILURE_LIMIT. Stockage fichier, mono-instance (docs/authentication.md) ;
+        # StrictCacheStorage fait échouer bruyamment une écriture impossible (le stockage standard l'ignore et ne limiterait plus rien, sans le dire).
+        verification_access:
+            policy: sliding_window
+            limit: '%env(int:VERIFICATION_ACCESS_LIMIT)%'
+            interval: '10 minutes'
+            storage_service: App\Permit\Infrastructure\RateLimiter\StrictCacheStorage
+        verification_failure:
+            policy: sliding_window
+            limit: '%env(int:VERIFICATION_FAILURE_LIMIT)%'
+            interval: '15 minutes'
+            storage_service: App\Permit\Infrastructure\RateLimiter\StrictCacheStorage
         # Mot de passe oublié : 3 demandes / heure par adresse, 10 / heure par IP (réponse identique, envoi
         # abandonné en silence au-delà) ; 10 validations ou soumissions de jeton / 15 min par IP.
         password_reset_email:
@@ -65,15 +84,6 @@ framework:
 
     #esi: true
     #fragments: true
-
-# Proxys de confiance : AUCUN par défaut (en-têtes X-Forwarded-* d'un client ignorés). Seul le développement
-# local, derrière Traefik (réseaux privés Docker), en déclare. Voir docs/authentication.md.
-when@dev:
-    framework:
-        # Le seul proxy de confiance est Traefik, déclaré par SYMFONY_TRUSTED_PROXIES (.env.local de la machine : adresse de Traefik sur le réseau
-        # Docker `reverse_proxy`, voir docs/authentication.md). Plus de `private_ranges` : un conteneur voisin du même réseau n'est pas un proxy.
-        # Variable absente : aucun proxy de confiance, l'IP vue est celle de Traefik (échec fermé : limiteurs plus stricts, jamais contournables).
-        trusted_headers: ['x-forwarded-for', 'x-forwarded-proto', 'x-forwarded-port']
 
 when@test:
     framework:

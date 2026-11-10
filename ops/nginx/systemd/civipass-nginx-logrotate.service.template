@@ -1,0 +1,9 @@
+# Rotation horaire des journaux nginx de Civipass. Généré par ops/nginx/bin/render.sh.
+[Unit]
+Description=Rotation et filtrage des journaux nginx de Civipass
+Documentation=file:///opt/civipass/ops/nginx/README.md
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/logrotate -s __LOGROTATE_STATE__ __LOGROTATE_CONF__
+# Un échec (filtre en défaut, rotation impossible) doit se voir : `systemctl --failed`, `journalctl -u civipass-nginx-logrotate`.

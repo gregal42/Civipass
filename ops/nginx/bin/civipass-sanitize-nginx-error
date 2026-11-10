@@ -1,0 +1,39 @@
+#!/usr/bin/perl
+# Filtre d'un journal d'erreur nginx de Civipass : lit l'entrée standard, écrit la sortie standard, une ligne en entrée = une ligne en sortie.
+#
+# nginx cite la requête (`request: "…"`) et le Referer (`referrer: "…"`) dans ses erreurs de requête (amont indisponible, corps trop gros…) et ne sait pas les
+# masquer. Ce filtre masque, DANS CES DEUX CHAMPS :
+#   R0  toute requête (`?…`) : `?q=Dupont` est une donnée personnelle ;
+#   R1  le segment qui suit /v/, /laissez-passer/, /invitation/ ou /reset-password/ (sauf les routes fixes de la liste blanche ci-dessous) ;
+#   R3  tout jeton opaque de 28 caractères ou plus (variantes encodées du préfixe : /%76/…, //, /./…), sauf un UUID (identifiant interne, pas un secret).
+# R1 est aussi appliquée au reste de la ligne (message d'erreur qui citerait un chemin hors des champs). Heure, niveau, erreur, client, serveur, hôte et amont sont
+# conservés : le diagnostic reste possible. Le filtre est idempotent (le repasser sur un fichier déjà filtré ne change rien).
+#
+# Liste blanche des routes fixes (/invitation/delegation, /invitation/rejoindre, /reset-password/done) : à garder identique à celle de conf.d/00-civipass-logging.conf
+# (contrôlé par les tests, et par rapport au routeur Symfony).
+use strict;
+use warnings;
+
+my $fixed_invitation = qr{(?:delegation|rejoindre)(?=/|$|\s|\?)}i;
+my $fixed_reset      = qr{(?:done)(?=/|$|\s|\?)}i;
+my $uuid             = qr/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i;
+
+sub mask_paths {
+    my ($v) = @_;
+    $v =~ s{(/(?:v|laissez-passer)/+)(?!\*\*\*)[^/\s?"]+}{$1***}gi;
+    $v =~ s{(/invitation/+)(?!\*\*\*)(?!$fixed_invitation)[^/\s?"]+}{$1***}gi;
+    $v =~ s{(/reset-password/+)(?!\*\*\*)(?!$fixed_reset)[^/\s?"]+}{$1***}gi;
+    return $v;
+}
+
+while (my $line = <STDIN>) {
+    $line =~ s{((?:request|referrer): ")([^"]*)(")}{
+        my ($open, $value, $close) = ($1, $2, $3);
+        $value =~ s{\?\S*}{?[requete-omise]}g;
+        $value = mask_paths($value);
+        $value =~ s{(?<![0-9A-Za-z_-])(?!$uuid)[0-9A-Za-z_-]{28,}(?![0-9A-Za-z_-])}{***}g;
+        "$open$value$close"
+    }ge;
+    $line = mask_paths($line);
+    print $line;
+}

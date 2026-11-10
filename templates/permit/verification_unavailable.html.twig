@@ -1,0 +1,13 @@
+{% extends 'layouts/pass.html.twig' %}
+
+{#
+  Compteurs de limitation indisponibles (503) : AUCUNE donnée. La vérification est suspendue, ce n'est pas un refus d'autorisation.
+#}
+{% block main_class %}vp-main{% endblock %}
+
+{% block content %}
+  <div class="vp-col">
+    {% include 'components/alert.html.twig' with { variant: 'warning', title: 'Vérification temporairement indisponible', text: 'Le service de vérification est momentanément suspendu. Ce n’est pas un refus d’autorisation. Réessayez dans quelques instants ou appliquez la procédure de terrain.', role: 'alert' } only %}
+    <a class="cp-btn cp-btn--primary cp-btn--l vp-refresh__button" href="" rel="nofollow">{% include 'components/icon.html.twig' with { name: 'refresh' } only %}<span>Actualiser</span></a>
+  </div>
+{% endblock %}

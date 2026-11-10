@@ -1,0 +1,28 @@
+# nginx — configuration principale de Civipass (production mono-instance). Généré par ops/nginx/bin/render.sh : NE PAS éditer à la main.
+# Remplace /etc/nginx/nginx.conf : la configuration par défaut de la distribution journalise `$request` en CLAIR (jetons compris).
+user __NGINX_USER__;
+worker_processes auto;
+pid __NGINX_PID_FILE__;
+# Journal GLOBAL (démarrage, rechargement, erreurs de configuration). Les erreurs de requêtes vont dans le journal du site (00-civipass-logging.conf).
+error_log /var/log/nginx/error.log notice;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    server_tokens off;
+    sendfile on;
+    keepalive_timeout 65;
+    client_max_body_size 64m;
+
+    gzip on;
+    gzip_vary on;
+    gzip_types text/plain text/css application/json application/javascript text/xml image/svg+xml;
+
+    # AUCUN access_log ni error_log ici : voir conf.d/00-civipass-logging.conf (journaux masqués et dédiés), hérités par tous les serveurs.
+    include /etc/nginx/conf.d/*.conf;
+}

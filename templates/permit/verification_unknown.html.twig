@@ -1,0 +1,12 @@
+{% extends 'layouts/pass.html.twig' %}
+
+{#
+  Réponse UNIQUE (404) pour un jeton mal formé, inconnu, ou un contrôle non activé : le corps est identique octet pour octet, aucune variable.
+#}
+{% block main_class %}vp-main{% endblock %}
+
+{% block content %}
+  <div class="vp-col">
+    {% include 'components/alert.html.twig' with { variant: 'warning', title: 'QR code non reconnu', text: 'Ce QR code n’est pas reconnu. Appliquez la procédure de terrain : ce n’est pas une validation.', role: 'alert' } only %}
+  </div>
+{% endblock %}

@@ -1,0 +1,39 @@
+# Rotation des journaux nginx de Civipass. Généré par ops/nginx/bin/render.sh : NE PAS éditer à la main.
+# Lancé par civipass-nginx-logrotate.timer CHAQUE HEURE (la directive `hourly` n'agit que si logrotate tourne toutes les heures).
+# Ne PAS copier ce fichier dans /etc/logrotate.d/ : la rotation quotidienne de la distribution le lancerait sans le rythme horaire.
+
+# Journal d'erreur BRUT (nginx ne sait pas masquer ses erreurs de requête) : tourné chaque heure, filtré à la rotation, rétention __ERROR_LOG_RETENTION_HOURS__ heures.
+# ATTENTION : le fichier ACTIF contient les secrets en clair pendant l'heure en cours ; la rotation ne supprime pas cette exposition, elle la borne.
+__LOG_DIR__/civipass-error.log {
+    hourly
+    rotate __ERROR_LOG_RETENTION_HOURS__
+    missingok
+    notifempty
+    nodateext
+    delaycompress
+    compress
+    create 0640 __NGINX_USER__ __ADMIN_GROUP__
+    sharedscripts
+    prerotate
+        CIVIPASS_ADMIN_GROUP=__ADMIN_GROUP__ CIVIPASS_SANITIZER=__SANITIZER_PATH__ __HOOK_PATH__ sweep __LOG_DIR__/civipass-error.log.1
+    endscript
+    postrotate
+        CIVIPASS_ADMIN_GROUP=__ADMIN_GROUP__ CIVIPASS_NGINX_USER=__NGINX_USER__ CIVIPASS_SANITIZER=__SANITIZER_PATH__ CIVIPASS_NGINX_PID_FILE=__NGINX_PID_FILE__ __HOOK_PATH__ error __LOG_DIR__/civipass-error.log.1
+    endscript
+}
+
+# Journal d'accès : déjà masqué par nginx (log_format civipass). Rétention __ACCESS_LOG_RETENTION_DAYS__ jours.
+__LOG_DIR__/civipass-access.log {
+    daily
+    rotate __ACCESS_LOG_RETENTION_DAYS__
+    missingok
+    notifempty
+    nodateext
+    delaycompress
+    compress
+    create 0640 __NGINX_USER__ __ADMIN_GROUP__
+    sharedscripts
+    postrotate
+        CIVIPASS_NGINX_USER=__NGINX_USER__ CIVIPASS_NGINX_PID_FILE=__NGINX_PID_FILE__ __HOOK_PATH__ access __LOG_DIR__/civipass-access.log
+    endscript
+}

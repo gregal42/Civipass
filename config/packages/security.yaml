@@ -13,6 +13,11 @@ security:
             # Ensure dev tools and static assets are always allowed
             pattern: ^/(_profiler(/|$)|(_wdt|assets|build)/)
             security: false
+        # Contrôle public `/v/{jeton}` (LOT 05.4.3) : AUCUN écouteur de sécurité, donc ni session, ni remember-me, ni lecture d'un cookie existant
+        # (même d'un agent connecté). Placé AVANT `main` : la première correspondance l'emporte. Couvre aussi les 404 et 405 du routeur.
+        public_verification:
+            pattern: ^/v(?:/|$)
+            security: false
         main:
             lazy: true
             provider: app_user_provider

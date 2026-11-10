@@ -1,0 +1,52 @@
+{#
+  Communes, zones et périodes de la vérification publique, zones retirées à part. L'état de CHAQUE zone est écrit (pastille avec texte) ; les
+  périodes sont « prévues » : le texte dit si elles sont en cours, passées, à venir ou sans effet. Pas d'attribut style, pas de script (CSP).
+  Variables : verification (PublicVerification), tz (libellé du fuseau).
+#}
+<section class="cp-box" aria-labelledby="vp-rights-title">
+  <div class="cp-box__head"><h2 class="cp-box__title" id="vp-rights-title">Communes et zones</h2></div>
+  <div class="vp-rights">
+    {% for authorization in verification.authorizations %}
+      {% set current = authorization.zones|filter(z => not z.isRemoved) %}
+      {% set removed = authorization.zones|filter(z => z.isRemoved) %}
+      <section class="pp-auth" aria-labelledby="vp-auth-{{ loop.index }}">
+        <h3 class="pp-auth__commune" id="vp-auth-{{ loop.index }}">{{ authorization.municipalityName }}</h3>
+        {% if authorization.revoked %}<p class="vp-revoked">{% include 'components/icon.html.twig' with { name: 'x', size: 's' } only %} Autorisation révoquée le {{ authorization.revokedAt|cp_datetime(verification.timezone) }}</p>{% endif %}
+        <p class="pp-auth__period">{{ cp_vwindow(authorization.validFrom, authorization.validUntil, verification.timezone) }} ({{ tz }})</p>
+        <ul class="pp-zones">
+          {% for zone in current %}
+            {% set state = cp_vzone(zone, verification.checkedAt, verification.timezone) %}
+            <li class="pp-zone pp-zone--{{ state.status }}">
+              <span class="pp-zone__label">{{ zone.label }}</span>
+              {% include 'components/status_pill.html.twig' with { status: state.status, label: state.label } only %}
+              <span class="pp-zone__detail">{{ state.detail }}</span>
+              {% if state.periods %}
+                <details class="vp-periods">
+                  <summary>Périodes ({{ state.periods|length }})</summary>
+                  <ul class="vp-periods__list">
+                    {% for period in state.periods %}<li class="vp-period vp-period--{{ period.phase }}"><span class="vp-period__phase">{{ period.phaseLabel }}</span> {{ period.text }}</li>{% endfor %}
+                  </ul>
+                </details>
+              {% endif %}
+            </li>
+          {% else %}
+            <li class="pp-zone"><span class="pp-zone__detail">Aucune zone actuellement associée pour cette commune.</span></li>
+          {% endfor %}
+        </ul>
+        {% if removed %}
+          <div class="vp-removed">
+            <h4 class="vp-removed__title">Zones retirées</h4>
+            <ul class="vp-removed__list">
+              {% for zone in removed %}
+                {% set state = cp_vzone(zone, verification.checkedAt, verification.timezone) %}
+                <li class="vp-removed__item"><span class="vp-removed__label">{{ zone.label }}</span> — {{ state.label }} : {{ state.detail }}. Aucun droit.</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+      </section>
+    {% else %}
+      <p class="vp-none">Aucune autorisation communale enregistrée.</p>
+    {% endfor %}
+  </div>
+</section>

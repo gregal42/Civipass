@@ -1,0 +1,13 @@
+{% extends 'layouts/pass.html.twig' %}
+
+{#
+  Événement terminé (décision du 10 novembre 2026) : statut NEUTRE, AUCUNE donnée du laissez-passer, ni nom, ni prénom, ni plaque, ni zone, ni référence, ni nom d'événement.
+  Réponse 200 (le QR est connu et son laissez-passer existe encore) ; jamais 410, réservé au QR remplacé.
+#}
+{% block main_class %}vp-main{% endblock %}
+
+{% block content %}
+  <div class="vp-col">
+    {% include 'components/alert.html.twig' with { variant: 'info', title: 'Événement terminé', text: 'Cet événement est terminé : ce QR code ne donne plus aucune information.', role: 'status' } only %}
+  </div>
+{% endblock %}

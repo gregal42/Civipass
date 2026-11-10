@@ -1,0 +1,31 @@
+; PHP-FPM — pool de Civipass (exemple pour Debian/Ubuntu : /etc/php/8.4/fpm/pool.d/civipass.conf). À ADAPTER puis installer à la main ; jamais appliqué automatiquement.
+[civipass]
+; Utilisateur DISTINCT de celui de nginx (www-data) : un PHP compromis ne doit pas pouvoir lire les journaux d'erreur bruts de nginx (propriété de l'utilisateur nginx).
+user = civipass
+group = civipass
+listen = /run/php/php8.4-fpm-civipass.sock
+listen.owner = www-data
+listen.group = www-data
+listen.mode = 0660
+
+pm = dynamic
+pm.max_children = 20
+pm.start_servers = 4
+pm.min_spare_servers = 2
+pm.max_spare_servers = 6
+
+; AUCUN journal d'accès PHP-FPM : l'URL (avec ses secrets) est déjà journalisée, masquée, par nginx. Ne pas décommenter `access.log`.
+; (Si un jour il fallait un journal d'accès FPM, son format ne devrait JAMAIS contenir %r, %q, %Q ni %U : uniquement %m, %s, %d, %R.)
+;access.log = /var/log/civipass/php/access.log
+
+; Les messages de Symfony (journal du framework, écrit par error_log()) et les erreurs PHP : un fichier dédié, jamais l'écran.
+catch_workers_output = yes
+decorate_workers_output = no
+php_admin_value[error_log] = /var/log/civipass/php/php-error.log
+php_admin_flag[log_errors] = on
+php_admin_flag[display_errors] = off
+php_admin_flag[html_errors] = off
+; Les arguments des fonctions ne figurent pas dans les traces d'exception (un jeton passé en argument n'y apparaîtrait pas) ; `#[\SensitiveParameter]` complète.
+php_admin_value[zend.exception_ignore_args] = On
+; Variables d'environnement de l'application : fichier .env.local / environnement systemd, jamais ici.
+clear_env = yes
