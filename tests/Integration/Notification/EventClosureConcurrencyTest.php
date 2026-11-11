@@ -131,6 +131,25 @@ final class EventClosureConcurrencyTest extends ClosedEventScenarioTestCase
         self::assertCount($sentBefore, $this->mailbox(), 'aucune prise en charge après la clôture');
     }
 
+    public function testTwoSimultaneousClosuresRecordTheCountersExactlyOnce(): void
+    {
+        $this->approveMore(3);
+        $admin = $this->admin->id()->toRfc4122();
+        $eventId = $this->event->id()->toRfc4122();
+
+        $results = ParallelPhp::run('notification-process.php', [['close', $admin, $eventId, '0'], ['close', $admin, $eventId, '0']]);
+
+        $decoded = array_map(static fn (array $r): array => json_decode($r['stdout'], true, 512, \JSON_THROW_ON_ERROR), $results);
+        self::assertCount(1, array_filter($decoded, static fn (array $d): bool => true === $d['ok']), 'une seule clôture aboutit, l\'autre est refusée sans effet : '.json_encode($decoded));
+        $failed = array_values(array_filter($decoded, static fn (array $d): bool => true !== $d['ok']))[0];
+        self::assertContains($failed['error'], [\App\Shared\Domain\DomainRuleViolation::class, \App\Shared\Domain\OperationNotAllowed::class], 'refus métier (événement déjà clos), jamais une erreur technique ni un conflit');
+        $connection = $this->em()->getConnection();
+        self::assertSame(1, (int) $connection->fetchOne('SELECT COUNT(*) FROM audit_log WHERE action = \'EVENT_CLOSED\''), 'un seul audit de clôture');
+        $stored = \App\Event\Domain\ClosureStatistics::fromArray(json_decode((string) $connection->fetchOne('SELECT closure_statistics FROM event_event'), true, 512, \JSON_THROW_ON_ERROR));
+        self::assertSame(4, $stored->requests, '1 dossier du scénario + 3');
+        self::assertEquals(static::getContainer()->get(\App\Event\Application\ClosureCounters::class)->count($this->event->id()), $stored, 'compteurs = état final');
+    }
+
     public function testClosureWaitsForARevocationHoldingItsLocksThenCancelsTheMessageItProduced(): void
     {
         $this->approveMore(1);

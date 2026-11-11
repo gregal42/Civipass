@@ -92,6 +92,7 @@ try {
             $audit,
             $container->get(App\Event\Application\ClosureNotificationNeutralizer::class),
             $container->get(App\Event\Application\ClosureInvitationRevoker::class),
+            $container->get(App\Event\Application\ClosureCounters::class),
         );
     }
     match ($argv[2]) {

@@ -81,12 +81,12 @@ class Event
     private ?\DateTimeImmutable $closedAt = null;
 
     /**
-     * Compteurs internes de clôture (LOT 05.6.2, M1) : jamais exposés directement, écriture unique ; NULL = non calculés. Accesseurs et validation du schéma JSON : lot des statistiques.
+     * Compteurs internes de clôture (LOT 05.6.2, M1) : jamais exposés directement, écrits UNE fois à la clôture ; NULL = non calculés (événement clos avant M1).
      *
      * @var array<string, mixed>|null
      */
     #[ORM\Column(type: Types::JSON, nullable: true)]
-    private ?array $closureStatistics = null; // @phpstan-ignore property.onlyWritten, property.unusedType (mapping seul : accesseurs et écriture unique au lot des statistiques)
+    private ?array $closureStatistics = null;
 
     #[ORM\ManyToOne(targetEntity: User::class, fetch: 'LAZY')]
     #[ORM\JoinColumn(name: 'created_by', nullable: false, onDelete: 'RESTRICT')]
@@ -198,6 +198,23 @@ class Event
     public function activatedAt(): ?\DateTimeImmutable
     {
         return $this->activatedAt;
+    }
+
+    /** @throws DomainRuleViolation hors événement clos, ou compteurs déjà enregistrés (écriture unique : jamais de recalcul) */
+    public function recordClosureStatistics(ClosureStatistics $statistics): void
+    {
+        if (!$this->status->isClosed()) {
+            throw new DomainRuleViolation('Les compteurs de clôture ne s\'enregistrent que sur un événement clos.');
+        }
+        if (null !== $this->closureStatistics) {
+            throw new DomainRuleViolation('Les compteurs de clôture sont déjà enregistrés : aucun recalcul.');
+        }
+        $this->closureStatistics = $statistics->toArray();
+    }
+
+    public function closureStatistics(): ?ClosureStatistics
+    {
+        return null === $this->closureStatistics ? null : ClosureStatistics::fromArray($this->closureStatistics);
     }
 
     public function closedAt(): ?\DateTimeImmutable

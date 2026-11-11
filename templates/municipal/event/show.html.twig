@@ -199,6 +199,9 @@
       {% embed 'components/panel.html.twig' with { id: 'brief-h', title: 'En bref', facts: facts } only %}
         {% block body %}{% include 'components/facts.html.twig' with { items: facts } only %}{% endblock %}
       {% endembed %}
+      {% if closure_statistics is defined and closure_statistics %}
+        {% include 'municipal/event/_closure_statistics.html.twig' with { stats: closure_statistics } only %}
+      {% endif %}
     </aside>
   </div>
 {% endblock %}

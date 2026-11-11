@@ -83,6 +83,23 @@ abstract class ClosedEventScenarioTestCase extends PublicRequestTestCase
         [$this->linkSecret, $this->linkId] = [$link->secret, $link->linkId];
     }
 
+    /**
+     * Dépose `$count` demandes sur les zones des DEUX communes et les approuve dans les deux (effectifs suffisants pour franchir un seuil de confidentialité).
+     */
+    protected function depositAndApprove(int $count, string $prefix = 'bulk'): void
+    {
+        $instruction = static::getContainer()->get(MunicipalInstructionService::class);
+        for ($i = 0; $i < $count; ++$i) {
+            $id = static::getContainer()->get(RequestSubmissionService::class)->submitPublic(
+                new SubmitRequestCommand($this->event->id()->toRfc4122(), 'Lot'.$i, 'Anne', null, 'lot'.$i.'@exemple.fr', null, 'private_person', 'home', null, TravelMode::Vehicle, [sprintf('LT-%03d-ZZ', 100 + $i)], [$this->organizerZone->id()->toRfc4122(), $this->partnerZone->id()->toRfc4122()], true),
+                sprintf('%s-%016d', $prefix, $i),
+            )->requestId;
+            $instruction->approve($this->managed($this->instructor), $this->organizerId, $id, ApprovalDuration::untilClosure());
+            $instruction->approve($this->managed($this->partnerInstructor), $this->partnerId, $id, ApprovalDuration::untilClosure());
+        }
+        $this->em()->clear();
+    }
+
     protected function managed(User $user): User
     {
         return $this->em()->find(User::class, $user->id()) ?? self::fail('Utilisateur absent.');

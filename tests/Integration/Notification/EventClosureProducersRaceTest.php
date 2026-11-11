@@ -175,6 +175,9 @@ final class EventClosureProducersRaceTest extends ClosedEventScenarioTestCase
             self::assertSame(['SUPPRESSED', 'EVENT_CLOSED'], [$row['status'], $row['last_error_code']], 'le message du producteur est supprimé par la clôture');
         }
         self::assertSame(0, (int) $connection->fetchOne('SELECT COUNT(*) FROM notification_secret'));
+        // Compteurs de clôture : exacts malgré la course (la clôture a attendu le producteur ; rien n'écrit après elle).
+        $stored = \App\Event\Domain\ClosureStatistics::fromArray(json_decode((string) $connection->fetchOne('SELECT closure_statistics FROM event_event'), true, 512, \JSON_THROW_ON_ERROR));
+        self::assertEquals(static::getContainer()->get(\App\Event\Application\ClosureCounters::class)->count($this->event->id()), $stored, 'compteurs = état final de la base, décision concurrente comprise');
     }
 
     #[DataProvider('producers')]

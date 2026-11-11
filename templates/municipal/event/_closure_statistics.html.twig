@@ -1,0 +1,53 @@
+{# Bilan de clôture (LOT 05.6.2) : valeurs PUBLIÉES et seuillées uniquement ; jamais de compteur exact. Une valeur masquée n'est pas un zéro. #}
+{% macro value(n, mask_text) %}{% if n is null %}{{ mask_text|default('Non communiqué') }}{% else %}{{ n }}{% endif %}{% endmacro %}
+{% import _self as m %}
+{% set mask = 'Non communiqué (effectif inférieur au seuil de confidentialité)' %}
+{% set global = stats.global %}
+{% set own = stats.own %}
+{% set threshold = (global ?? own).threshold %}
+{% embed 'components/panel.html.twig' with { id: 'stats-h', title: 'Bilan de clôture', threshold: threshold } only %}
+  {% block body %}
+    <p class="cp-muted">Chiffres arrondis au secret statistique : un effectif non nul inférieur à {{ threshold }} n’est pas communiqué. Ces chiffres ne donnent accès à aucun dossier.</p>
+  {% endblock %}
+{% endembed %}
+{% if global %}
+  {% set items = [{ label: 'Dossiers communaux', value: m.value(global.dossiers, mask) }] %}
+  {% if stats.singleMunicipality and global.byStatus is not null %}
+    {% set items = items|merge([
+      { label: 'Approuvés', value: global.byStatus.approved },
+      { label: 'Refusés', value: global.byStatus.refused },
+      { label: 'Non décidés', value: global.byStatus.pending },
+      { label: 'Autorisations délivrées', value: global.byStatus.authorizations },
+    ]) %}
+  {% elseif stats.singleMunicipality %}
+    {% set items = items|merge([{ label: 'Répartition par statut', value: mask }]) %}
+  {% endif %}
+  {% embed 'components/panel.html.twig' with { id: 'stats-global-h', title: 'Ensemble de l’événement', items: items } only %}
+    {% block body %}{% include 'components/facts.html.twig' with { items: items } only %}{% endblock %}
+  {% endembed %}
+  {% if not stats.singleMunicipality and global.communes is not null %}
+    {% set lines = [] %}
+    {% for line in global.communes %}{% set lines = lines|merge([{ label: stats.communeNames[line.municipalityId]|default('Commune'), value: line.dossiers }]) %}{% endfor %}
+    {% embed 'components/panel.html.twig' with { id: 'stats-communes-h', title: 'Dossiers par commune', lines: lines } only %}
+      {% block body %}{% include 'components/facts.html.twig' with { items: lines } only %}{% endblock %}
+    {% endembed %}
+  {% elseif not stats.singleMunicipality and 'communes' in global.masked %}
+    <p class="cp-muted">Ventilation par commune non communiquée : au moins une commune a un effectif inférieur au seuil de confidentialité.</p>
+  {% endif %}
+{% endif %}
+{% if own and not (global and stats.singleMunicipality) %}
+  {% set mine = [{ label: 'Dossiers de votre commune', value: m.value(own.dossiers, mask) }] %}
+  {% if own.byStatus is not null %}
+    {% set mine = mine|merge([
+      { label: 'Approuvés', value: own.byStatus.approved },
+      { label: 'Refusés', value: own.byStatus.refused },
+      { label: 'Non décidés', value: own.byStatus.pending },
+      { label: 'Autorisations délivrées', value: own.byStatus.authorizations },
+    ]) %}
+  {% else %}
+    {% set mine = mine|merge([{ label: 'Répartition par statut', value: mask }]) %}
+  {% endif %}
+  {% embed 'components/panel.html.twig' with { id: 'stats-own-h', title: 'Votre commune', mine: mine } only %}
+    {% block body %}{% include 'components/facts.html.twig' with { items: mine } only %}{% endblock %}
+  {% endembed %}
+{% endif %}

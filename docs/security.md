@@ -43,6 +43,19 @@ Un événement clos n'ouvre **plus aucun accès opérationnel** (dossiers, justi
 - **Rejeu d'idempotence (N1)** : après la clôture, aucun rejeu ne renvoie la référence, la décision ou une information (dépôt public avec ou sans pièces jointes, délivrance directe).
 - Les liens d'invitation non consommés sont révoqués ; les notifications en attente sont supprimées (voir `exploitation-notifications.md`, §19).
 
+## Bilan statistique de clôture : habilitations (LOT 05.6.2, DM-120)
+
+Le bilan de clôture (compteurs agrégés, seuillés) est **distinct de l'accès aux archives** : il ne donne **aucun accès aux dossiers**, ne crée **aucune habilitation d'archive** (la désignation explicite de l'organisateur relève du 05.6.3) et n'expose aucun identifiant de dossier. Compteurs exacts stockés (`event_event.closure_statistics`) : **jamais affichés** ; publication **calculée à la lecture** avec le seuil `CLOSURE_STATISTICS_MIN_COUNT` (5, provisoire).
+
+| Lecteur (commune de l'écran = membership effectif, lecture) | Bilan global | Ventilation par commune | Sa propre répartition |
+|---|---|---|---|
+| `MUNICIPALITY_ADMIN` ou `EVENT_MANAGER` de la commune **organisatrice** | oui (total ; répartition par statut seulement pour un événement à une commune) | oui, avec la visibilité de coordination de l'organisatrice (`ParticipantListVisibility::Full`), si **tous** les effectifs communaux sont publiables | oui |
+| `MUNICIPALITY_ADMIN` ou `EVENT_MANAGER` d'une commune **participante** (réellement activée) | non | non | oui, **sa seule ligne** |
+| `INSTRUCTOR` (toute commune) | non | non | non |
+| Commune sans lien avec l'événement, identifiants forgés, CWS sans appartenance | rien (même réponse qu'un événement inexistant) | rien | rien |
+
+Aucune habilitation de coordination **distincte** n'existe avant le 05.6.3 : la ventilation par commune suit la visibilité de coordination déjà accordée à l'organisatrice ; c'est une limite connue (L5-36).
+
 ## Secrets des notifications (LOT 05.3.2, DT-049)
 
 Le secret du lien automatique n'est conservé que chiffré (XChaCha20-Poly1305, données associées liant message, type et laissez-passer), dans une table séparée, 48 heures au plus, supprimé dès le traitement définitif. Les clés viennent de l'environnement (`NOTIFICATION_KEYRING`), jamais du dépôt ; contrôle : `app:notifications:check-crypto`. Clé absente ou invalide : fail-closed (aucun lien, aucun clair, message en attente, approbation jamais bloquée, remise manuelle possible, échec définitif après 7 jours). Aucun secret ni valeur de clé dans les journaux, audits, exceptions ou sorties de commandes (testé). Détails : `docs/lot-05-schema.md` §19.

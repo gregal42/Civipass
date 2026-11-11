@@ -28,6 +28,8 @@ parameters:
     env(VERIFICATION_ACCESS_LIMIT): '300'
     env(VERIFICATION_FAILURE_LIMIT): '20'
     env(EVENT_MAX_ZONES_PER_BULK_OPERATION): '100'
+    # Seuil PROVISOIRE de confidentialité des bilans statistiques de clôture (LOT 05.6.2) : effectifs non nuls inférieurs au seuil masqués. À valider par le DPO.
+    env(CLOSURE_STATISTICS_MIN_COUNT): '5'
 
 services:
     # default configuration for services in *this* file

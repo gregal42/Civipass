@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Event\Application\Service;
 
 use App\Event\Application\Command\UpdateEventCommand;
+use App\Event\Application\ClosureCounters;
 use App\Event\Application\ClosureInvitationRevoker;
 use App\Event\Application\ClosureNotificationNeutralizer;
 use App\Event\Application\EventAccessPolicy;
@@ -53,6 +54,7 @@ final readonly class EventLifecycleService
         private EventAuditRecorder $audit,
         private ClosureNotificationNeutralizer $notifications,
         private ClosureInvitationRevoker $invitations,
+        private ClosureCounters $counters,
     ) {
     }
 
@@ -174,6 +176,10 @@ final readonly class EventLifecycleService
             $notifications = $this->notifications->neutralize($event->id(), $now);
             $revokedInvitations = $this->invitations->revokeUnconsumed($event->id(), $now);
 
+            // Compteurs de clôture (LOT 05.6.2) : UNE fois, dans la même transaction que le changement d'état et APRÈS les verrous (plus aucun écrivain actif) ;
+            // un échec du calcul annule la clôture (jamais d'événement clos sans compteurs, jamais de compteurs sur un événement non clos).
+            $event->recordClosureStatistics($this->counters->count($event->id()));
+
             $this->audit->record(
                 AuditAction::EventClosed,
                 AuditSubjectType::Event,
@@ -182,7 +188,7 @@ final readonly class EventLifecycleService
                 $actor,
                 $now,
                 $previousState,
-                [...EventAuditRecorder::eventState($event), 'cause' => EventStatus::Draft === $previousStatus ? 'FROM_DRAFT' : 'NORMAL', 'closedParticipations' => \count($closed), 'cancelledNotifications' => $notifications['cancelled'], 'removedSecrets' => $notifications['secrets'], 'revokedLinks' => $notifications['links'], 'revokedInvitations' => $revokedInvitations],
+                [...EventAuditRecorder::eventState($event), 'cause' => EventStatus::Draft === $previousStatus ? 'FROM_DRAFT' : 'NORMAL', 'closedParticipations' => \count($closed), 'cancelledNotifications' => $notifications['cancelled'], 'removedSecrets' => $notifications['secrets'], 'revokedLinks' => $notifications['links'], 'revokedInvitations' => $revokedInvitations, 'closureStatistics' => true],
                 $batch,
             );
             foreach ($participationAudits as [$participation, $before]) {

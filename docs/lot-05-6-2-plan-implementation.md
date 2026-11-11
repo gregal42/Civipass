@@ -1,6 +1,6 @@
 # LOT 05.6.2 — Plan d'implémentation détaillé (11 novembre 2026)
 
-**Statut : phase 1 (étapes 1 à 3 du §9) IMPLÉMENTÉE le 11 novembre 2026, non commitée ; statistiques (étapes 4 et 5) et migration M1 NON commencées, en attente d'accord.** Fait suite au [cadrage technique](lot-05-6-2-cadrage.md). Décisions Q1 à Q8 du commanditaire intégrées, avec ses réserves (barrière exhaustive et gardes métier, notifications concurrentes, statistiques à deux niveaux, M1 distincte). **À présenter et valider avant la première ligne de code.** Le 05.6.3 n'est pas commencé.
+**Statut : phase 1 (étapes 1 à 3 du §9) IMPLÉMENTÉE et commitée ; M1 exécutée (`civipass_test`, `civipass`) et commitée ; statistiques (étape 5) IMPLÉMENTÉES le 11 novembre 2026, NON commitées en attente d'accord sur leur rapport final.** Fait suite au [cadrage technique](lot-05-6-2-cadrage.md). Décisions Q1 à Q8 du commanditaire intégrées, avec ses réserves (barrière exhaustive et gardes métier, notifications concurrentes, statistiques à deux niveaux, M1 distincte). **À présenter et valider avant la première ligne de code.** Le 05.6.3 n'est pas commencé.
 
 Règles de lecture : tout ce qui est écrit « à vérifier » est **un point non prouvé** ; aucune contradiction n'est déclarée résolue tant que son test n'est pas vert (L5-33 et L5-35 restent ouvertes ; L5-34 reste ouverte jusqu'à la livraison et au test du lot).
 
@@ -125,7 +125,7 @@ Voir §9 (T-BAR-1 à T-BAR-9).
 ### 5.3 Protocole
 
 **P1 — À la clôture** (même transaction, après les verrous événement → participations, **avant** la fin ; verrou de la ligne d'outbox **en dernier**, conforme à l'ordre documenté) :
-1. lecture **verrouillante** (`FOR UPDATE`, jamais l'instantané REPEATABLE READ) des lignes `PENDING` des laissez-passer de l'événement (prises par `permit_id`, **sans** verrouiller les laissez-passer) ;
+1. lecture **non verrouillante** des identifiants des lignes `PENDING` des laissez-passer de l'événement, puis **verrou de chaque ligne par sa clé primaire**, dans l'ordre des identifiants, avec relecture de l'état et du bail sous verrou (**correction du 11 novembre 2026** : la lecture `FOR UPDATE` initiale posait des verrous d'intervalle et provoquait des interblocages avec les distributeurs en concurrence réelle) ;
 2. pour chacune : `suppress(EVENT_CLOSED)` (toutes catégories, **prioritaires comprises**, Q3), suppression du secret chiffré, **révocation du lien** jamais remis (réemploi de la logique de `SecretPurger`) ;
 3. suppression des secrets chiffrés restants des laissez-passer de l'événement (les lignes déjà `SENT` n'en ont plus : purge existante) ;
 4. **compteurs** (nombre de lignes annulées, de secrets supprimés, de liens révoqués) dans le **payload d'audit** `EVENT_CLOSED` : aucun identifiant de personne ni contenu ;
@@ -390,3 +390,25 @@ Valeur objet, calculateur, éditeur de vues, permission, panneau.
 | P5 | Unité publiée = dossier communal ; demandes distinctes **internes** ; organisateur : global + totaux par commune ; participante : sa ligne seule | Oui |
 | P6 | `EVENT_MANAGER` voit les statistiques sans désignation (option B) | Oui |
 | P7 | Les limites SMTP (§5.4) seront documentées **uniquement** comme résultats de test, sans garantie « un seul e-mail » | Oui |
+
+---
+
+## 11. Statistiques de clôture : implémentation (11 novembre 2026) — écarts avec le §6, dus à l'énumération des déductions
+
+**Livré** : `ClosureStatistics` et `MunicipalityCounters` (domaine, schéma strict), `Event::recordClosureStatistics` (écriture unique, événement clos seulement) et `closureStatistics()` (relecture stricte), `ClosureCounters` (port) et `DbalClosureCounters` (agrégats SQL ensemblistes), calcul **dans la transaction de clôture** après les verrous (un échec annule toute la clôture), `ClosureStatisticsPublication` (règles pures), `ClosureStatisticsReader` (publication calculée à la lecture), audience dans `EventAccessPolicy`, panneau « Bilan de clôture » de la fiche de l'événement, seuil `CLOSURE_STATISTICS_MIN_COUNT` (5, **provisoire**, jamais sous 2).
+
+**Schéma JSON retenu** : `{"v":1,"internal":{"requests":int,"municipalities":[{"id":uuid,"approved":int,"refused":int,"pending":int,"authorizations":int}]}}`. Les totaux (dossiers, autorisations) ne sont **pas** stockés : une seule source, les lignes communales (écart avec le §6.2, qui stockait `authorizations` global).
+
+**Règles de publication** (seuil `T`) : R1 un effectif est publié s'il vaut **0 ou au moins `T`** ; R2 répartition par statut + autorisations = **un groupe tout ou rien** ; R3 la ventilation par commune est **tout ou rien**, et, dans un événement **multicommunal**, le **total global n'est publié que si tous les effectifs communaux le sont** ; R4 la répartition par statut **globale n'est publiée que pour un événement à une commune** (dans un événement multicommunal, chaque commune ne voit que **sa propre** répartition).
+
+**Pourquoi R3 (second volet) et R4** : l'énumération exhaustive (`ClosureStatisticsPublicationTest`, plusieurs millions de combinaisons, deux seuils) a montré qu'avec le §6.3 d'origine, un lecteur membre de l'organisatrice **et** d'une commune participante pouvait déduire l'effectif d'une **troisième** commune (total − sa propre ligne − celle de l'organisatrice) et que `global par statut − sa ligne` dévoilait celle des autres. Deux mutations volontaires (suppression de R3 puis de R4) font échouer le test. Les vues sont testées **seules et combinées** pour un lecteur à plusieurs appartenances.
+
+**Permissions (P5, P6)** : `MUNICIPALITY_ADMIN` et `EVENT_MANAGER` ; commune organisatrice → bilan global **et** sa propre répartition ; commune ayant réellement participé (`activated_at`) → **sa seule ligne** ; `INSTRUCTOR` : aucun accès ; commune sans lien : rien (même `null` qu'un événement inexistant). La **ventilation par commune** exige la visibilité de coordination de l'organisatrice (`ParticipantListVisibility::Full`, rôles de gestion de l'organisatrice) : **aucune habilitation de coordination distincte n'existe avant la désignation explicite du 05.6.3** ; c'est la limite honnête de P5. Le bilan ne donne **aucun accès aux dossiers archivés**.
+
+**Événements déjà clos** : `closure_statistics` reste `NULL` ; « bilan non disponible » (aucun panneau), **aucun recalcul**, aucune commande de rattrapage (Q8). Les compteurs exacts ne sont jamais affichés ni exportés ; leur suppression à la purge du dernier dossier reste une **dépendance du 05.6.4** soumise au DPO.
+
+## 12. Clôture du LOT 05.6.2 : dépendances des sous-lots suivants
+
+**Pour le 05.6.3 (archive, désignation, gel)** : l'accès aux archives est **séparé** du bilan et exige la désignation explicite de l'organisateur par événement et commune (option B) ; la **ventilation par commune** du bilan devra s'appuyer sur cette désignation (L5-36) ; les chemins `/communes/{m}/archives/…` sont **déjà réservés** (classifieur de routes, hors barrière), les espaces de noms `App\Archive` interdits d'appel à la garde opérationnelle (test d'architecture) ; le prédicat de clôture reste la seule porte de l'exploitation.
+
+**Pour le 05.6.4 (purge et suppression)** : supprimer le bloc de compteurs exacts à la purge du dernier dossier (L5-37, avis du DPO) ; l'outbox à 90 jours (L5-33) et les lignes `SUPPRESSED/EVENT_CLOSED` suivent la purge du dossier ; les clés d'idempotence (conservées à la clôture, Q4) disparaissent avec le dossier ; le jeton de contrôle public passe de 410 à 404 après purge (O1) ; décision C14 (`first_decision_id`, L5-32) ; le service de purge **n'appelle pas** la garde opérationnelle (test d'architecture).

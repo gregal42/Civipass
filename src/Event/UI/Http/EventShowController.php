@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Event\UI\Http;
 
+use App\Event\Application\ClosureStatisticsReader;
 use App\Event\Application\EventDetailReader;
 use App\Identity\Domain\User;
 use App\Shell\CommuneSelectionController;
@@ -26,6 +27,7 @@ final class EventShowController extends AbstractController
         private readonly EventDetailReader $details,
         private readonly ShellContextFactory $shell,
         private readonly EventViewFactory $views,
+        private readonly ClosureStatisticsReader $statistics,
     ) {
     }
 
@@ -40,6 +42,6 @@ final class EventShowController extends AbstractController
             $request->getSession()->set(CommuneSelectionController::SESSION_KEY, $municipalityId);
         }
 
-        return $this->render('municipal/event/show.html.twig', $this->views->page($shell, $detail, $municipalityId, $detail->name));
+        return $this->render('municipal/event/show.html.twig', $this->views->page($shell, $detail, $municipalityId, $detail->name, extra: ['closure_statistics' => $this->statistics->forViewer($user, $municipalityId, $eventId)]));
     }
 }

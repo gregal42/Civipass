@@ -127,6 +127,32 @@ final readonly class EventAccessPolicy
         return ParticipantListVisibility::Coordination;
     }
 
+    /**
+     * Audience du bilan statistique de clôture (LOT 05.6.2) pour la commune AGISSANTE : membership effectif (lecture) exigé et rôle de gestion
+     * (MUNICIPALITY_ADMIN ou EVENT_MANAGER ; `INSTRUCTOR` seul : aucun accès). Commune organisatrice : bilan global ; commune ayant réellement participé : sa
+     * propre ligne ; toute autre : rien. Un événement non clos n'a pas de bilan.
+     */
+    public function closureStatisticsAudience(User $user, Municipality $viewer, Event $event): ClosureStatisticsAudience
+    {
+        if (!$event->status()->isClosed()) {
+            return ClosureStatisticsAudience::None;
+        }
+        $membership = $this->memberships->effectiveMembership($user, $viewer, write: false);
+        $managing = false;
+        foreach (EventPermission::ViewParticipationDetails->roles() ?? [] as $role) {
+            $managing = $managing || (null !== $membership && $membership->hasRole($role));
+        }
+        if (!$managing) {
+            return ClosureStatisticsAudience::None;
+        }
+        if ($event->isOrganizedBy($viewer)) {
+            return ClosureStatisticsAudience::Organizer;
+        }
+        $own = $this->participations->findByEventAndMunicipality($event->id(), $viewer->id());
+
+        return null !== $own && null !== $own->activatedAt() ? ClosureStatisticsAudience::Participant : ClosureStatisticsAudience::None;
+    }
+
     private function mayViewParticipationDetails(User $user, Municipality $organizer): bool
     {
         $membership = $this->memberships->effectiveMembership($user, $organizer, write: false);
