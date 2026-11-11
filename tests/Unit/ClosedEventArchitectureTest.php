@@ -24,6 +24,9 @@ final class ClosedEventArchitectureTest extends TestCase
         'src/Request/Application/RequestSubmissionService.php',
         'src/Permit/Application/PermitRevisionGuard.php',
         'src/Permit/Application/PermitAccessService.php',
+        'src/Permit/Application/BeneficiaryPassReader.php',
+        'src/Notification/Application/NotificationDispatcher.php',
+        'src/Notification/Application/SecretProvisioner.php',
     ];
 
     /** @return list<string> */

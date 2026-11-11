@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Event\Application\Service;
 
 use App\Event\Application\Command\UpdateEventCommand;
+use App\Event\Application\ClosureInvitationRevoker;
+use App\Event\Application\ClosureNotificationNeutralizer;
 use App\Event\Application\EventAccessPolicy;
 use App\Event\Application\EventPermission;
 use App\Event\Application\EventResourceResolver;
@@ -49,6 +51,8 @@ final readonly class EventLifecycleService
         private EventTypeRepository $types,
         private EventZoneRepository $zones,
         private EventAuditRecorder $audit,
+        private ClosureNotificationNeutralizer $notifications,
+        private ClosureInvitationRevoker $invitations,
     ) {
     }
 
@@ -165,6 +169,11 @@ final readonly class EventLifecycleService
                 $participationAudits[] = [$participation, $before];
             }
 
+            // Effets de la clôture sur les accès (LOT 05.6.2), dans la même transaction et APRÈS les verrous événement → participations (lignes d'outbox en dernier) :
+            // notifications en attente supprimées (prioritaires comprises), secrets et liens jamais remis retirés, invitations non consommées révoquées.
+            $notifications = $this->notifications->neutralize($event->id(), $now);
+            $revokedInvitations = $this->invitations->revokeUnconsumed($event->id(), $now);
+
             $this->audit->record(
                 AuditAction::EventClosed,
                 AuditSubjectType::Event,
@@ -173,7 +182,7 @@ final readonly class EventLifecycleService
                 $actor,
                 $now,
                 $previousState,
-                [...EventAuditRecorder::eventState($event), 'cause' => EventStatus::Draft === $previousStatus ? 'FROM_DRAFT' : 'NORMAL', 'closedParticipations' => \count($closed)],
+                [...EventAuditRecorder::eventState($event), 'cause' => EventStatus::Draft === $previousStatus ? 'FROM_DRAFT' : 'NORMAL', 'closedParticipations' => \count($closed), 'cancelledNotifications' => $notifications['cancelled'], 'removedSecrets' => $notifications['secrets'], 'revokedLinks' => $notifications['links'], 'revokedInvitations' => $revokedInvitations],
                 $batch,
             );
             foreach ($participationAudits as [$participation, $before]) {

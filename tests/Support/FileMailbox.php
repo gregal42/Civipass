@@ -22,12 +22,14 @@ final class FileMailbox implements MailerInterface
     public function send(RawMessage $message, ?Envelope $envelope = null): void
     {
         \assert($message instanceof Email);
+        $entered = microtime(true);
         usleep($this->delayMicroseconds);
         $text = (string) $message->getTextBody();
         $line = json_encode([
             'id' => $message->getHeaders()->get('Message-ID')?->getBodyAsString() ?? '',
             'secretHash' => 1 === preg_match('#/laissez-passer/([A-Za-z0-9_-]{43})#', $text, $m) ? hash('sha256', $m[1]) : null,
             'pid' => getmypid(),
+            'entered' => $entered,
         ], \JSON_THROW_ON_ERROR)."\n";
         file_put_contents($this->file, $line, \FILE_APPEND | \LOCK_EX);
         if ($this->crashAfterAcceptance) {

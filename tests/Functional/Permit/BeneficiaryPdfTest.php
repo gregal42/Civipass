@@ -184,7 +184,21 @@ final class BeneficiaryPdfTest extends PublicRequestTestCase
     {
         yield 'toutes les autorisations révoquées' => ['revoked', 'Droits révoqués : aucun PDF', 'Seul le contrôle du QR code fait foi'];
         yield 'autorisations expirées' => ['expired', 'Droits terminés : aucun PDF', 'Seul le contrôle du QR code fait foi'];
-        yield 'événement clôturé' => ['closed', 'Droits terminés : aucun PDF', 'Seul le contrôle du QR code fait foi'];
+    }
+
+    /** LOT 05.6.2 : à la clôture le lien est fermé : ni page ni PDF, même réponse (404) qu'un lien inconnu. */
+    public function testAClosedEventClosesTheLinkSoNoPdfIsGeneratedAtAll(): void
+    {
+        $secret = $this->secret();
+        $this->sql("UPDATE event_event SET status = 'CLOSED', closed_at = UTC_TIMESTAMP()");
+
+        $this->client->request('GET', '/laissez-passer/'.$secret.'/pdf');
+
+        self::assertResponseStatusCodeSame(404);
+        $body = (string) $this->client->getResponse()->getContent();
+        self::assertStringStartsNotWith('%PDF', $body);
+        self::assertStringContainsString('Ce lien n’est pas valide', $body);
+        self::assertStringNotContainsString($secret, $body);
     }
 
     #[DataProvider('nothingLeft')]
@@ -194,7 +208,6 @@ final class BeneficiaryPdfTest extends PublicRequestTestCase
         match ($cause) {
             'revoked' => array_map(fn (array $c) => $this->revoke(...$c), [[$this->instructor, $this->organizerId], [$this->partnerInstructor, $this->partnerId]]),
             'expired' => $this->sql("UPDATE permit_authorization SET duration_mode = 'CUSTOM', valid_from = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 2 DAY), valid_until = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 HOUR)"),
-            'closed' => $this->sql("UPDATE event_event SET status = 'CLOSED', closed_at = UTC_TIMESTAMP()"),
             default => self::fail('Cause inconnue : '.$cause),
         };
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Notification\Application;
 
+use App\Event\Application\EventStatusProbe;
 use App\Notification\Domain\NotificationOutboxRepository;
 use App\Notification\Domain\NotificationSecret;
 use App\Notification\Domain\NotificationSecretRepository;
@@ -38,6 +39,7 @@ final readonly class SecretProvisioner
         private SecretCipher $cipher,
         private KeyRingProvider $keys,
         private ClockInterface $clock,
+        private EventStatusProbe $events,
     ) {
     }
 
@@ -49,6 +51,9 @@ final readonly class SecretProvisioner
             $row = $this->outbox->lock($outboxId);
             if (null === $row || NotificationType::PermitIssued !== $row->type() || OutboxStatus::Pending !== $row->status()) {
                 return ProvisionOutcome::Skipped;
+            }
+            if ($this->events->isClosedByPermit($row->permitId())) {
+                return ProvisionOutcome::Skipped; // événement clos (LOT 05.6.2) : aucun lien n'est créé ; la clôture ou la garde G1 du distributeur supprime la ligne
             }
             if (null !== $this->secrets->findByOutbox($row->id())) {
                 return ProvisionOutcome::AlreadyProvisioned;

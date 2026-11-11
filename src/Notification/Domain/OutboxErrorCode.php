@@ -37,4 +37,6 @@ enum OutboxErrorCode: string
     case SupersededByRevocation = 'SUPERSEDED_BY_REVOCATION';
     /** Secret chiffré conservé plus de 48 heures sans traitement définitif : supprimé, lien révoqué. */
     case SecretExpired = 'SECRET_EXPIRED';
+    /** Événement clos (LOT 05.6.2) : aucune notification opérationnelle n'est plus émise, prioritaire ou non. */
+    case EventClosed = 'EVENT_CLOSED';
 }

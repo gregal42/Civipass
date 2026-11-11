@@ -38,7 +38,7 @@ final class NotificationModuleBoundaryTest extends TestCase
 
     public function testNotificationOnlyDependsOnThePermitPortAndSharedKernels(): void
     {
-        $allowedPermit = ['App\\Permit\\Application\\NotificationIntentRecorder', 'App\\Permit\\Domain\\NotificationIntent', 'App\\Permit\\Application\\SystemAccessLinks', 'App\\Permit\\Application\\NotificationFactsReader', 'App\\Permit\\Application\\Read\\NotificationFacts', 'App\\Permit\\Application\\ManualNotificationRequester', 'App\\Permit\\Application\\NotificationStatusProvider', 'App\\Permit\\Application\\Read\\NotificationOverview', 'App\\Permit\\Application\\Read\\NotificationLine', 'App\\Permit\\Domain\\ManualNotificationOutcome'];
+        $allowedPermit = ['App\\Permit\\Application\\NotificationIntentRecorder', 'App\\Permit\\Domain\\NotificationIntent', 'App\\Permit\\Application\\SystemAccessLinks', 'App\\Permit\\Application\\NotificationFactsReader', 'App\\Permit\\Application\\Read\\NotificationFacts', 'App\\Permit\\Application\\ManualNotificationRequester', 'App\\Permit\\Application\\NotificationStatusProvider', 'App\\Permit\\Application\\Read\\NotificationOverview', 'App\\Permit\\Application\\Read\\NotificationLine', 'App\\Permit\\Domain\\ManualNotificationOutcome', 'App\\Event\\Application\\EventStatusProbe', 'App\\Event\\Application\\ClosureNotificationNeutralizer'];
         foreach ($this->sources('src/Notification') as $source) {
             preg_match_all('/^use (App\\\\[A-Za-z\\\\]+);/m', $source, $uses);
             foreach ($uses[1] as $use) {

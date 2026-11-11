@@ -24,6 +24,12 @@ interface InvitationLinkRepository
     public function revokeOpen(Uuid $participationId, InvitationLinkKind $kind, \DateTimeImmutable $now, ?Uuid $exceptId = null): int;
 
     /**
+     * Révoque tous les liens encore ouverts (ni consommés, ni révoqués) des participations d'un événement, de tout type (clôture de l'événement,
+     * LOT 05.6.2) ; renvoie leur nombre. Les liens consommés ne sont pas modifiés (historique).
+     */
+    public function revokeOpenOfEvent(Uuid $eventId, \DateTimeImmutable $now): int;
+
+    /**
      * Consomme le lien de façon atomique (mise à jour conditionnelle : ni consommé, ni révoqué, non expiré) ; vrai si CE
      * appel l'a consommé. Deux consommations simultanées : une seule réussit.
      */

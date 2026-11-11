@@ -45,6 +45,15 @@ final readonly class DoctrineInvitationLinkRepository implements InvitationLinkR
         return (int) $this->entityManager->getConnection()->executeStatement($sql, $params);
     }
 
+    public function revokeOpenOfEvent(Uuid $eventId, \DateTimeImmutable $now): int
+    {
+        return (int) $this->entityManager->getConnection()->executeStatement(
+            'UPDATE onboarding_invitation_link l JOIN event_participation p ON p.id = l.participation_id SET l.revoked_at = :now'
+            .' WHERE p.event_id = :event AND l.consumed_at IS NULL AND l.revoked_at IS NULL',
+            ['now' => self::utc($now), 'event' => $eventId->toBinary()],
+        );
+    }
+
     public function consume(Uuid $id, \DateTimeImmutable $now): bool
     {
         return 1 === (int) $this->entityManager->getConnection()->executeStatement(

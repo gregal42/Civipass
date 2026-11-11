@@ -90,6 +90,8 @@ try {
             $container->get(EventTypeRepository::class),
             $container->get(EventZoneRepository::class),
             $audit,
+            $container->get(App\Event\Application\ClosureNotificationNeutralizer::class),
+            $container->get(App\Event\Application\ClosureInvitationRevoker::class),
         );
     }
     match ($argv[2]) {

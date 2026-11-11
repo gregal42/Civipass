@@ -185,52 +185,55 @@ final class PermitAccessServiceTest extends MunicipalDecisionTestCase
         self::assertSame($limit->format('Y-m-d H:i:s'), $this->tokenRows()[0]['expires_at'], 'instantané informatif enregistré à l\'émission');
     }
 
-    public function testAnEarlyClosureShortensTheLinkToTheClosurePlusThirtyDays(): void
+    /** LOT 05.6.2 (DM-114 amendé, DM-120) : le lien est fermé À LA CLÔTURE, plus de délai de grâce de 30 jours pour un événement clos. */
+    public function testAnEarlyClosureClosesTheLinkImmediately(): void
     {
         $secret = $this->issue($this->approved());
+        self::assertNotNull($this->reader()->find($secret, $this->at('2026-06-14 11:00:00')));
         $closure = $this->at('2026-06-14 12:00:00'); // avant la fin planifiée (20 juin)
         $this->sql('UPDATE event_event SET status = \'CLOSED\', closed_at = :c WHERE id = :id', ['c' => $closure->format('Y-m-d H:i:s'), 'id' => $this->event->id()->toBinary()]);
 
-        self::assertNotNull($this->reader()->find($secret, $closure->modify('+30 days')->modify('-1 second')));
-        self::assertNull($this->reader()->find($secret, $closure->modify('+30 days')));
+        self::assertNull($this->reader()->find($secret, $closure), 'fermé à la clôture, réponse identique à un lien inconnu');
+        self::assertNull($this->reader()->find($secret, $closure->modify('+1 minute')));
+        self::assertNull($this->reader()->find($secret, $closure->modify('+29 days')), 'plus aucune période de grâce');
+        self::assertCount(1, $this->tokenRows(), 'la ligne de jeton est conservée (preuve, archive)');
+        self::assertNull($this->tokenRows()[0]['revoked_at'], 'fermeture par prédicat : aucune révocation en masse');
     }
 
-    public function testALateAdministrativeClosureNeverExtendsTheLink(): void
+    public function testALateAdministrativeClosureNeverReopensOrExtendsTheLink(): void
     {
         $secret = $this->issue($this->approved());
         $end = $this->event->endsAt() ?? self::fail('Fin attendue.');
+        self::assertNotNull($this->reader()->find($secret, $end->modify('+30 days')->modify('-1 second')), 'événement non clos : fin planifiée + 30 jours');
+        self::assertNull($this->reader()->find($secret, $end->modify('+30 days')));
         $lateClosure = $end->modify('+20 days'); // clôture administrative tardive
         $this->sql('UPDATE event_event SET status = \'CLOSED\', closed_at = :c WHERE id = :id', ['c' => $lateClosure->format('Y-m-d H:i:s'), 'id' => $this->event->id()->toBinary()]);
 
-        self::assertNotNull($this->reader()->find($secret, $end->modify('+30 days')->modify('-1 second')));
-        self::assertNull($this->reader()->find($secret, $end->modify('+30 days')), 'la fin planifiée fait foi : +30 jours, pas clôture + 30 jours');
-        self::assertNull($this->reader()->find($secret, $lateClosure->modify('+29 days')));
+        self::assertNull($this->reader()->find($secret, $end->modify('+10 days')), 'clos : fermé, même avant la fin planifiée + 30 jours');
+        self::assertNull($this->reader()->find($secret, $end->modify('+30 days')->modify('-1 second')));
     }
 
-    public function testAnExplicitlyPostponedPlannedEndIsTheOneThatCountsAndALaterClosureDoesNotExtendIt(): void
+    public function testAnExplicitlyPostponedPlannedEndIsTheOneThatCountsWhileTheEventIsOpen(): void
     {
         $secret = $this->issue($this->approved());
         $this->sql('UPDATE event_event SET ends_at = :e WHERE id = :id', ['e' => '2026-07-10 00:00:00', 'id' => $this->event->id()->toBinary()]);
         $newEnd = $this->at('2026-07-10 00:00:00');
         self::assertNotNull($this->reader()->find($secret, $newEnd->modify('+30 days')->modify('-1 second')), 'fin planifiée repoussée : le lien suit');
-
-        // Clôture ensuite tardive par rapport à la nouvelle fin : la nouvelle fin planifiée reste la référence.
-        $this->sql('UPDATE event_event SET status = \'CLOSED\', closed_at = :c WHERE id = :id', ['c' => '2026-09-01 00:00:00', 'id' => $this->event->id()->toBinary()]);
         self::assertNull($this->reader()->find($secret, $newEnd->modify('+30 days')));
-        // Repousser la fin après coup (impossible via Event::reschedule une fois clôturé) ne rattraperait pas non plus une clôture plus tôt : min().
-        $this->sql('UPDATE event_event SET closed_at = :c WHERE id = :id', ['c' => '2026-07-01 00:00:00', 'id' => $this->event->id()->toBinary()]);
-        self::assertNull($this->reader()->find($secret, $this->at('2026-07-01 00:00:00')->modify('+30 days')));
+
+        $this->sql('UPDATE event_event SET status = \'CLOSED\', closed_at = :c WHERE id = :id', ['c' => '2026-09-01 00:00:00', 'id' => $this->event->id()->toBinary()]);
+        self::assertNull($this->reader()->find($secret, $newEnd->modify('+1 day')), 'événement clos : lien fermé');
     }
 
-    public function testWithoutAPlannedEndTheClosureMakesTheEnd(): void
+    public function testWithoutAPlannedEndTheLinkLastsUntilTheClosure(): void
     {
         $secret = $this->issue($this->approved());
         $this->sql('UPDATE event_event SET ends_at = NULL WHERE id = :id', ['id' => $this->event->id()->toBinary()]);
         self::assertNotNull($this->reader()->find($secret, $this->at('2030-01-01 00:00:00')), 'ni fin planifiée ni clôture : pas d\'expiration encore');
 
         $this->sql('UPDATE event_event SET status = \'CLOSED\', closed_at = :c WHERE id = :id', ['c' => '2026-07-01 00:00:00', 'id' => $this->event->id()->toBinary()]);
-        self::assertNull($this->reader()->find($secret, $this->at('2026-07-31 00:00:00')));
-        self::assertNotNull($this->reader()->find($secret, $this->at('2026-07-30 23:59:59')));
+        self::assertNull($this->reader()->find($secret, $this->at('2026-07-01 00:00:00')));
+        self::assertNull($this->reader()->find($secret, $this->at('2026-07-30 23:59:59')));
     }
 
     public function testPostponingTheEndOfAnOpenEventExtendsTheLinksWithIt(): void

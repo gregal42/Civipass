@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Permit\Application;
 
+use App\Event\Application\EventOperationalGuard;
 use App\Permit\Application\Read\BeneficiaryPass;
 use App\Permit\Domain\AccessSecret;
 use App\Permit\Domain\PermitAccessTokenRepository;
@@ -22,6 +23,7 @@ final readonly class BeneficiaryPassReader
     public function __construct(
         private PermitAccessTokenRepository $tokens,
         private PermitRightsEvaluator $evaluator,
+        private EventOperationalGuard $closure,
     ) {
     }
 
@@ -36,6 +38,9 @@ final readonly class BeneficiaryPassReader
             return null;
         }
         $permit = $token->permit();
+        if (!$this->closure->isOpen($permit->event()->id())) {
+            return null; // lien fermé à la clôture (DM-120) : même réponse qu'un lien inconnu ; la ligne de jeton est conservée
+        }
         $request = $permit->request();
 
         return new BeneficiaryPass(

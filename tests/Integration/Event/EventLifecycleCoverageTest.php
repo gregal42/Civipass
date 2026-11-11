@@ -243,7 +243,7 @@ final class EventLifecycleCoverageTest extends EventSchemaTestCase
     {
         $c = self::getContainer();
 
-        return new EventLifecycleService($c->get(EventTransactions::class), $c->get(ClockInterface::class), $c->get(EventResourceResolver::class), $c->get(EventAccessPolicy::class), $c->get(EventLocker::class), $c->get(EventTypeRepository::class), $c->get(EventZoneRepository::class), new EventAuditRecorder(new FailingAuditTrail($c->get(AuditTrail::class), 1)));
+        return new EventLifecycleService($c->get(EventTransactions::class), $c->get(ClockInterface::class), $c->get(EventResourceResolver::class), $c->get(EventAccessPolicy::class), $c->get(EventLocker::class), $c->get(EventTypeRepository::class), $c->get(EventZoneRepository::class), new EventAuditRecorder(new FailingAuditTrail($c->get(AuditTrail::class), 1)), $c->get(\App\Event\Application\ClosureNotificationNeutralizer::class), $c->get(\App\Event\Application\ClosureInvitationRevoker::class));
     }
 
     private function assertInjectedFailureLeavesTheEventUntouched(\Closure $operation): void

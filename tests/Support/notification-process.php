@@ -47,6 +47,14 @@ try {
 
             return ['ok' => true];
         })(),
+        'close' => (static function () use ($container, $argv, $em): array {
+            // close <adminUserId> <eventId> <délai µs> : clôture réelle de l'événement (service applicatif) ; l'instant de validation est mesuré APRÈS le retour.
+            usleep((int) $argv[4]);
+            $admin = $em->find(App\Identity\Domain\User::class, Uuid::fromString($argv[2])) ?? throw new RuntimeException('Utilisateur introuvable.');
+            $container->get(App\Event\Application\Service\EventLifecycleService::class)->close($admin, $argv[3]);
+
+            return ['ok' => true, 'committedAt' => microtime(true)];
+        })(),
         'provision' => ['ok' => true, 'outcome' => NotificationKit::provisioner($container, $keys, $clock)->provision(Uuid::fromString($argv[2]))->value],
         'purge-outbox' => ['ok' => true, 'report' => NotificationKit::outboxPurger($container, $clock)->purge()],
         'purge' => ['ok' => true, 'report' => NotificationKit::purger($container, $clock)->purge()],

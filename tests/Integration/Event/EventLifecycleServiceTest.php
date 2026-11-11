@@ -238,6 +238,8 @@ final class EventLifecycleServiceTest extends EventSchemaTestCase
             $c->get(EventTypeRepository::class),
             $c->get(EventZoneRepository::class),
             new EventAuditRecorder(new FailingAuditTrail($c->get(AuditTrail::class), 3)),
+            $c->get(\App\Event\Application\ClosureNotificationNeutralizer::class),
+            $c->get(\App\Event\Application\ClosureInvitationRevoker::class),
         );
         $audits = $this->rows('SELECT COUNT(*) FROM audit_log');
 

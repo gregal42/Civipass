@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Notification\Application;
 
+use App\Event\Application\EventStatusProbe;
 use App\Notification\Domain\ChangeCategory;
 use App\Notification\Domain\DispatchReport;
 use App\Notification\Domain\FailureKind;
@@ -66,6 +67,7 @@ final class NotificationDispatcher
         private readonly KeyRingProvider $keys,
         private readonly ClockInterface $clock,
         private readonly LoggerInterface $logger,
+        private readonly EventStatusProbe $events,
     ) {
     }
 
@@ -113,6 +115,13 @@ final class NotificationDispatcher
             return 'skipped';
         }
         [$type, $permitId, $authorizationId] = [$row->type(), $row->permitId(), $row->authorizationId()];
+
+        // (G1) Événement CLOS (LOT 05.6.2, DM-120) : plus aucune prise en charge, avant l'ordonnancement et AVANT la création d'un lien (étape 2). Tout type,
+        // prioritaire compris. Lecture fraîche, hors transaction, sans verrou d'événement (l'ordre des verrous reste événement → participations → lignes).
+        // Couvre aussi les lignes revenues en attente après un échec SMTP et les réservations à bail expiré (processus mort) : traitement idempotent.
+        if ($this->events->isClosedByPermit($permitId)) {
+            return $this->settle($id, $this->suppressClosed(...), 'suppressed', lease: null);
+        }
 
         // (0) Ordre (LOT 05.3.4) : une extension attend la mise à disposition ; redondante ou sans premier message remis, elle est supprimée.
         if (ChangeCategory::Ordinary === $type->category() || NotificationType::QrReplaced === $type) {
@@ -163,6 +172,11 @@ final class NotificationDispatcher
 
         // (4) État courant, relu juste avant l'envoi (jamais d'instance périmée). Les révisions en attente sont lues AVANT l'état : une révision commise entre
         // les deux est décrite par le message mais non déclarée couverte (au pire un message de plus, jamais une perte).
+        // (G2) Dernier contrôle avant la composition et l'envoi : la clôture a pu être validée entre G1 et la réservation. Au-delà, plus aucune garde n'est
+        // possible : aucun verrou n'est tenu pendant l'échange SMTP (limite documentée dans exploitation-notifications.md).
+        if ($this->events->isClosedByPermit($permitId)) {
+            return $this->settle($id, $this->suppressClosed(...), 'suppressed', $claim);
+        }
         $this->em->clear();
         $now = $this->clock->now();
         // Un message décrit l'état courant d'UNE autorisation (celle de la ligne) : il ne couvre que les révisions en attente de CETTE autorisation, jamais celles
@@ -245,6 +259,13 @@ final class NotificationDispatcher
             $decision = RetryPolicy::decide($r->attempts(), $r->firstAttemptAt() ?? $at, $at);
             $decision instanceof \DateTimeImmutable ? $r->retryAt($decision, OutboxErrorCode::SmtpTemporary) : $r->abandon($decision, $at);
         }, 'retry', $claim);
+    }
+
+    /** Suppression « événement clos » : trace d'audit sans donnée personnelle ; le secret est purgé et le lien jamais remis révoqué par `settle`. */
+    private function suppressClosed(NotificationOutbox $row, \DateTimeImmutable $now): void
+    {
+        $row->suppress(OutboxErrorCode::EventClosed, $now);
+        NotificationOrdering::auditSuppression($this->audit, $row, $now);
     }
 
     /**

@@ -51,7 +51,7 @@ final class NotificationKit
 
     public static function provisioner(ContainerInterface $c, KeyRingProvider $keys, ClockInterface $clock, ?AuditTrail $audit = null): SecretProvisioner
     {
-        return new SecretProvisioner($c->get(TransactionRunner::class), $c->get(NotificationOutboxRepository::class), $c->get(NotificationSecretRepository::class), self::links($c, $audit), new SecretCipher(), $keys, $clock);
+        return new SecretProvisioner($c->get(TransactionRunner::class), $c->get(NotificationOutboxRepository::class), $c->get(NotificationSecretRepository::class), self::links($c, $audit), new SecretCipher(), $keys, $clock, $c->get(\App\Event\Application\EventStatusProbe::class));
     }
 
     public static function vault(ContainerInterface $c, KeyRingProvider $keys): SecretVault
@@ -68,7 +68,7 @@ final class NotificationKit
      * @param string|null $baseUrl domaine des liens : `null` = le VRAI compositeur du conteneur (DEFAULT_URI de la configuration) ; une valeur explicite
      *                             n'est qu'une doublure de test et ne doit jamais servir à une recette
      */
-    public static function dispatcher(ContainerInterface $c, KeyRingProvider $keys, ClockInterface $clock, MailerInterface $mailer, ?LoggerInterface $logger = null, ?AuditTrail $audit = null, ?string $baseUrl = 'http://civipass.test'): NotificationDispatcher
+    public static function dispatcher(ContainerInterface $c, KeyRingProvider $keys, ClockInterface $clock, MailerInterface $mailer, ?LoggerInterface $logger = null, ?AuditTrail $audit = null, ?string $baseUrl = 'http://civipass.test', ?\App\Event\Application\EventStatusProbe $probe = null): NotificationDispatcher
     {
         $links = self::links($c, $audit);
         $secrets = $c->get(NotificationSecretRepository::class);
@@ -93,6 +93,7 @@ final class NotificationKit
             $keys,
             $clock,
             $logger ?? new \Psr\Log\NullLogger(),
+            $probe ?? $c->get(\App\Event\Application\EventStatusProbe::class),
         );
     }
 
