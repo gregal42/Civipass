@@ -95,6 +95,10 @@ final class EventClosureConcurrencyTest extends ClosedEventScenarioTestCase
     public function testClosureRacingSeveralDistributorsNeverLeavesAPendingMessageAndTheLateSendsAreBounded(int $delay): void
     {
         $this->approveMore(8);
+        // Graines : une réservation à bail expiré (processus mort) et un message ordinaire pas encore échu.
+        $seed = $this->em()->getConnection()->fetchFirstColumn('SELECT LOWER(HEX(id)) FROM notification_outbox WHERE status = \'PENDING\' ORDER BY id DESC LIMIT 2');
+        $this->sql('UPDATE notification_outbox SET status = \'RESERVED\', attempts = 1, first_attempt_at = UTC_TIMESTAMP(), leased_until = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 5 MINUTE) WHERE id = UNHEX(:id)', ['id' => $seed[0]]);
+        $this->sql('UPDATE notification_outbox SET available_at = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 DAY) WHERE id = UNHEX(:id)', ['id' => $seed[1]]);
         $admin = $this->admin->id()->toRfc4122();
         $eventId = $this->event->id()->toRfc4122();
 
@@ -105,13 +109,21 @@ final class EventClosureConcurrencyTest extends ClosedEventScenarioTestCase
         $mails = $this->mailbox();
         $connection = $this->em()->getConnection();
         self::assertSame('CLOSED', $connection->fetchOne('SELECT status FROM event_event'));
-        self::assertSame(0, (int) $connection->fetchOne('SELECT COUNT(*) FROM notification_outbox WHERE status IN (\'PENDING\', \'RESERVED\')'), 'rien n\'est resté en attente ni réservé');
+        $left = $connection->fetchAllAssociative('SELECT HEX(id) AS id, type, status, attempts, last_error_code, leased_until, available_at, processed_at FROM notification_outbox WHERE status IN (\'PENDING\', \'RESERVED\')');
+        self::assertSame([], $left, 'rien n\'est resté en attente ni réservé : '.json_encode($left).' ; clôture validée à '.$committedAt.' ; processus : '.json_encode(array_map(static fn (array $r): mixed => [$r['outcomes'] ?? $r, $r['log'] ?? []], \array_slice($results, 0, self::DISTRIBUTORS))));
         self::assertCount(\count(array_unique(array_column($mails, 'id'))), $mails, 'aucun doublon');
         self::assertSame(\count($mails), (int) $connection->fetchOne('SELECT COUNT(*) FROM notification_outbox WHERE status = \'SENT\''), 'chaque message parti est une ligne SENT (état exact)');
         $late = \count(array_filter($mails, static fn (array $m): bool => $m['entered'] > $committedAt));
         self::assertLessThanOrEqual(self::DISTRIBUTORS, $late, 'au plus un message en vol par distributeur actif (mesuré ; fenêtre SMTP irréductible)');
         fwrite(\STDERR, sprintf("[mesure] délai %d µs : %d message(s) parti(s), dont %d entré(s) dans l'envoi après la validation de la clôture.\n", $delay, \count($mails), $late));
         self::assertSame(0, (int) $connection->fetchOne('SELECT COUNT(*) FROM notification_secret'), 'aucun secret chiffré ne subsiste');
+
+        // Stabilisation : un passage ultérieur (bails échus) ne laisse AUCUNE ligne abandonnée en attente ou réservée. Les 60 passes de stabilité du 11 novembre 2026
+        // ne sont pas une preuve d'absence d'interblocage ; la reprise (bail 10 minutes puis garde G1) en est le filet.
+        putenv('NOTIFICATION_TEST_CLOCK_OFFSET='.(time() - strtotime('2026-06-12 09:00:00 UTC') + 700));
+        $this->decode(ParallelPhp::run('notification-process.php', [['dispatch']]));
+        self::assertSame(0, (int) $connection->fetchOne('SELECT COUNT(*) FROM notification_outbox WHERE status IN (\'PENDING\', \'RESERVED\')'), 'aucune ligne PENDING ou RESERVED abandonnée après stabilisation');
+        putenv('NOTIFICATION_TEST_CLOCK_OFFSET='.(time() - strtotime('2026-06-12 09:00:00 UTC')));
 
         // Un distributeur lancé après la clôture n'envoie rien.
         $sentBefore = \count($mails);

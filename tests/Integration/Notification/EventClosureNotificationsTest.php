@@ -188,6 +188,61 @@ final class EventClosureNotificationsTest extends ClosedEventScenarioTestCase
         self::assertSame('SUPPRESSED/EVENT_CLOSED', (string) $this->em()->getConnection()->fetchOne('SELECT CONCAT(status, \'/\', last_error_code) FROM notification_outbox WHERE id = UNHEX(:id)', ['id' => $id]));
     }
 
+    /** @return iterable<string, array{string, string, int, string}> état imposé AVANT le verrou de la ligne, état final attendu, nombre annulé, motif */
+    public static function changesBetweenSelectionAndLock(): iterable
+    {
+        yield 'inchangé : annulé' => ['', 'SUPPRESSED/EVENT_CLOSED', 1, 'la ligne en attente est neutralisée'];
+        yield 'envoyé entre-temps : laissé' => ['UPDATE notification_outbox SET status = \'SENT\', processed_at = UTC_TIMESTAMP(), attempts = 1 WHERE id = UNHEX(:id)', 'SENT/-', 0, 'un message déjà parti garde son état exact'];
+        yield 'réservé à bail valide : laissé' => ['UPDATE notification_outbox SET status = \'RESERVED\', attempts = 1, first_attempt_at = UTC_TIMESTAMP(), leased_until = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 5 MINUTE) WHERE id = UNHEX(:id)', 'RESERVED/-', 0, 'envoi peut-être en cours : la garde G2 et G1 prendront le relais'];
+        yield 'réservé à bail expiré : annulé' => ['UPDATE notification_outbox SET status = \'RESERVED\', attempts = 1, first_attempt_at = UTC_TIMESTAMP(), leased_until = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 5 MINUTE) WHERE id = UNHEX(:id)', 'SUPPRESSED/EVENT_CLOSED', 1, 'processus mort : récupéré'];
+    }
+
+    /**
+     * Une ligne qui change d'état ENTRE la sélection des identifiants et son verrou (le distributeur la réserve ou l'envoie) : l'état est relu SOUS le verrou ;
+     * jamais d'écrasement d'un message en cours ou envoyé, jamais d'échappement d'une ligne encore en attente.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('changesBetweenSelectionAndLock')]
+    public function testARowChangingStateBetweenTheSelectionAndTheLockIsRecheckedUnderItsLock(string $sql, string $expected, int $cancelled, string $why): void
+    {
+        $c = static::getContainer();
+        $real = $c->get(\App\Notification\Domain\NotificationOutboxRepository::class);
+        $connection = $this->em()->getConnection();
+        $ids = $connection->fetchFirstColumn('SELECT LOWER(HEX(id)) FROM notification_outbox WHERE status = \'PENDING\' ORDER BY id LIMIT 1');
+        self::assertCount(1, $ids);
+        $target = (string) $ids[0];
+        $connection->executeStatement('UPDATE notification_outbox SET status = \'SUPPRESSED\', last_error_code = \'TEST_AUTRE\', processed_at = UTC_TIMESTAMP() WHERE status = \'PENDING\' AND id <> UNHEX(:id)', ['id' => $target]);
+        $stub = $this->createStub(\App\Notification\Domain\NotificationOutboxRepository::class);
+        $stub->method('lock')->willReturnCallback(function (Uuid $id) use ($real, $sql, $connection, $target) {
+            if ('' !== $sql && str_replace('-', '', $id->toRfc4122()) === $target) {
+                $connection->executeStatement($sql, ['id' => $target]); // la « concurrence » : changement d'état juste avant le verrou
+            }
+
+            return $real->lock($id);
+        });
+        $neutralizer = new \App\Notification\Application\EventClosureNotifications($connection, $stub, $c->get(\App\Notification\Domain\NotificationSecretRepository::class), $c->get(\App\Permit\Application\SystemAccessLinks::class));
+
+        $report = $c->get(\App\Shared\Application\TransactionRunner::class)->run(fn (): array => $neutralizer->neutralize($this->event->id(), $this->clockService()->now()));
+
+        self::assertSame($cancelled, $report['cancelled'], $why);
+        self::assertSame($expected, $connection->fetchOne('SELECT CONCAT(status, \'/\', COALESCE(last_error_code, \'-\')) FROM notification_outbox WHERE id = UNHEX(:id)', ['id' => $target]), $why);
+    }
+
+    public function testAReservationWithAValidLeaseLeftByTheClosureIsNeutralisedOnceItsLeaseHasExpiredWithoutAnySending(): void
+    {
+        $id = (string) $this->em()->getConnection()->fetchOne('SELECT LOWER(HEX(id)) FROM notification_outbox WHERE status = \'PENDING\' ORDER BY id LIMIT 1');
+        $this->sql('UPDATE notification_outbox SET status = \'RESERVED\', attempts = 1, first_attempt_at = UTC_TIMESTAMP(), leased_until = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 5 MINUTE) WHERE id = UNHEX(:id)', ['id' => $id]);
+        $this->close();
+        self::assertSame('RESERVED', $this->em()->getConnection()->fetchOne('SELECT status FROM notification_outbox WHERE id = UNHEX(:id)', ['id' => $id]), 'bail valide : laissée par la clôture');
+
+        // Le processus qui la tenait est mort : plus tard, un distributeur la récupère à l\'expiration du bail et la neutralise sans rien envoyer.
+        $later = new \Symfony\Component\Clock\MockClock($this->clockService()->now()->modify('+11 minutes'));
+        NotificationKit::dispatcher(static::getContainer(), $this->keys, $later, $this->mailer)->run();
+
+        self::assertSame('SUPPRESSED/EVENT_CLOSED', $this->em()->getConnection()->fetchOne('SELECT CONCAT(status, \'/\', last_error_code) FROM notification_outbox WHERE id = UNHEX(:id)', ['id' => $id]));
+        self::assertSame([], $this->mailer->tried);
+        self::assertSame(0, $this->scalarInt('SELECT COUNT(*) FROM notification_outbox WHERE status IN (\'PENDING\', \'RESERVED\')'), 'aucune ligne abandonnée après stabilisation');
+    }
+
     public function testASecondClosureIsRefusedWithoutAnyMutation(): void
     {
         $this->close();

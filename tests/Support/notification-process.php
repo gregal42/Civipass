@@ -29,7 +29,12 @@ $keys = NotificationKit::provider(getenv('NOTIFICATION_KEYRING_TEST') ?: null, g
 
 try {
     $result = match ($argv[1]) {
-        'dispatch', 'dispatch-crash' => ['ok' => true, 'outcomes' => NotificationKit::dispatcher($container, $keys, $clock, new App\Tests\Support\FileMailbox((string) getenv('NOTIFICATION_TEST_MAILBOX'), 'dispatch-crash' === $argv[1], (int) (getenv('NOTIFICATION_TEST_SEND_DELAY_US') ?: 0)))->run(50, 30)->outcomes],
+        'dispatch', 'dispatch-crash' => (static function () use ($container, $keys, $clock, $argv): array {
+            $logger = new App\Tests\Support\RecordingLogger();
+            $outcomes = NotificationKit::dispatcher($container, $keys, $clock, new App\Tests\Support\FileMailbox((string) getenv('NOTIFICATION_TEST_MAILBOX'), 'dispatch-crash' === $argv[1], (int) (getenv('NOTIFICATION_TEST_SEND_DELAY_US') ?: 0)), $logger)->run(50, 30)->outcomes;
+
+            return ['ok' => true, 'outcomes' => $outcomes, 'log' => $logger->lines];
+        })(),
         'manual' => (static function () use ($container, $clock, $argv, $em): array {
             // manual <userId> <municipalityId> <requestId> <nonce> : demande manuelle d'un agent (service réel, horloge figée).
             $agent = $em->find(App\Identity\Domain\User::class, Uuid::fromString($argv[2])) ?? throw new RuntimeException('Utilisateur introuvable.');
