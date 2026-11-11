@@ -1,6 +1,6 @@
-# LOT 05.6 — Cycle de vie des événements, archives et suppression RGPD : cadrage (version 2.1)
+# LOT 05.6 — Cycle de vie des événements, archives et suppression RGPD : cadrage (version 2.2)
 
-**Statut : CADRAGE UNIQUEMENT (11 novembre 2026). Orientation et dix arbitrages du commanditaire INTÉGRÉS (§0). Aucune implémentation, aucune migration, aucune modification d'infrastructure, aucun déploiement. `PUBLIC_VERIFICATION_ENABLED` reste à 0.**
+**Statut : CADRAGE UNIQUEMENT (11 novembre 2026). Orientation, dix arbitrages et quatre décisions de conception du commanditaire INTÉGRÉS (§0 et §0 bis). Aucune implémentation, aucune migration, aucune modification d'infrastructure, aucun déploiement. `PUBLIC_VERIFICATION_ENABLED` reste à 0.**
 
 Cette version **remplace** la version 1 (anonymisation progressive des champs à `T`+30 j, `T`+3 mois, `T`+6 mois : **abandonnée**) et la version 2 initiale. Principe directeur (commanditaire, 11 novembre 2026) : Civipass est un outil **temporaire** de gestion d'événement ; les données opérationnelles ne sont plus accessibles à la clôture ; leur conservation ultérieure répond à une **finalité précise** (litige, obligation légale), dans une **archive intermédiaire strictement cloisonnée**, puis **purge et suppression définitive** lorsque cela est autorisé ; aucune base permanente de citoyens, de véhicules ou de demandes.
 
@@ -16,7 +16,7 @@ Cette version **remplace** la version 1 (anonymisation progressive des champs à
 |---|---|---|
 | 1 | **Demandes non décidées** : **conservées dans l'archive avec leur statut réel**, comme les demandes refusées ou approuvées (ne sont plus supprimées à la clôture) | §3.2, §3.5, §4 |
 | 2 | **12 mois = hypothèse, non durée validée** ; politique de conservation à confirmer avec le DPO et le service d'archives ; **gel contentieux motivé, limité au périmètre nécessaire, réexaminé régulièrement** | §3.2, §6.3, §8, R1 |
-| 3 | **Accès aux archives : `MUNICIPALITY_ADMIN` et `EVENT_MANAGER` de la commune concernée uniquement** ; rattachement de l'habilitation de l'organisateur à l'événement à vérifier ; aucun accès aux données confidentielles des autres communes | §6.1, §6.2, R9 |
+| 3 | **Accès aux archives : `MUNICIPALITY_ADMIN` et `EVENT_MANAGER` de la commune concernée uniquement** ; rattachement de l'organisateur à l'événement : **option B, désignation explicite** (D2) ; aucun accès aux données confidentielles des autres communes | §6.1, §6.2, R9 |
 | 4 | **Rapport de comptes candidats validé**, **aucune suppression automatique en V1** ; nettoyage des accès événementiels ; comptes partagés et permanents préservés | §5, R6 |
 | 5 | **QR après purge : option O1** (410 conservé avant la purge ; 404 neutre accepté après) ; évolution du contrat à documenter et à tester | §7, R4 |
 | 6 | **Lien bénéficiaire fermé immédiatement à la clôture** (le délai de 30 jours de DM-114 est supprimé) | §3.1, §4, R4 |
@@ -24,6 +24,16 @@ Cette version **remplace** la version 1 (anonymisation progressive des champs à
 | 8 | **Clés étrangères `RESTRICT` conservées** ; service de suppression **explicite, idempotent et reprenable** ; **pas de `CASCADE` généralisé** | §2 C2, §3.3, §10 |
 | 9 | **Multicommunal** : données **réellement communes** et décisions **propres à chaque commune** identifiées ; un gel contentieux **n'ouvre pas** les archives des autres communes | §4.2, §6.3 |
 | 10 | **Événements sans fin** : dispositif de **détection et d'alerte**, **sans clôture automatique** susceptible de modifier les droits | §3.5, R2 |
+
+### 0 bis. Décisions de conception définitives (11 novembre 2026, DM-120)
+
+| # | Décision | Intégrée au |
+|---|---|---|
+| D1 | **Règle 8 reformulée — VALIDÉE** : « Aucune suppression de données avant la fin de leur conservation justifiée. À l'issue, suppression contrôlée, traçable et conforme aux obligations applicables. » | §2 C9, DM-120, CONTRADICTIONS L5-28 |
+| D2 | **Habilitation de l'organisateur — OPTION B** : `EVENT_MANAGER` reste un rôle communal ; l'accès aux archives exige une **désignation explicite** pour **chaque événement et chaque commune** ; `MUNICIPALITY_ADMIN` accède aux archives de sa commune ; `INSTRUCTOR` exclu ; **aucune extension automatique** à d'autres événements ou communes ; permissions opérationnelles **inchangées** | §6, §10.1, §13 (05.6.3), Annexe A |
+| D3 | **Unité de gel et de purge — DOSSIER COMMUNAL** (demande × commune) ; **la clôture reste globale** à l'événement ; les données **propres à une commune** peuvent être purgées quand leur conservation n'est plus justifiée ; les **données partagées** ne sont supprimées physiquement que lorsqu'**aucun** dossier ne justifie plus leur conservation ; un gel ne donne **jamais** accès aux dossiers des autres communes ; **tests multicommunaux** (références partagées, accès, suppressions partielles) | §3.3, §4.2, §13 (05.6.4), §10.4 |
+| D4 | **Migrations : accord de principe uniquement** ; avant **chaque** sous-lot concerné, présenter : SQL exact, entités Doctrine, contraintes et index, traitement des données existantes, risques et retour arrière, tests de non-régression ; **aucune exécution sans validation explicite** | Annexe B, §13 |
+| D5 | **Politique de conservation** : la durée de **12 mois reste une hypothèse** ; durées, règles d'élimination, obligations d'archives publiques et modalités de gel à valider par les responsables compétents **avant la production** ; **jamais présentée comme une règle juridiquement acquise** | §8, §12 |
 
 ---
 
@@ -47,15 +57,16 @@ Cette version **remplace** la version 1 (anonymisation progressive des champs à
 | C2 | **Toutes** les clés étrangères sont en `ON DELETE RESTRICT` (37 tables métier, plus le suivi des migrations ; voulu : règle 8). Supprimer un événement exige l'effacement ordonné d'une vingtaine de tables dépendantes. | Service de purge **explicite et ordonné** ; les `RESTRICT` restent le filet de sécurité ; **aucun `CASCADE`** (décision 8) |
 | C3 | Tables liées à l'événement **sans clé étrangère** : `notification_outbox`, `notification_secret` (`permit_id` simples), `audit_log` (`subject_id` simples, aucune colonne événement). | Nettoyage applicatif obligatoire |
 | C4 | Les **fichiers** justificatifs sont hors base (`LocalFileStorage`, clé `storage_key`, `delete()` existe). | Suppression de fichiers avec reprise |
-| C5 | **Rattachement actuel des habilitations d'événement** (vérifié dans `EventAccessPolicy` et `EventPermission`) : une permission exige une appartenance `MunicipalityMembership` (utilisateur, **commune**) avec un rôle de la liste de la permission (le plus souvent `MUNICIPALITY_ADMIN` ou `EVENT_MANAGER`), dans **la commune organisatrice** de l'événement (droits d'événement) ou **la commune participante** (droits de participation et de zones). **Il n'existe aucune désignation individuelle « pour cet événement »** : l'organisateur est un membre de la commune organisatrice. | Décision R9 (option A : on garde ce rattachement ; option B : désignation par événement) |
+| C5 | **Rattachement actuel des habilitations d'événement** (vérifié dans `EventAccessPolicy` et `EventPermission`) : une permission exige une appartenance `MunicipalityMembership` (utilisateur, **commune**) avec un rôle de la liste de la permission (le plus souvent `MUNICIPALITY_ADMIN` ou `EVENT_MANAGER`), dans **la commune organisatrice** de l'événement (droits d'événement) ou **la commune participante** (droits de participation et de zones). **Il n'existe aucune désignation individuelle « pour cet événement »**. | **Décision D2 : option B** — une désignation explicite par événement et commune est ajoutée **pour l'accès aux archives seulement** ; les droits opérationnels existants ne changent pas |
 | C6 | Les comptes créés par une invitation (`AdministratorEnrollment`) sont des **administrateurs de la commune invitée** (appartenance de commune) ; une commune invitée est une commune **existante** de la plateforme ; aucune notion de compte temporaire. | Aucun compte n'est « temporaire » par nature (§5) |
 | C7 | Une demande est **partagée** entre les communes concernées (identité, contact, adresse, plaques, justificatifs, laissez-passer, QR) ; la **ligne « demande × commune »** (`request_permit_request_municipality`) et la **décision** (`request_permit_request_decision`) sont **propres à chaque commune**, ainsi que l'autorisation et les révisions. | Archive cloisonnée **par commune** ; unité de gel et de purge : le **dossier** (§4.2, §6.3) |
 | C8 | `Event.endsAt` est **nullable** : un événement sans fin planifiée et jamais clôturé reste actif indéfiniment ; ses autorisations « jusqu'à la clôture » restent valables. | Détection et alerte (§3.5) |
-| C9 | Règle 8 : « pas de suppression physique d'une décision, d'une autorisation ou de son historique ». L'orientation prévoit leur suppression **après la conservation justifiée**. | **Écart à arbitrer** : reformulation proposée de la règle 8 (R2) ; **CLAUDE.md n'est pas modifié sans validation** |
+| C9 | Règle 8 : « pas de suppression physique d'une décision, d'une autorisation ou de son historique ». | **Décision D1 : reformulation VALIDÉE** (« Aucune suppression de données avant la fin de leur conservation justifiée. À l'issue, suppression contrôlée, traçable et conforme aux obligations applicables. ») ; reportée dans DM-120 et CLAUDE.md |
 | C10 | Le lien bénéficiaire (DM-114) restait valable 30 jours après la fin effective de l'événement. | **Décision 6 : fermé à la clôture** (DM-114 amendé) |
 | C11 | La page publique d'un événement clos affiche déjà **uniquement « Événement terminé »** (DM-115 amendé le 10 novembre 2026) ; un jeton retiré répond 410 ; un jeton inconnu 404. | Contrat conservé avant la purge ; évolution après la purge : §7 |
 | C12 | Aucune statistique de clôture n'est enregistrée. | Instantané anonyme à calculer à la clôture |
 | C13 | Rien ne détecte aujourd'hui un événement dormant ou jamais clôturé. | §3.5 |
+| C14 | **Dépendance « donnée partagée → donnée propre à une commune »** (vérifiée dans le schéma) : `permit_permit.first_decision_id` est une clé **non nulle** vers la décision de la **première commune approbatrice** ; son getter `Permit::firstDecision()` n'est utilisé nulle part (provenance). C'est la **seule** clé de ce sens ; les autres liens vont d'une donnée propre à une commune vers une donnée partagée (demande, laissez-passer). | Elle empêche de supprimer physiquement cette décision tant que le laissez-passer existe : voir §3.3 et la décision à confirmer à l'ouverture du 05.6.4 |
 
 ---
 
@@ -79,12 +90,17 @@ Le seul traitement différé est la **purge d'un dossier** : tout ce qui n'est p
 - **Durée d'archive : 12 mois après la clôture, HYPOTHÈSE DE TRAVAIL, non validée** (décision 2). Elle est paramétrable et **ne devient une durée qu'après confirmation par le DPO et le service d'archives** (§8). Elle ne doit pas être présentée comme une obligation légale.
 - **Archives publiques.** Les communes sont des personnes publiques : leurs décisions peuvent relever des **archives publiques** (Code du patrimoine), dont l'élimination est en principe soumise au **visa de l'administration des archives** et à un tableau de gestion (durée d'utilité administrative, sort final). **À vérifier avec le service d'archives.** Le lot prévoit un **bordereau de purge** (événement, communes, dates, comptages, **sans donnée personnelle**).
 
-### 3.3 Fin de l'archive et purge (unité : le dossier)
+### 3.3 Fin de l'archive et purge (unité : le dossier communal, décision D3)
 
-- L'accès d'une commune à un dossier se ferme à `clôture + durée d'archive`, **sauf gel de cette commune sur ce dossier**.
-- Un **dossier** est purgé quand **plus aucune commune concernée** n'y a d'accès ouvert ni de gel : les données communes (une seule copie) attendent la dernière commune.
+La **clôture est globale** à l'événement ; la **conservation, le gel et la purge** sont **par dossier communal** (demande × commune, `request_permit_request_municipality`).
+
+- L'accès d'une commune à son dossier se ferme à `clôture + durée d'archive` (hypothèse de 12 mois), **sauf gel de cette commune sur ce dossier**.
+- **Purge à deux niveaux** :
+  1. **Niveau commune** — quand le dossier de la commune `M` n'est plus justifié (accès fermé, aucun gel) : suppression des données **propres à `M`** : ligne demande × commune, décision et motifs de refus de `M`, autorisation de `M` (zones copiées, périodes), révisions de `M` (dont leurs lignes de plaques), audit et notifications propres à `M`. Les autres communes ne sont pas touchées ; **leurs lignes neutres relatives aux actions de `M` disparaissent de leur historique** (conséquence documentée et testée).
+  2. **Niveau données partagées** — quand **plus aucun** dossier de la demande ne justifie la conservation (tous les dossiers communaux sont purgés) : suppression de la demande (identité, contact, adresse, textes libres), plaques déclarées, justificatifs **et fichiers**, laissez-passer, plaques autorisées, jetons, liens, intentions de notification du laissez-passer.
+- **Dépendance C14** : la décision de la **première commune approbatrice** reste référencée par le laissez-passer (clé non nulle). *Option 1 (recommandée, sans migration)* : cette ligne de décision **est supprimée avec les données partagées** ; elle ne contient **aucun texte libre** (`refusal_comment` est vide pour une approbation) ni donnée de la personne, seulement le résultat, les dates et un identifiant d'agent ; son accès est fermé comme le reste du dossier de `M`. *Option 2* : rendre la clé nullable (migration) pour supprimer la décision au niveau commune. **À confirmer à l'ouverture du 05.6.4** (la décision d'approbation conservée plus longtemps est une exception documentée à « purge propre à la commune »).
 - Un événement est « entièrement purgé » quand tous ses dossiers le sont.
-- **Déclenchement proposé** : à l'échéance, **après un préavis de 30 jours** aux `MUNICIPALITY_ADMIN` de chaque commune concernée (qui peuvent poser ou prolonger un gel motivé) ; opération **par lots, idempotente, reprenable**, avec **simulation (dry-run)** ; verrou, refus si un gel existe ou si l'événement n'est pas clos ; **service explicite** (aucun `CASCADE`, décision 8).
+- **Déclenchement proposé** : à l'échéance, **après un préavis de 30 jours** aux `MUNICIPALITY_ADMIN` de la commune concernée (qui peut poser ou prolonger un gel motivé) ; opération **par lots, idempotente, reprenable**, avec **simulation (dry-run)** ; refus si un gel existe ou si l'événement n'est pas clos ; **service explicite** (aucun `CASCADE`, décision 8) ; chaque étape journalisée.
 
 ### 3.4 Suppression définitive de l'événement
 
@@ -145,7 +161,13 @@ Le seul traitement différé est la **purge d'un dossier** : tout ce qui n'est p
 | **Propres à chaque commune** | ligne demande × commune (statut réel), **décision** (résultat, motif de refus, commentaire), autorisation, périodes, zones copiées, **révisions** (motifs, commentaires, auteur) | une copie **par commune** | **seulement les siennes** ; celles des autres : **lignes neutres** (type, date, commune), jamais motif ni auteur | protège **les siennes** ; n'ouvre **rien** des autres communes |
 | **Événement** | zones, participations, statistiques | par commune pour les zones et la participation | les siennes ; statistiques : les siennes | aucun |
 
-**Règle d'accès** : `M` accède au dossier `D` ssi `M` est concernée par `D` **et** (l'accès de `M` est dans sa durée d'archive **ou** `M` a un gel sur `D`). Le gel d'une commune **ne prolonge jamais** l'accès des autres communes.
+**Règle d'accès** : `M` accède au dossier `D` ssi `M` est concernée par `D` **et** (l'accès de `M` est dans sa durée d'archive **ou** `M` a un gel sur `D`) **et** l'utilisateur est `MUNICIPALITY_ADMIN` de `M` ou `EVENT_MANAGER` explicitement désigné pour cet événement et `M` (décision D2). Le gel d'une commune **ne prolonge jamais** l'accès des autres communes.
+
+**Règles de suppression partielle (décision D3)** :
+1. Les données **propres à `M`** peuvent être supprimées quand le dossier de `M` n'est plus justifié, **sans** attendre les autres communes (sous réserve de la dépendance C14).
+2. Les données **partagées** ne sont supprimées que lorsque **tous** les dossiers de la demande sont purgés : tant qu'**un seul** dossier est gelé ou ouvert, la copie partagée reste, **accessible uniquement** au titulaire de ce dossier.
+3. Un gel ne donne **jamais** accès aux données propres d'une autre commune, ni à l'archive d'un autre événement.
+4. Après la purge de `M`, un autre dossier voit **moins de lignes neutres** (celles des actions de `M`), jamais plus.
 
 ---
 
@@ -176,27 +198,35 @@ L'appartenance est `MunicipalityMembership` (utilisateur, **commune**, rôles cu
 
 ## 6. Archives : accès, périmètre multicommunal, gel
 
-### 6.1 Profils autorisés (décision 3)
+### 6.1 Profils autorisés (décisions 3 et D2)
 
-**Uniquement** `MUNICIPALITY_ADMIN` et `EVENT_MANAGER` **de la commune concernée**. **Jamais** `INSTRUCTOR`, jamais un utilisateur d'une autre commune, **organisateur compris** : l'organisateur n'obtient **aucune** donnée confidentielle des autres communes. Un utilisateur d'une commune dont l'accès à l'archive est fermé n'a aucun accès, même s'il a l'un de ces deux rôles.
+- **`MUNICIPALITY_ADMIN`** de la commune concernée : accède aux archives **de sa commune**.
+- **`EVENT_MANAGER`** de la commune concernée : accède **uniquement** aux archives des événements pour lesquels il est **explicitement désigné**, **pour cette commune**.
+- **`INSTRUCTOR`** : jamais. Un utilisateur d'une autre commune : jamais ; **l'organisateur n'obtient aucune donnée confidentielle des autres communes**. Un utilisateur dont la commune a fermé son accès à l'archive n'a aucun accès, même désigné.
+- **Aucune extension automatique** : une désignation ne vaut ni pour un autre événement, ni pour une autre commune, ni pour un autre utilisateur.
 
-### 6.2 Rattacher l'habilitation de l'organisateur à l'événement (vérification demandée)
+### 6.2 Désignation explicite de l'organisateur habilité (option B, décision D2)
 
-Constat (C5) : l'habilitation est **communale** ; l'événement est relié à la commune organisatrice (`Event.organizerMunicipality`) et aux communes participantes (`EventParticipation`).
+**Principe.** `EVENT_MANAGER` reste le rôle **communal** actuel ; les permissions opérationnelles (événement, participation, zones, instruction) sont **inchangées**. S'y ajoute une **désignation** « utilisateur `U` est l'organisateur habilité aux archives de l'événement `E` pour la commune `M` », propre à l'archive.
 
-| Option | Principe | Avantages | Inconvénients | Migration |
-|---|---|---|---|---|
-| **A (recommandée en V1)** | Accès à l'archive de `M` pour tout `EVENT_MANAGER` ou `MUNICIPALITY_ADMIN` **de `M`**, pour les événements où `M` est **organisatrice ou participante** (le même rattachement que les droits d'événement existants) | cohérent avec le modèle ; aucun changement ; testable avec le même mécanisme | un `EVENT_MANAGER` de `M` voit l'archive de **tous** les événements de `M`, pas d'un seul | Non |
-| **B** | Désignation individuelle d'un organisateur **par événement** (table d'affectation) | plus fin : « habilité pour cet événement » | nouveau concept, écran d'administration, migration, jamais demandé jusqu'ici | **Oui** |
+**Modèle (adaptation proposée, voir Annexe A).** Une entité `EventManagerDesignation` rattachée à la **participation** `(E, M)` (`event_participation`, unique par événement et commune) et à l'utilisateur `U` : date et auteur de la désignation, date et auteur de la révocation. Le lien à la participation **garantit** que `M` participe à `E` et **interdit** d'étendre la désignation à un autre événement ou une autre commune.
 
-Dans les deux options, l'archive reste **bornée à la commune** (§4.2). **Décision de portée à valider** (R9) ; sans validation, l'option A est retenue pour la conception.
+**Règles proposées** (à confirmer à l'ouverture du 05.6.3 sauf mention) :
+1. **Qui désigne** : `MUNICIPALITY_ADMIN` de `M`, uniquement ; **jamais** l'organisateur désigné lui-même ni un administrateur d'une autre commune.
+2. **Pré-requis** : `U` a un rôle `EVENT_MANAGER` effectif dans `M` **au moment de la désignation** ; le rôle est **revérifié à chaque accès** (un rôle retiré ferme l'accès immédiatement).
+3. **Quand** : possible pendant l'événement et **après la clôture** (l'administrateur a toujours accès et peut désigner), journalisé.
+4. **Retrait du rôle ou de l'appartenance** : les désignations de `U` dans `M` sont **révoquées explicitement** (pas de réactivation silencieuse si le rôle est rendu plus tard).
+5. **Fermeture** : les désignations deviennent inopérantes avec l'accès de `M` à l'archive (échéance ou purge) ; elles sont supprimées avec la participation à la suppression de l'événement.
+6. **Audit** : désignation, révocation, accès ; aucune donnée personnelle (identifiants seulement).
+7. **Existant** : aucune désignation n'existe au départ ; sans désignation, **seul** `MUNICIPALITY_ADMIN` accède à l'archive.
+8. **Utilité** : une seule désignation pour l'événement et la commune ne donne aucun accès à une autre commune participante, y compris la commune organisatrice si `U` y a aussi un rôle (il faut une désignation par commune).
 
 ### 6.3 Fonctionnement (sans workflow d'approbation)
 
 - **Écrans séparés** des écrans opérationnels (module dédié) ; **aucune** route opérationnelle ne sert une donnée personnelle après la clôture.
 - **Justification** à chaque consultation : code (litige, obligation légale, exercice d'un droit d'une personne, contrôle, autre) et commentaire court déconseillant toute donnée personnelle ; **journalisée** (acteur, commune, dossier, code, date ; aucun contenu personnel). **Lecture seule.**
 - **Fermeture à terme** : l'accès de `M` à un dossier se ferme à `clôture + durée d'archive`, sauf gel de `M` sur ce dossier.
-- **Gel contentieux** (décision 2) : **motivé** (motif codé et commentaire court, sans donnée personnelle), **limité au périmètre nécessaire** (un ou plusieurs **dossiers** précis, jamais l'événement entier par défaut), posé et levé par `MUNICIPALITY_ADMIN` de la commune, avec **date de revue** (tous les 6 mois, paramétrable) ; l'absence de revue produit une alerte, **jamais une prolongation automatique silencieuse** ; chaque pose, revue et levée est journalisée.
+- **Gel contentieux** (décision 2) : **motivé** (motif codé et commentaire court, sans donnée personnelle), **limité au périmètre nécessaire** (un ou plusieurs **dossiers communaux** précis, jamais l'événement entier par défaut), posé et levé par `MUNICIPALITY_ADMIN` de la commune, avec **date de revue** (tous les 6 mois, paramétrable) ; l'absence de revue produit une alerte, **jamais une prolongation automatique silencieuse** ; chaque pose, revue et levée est journalisée.
 - **Le gel d'une commune n'ouvre pas les archives des autres** (décision 9) : voir la règle d'accès du §4.2.
 - **Responsabilité conjointe** : les données communes sont une seule copie ; l'éventuelle responsabilité conjointe des communes (RGPD, à vérifier avec le DPO) et le rôle de sous-traitant de CWS sont à préciser dans le registre des traitements.
 
@@ -247,26 +277,35 @@ Légende : **V** = validé par le commanditaire (principe) ; **H** = hypothèse 
 | R | Question reformulée | Décision et recommandation | Statut | Conséquences fonctionnelles | Conséquences techniques | Risques RGPD | Migration |
 |---|---|---|---|---|---|---|---|
 | **R1** | Durée d'archive intermédiaire et gel contentieux | **12 mois = HYPOTHÈSE** ; gel **motivé, limité au dossier, revue tous les 6 mois**, posé par `MUNICIPALITY_ADMIN` | durée **H** ; gel **V** | Les communes disposent d'une période pour un litige ; au-delà, sans gel, plus d'accès | Durée en configuration ; gel par ligne demande × commune ; alerte de revue | Durée trop longue : non-minimisation ; gel abusif : conservation sans fin → revue obligatoire | **Oui** (gel) |
-| **R2** | Cycle de vie : clôture, purge, suppression, événements sans fin, règle 8 | Fermeture immédiate ; **non décidées dans l'archive** ; purge par dossier avec préavis de 30 jours ; suppression explicite de l'événement ; **détection et alerte** des événements sans fin, **sans clôture automatique** ; règle 8 reformulée | cycle **V** ; **règle 8 : À trancher** | Rien à faire dans le cas normal ; alertes de dormance | Service de purge ordonné, idempotent, reprenable, simulation ; règles et rapport de dormance | Événement jamais clos : conservation sans fin tant que personne n'agit | **Oui** (statistiques, état de l'événement) |
+| **R2** | Cycle de vie : clôture, purge, suppression, événements sans fin, règle 8 | Fermeture immédiate ; **non décidées dans l'archive** ; purge par dossier avec préavis de 30 jours ; suppression explicite de l'événement ; **détection et alerte** des événements sans fin, **sans clôture automatique** ; règle 8 reformulée (D1) | cycle **V** ; **règle 8 : V** (D1) | Rien à faire dans le cas normal ; alertes de dormance | Service de purge ordonné, idempotent, reprenable, simulation ; règles et rapport de dormance | Événement jamais clos : conservation sans fin tant que personne n'agit | **Oui** (statistiques, état de l'événement) |
 | **R3** | Contenu de l'archive | **Archive complète**, de **tout statut**, y compris non décidées ; données purement techniques supprimées à la clôture | **V** | Un litige peut être instruit avec toutes les pièces | Aucune transformation de champ ; accès uniquement par l'archive | Textes libres et justificatifs peuvent contenir des données de tiers ; option minimisée si le DPO l'exige | Non |
 | **R4** | Liens bénéficiaires et QR | **Lien fermé à la clôture** ; **O1** (410 avant purge, 404 après) ; évolution documentée et testée | **V** | Le bénéficiaire ne rouvre plus sa page après la clôture (DM-114 amendé) ; après purge, un vieux QR donne 404 | Fermeture du lien dans la clôture ; aucune table résiduelle ; tests §7 | Aucun résiduel (O1) | Non |
 | **R5** | Justificatifs, fichiers, notifications, clés d'idempotence | Conservés pour la **preuve** pendant l'archive, supprimés à la purge **de façon contrôlée** ; clés et secrets supprimés à la clôture ; fichiers, notifications **et sauvegardes** traités | **V** (principe) | Aucun justificatif après la purge | Suppression de fichier **avec reprise** (marquer, supprimer le fichier, supprimer la ligne) ; nettoyage des orphelins ; cohérence base/disque | Suppression **irréversible** ; copies en sauvegarde ; fichier orphelin si échec | Non |
 | **R6** | Comptes utilisateurs | **Rapport de comptes candidats** (règle §5.2), **aucune suppression automatique en V1** ; nettoyage des accès événementiels ; comptes partagés et permanents préservés | **V** | Aucun compte supprimé sans décision | Requêtes de candidature ; filet des clés `RESTRICT` | Données d'agents conservées tant que non traitées (finalité à définir avec le DPO) | Non (marque d'origine seulement si nécessaire) |
-| **R7** | Modèle d'état | **Pas de colonne `anonymized_at` généralisée** ; état de l'événement, gel par ligne demande × commune, statistiques | **V** ; **SQL à valider** | Aucun écran « anonymisé » ; un dossier est archivé, gelé ou purgé | Quelques colonnes (§10.1) ; `permit_revision.anonymized_at` existant reste inutilisé | Aucun | **Oui, minimale** |
+| **R7** | Modèle d'état | **Pas de colonne `anonymized_at` généralisée** ; état de l'événement, gel par dossier communal, statistiques, désignation des organisateurs | **V** ; **SQL à valider avant chaque sous-lot (D4)** | Aucun écran « anonymisé » ; un dossier est archivé, gelé ou purgé | Quelques colonnes et une table (§10.1) ; `permit_revision.anonymized_at` existant reste inutilisé | Aucun | **Oui, minimale** |
 | **R8** | Audit lié à l'événement | **Preuve pendant l'archive, supprimé à la purge** (sauf la ligne de purge) ; audit global inchangé ; identifiants collectés avant effacement | **V** | La preuve détaillée disparaît avec les données ; la preuve de la purge reste | Collecte par table, suppression ordonnée ; test que rien de global n'est supprimé | Identifiants d'agents (pseudonymes) | Non |
-| **R9** | Accès aux archives et droits des personnes | `MUNICIPALITY_ADMIN` et `EVENT_MANAGER` **de la commune** ; jamais INSTRUCTOR ni autre commune ; **rattachement : option A** (communal) ou B (par événement) ; droits des personnes : accès par export du périmètre de la commune, effacement refusé tant qu'une finalité subsiste | profils **V** ; **portée de l'organisateur : À trancher** | Une personne peut obtenir ses données ; en archive, l'effacement est refusé avec motif tant qu'une finalité subsiste | Module d'archive cloisonné ; politique d'accès dédiée ; journal | Effacement partiel (e-mails reçus, PDF téléchargés, sauvegardes) ; corresponsabilité | Non (A) ; oui (B) |
+| **R9** | Accès aux archives et droits des personnes | `MUNICIPALITY_ADMIN` et `EVENT_MANAGER` **de la commune** ; jamais INSTRUCTOR ni autre commune ; **rattachement : option B, désignation explicite par événement et commune** (D2) ; droits des personnes : accès par export du périmètre de la commune, effacement refusé tant qu'une finalité subsiste | profils **V** ; **option B : V** (D2) | Une personne peut obtenir ses données ; en archive, l'effacement est refusé avec motif tant qu'une finalité subsiste | Module d'archive cloisonné ; politique d'accès dédiée ; journal | Effacement partiel (e-mails reçus, PDF téléchargés, sauvegardes) ; corresponsabilité | **Oui** (table de désignation) |
 | **R10** | Exploitation : déclenchement, sauvegardes, journaux, bordereau, détection | Commande de purge manuelle en **simulation** d'abord ; planification validée avec l'exploitation (hors lot) ; **rejeu de la purge après restauration** (registre des purges conservé hors de la base) ; bordereau de purge ; rapport de dormance ; journaux : durée à fixer | À valider avec l'exploitation | Aucun | Commandes idempotentes ; registre ; documentation d'exploitation | Les sauvegardes détiennent les données au-delà des durées ; une restauration réintroduit des données purgées | Non |
 
 ---
 
 ## 10. E. Analyse d'impact technique
 
-### 10.1 Migrations envisagées (aucune exécutée ; SQL à présenter pour accord)
+### 10.1 Migrations envisagées (accord de PRINCIPE uniquement ; aucune exécutée ; décision D4)
 
-1. `request_permit_request_municipality` (ligne demande × commune) : gel contentieux : `legal_hold_reason VARCHAR(30) NULL`, `legal_hold_comment VARCHAR(200) NULL`, `legal_hold_review_at DATETIME NULL`. L'historique des poses, revues et levées est dans l'audit.
-2. `event_event` : `closure_statistics JSON NULL`, `purged_at DATETIME NULL` (renseignée quand le dernier dossier est purgé).
-3. **Aucune** colonne d'état sur les demandes, plaques, justificatifs, comptes (R7, R6). **Aucune** table résiduelle de QR (O1). Option B de R9 : une table d'affectation par événement (non retenue en V1).
-4. **Les `ON DELETE RESTRICT` ne sont pas modifiés** (décision 8) : une migration vers `CASCADE` ôterait le filet de sécurité de la règle 8.
+| Réf. | Sous-lot | Objet | Contenu envisagé |
+|---|---|---|---|
+| **M1** | 05.6.2 | statistiques de clôture | `event_event.closure_statistics JSON NULL` |
+| **M2** | 05.6.3 | désignation des organisateurs (option B) | **nouvelle table** `event_manager_designation` rattachée à `event_participation` et `identity_user` (Annexe A) |
+| **M3** | 05.6.3 | gel contentieux par dossier communal | `request_permit_request_municipality` : `legal_hold_reason`, `legal_hold_comment`, `legal_hold_review_at` |
+| **M4** | 05.6.4 | état de purge de l'événement | `event_event.purged_at DATETIME NULL` |
+| **M5** | 05.6.4 (**option 2 de C14 seulement**) | décision de la première commune approbatrice | `permit_permit.first_decision_id` rendue **nullable** (non retenue par défaut) |
+| **M6** | 05.6.5 (**seulement si le besoin est démontré**) | report et rappels de dormance | `event_event` : `dormancy_snoozed_until`, `dormancy_alerted_at` (alternative sans colonne : lire l'audit) |
+
+- **Aucune** colonne d'état d'anonymisation sur les demandes, plaques, justificatifs, comptes (R7, R6). **Aucune** table résiduelle de QR (O1).
+- Les `ON DELETE RESTRICT` **ne sont pas modifiés** (décision 8) ; aucun `CASCADE`.
+- **Avant chaque migration**, présentation obligatoire selon l'**Annexe B** (SQL exact, entités Doctrine, contraintes et index, traitement des données existantes, risques et retour arrière, tests de non-régression), puis **validation explicite** ; **aucune exécution sans accord**.
+- **Données existantes** : l'application n'est pas en production ; seules les bases de développement et de test existent. Toutes les colonnes ajoutées sont **nullables** (aucune ligne existante n'est modifiée) ; la table de désignation est **vide** au départ.
 
 ### 10.2 Composants concernés
 
@@ -280,7 +319,8 @@ Légende : **V** = validé par le commanditaire (principe) ; **H** = hypothèse 
 | **Archive (nouveau)** | module dédié : politique d'accès (`MUNICIPALITY_ADMIN`, `EVENT_MANAGER`), lecteurs bornés par commune et par dossier, écrans en lecture seule, justification, journal d'accès, gel et revue | nouveau code, nouveaux écrans |
 | **Purge et suppression (nouveau)** | service ordonné par table (≈ 20), **idempotent, reprenable**, simulation ; suppression de **fichiers** (`LocalFileStorage`) ; nettoyage de `notification_outbox`, `notification_secret`, `audit_log` ; bordereau ; registre des purges | nouveau code |
 | **Comptes** | `identity_user`, `municipality_membership`, `onboarding_invitation_link`, `UserManager` | rapport de candidats ; aucune suppression automatique ; suppression des liens d'invitation |
-| **Permissions** | `EventAccessPolicy`, `EventPermission`, `PermitRevisionGuard`, `MunicipalityContext` | permissions d'archive ; interdiction de l'exploitation après clôture |
+| **Permissions** | `EventAccessPolicy`, `EventPermission`, `PermitRevisionGuard`, `MunicipalityContext` | politique d'archive **séparée** ; **permissions opérationnelles inchangées** ; interdiction de l'exploitation après clôture |
+| **Désignation (nouveau, D2)** | entité `EventManagerDesignation`, dépôt, service ; `MembershipManager` (révocation des désignations au retrait d'un rôle ou d'une appartenance) | création, révocation, vérification à chaque accès |
 | **Audit** | `AuditAction`, `AuditTrail`, `AuditSubjectType` | actions : clôture étendue, consultation d'archive, gel (pose, revue, levée), purge, suppression ; aucune valeur personnelle |
 | **Notifications** | `NotificationDispatcher`, `OutboxPurger`, `PurgeOutboxCommand`, `SecretPurger` | annulation à la clôture ; la purge générale à 90 jours (provisoire) devient sans objet pour les événements clos |
 | **Doctrine** | `Event`, `RequestMunicipality` | quelques colonnes (§10.1) ; aucune relation modifiée |
@@ -296,25 +336,151 @@ Légende : **V** = validé par le commanditaire (principe) ; **H** = hypothèse 
 
 ### 10.4 Tests nécessaires
 
-**Clôture** : statistiques exactes et anonymes (seuils, non décidées comprises) ; plus aucune route opérationnelle ne sert une donnée personnelle (parcours de **tous** les écrans listés, pour INSTRUCTOR, EVENT_MANAGER, MUNICIPALITY_ADMIN, CWS) ; réponses publiques inchangées ; liens bénéficiaires et d'invitation fermés ; notifications en attente annulées, envoyées conservées ; demandes non décidées présentes dans l'archive avec leur statut. **Archive** : permissions par rôle et par commune avec **identifiants forgés** (autre commune, autre événement, dossier non concerné, événement non clos, accès fermé) ; INSTRUCTOR refusé ; périmètre multicommunal (lignes neutres, aucune fuite) ; **un gel de `A` n'ouvre pas `B`** ; journal d'accès sans donnée personnelle ; gel posé, revu, levé ; fermeture à l'échéance. **Purge** : simulation sans écriture ; idempotence ; **reprise après échec au milieu** ; **concurrence réelle MySQL** (purge contre opération, gel, clôture) ; aucun orphelin ; ressources partagées (communes, comptes, types, référentiels) **intactes** ; fichiers supprimés et cohérence disque ; audit global intact ; bordereau sans donnée personnelle ; 404 après purge (§7). **Suppression de l'événement** : refus si non purgé ou si donnée personnelle ; saisie de la référence ; trace minimale. **Comptes** : jamais supprimé automatiquement ; candidats exacts ; filet `RESTRICT`. **Dormance** : détection des trois règles ; **aucun changement de droits ni de statut** ; alerte renouvelée ; report motivé. `bin/qa full`.
+**Clôture** : statistiques exactes et anonymes (seuils, non décidées comprises) ; plus aucune route opérationnelle ne sert une donnée personnelle (parcours de **tous** les écrans listés, pour INSTRUCTOR, EVENT_MANAGER, MUNICIPALITY_ADMIN, CWS) ; réponses publiques inchangées ; liens bénéficiaires et d'invitation fermés ; notifications en attente annulées, envoyées conservées ; demandes non décidées présentes dans l'archive avec leur statut. **Archive** : permissions par rôle et par commune avec **identifiants forgés** (autre commune, autre événement, dossier non concerné, événement non clos, accès fermé) ; INSTRUCTOR refusé ; périmètre multicommunal (lignes neutres, aucune fuite) ; **un gel de `A` n'ouvre pas `B`** ; journal d'accès sans donnée personnelle ; gel posé, revu, levé ; fermeture à l'échéance. **Purge** : simulation sans écriture ; idempotence ; **reprise après échec au milieu** ; **concurrence réelle MySQL** (purge contre opération, gel, clôture) ; aucun orphelin ; ressources partagées (communes, comptes, types, référentiels) **intactes** ; fichiers supprimés et cohérence disque ; audit global intact ; bordereau sans donnée personnelle ; 404 après purge (§7). **Désignation (D2)** : `EVENT_MANAGER` non désigné refusé ; désigné pour `(E, M)` refusé pour `(E, M')` et `(E', M)` ; désignation par un non-administrateur ou par un administrateur d'une autre commune refusée ; rôle ou appartenance retirés : accès fermé **et** désignations révoquées, **sans réactivation** si le rôle est rendu ; permissions opérationnelles existantes **inchangées** (tests existants conservés). **Multicommunal (D3)** : références partagées (identité, plaques, justificatifs, laissez-passer) lues par chaque commune concernée ; dossier de `A` purgé, dossier de `B` gelé : la copie partagée **reste**, `B` y accède, `A` n'a plus rien, `B` perd les lignes neutres de `A` ; gel de `A` n'ouvre rien de `B` ; purge de `B` ensuite : tout est supprimé ; dépendance C14 ; ressources partagées intactes ; suppressions partielles idempotentes et reprenables. **Suppression de l'événement** : refus si non purgé ou si donnée personnelle ; saisie de la référence ; trace minimale. **Comptes** : jamais supprimé automatiquement ; candidats exacts ; filet `RESTRICT`. **Dormance** : détection des trois règles ; **aucun changement de droits ni de statut** ; alerte renouvelée ; report motivé. `bin/qa full`.
 
-### 10.5 Découpage proposé
+### 10.5 Découpage
 
-05.6.1 politique, registre des traitements, confirmation DPO et archives (documentation) ; 05.6.2 clôture étendue (fermeture des accès et des liens, statistiques, annulation des notifications) ; 05.6.3 module d'archive (accès, justification, journal, gel) ; 05.6.4 purge et suppression (service ordonné, fichiers, audit, bordereau, 404 après purge) ; 05.6.5 comptes (rapport de candidats) et dormance (détection, alertes) ; 05.6.6 recette. Chaque sous-lot : migration éventuelle **présentée avant exécution**.
-
----
+Voir **§13** (découpage détaillé en sept sous-lots, avec objectif, périmètre, impacts, migrations, tests et critères d'acceptation).
 
 ## 11. Écarts documentaires et décisions mises à jour
 
-[DM-120](decisions/metier/DM-120-cycle-de-vie-des-evenements-archives-et-suppression.md) (nouvelle décision, orientation validée) ; **amendements** : DM-114 (lien bénéficiaire fermé à la clôture), DM-115 (comportement après la purge, O1) ; **notes de remplacement** : DM-117 §3 et DM-119 §9 (hypothèses de durées abandonnées) ; `lot-05-schema.md` §11 ; [CONTRADICTIONS.md](revisions/CONTRADICTIONS.md) L5-26 à L5-31. **Non modifiés** : CLAUDE.md règle 8 (reformulation à valider) ; `exploitation-notifications.md` (purge de l'outbox, à reprendre au 05.6.4).
+[DM-120](decisions/metier/DM-120-cycle-de-vie-des-evenements-archives-et-suppression.md) (décisions de conception D1 à D5 validées) ; **amendements** : DM-114 (lien bénéficiaire fermé à la clôture), DM-115 (comportement après la purge, O1) ; **notes de remplacement** : DM-117 §3 et DM-119 §9 ; `lot-05-schema.md` §11 ; **CLAUDE.md règle 8** reformulée (D1) ; [CONTRADICTIONS.md](revisions/CONTRADICTIONS.md) L5-26 à L5-32. **À reprendre au sous-lot concerné** : `exploitation-notifications.md` (purge de l'outbox, 05.6.4).
 
-## 12. Arbitrages réellement bloquants avant le développement
+## 12. Décisions restantes (aucune ne bloque l'ouverture du 05.6.1)
 
-1. **Règle 8 de CLAUDE.md** : valider la reformulation (« pas de suppression avant la fin de la conservation justifiée, puis suppression contrôlée et tracée ») : **bloque 05.6.4** (purge et suppression).
-2. **Portée de l'habilitation de l'organisateur** (R9, §6.2) : option A (communal, recommandée) ou B (par événement, migration) : **bloque 05.6.3** (archive).
-3. **Gel et purge par dossier** (§3.3, §6.3, §10.1) : valider l'unité « dossier » (demande × commune) plutôt que « commune » ou « événement » : **bloque 05.6.3 et la migration du gel**.
-4. **SQL des migrations** (§10.1) : à présenter et valider **avant** chaque sous-lot concerné.
+**Plus aucun arbitrage ne bloque le démarrage du développement du LOT 05.6.** Restent :
+- **À confirmer à l'ouverture d'un sous-lot** : (a) **C14** : suppression de la décision d'approbation avec les données partagées (option 1, sans migration, recommandée) ou clé nullable (option 2, M5) : **05.6.4** ; (b) règles de désignation 1 à 8 du §6.2 : **05.6.3** ; (c) seuils de dormance, seuil de secret statistique, période de revue du gel : **05.6.2, 05.6.3, 05.6.5**.
+- **SQL de chaque migration** (M1 à M6) : à présenter selon l'Annexe B et à valider **avant** le sous-lot concerné (D4).
+- **Avant la production (responsables compétents)** : durée d'archive (**hypothèse de 12 mois, non acquise**), règles d'élimination et obligations d'archives publiques, modalités et motifs de gel, qualification des communes (responsabilité conjointe) et de CWS, politique de sauvegarde (D5).
 
-**Non bloquants pour le développement** (ils bloquent la **production** ou une configuration) : durée d'archive et sort final (DPO, archives) ; corresponsabilité des communes ; politique de sauvegarde ; seuils de dormance et de statistiques ; durée de revue du gel.
+## 13. Découpage détaillé en sous-lots
+
+Ordre : 05.6.1 → 05.6.2 → 05.6.3 → 05.6.4 ; 05.6.5 peut suivre 05.6.2 ; 05.6.6 après 05.6.4 ; 05.6.7 clôt le lot. Chaque sous-lot se termine par `bin/qa full` (= `make quality`), `verify-docs.sh`, un compte rendu (fichiers, migrations, tests, risques) et **ne démarre qu'après validation du précédent**. Toute migration est présentée **avant** exécution (Annexe B).
+
+### 05.6.1 — Politique de conservation, registre et gouvernance
+
+| | |
+|---|---|
+| **Objectif** | Figer la politique de conservation **soumise** à validation (DPO, service d'archives), sans la présenter comme acquise. |
+| **Périmètre fonctionnel** | Aucun écran. Documents : politique de conservation (durée d'archive **hypothèse**), registre des traitements (finalités, destinataires, responsables, sous-traitant), motifs de gel admissibles, règles d'élimination et bordereau, texte des conditions d'utilisation (QR et événement), procédure de sauvegarde. Paramètres de configuration nommés (durée d'archive, préavis, revue du gel, seuils de dormance). |
+| **Impacts techniques** | Documentation ; **CLAUDE.md règle 8** reformulée ; DM-120. Aucun code. |
+| **Migrations** | Aucune. |
+| **Tests** | `verify-docs.sh` ; relecture croisée DM-114, DM-115, DM-117, DM-119, DM-120. |
+| **Critères d'acceptation** | Politique et registre rédigés ; toute durée marquée « hypothèse » ; liste des motifs de gel admissibles proposée ; avis DPO et archives **demandés** (date, destinataire) ou report explicite ; règle 8 reportée ; **aucune** durée présentée comme obligation légale. |
+
+### 05.6.2 — Clôture étendue : fermeture des accès opérationnels
+
+| | |
+|---|---|
+| **Objectif** | À la clôture, plus **aucun** accès opérationnel aux données personnelles, pour tous les rôles ; statistiques anonymes ; fermeture des accès propres à l'événement. |
+| **Périmètre fonctionnel** | Clôture **globale** (dans la même transaction) : (1) statistiques anonymes (demandes reçues, approuvées, refusées, **non décidées**, autorisations, remplacements de QR, révocations ; seuil) ; (2) **prédicat unique** « événement ouvert pour l'exploitation » appliqué aux lecteurs et contrôleurs opérationnels ; message clair à l'agent ; (3) **liens bénéficiaires fermés** (404) ; liens d'invitation et de réinitialisation liés à l'événement révoqués ; (4) intentions de notification **en attente annulées** (code dédié, avec trace), envoyées conservées ; secrets chiffrés et clés d'idempotence **supprimés** ; (5) **demandes non décidées conservées avec leur statut** ; (6) fiche événement avec statistiques ; (7) page publique **inchangée** (« Événement terminé », 410, 404). |
+| **Impacts techniques** | `EventLifecycleService::close` ; `MunicipalRequestReader`, `DoctrineMunicipalRequestReadModel`, `MunicipalRequestController`, `MunicipalRequestAttachmentController`, `MunicipalRequestDecisionController`, `RequestIdentityController`, `AgentRequestController`, `DirectIssuanceController`, `PermitRights/Zones/Vehicles/Period/Qr/AccessController` ; `BeneficiaryPassReader`, `PermitAccessService` ; `NotificationDispatcher` ; invitations ; administration Sonata (**à inspecter** : lecture seule mais exposition éventuelle de demandes) ; dépôt public sur événement clos (**à vérifier**). |
+| **Migrations** | **M1** : `event_event.closure_statistics JSON NULL` (présentation Annexe B). |
+| **Tests** | Parcours de **tous** les écrans listés × rôles (`INSTRUCTOR`, `EVENT_MANAGER`, `MUNICIPALITY_ADMIN`, CWS) après clôture : aucune donnée personnelle servie ; réponses publiques **inchangées** (tests des LOT 05.4 et 05.5 conservés) ; lien bénéficiaire fermé ; notifications annulées ou conservées ; statistiques exactes (zéro demande, non décidées, multicommunal, seuil) ; clôture idempotente ; **concurrence** clôture contre opération ; non-régression de la migration. |
+| **Critères d'acceptation** | Aucune route opérationnelle ne sert nom, plaque, justificatif ou motif libre après clôture, quel que soit le rôle ; QR 410 / 404 / « Événement terminé » identiques ; liens fermés ; statistiques anonymes présentes ; non décidées présentes en base avec leur statut ; `bin/qa full` vert. |
+
+### 05.6.3 — Archive cloisonnée, désignation des organisateurs et gel contentieux
+
+| | |
+|---|---|
+| **Objectif** | Donner accès aux archives, par dossier communal, aux seuls `MUNICIPALITY_ADMIN` et `EVENT_MANAGER` **désignés**, avec justification, journal et gel motivé. |
+| **Périmètre fonctionnel** | Module `Archive` (écrans **séparés** des écrans opérationnels, **lecture seule**) : liste des événements clos de la commune ; liste et détail des **dossiers communaux** (données communes, données propres à la commune, lignes neutres des autres) ; téléchargement des justificatifs **journalisé** ; **justification** obligatoire à chaque consultation (code et commentaire court) ; **désignation et révocation** des organisateurs par `MUNICIPALITY_ADMIN` (règles du §6.2) ; **gel** : pose (motif codé, commentaire, date de revue), revue, levée, **alerte** de revue en retard ; fermeture à l'échéance ; `INSTRUCTOR` exclu. |
+| **Impacts techniques** | Nouveau module ; `ArchiveAccessPolicy` ; entité, dépôt et service `EventManagerDesignation` ; gel sur `RequestMunicipality` ; lecteurs bornés par commune et dossier ; gabarits ; `AuditAction` (désignation, révocation, accès, gel, revue, levée) ; `MembershipManager` (révocation des désignations au retrait d'un rôle) ; `MunicipalityContext` ; **permissions opérationnelles inchangées**. |
+| **Migrations** | **M2** : table `event_manager_designation` ; **M3** : colonnes de gel sur `request_permit_request_municipality` (présentation Annexe B pour chacune, avant exécution). |
+| **Tests** | Matrice d'accès exhaustive avec **identifiants forgés** : rôle × commune × événement × dossier × état (actif, clos, accès fermé, gel) ; `INSTRUCTOR` refusé ; `EVENT_MANAGER` non désigné refusé ; désigné pour `(E, M)` refusé pour `(E, M')` et `(E', M)` ; désignation par un non-administrateur refusée ; rôle retiré : accès fermé et désignations révoquées, **sans réactivation** ; **un gel de `A` n'ouvre rien de `B`** (accès, fichiers, lignes neutres) ; journal sans donnée personnelle ; fermeture à l'échéance ; concurrence désignation / retrait de rôle ; **non-régression des permissions opérationnelles**. |
+| **Critères d'acceptation** | Chaque cas de la matrice d'accès est testé et conforme ; aucun contenu personnel dans le journal ; gel motivé, limité à un dossier, réexaminé et levable ; migrations M2 et M3 validées puis exécutées **sur accord** ; `bin/qa full` vert. |
+
+### 05.6.4 — Purge à deux niveaux, suppression de l'événement et 404 après purge
+
+| | |
+|---|---|
+| **Objectif** | Supprimer de façon **contrôlée, traçable, idempotente et reprenable** les données d'un dossier communal, puis les données partagées, puis l'événement. |
+| **Périmètre fonctionnel** | **Purge niveau commune** (données propres à `M`) puis **niveau données partagées** (quand plus aucun dossier ne les justifie) selon le §3.3 ; **fichiers** justificatifs supprimés ; audit et notifications du dossier supprimés (sauf une ligne de purge) ; **préavis de 30 jours** aux administrateurs ; **simulation** ; **bordereau de purge** et **registre des purges** sans donnée personnelle ; **suppression de l'événement** (garde : événement purgé ou sans donnée personnelle, saisie de la référence, `MUNICIPALITY_ADMIN` de l'organisatrice) ; **404 neutre** pour tout jeton après la purge (O1). Commande `app:retention:purge` : **simulation par défaut**, `--execute` explicite. |
+| **Impacts techniques** | Service de purge ordonné (≈ 20 tables) ; `LocalFileStorage` ; suppression dans `audit_log` par identifiants collectés avant effacement ; `notification_outbox` ; `PublicVerificationReader` (jeton supprimé = inconnu) ; décision **C14** ; `exploitation-notifications.md`. |
+| **Migrations** | **M4** : `event_event.purged_at` ; **M5** seulement si l'option 2 de C14 est retenue (présentation Annexe B). |
+| **Tests** | Simulation **sans écriture** ; idempotence ; **reprise après échec à chaque étape** ; **concurrence réelle MySQL** (purge contre opération, gel, clôture) ; **multicommunal (D3)** : `A` purgé / `B` gelé (copie partagée conservée, accès de `B` seul, lignes neutres de `A` disparues), purge de `B` ensuite (tout supprimé), gel de `A` sans effet sur `B` ; **références partagées** (identité, plaques, justificatifs, laissez-passer, décision C14) ; **ressources partagées intactes** (communes, comptes, types, référentiels) ; fichiers supprimés et cohérence disque ; audit global intact ; bordereau sans donnée personnelle ; **aucun orphelin** (comptages avant et après) ; **404 identique** (page, code, en-têtes) pour jeton actif, retiré, inconnu après purge ; tests des LOT 05.4 et 05.5 conservés **avant** la purge. |
+| **Critères d'acceptation** | Après purge complète d'un dossier : **aucune donnée personnelle résiduelle** (requêtes de contrôle par table) ; aucune donnée partagée supprimée tant qu'un dossier la justifie ; reprise démontrée ; bordereau et registre produits ; règle 8 reformulée respectée (aucune suppression avant l'échéance, suppression tracée) ; migrations validées puis exécutées **sur accord** ; `bin/qa full` vert. |
+
+### 05.6.5 — Comptes candidats et dormance des événements
+
+| | |
+|---|---|
+| **Objectif** | Rapport de comptes candidats à la suppression (jamais de suppression automatique) ; détection et alerte des événements sans fin ou jamais clôturés. |
+| **Périmètre fonctionnel** | Commande de **rapport** `app:accounts:candidates` (règles du §5.2, décision CWS) ; nettoyage des accès événementiels non encore couverts ; **détection** de dormance (fin planifiée dépassée de 30 jours ; pas de fin planifiée et aucune activité depuis 90 jours ; autorisations toutes expirées) ; **alertes** : bandeau pour les administrateurs et organisateurs de la commune organisatrice, rapport console `app:event:dormancy-report` (sans donnée personnelle), e-mail de rappel renouvelé tous les 30 jours, **report motivé** ; **aucune clôture automatique, aucun changement de droit**. |
+| **Impacts techniques** | `UserManager`, `MembershipManager` (requêtes en lecture) ; `EventListReader`, `EventDetailReader` (bandeau) ; notificateur d'e-mails ; configuration des seuils. |
+| **Migrations** | **M6 seulement si le besoin est démontré** (sinon lecture de l'audit). |
+| **Tests** | Candidats exacts (compte permanent, partagé, CWS, référencé par une clé conservée, commune avec autre événement : **non candidats**) ; **jamais de suppression** ; trois règles de dormance ; **aucun changement de statut ni de droit** ; renouvellement et report ; événement avec activité récente non signalé. |
+| **Critères d'acceptation** | Le rapport ne supprime rien ; les trois règles détectent les cas attendus ; aucun droit modifié ; alertes reçues par les bons destinataires uniquement ; `bin/qa full` vert. |
+
+### 05.6.6 — Droits des personnes dans le modèle d'archive
+
+| | |
+|---|---|
+| **Objectif** | Traiter les demandes d'accès et d'effacement d'une personne sans casser le cloisonnement ni la conservation justifiée. |
+| **Périmètre fonctionnel** | **Export d'accès** borné au dossier de la commune (par `MUNICIPALITY_ADMIN`) ; **effacement sur demande** : refusé avec motif codé tant qu'une finalité subsiste (gel, obligation), accordé sinon par **purge anticipée du dossier communal** (règles de partage du §3.3) ; trace de la demande, du délai (un mois) et de la réponse ; procédure de vérification de l'identité documentée. |
+| **Impacts techniques** | Module d'archive ; service de purge (purge anticipée) ; audit ; documents. |
+| **Migrations** | Aucune sauf besoin démontré d'un journal dédié (sinon audit). |
+| **Tests** | Export borné à la commune, sans donnée d'une autre ; effacement refusé sous gel ; effacement d'un dossier **sans** supprimer la copie partagée tant qu'un autre dossier la justifie ; trace sans donnée personnelle ; idempotence. |
+| **Critères d'acceptation** | Aucune fuite entre communes ; décisions de refus motivées et tracées ; effacement partiel conforme au §4.2 ; `bin/qa full` vert. |
+
+### 05.6.7 — Exploitation, sauvegardes et recette du LOT 05.6
+
+| | |
+|---|---|
+| **Objectif** | Rendre le cycle exploitable et démontrer qu'il fonctionne de bout en bout. |
+| **Périmètre fonctionnel** | Runbooks (purge, rapport de comptes, dormance) ; **rejeu de la purge après restauration** à partir du registre des purges conservé **hors de la base** ; durées de journaux ; recette de bout en bout (création → demandes → clôture → archive → gel → purge → suppression) avec deux communes ; checklist des recettes manuelles ; bilan RGPD et liste des **conditions préalables à la production** (confirmation DPO et archives). **Aucune planification créée** (hors lot). |
+| **Impacts techniques** | Documentation, commandes existantes ; **aucune infrastructure**. |
+| **Migrations** | Aucune. |
+| **Tests** | Scénario automatisé de bout en bout (communes `A` et `B`) ; rejeu de purge idempotent après restauration simulée ; `bin/qa full`, `verify-docs.sh`. |
+| **Critères d'acceptation** | Cycle complet démontré ; rejeu idempotent ; aucune recette manuelle marquée réussie sans exécution réelle ; conditions préalables à la production consignées. |
+
+---
+
+## Annexe A — DDL préliminaire des migrations (INDICATIF, NON EXÉCUTÉ)
+
+*Esquisse pour apprécier l'ampleur. Le SQL exact sera produit par Doctrine puis présenté selon l'Annexe B, et ne vaut **pas** accord.*
+
+```sql
+-- M1 (05.6.2)
+ALTER TABLE event_event ADD closure_statistics JSON DEFAULT NULL;
+
+-- M2 (05.6.3) : désignation explicite d'un EVENT_MANAGER pour (événement, commune) via la participation
+CREATE TABLE event_manager_designation (
+  id BINARY(16) NOT NULL,
+  participation_id BINARY(16) NOT NULL,
+  user_id BINARY(16) NOT NULL,
+  designated_by_user_id BINARY(16) NOT NULL,
+  designated_at DATETIME NOT NULL,
+  revoked_at DATETIME DEFAULT NULL,
+  revoked_by_user_id BINARY(16) DEFAULT NULL,
+  active_marker TINYINT(1) DEFAULT NULL,           -- 1 tant que la désignation est active, NULL une fois révoquée
+  UNIQUE INDEX uniq_designation_active (participation_id, user_id, active_marker),
+  INDEX idx_designation_user (user_id),
+  PRIMARY KEY (id)
+) DEFAULT CHARACTER SET utf8mb4;
+ALTER TABLE event_manager_designation ADD CONSTRAINT fk_designation_participation FOREIGN KEY (participation_id) REFERENCES event_participation (id) ON DELETE RESTRICT;
+ALTER TABLE event_manager_designation ADD CONSTRAINT fk_designation_user FOREIGN KEY (user_id) REFERENCES identity_user (id) ON DELETE RESTRICT;
+ALTER TABLE event_manager_designation ADD CONSTRAINT fk_designation_by FOREIGN KEY (designated_by_user_id) REFERENCES identity_user (id) ON DELETE RESTRICT;
+ALTER TABLE event_manager_designation ADD CONSTRAINT fk_designation_revoked_by FOREIGN KEY (revoked_by_user_id) REFERENCES identity_user (id) ON DELETE RESTRICT;
+
+-- M3 (05.6.3) : gel contentieux du dossier communal
+ALTER TABLE request_permit_request_municipality
+  ADD legal_hold_reason VARCHAR(30) DEFAULT NULL,
+  ADD legal_hold_comment VARCHAR(200) DEFAULT NULL,
+  ADD legal_hold_review_at DATETIME DEFAULT NULL,
+  ADD INDEX idx_request_municipality_hold_review (legal_hold_review_at);
+
+-- M4 (05.6.4)
+ALTER TABLE event_event ADD purged_at DATETIME DEFAULT NULL;
+
+-- M5 (05.6.4, option 2 de C14 seulement)
+-- ALTER TABLE permit_permit MODIFY first_decision_id BINARY(16) DEFAULT NULL;
+```
+
+Remarques : la suppression d'un événement doit supprimer les désignations **avant** la participation (clés `RESTRICT`) ; le marqueur `active_marker` reprend le procédé du jeton de vérification actif (MySQL n'a pas d'index unique partiel) ; aucune ligne existante n'est modifiée (colonnes nullables, table vide).
+
+## Annexe B — Gabarit de présentation d'une migration (décision D4)
+
+Avant **chaque** sous-lot concerné, présenter : (1) le **SQL exact** généré ; (2) les **entités Doctrine** concernées (mapping, relations, tests de schéma) ; (3) les **contraintes et index** (clés, unicité, `RESTRICT`, noms) ; (4) le **traitement des données existantes** (valeurs par défaut, rattrapage éventuel, événements déjà clos) ; (5) les **risques et la stratégie de retour arrière** (sauvegarde préalable, `down()` testé, fenêtre, effet sur les tests) ; (6) les **tests de non-régression** (schéma synchronisé, suite complète). **Aucune exécution sans validation explicite**, base par base (test, puis développement), comme pour les migrations des LOT 05.5.1 et 05.5.2.
 
 Aucune implémentation, aucune migration, aucun commit poussé, avant votre accord explicite.

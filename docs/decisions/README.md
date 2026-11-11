@@ -121,7 +121,7 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DM-117](metier/DM-117-notifications-du-beneficiaire-et-conservation-des-donnees.md) | Notifications du bénéficiaire et conservation des données | LOT 05 — Laissez-passer | Validée |
 | [DM-118](metier/DM-118-liens-d-acces-beneficiaire-cycle-de-vie-et-remise-par-l-agent.md) | Liens d'accès bénéficiaire : cycle de vie, expiration, remise par l'agent | LOT 05 — Laissez-passer | Validée |
 | [DM-119](metier/DM-119-revisions-des-droits-d-un-laissez-passer.md) | Révisions des droits : révocation, périodes, zones, plaques, remplacement du QR (arbitrages validés ; règles de détail et schéma à valider) | LOT 05 — Laissez-passer | Proposée |
-| [DM-120](metier/DM-120-cycle-de-vie-des-evenements-archives-et-suppression.md) | Cycle de vie des événements : clôture, archive intermédiaire, purge et suppression (orientation validée le 11 novembre 2026 ; durées, portée de l'organisateur et règle 8 à valider) | LOT 05.6 — Conservation RGPD | Proposée |
+| [DM-120](metier/DM-120-cycle-de-vie-des-evenements-archives-et-suppression.md) | Cycle de vie des événements : clôture, archive intermédiaire, purge et suppression (orientation et arbitrages D1 à D4 validés le 11 novembre 2026 ; durées à valider avant la production) | LOT 05.6 — Conservation RGPD | Proposée |
 
 ## Décisions techniques
 

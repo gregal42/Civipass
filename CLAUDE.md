@@ -14,7 +14,7 @@ Symfony 8.1 / PHP 8.4 / Doctrine ORM / MySQL 8.4, Twig, AssetMapper, Stimulus, U
 5. Ne jamais faire confiance à un `municipalityId`, `eventId`, `zoneId` ou `permitId` fourni par le client sans vérifier les relations et permissions.
 6. Les contrôleurs externes n'ont pas de compte utilisateur ; les citoyens non plus.
 7. QR stable, opaque et non prédictible ; aucune donnée personnelle dans le QR lui-même.
-8. Pas de suppression physique d'une décision, d'une autorisation ou de son historique ; modifications traçables.
+8. Aucune suppression de données avant la fin de leur conservation justifiée. À l'issue, suppression contrôlée, traçable et conforme aux obligations applicables. Modifications traçables. (Reformulation validée le 11 novembre 2026, DM-120 D1.)
 9. Ne pas introduire de frontend build TypeScript sans décision explicite : AssetMapper ne transpile pas TypeScript. Le design Claude UI est une source visuelle à intégrer avec Twig/Stimulus.
 10. Ne pas modifier Docker, Makefile, versions ou dépendances sans justification et accord.
 11. Tests automatisés des règles métier, permissions, séparation des communes et transitions ; `make quality` doit passer.
