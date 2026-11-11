@@ -18,6 +18,7 @@
 | [`lot-05-schema.md`](lot-05-schema.md) | Laissez-passer LOT 05 : modèle, création atomique, droits calculés, scan public (DM-112 à DM-119, DT-046 à DT-051) |
 | [`lot-05-5-2-cadrage.md`](lot-05-5-2-cadrage.md) | LOT 05.5.2 : périodes d'autorisation (prolongation, reprise, raccourcissement, B2), livré ; contrôle des notifications et validations préproduction |
 | [`lot-05-6-cadrage.md`](lot-05-6-cadrage.md) | LOT 05.6 (version 2.1, 11 novembre 2026) : cycle de vie des événements, archive intermédiaire cloisonnée, purge par dossier et suppression, comptes ; arbitrages du commanditaire intégrés, arbitrages bloquants restants au §12 (bloquant avant la production) ; décision [DM-120](decisions/metier/DM-120-cycle-de-vie-des-evenements-archives-et-suppression.md) |
+| [`lot-05-5-6-checklist-terrain.md`](lot-05-5-6-checklist-terrain.md) | LOT 05.5.6 : checklist courte des recettes de terrain (iPhone, Android, boîte e-mail réelle, PDF, deux communes, nginx natif) ; aucune recette marquée réussie |
 | [`lot-05-5-6-recette.md`](lot-05-5-6-recette.md) | LOT 05.5.6 : recette transversale (matrice de couverture, anomalies, recettes manuelles restantes, proposition de clôture du LOT 05.5) |
 | [`lot-05-git-decoupage.md`](lot-05-git-decoupage.md) | Plan de découpage en 4 commits (manifeste, script non exécuté, stratégie de vérification) : proposition, aucun commit réalisé |
 | [`lot-05-git-inventaire.md`](lot-05-git-inventaire.md) | Inventaire des modifications non commitées depuis le LOT 05.4.1 et proposition de découpage en commits (aucun commit réalisé) |
