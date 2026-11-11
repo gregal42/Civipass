@@ -51,7 +51,7 @@
           <li class="pp-zone{% if r.isRemoved %} pp-zone--removed{% endif %}">
             <span class="pp-zone__label">{{ r.label }}</span>
             {% if r.isRemoved %}<span class="pp-zone__detail">Retirée le {{ r.removedAt|cp_datetime(overview.timezone) }}</span>
-            {% else %}<span class="pp-zone__detail">Rattachée{% if r.state %} · {{ r.state.value|lower|replace({'_': ' '}) }}{% endif %}</span>{% endif %}
+            {% else %}<span class="pp-zone__detail">Rattachée{% if r.state %} · {{ cp_state_label(r.state) }}{% endif %}</span>{% endif %}
             {% if r.isLabelOutdated %}<span class="app-note"> · libellé actuel de la zone : « {{ r.currentLabel }} »</span>{% endif %}
           </li>
         {% else %}
@@ -158,6 +158,7 @@
       {% else %}
         <p class="app-note" id="rights-history-empty">Aucune révision pour l’instant.</p>
       {% endif %}
+      <p class="app-note" id="rights-history-order">Ordre d’affichage : de la plus ancienne à la plus récente, à la seconde près. Deux révisions enregistrées dans la <b>même seconde</b> par des traitements différents peuvent s’afficher dans un ordre qui n’est pas garanti ; les révisions d’une même opération (par exemple un remplacement) forment un lot et sont reliées explicitement. Cet ordre n’est jamais utilisé pour calculer les droits.</p>
       <p class="app-note">Les révisions des autres communes apparaissent sous forme d’une ligne neutre (type, date et commune) : leurs motifs et leurs droits ne sont pas communiqués.</p>
     {% endblock %}
   {% endembed %}

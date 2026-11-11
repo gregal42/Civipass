@@ -17,6 +17,7 @@ use App\Permit\Domain\PermitRepository;
 use App\Permit\Domain\PermitRevision;
 use App\Permit\Domain\PermitRevisionRepository;
 use App\Permit\Domain\PermitRevisionVehicle;
+use App\Permit\Domain\PlateInCommentDetector;
 use App\Permit\Domain\PermitVehicle;
 use App\Permit\Domain\VehicleAddReason;
 use App\Permit\Domain\VehicleChange;
@@ -280,8 +281,8 @@ final readonly class PermitVehicleService
 
             return null;
         }
-        // Forme d'une plaque SIV (AB-123-CD) ou FNI à 3-4 chiffres (1234 AB 56), avec ou sans séparateurs : jamais conservée dans un commentaire.
-        if (1 === preg_match('/(?<![\p{L}\d])[A-Z]{2}[\s\-]?\d{3}[\s\-]?[A-Z]{2}(?![\p{L}\d])/iu', $comment) || 1 === preg_match('/(?<![\p{L}\d])\d{3,4}[\s\-]?[A-Z]{1,3}[\s\-]?(\d{2}|2[AB])(?![\p{L}\d])/iu', $comment)) {
+        // Plaque SIV ou FNI dans le texte (séparateurs et présentations variés) : jamais conservée dans un commentaire ; voir `PlateInCommentDetector` (décision D1 du 11 novembre 2026).
+        if (PlateInCommentDetector::containsPlate($comment)) {
             throw new DomainRuleViolation('Le commentaire ne doit contenir aucune plaque d\'immatriculation : elle est déjà conservée à part.');
         }
 
@@ -299,7 +300,7 @@ final readonly class PermitVehicleService
         if (null === $comment) {
             return;
         }
-        $compact = mb_strtoupper((string) preg_replace('/[\s\-\x{2010}-\x{2015}]+/u', '', $comment));
+        $compact = mb_strtoupper((string) preg_replace('/[\s\p{Z}\-\x{2010}-\x{2015}._\/]+/u', '', $comment));
         $plates = [
             ...array_map(static fn (VehicleRowState $r): string => $r->registration, $rows),
             ...array_map(static fn (LicensePlate $p): string => $p->value, $operation['adds']),

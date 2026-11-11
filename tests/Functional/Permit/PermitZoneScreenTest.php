@@ -250,6 +250,22 @@ final class PermitZoneScreenTest extends PublicRequestTestCase
         self::assertStringContainsString('Zone réintégrée', $this->html());
     }
 
+    public function testTheZoneListWritesTheStateInFrenchAndNeverTheTechnicalValue(): void
+    {
+        $this->as($this->instructor);
+        $this->submitZones('/zones', ['add' => [$this->id($this->zoneB)], 'step' => 'apply']);
+        $this->sql("UPDATE event_zone SET status = 'SUSPENDED' WHERE id = :id", ['id' => $this->zoneB->id()->toBinary()]);
+
+        $this->client->request('GET', $this->url());
+
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('Rattachée · Valide actuellement', $this->html(), 'zone rattachée et accessible');
+        self::assertStringContainsString('Rattachée · Zone suspendue', $this->html(), 'zone rattachée mais PAS accessible : la différence est lisible');
+        foreach (['zone suspended', 'zone_suspended', '· valid<'] as $technical) {
+            self::assertStringNotContainsString($technical, $this->html(), 'jamais la valeur technique : '.$technical);
+        }
+    }
+
     // ------------------------------------------------------------------ suspension, libellés
 
     public function testASuspendedEventBlocksAdditionsButNotRemovalsOrLabelCorrections(): void

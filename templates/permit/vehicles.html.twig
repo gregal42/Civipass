@@ -18,13 +18,15 @@
     {% include 'components/alert.html.twig' with { variant: 'info', title: 'Les plaques sont communes à toutes les communes de ce laissez-passer.' ~ (v.otherMunicipalities|length ? ' Cette modification s’appliquera aussi aux communes : ' ~ v.otherMunicipalities|join(', ') ~ '.' : ' Aucune autre commune n’a d’autorisation en cours sur ce laissez-passer.'), id: 'vehicles-scope' } only %}
     {% if plan %}
       <section class="cp-box" id="vehicles-preview" aria-labelledby="vehicles-preview-title">
-        <h2 class="cp-box__title" id="vehicles-preview-title">Ce qui changerait</h2>
+      <div class="cp-box__head"><h2 class="cp-box__title" id="vehicles-preview-title">Ce qui changerait</h2></div>
+      <div class="cp-box__body">
         <ul class="cp-consequences">
-          {% for c in plan_lines %}<li><b>{{ kinds[c.kind] }}</b> : {{ c.plate }}{% if c.pair is not null %} (remplacement n° {{ c.pair + 1 }}){% endif %}</li>{% endfor %}
+          {% for c in plan_lines %}<li>{% include 'components/icon.html.twig' with { name: 'right', size: 's' } only %}<span><b>{{ kinds[c.kind] }}</b> : {{ c.plate }}{% if c.pair is not null %} (remplacement n° {{ c.pair + 1 }}){% endif %}</span></li>{% endfor %}
         </ul>
         <p class="app-note">Plaques actives après l’opération : <b>{{ plan.activeAfter }}</b>. {% if plan.hasRemoval %}Le bénéficiaire sera prévenu sans attendre (retrait ou remplacement de plaque).{% else %}Le bénéficiaire sera prévenu par e-mail si une adresse est enregistrée.{% endif %}
           Les zones, les périodes et le QR code ne sont pas touchés. Le message au bénéficiaire ne contient aucune plaque.</p>
-      </section>
+      </div>
+    </section>
     {% endif %}
 
     <form class="cp-decision" id="vehicles-form" action="{{ action_url }}" method="post" novalidate aria-labelledby="vehicles-form-title" data-turbo="false">

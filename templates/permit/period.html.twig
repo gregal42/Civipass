@@ -17,14 +17,17 @@
     <p>{% include 'components/button.html.twig' with { label: 'Retour aux droits', variant: 'secondary', href: rights_url } only %}</p>
   {% else %}
     <section class="cp-box" aria-labelledby="period-now-title">
-      <h2 class="cp-box__title" id="period-now-title">Période actuelle de votre commune</h2>
+      <div class="cp-box__head"><h2 class="cp-box__title" id="period-now-title">Période actuelle de votre commune</h2></div>
+      <div class="cp-box__body">
       <p class="pp-auth__period" id="period-now">{{ cp_authorization_period(overview.rights, tz) }}</p>
       {% if resuming %}<p class="app-note">Cette période est terminée. Une reprise ouvre une <b>nouvelle</b> période à partir de maintenant : <b>aucun droit n’est rétabli</b> pour le temps écoulé.</p>{% endif %}
+      </div>
     </section>
 
     {% if plan %}
       <section class="cp-box" id="period-preview" aria-labelledby="period-preview-title">
-        <h2 class="cp-box__title" id="period-preview-title">Période qui en résulterait</h2>
+      <div class="cp-box__head"><h2 class="cp-box__title" id="period-preview-title">Période qui en résulterait</h2></div>
+      <div class="cp-box__body">
         {% if plan.until %}
           <p><b>Du {{ plan.from|cp_datetime(tz) }} au {{ plan.until|cp_datetime(tz) }}</b></p>
         {% else %}
@@ -33,7 +36,8 @@
         {% if plan.archivesCurrent %}<p class="app-note" id="preview-resume">Reprise : aucun droit entre la fin de la période actuelle ({{ plan.before.until|cp_datetime(tz) }}) et maintenant.</p>{% endif %}
         {% if plan.immediate %}<p class="app-note" id="preview-immediate"><b>Fin immédiate</b> : la date demandée est passée ; les droits prendront fin maintenant, jamais à une date antérieure.</p>{% endif %}
         <p class="app-note">Le début de la période est inclus, sa fin est exclue. Le QR code et les autres communes ne sont pas touchés.</p>
-      </section>
+      </div>
+    </section>
     {% endif %}
 
     <form class="cp-decision{% if shortening %} cp-decision--refuse{% endif %}" id="period-form" action="{{ action_url }}" method="post" novalidate aria-labelledby="period-form-title" data-turbo="false">

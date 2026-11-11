@@ -17,13 +17,15 @@
   {% else %}
     {% include 'components/alert.html.twig' with { variant: 'info', title: 'Le QR code est commun à toutes les communes de ce laissez-passer.' ~ (q.otherMunicipalities|length ? ' Ce remplacement s’appliquera aussi aux communes : ' ~ q.otherMunicipalities|join(', ') ~ '.' : ' Aucune autre commune n’a d’autorisation en cours sur ce laissez-passer.'), id: 'qr-scope' } only %}
     <section class="cp-box" id="qr-effect" aria-labelledby="qr-effect-title">
-      <h2 class="cp-box__title" id="qr-effect-title">Ce qui se passera</h2>
+      <div class="cp-box__head"><h2 class="cp-box__title" id="qr-effect-title">Ce qui se passera</h2></div>
+      <div class="cp-box__body">
       <ul class="cp-consequences">
-        <li>L’<b>ancien QR code cesse définitivement de fonctionner</b> (QR imprimés et PDF déjà téléchargés compris) : il répondra « QR remplacé ».</li>
-        <li>Un <b>nouveau QR code</b> est créé ; le lien personnel du bénéficiaire l’affiche et permet de télécharger un PDF à jour.</li>
-        <li>La référence du laissez-passer, les autorisations, les zones, les périodes et les plaques ne changent pas.</li>
-        <li>Le bénéficiaire est prévenu sans attendre. Le message ne contient aucun QR code ni lien de contrôle.</li>
+        <li>{% include 'components/icon.html.twig' with { name: 'right', size: 's' } only %}<span>L’<b>ancien QR code cesse définitivement de fonctionner</b> (QR imprimés et PDF déjà téléchargés compris) : il répondra « QR remplacé ».</span></li>
+        <li>{% include 'components/icon.html.twig' with { name: 'right', size: 's' } only %}<span>Un <b>nouveau QR code</b> est créé ; le lien personnel du bénéficiaire l’affiche et permet de télécharger un PDF à jour.</span></li>
+        <li>{% include 'components/icon.html.twig' with { name: 'right', size: 's' } only %}<span>La référence du laissez-passer, les autorisations, les zones, les périodes et les plaques ne changent pas.</span></li>
+        <li>{% include 'components/icon.html.twig' with { name: 'right', size: 's' } only %}<span>Le bénéficiaire est prévenu sans attendre. Le message ne contient aucun QR code ni lien de contrôle.</span></li>
       </ul>
+      </div>
     </section>
 
     <form class="cp-decision" id="qr-form" action="{{ action_url }}" method="post" novalidate aria-labelledby="qr-form-title" data-turbo="false">

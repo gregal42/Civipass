@@ -16,13 +16,15 @@
   {% else %}
     {% if plan %}
       <section class="cp-box" id="zones-preview" aria-labelledby="zones-preview-title">
-        <h2 class="cp-box__title" id="zones-preview-title">Ce qui changerait</h2>
+      <div class="cp-box__head"><h2 class="cp-box__title" id="zones-preview-title">Ce qui changerait</h2></div>
+      <div class="cp-box__body">
         <ul class="cp-consequences">
-          {% for c in plan.changes %}<li><b>{{ kinds[c.kind.value] }}</b> : {{ c.label }}{% if c.previousLabel and c.previousLabel != c.label %} (ancien libellé : {{ c.previousLabel }}){% endif %}</li>{% endfor %}
+          {% for c in plan.changes %}<li>{% include 'components/icon.html.twig' with { name: 'right', size: 's' } only %}<span><b>{{ kinds[c.kind.value] }}</b> : {{ c.label }}{% if c.previousLabel and c.previousLabel != c.label %} (ancien libellé : {{ c.previousLabel }}){% endif %}</span></li>{% endfor %}
         </ul>
         <p class="app-note">Zones rattachées après l’opération : <b>{{ plan.attachedAfter }}</b>. {% if plan.hasRemoval %}Le bénéficiaire sera prévenu sans attendre (retrait de zone).{% else %}Le bénéficiaire sera prévenu par e-mail si une adresse est enregistrée.{% endif %}
           Un droit dans une zone dépend aussi de la période de l’autorisation et des créneaux de la zone ; le QR code et les autres communes ne sont pas touchés.</p>
-      </section>
+      </div>
+    </section>
     {% endif %}
 
     <form class="cp-decision" id="zones-form" action="{{ action_url }}" method="post" novalidate aria-labelledby="zones-form-title" data-turbo="false">
@@ -34,7 +36,7 @@
           {% set attached = overview.zoneRows|filter(r => not r.isRemoved) %}
           <div class="cp-choices">
             {% for r in attached %}
-              {% include 'components/choice.html.twig' with { type: 'checkbox', name: 'remove[]', value: r.id, id: 'f-remove-' ~ r.id, label: r.label, note: r.state ? 'Actuellement : ' ~ r.state.value|lower|replace({'_': ' '}) : '', checked: r.id in form.remove } only %}
+              {% include 'components/choice.html.twig' with { type: 'checkbox', name: 'remove[]', value: r.id, id: 'f-remove-' ~ r.id, label: r.label, note: r.state ? 'Actuellement : ' ~ cp_state_label(r.state) : '', checked: r.id in form.remove } only %}
             {% endfor %}
           </div>
           {% if attached|length < 2 %}<p class="app-note" id="zones-last">Une seule zone reste rattachée : elle ne peut pas être retirée. Pour retirer tous les droits de votre commune, révoquez l’autorisation.</p>{% endif %}

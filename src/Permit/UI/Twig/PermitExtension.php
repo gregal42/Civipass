@@ -40,6 +40,28 @@ final class PermitExtension
         };
     }
 
+    /**
+     * Libellé français d'un état de droit (liste des zones rattachées, écrans agent) : jamais la valeur technique de l'énumération. Mêmes mots que `cp_zone_state`.
+     */
+    #[AsTwigFunction('cp_state_label')]
+    public function stateLabel(RightState $state): string
+    {
+        return match ($state) {
+            RightState::Valid => 'Valide actuellement',
+            RightState::NotYetValid => 'Pas encore valide',
+            RightState::OutsidePeriod => 'Hors créneau',
+            RightState::Expired => 'Expirée',
+            RightState::ZoneSuspended => 'Zone suspendue',
+            RightState::ParticipationInactive => 'Suspendue',
+            RightState::CommuneInactive => 'Commune inactive',
+            RightState::EventNotActive => 'Événement suspendu',
+            RightState::EventClosed => 'Événement terminé',
+            RightState::Revoked => 'Révoquée',
+            RightState::Removed => 'Retirée',
+            RightState::ZoneNotAuthorized => 'Non autorisée',
+        };
+    }
+
     /** Période de l'autorisation d'une commune, dans le fuseau de l'événement. */
     #[AsTwigFunction('cp_authorization_period')]
     public function period(AuthorizationRights $authorization, string $timezone): string

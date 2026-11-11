@@ -135,6 +135,17 @@ final class PermitRightsScreenTest extends PublicRequestTestCase
 
     // ------------------------------------------------------------------ écran et périmètre
 
+    public function testTheHistoryStatesThatTheOrderOfTwoRevisionsInTheSameSecondIsNotGuaranteed(): void
+    {
+        $this->as($this->instructor);
+
+        $this->client->request('GET', $this->url());
+
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('même seconde', $this->html(), 'aucun ordre artificiellement certain n\'est affiché');
+        self::assertStringContainsString('n’est jamais utilisé pour calculer les droits', $this->html());
+    }
+
     public function testTheRightsScreenShowsTheOwnAuthorizationAndNothingPersonalOrTechnical(): void
     {
         $this->as($this->instructor);
