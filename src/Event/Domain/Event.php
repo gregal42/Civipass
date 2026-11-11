@@ -80,6 +80,14 @@ class Event
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $closedAt = null;
 
+    /**
+     * Compteurs internes de clôture (LOT 05.6.2, M1) : jamais exposés directement, écriture unique ; NULL = non calculés. Accesseurs et validation du schéma JSON : lot des statistiques.
+     *
+     * @var array<string, mixed>|null
+     */
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $closureStatistics = null; // @phpstan-ignore property.onlyWritten, property.unusedType (mapping seul : accesseurs et écriture unique au lot des statistiques)
+
     #[ORM\ManyToOne(targetEntity: User::class, fetch: 'LAZY')]
     #[ORM\JoinColumn(name: 'created_by', nullable: false, onDelete: 'RESTRICT')]
     private User $createdBy;
