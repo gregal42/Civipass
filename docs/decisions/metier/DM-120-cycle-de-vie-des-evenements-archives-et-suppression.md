@@ -2,7 +2,7 @@
 
 - **Identifiant** : DM-120
 - **Thème** : LOT 05.6 — Conservation et suppression des données (RGPD)
-- **Statut** : **Proposée** — **orientation et dix arbitrages VALIDÉS par le commanditaire le 11 novembre 2026** ; **arbitrages bloquants D1 à D4 validés le 11 novembre 2026** (règle 8, option B de désignation, dossier communal, accord de principe sur les migrations) ; **durées, règles d'élimination, archives publiques et modalités de gel restent à valider par les responsables compétents avant la production** (la durée de 12 mois est une hypothèse, pas une obligation légale établie) ; **SQL de chaque migration à valider avant le sous-lot concerné**. Cadrage : [lot-05-6-cadrage.md](../../lot-05-6-cadrage.md).
+- **Statut** : **Proposée** — **orientation et dix arbitrages VALIDÉS par le commanditaire le 11 novembre 2026** ; **arbitrages bloquants D1 à D4 validés le 11 novembre 2026** (règle 8, option B de désignation, dossier communal, accord de principe sur les migrations) ; **durées, règles d'élimination, archives publiques et modalités de gel restent à valider par les responsables compétents avant la production** (la durée de 12 mois est une hypothèse, pas une obligation légale établie) ; **SQL de chaque migration à valider avant le sous-lot concerné**. Cadrage : [lot-05-6-cadrage.md](../../lot-05-6-cadrage.md). Politique : [rgpd-politique-conservation.md](../../rgpd-politique-conservation.md).
 - **Décisions remplacées** : les **hypothèses de conservation progressive** de DM-119 §9 (anonymisation de champs à `T`+30 j, `T`+3 mois, `T`+6 mois), **abandonnées** ; complète DM-117 §3 ; **amende** DM-114 (lien bénéficiaire) et DM-115 (comportement après la purge).
 
 ## 1. Contexte
