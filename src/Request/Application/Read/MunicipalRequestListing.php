@@ -16,6 +16,8 @@ final readonly class MunicipalRequestListing
         public ?RequestEventOption $event,
         public array $categories,
         public ?MunicipalRequestPage $page,
+        /** Événements CLOS de la commune (LOT 05.6.2) : ni listés ni sélectionnés, mais leur existence explique l'état vide. */
+        public int $closedEventCount = 0,
     ) {
     }
 }

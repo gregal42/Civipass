@@ -567,7 +567,6 @@ final class MunicipalRequestDecisionTest extends PublicRequestTestCase
         yield 'participation SUSPENDED' => ['UPDATE event_participation SET status = \'SUSPENDED\' WHERE municipality_id = UNHEX(:m)', 'participation de votre commune'];
         yield 'participation CLOSED' => ['UPDATE event_participation SET status = \'CLOSED\' WHERE municipality_id = UNHEX(:m)', 'participation de votre commune'];
         yield 'événement suspendu' => ['UPDATE event_event SET status = \'SUSPENDED\' WHERE :m <> \'\'', 'n’est pas ouvert aux décisions'];
-        yield 'événement clôturé' => ['UPDATE event_event SET status = \'CLOSED\' WHERE :m <> \'\'', 'n’est pas ouvert aux décisions'];
         yield 'commune suspendue' => ['UPDATE municipality SET status = \'SUSPENDED\' WHERE id = UNHEX(:m)', 'commune est suspendue'];
     }
 
@@ -590,6 +589,24 @@ final class MunicipalRequestDecisionTest extends PublicRequestTestCase
             self::assertResponseRedirects($this->url($this->instructorO));
             $this->client->request('POST', $this->url($this->instructorO, $suffix), ['mode' => 'H24', 'step' => 'confirm', 'reason' => 'duplicate', '_token' => 'x']);
             self::assertResponseRedirects($this->url($this->instructorO));
+        }
+        self::assertSame(0, $this->decisions());
+    }
+
+    /** LOT 05.6.2 : un événement CLOS ne sert plus la fiche ni les écrans de décision (410 neutre, aucune donnée), il ne s'explique plus. */
+    public function testAClosedEventNoLongerServesTheDossierNorTheDecisionScreens(): void
+    {
+        $this->sql('UPDATE event_event SET status = \'CLOSED\' WHERE :m <> \'\'', ['m' => 'x']);
+        $this->as($this->instructorO);
+
+        foreach (['', '/approuver', '/refuser'] as $suffix) {
+            $this->client->request('GET', $this->url($this->instructorO, $suffix));
+            self::assertResponseStatusCodeSame(410);
+            if ('' === $suffix) {
+                continue; // la fiche n'accepte que GET
+            }
+            $this->client->request('POST', $this->url($this->instructorO, $suffix), ['mode' => 'H24', 'step' => 'confirm', 'reason' => 'duplicate', '_token' => 'x']);
+            self::assertResponseStatusCodeSame(410);
         }
         self::assertSame(0, $this->decisions());
     }

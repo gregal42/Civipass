@@ -50,6 +50,7 @@ final class PermitAccessServiceTest extends MunicipalDecisionTestCase
             self::getContainer()->get(\App\Permit\Application\NotificationStatusProvider::class),
             self::getContainer()->get(\App\Permit\Application\ManualNotificationRequester::class),
             self::getContainer()->get(\App\Permit\Application\SystemAccessLinks::class),
+            self::getContainer()->get(\App\Event\Application\EventOperationalGuard::class),
         );
     }
 

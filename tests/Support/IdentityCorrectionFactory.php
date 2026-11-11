@@ -27,6 +27,7 @@ final class IdentityCorrectionFactory
             $c->get(PermitRequestRepository::class),
             $c->get(PhoneNumberNormalizer::class),
             $audit ?? $c->get(AuditTrail::class),
+            $c->get(\App\Event\Application\EventOperationalGuard::class),
         );
     }
 }

@@ -354,11 +354,11 @@ final class PermitQrScreenTest extends PublicRequestTestCase
         self::assertSame(1, $this->revisions());
 
         $this->sql("UPDATE event_event SET status = 'CLOSED'");
+        // LOT 05.6.2 : un événement clos répond 410 neutre (barrière), en lecture comme en écriture.
         $this->client->request('GET', $this->url('/qr'));
-        self::assertResponseStatusCodeSame(409);
-        self::assertStringContainsString('clos', $this->html());
+        self::assertResponseStatusCodeSame(410);
         $this->client->request('POST', $this->url('/qr'), $this->valid() + ['_token' => 'x', 'operation_id' => 'x']);
-        self::assertResponseStatusCodeSame(409);
+        self::assertResponseStatusCodeSame(410);
         self::assertSame(1, $this->revisions());
     }
 

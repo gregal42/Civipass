@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Request\Application;
 
+use App\Event\Application\EventOperationalGuard;
 use App\Identity\Domain\User;
 use App\Municipality\Application\MunicipalityContext;
 use App\Event\Domain\ParticipationStatus;
@@ -29,6 +30,7 @@ final readonly class DirectIssuanceReader
     public function __construct(
         private MunicipalityContext $context,
         private PermitRequestRepository $requests,
+        private EventOperationalGuard $closure,
     ) {
     }
 
@@ -50,6 +52,7 @@ final readonly class DirectIssuanceReader
             throw new OperationNotAllowed('Ressource inaccessible.');
         }
         $request = $part->request();
+        $this->closure->assertOpen($request->event()->id()); // événement clos : plus aucune donnée (LOT 05.6.2), après habilitation et portion communale
         $zones = array_map(static fn (PermitRequestZone $z): string => $z->zoneLabel(), $part->zones());
         sort($zones);
 

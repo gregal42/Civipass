@@ -534,6 +534,7 @@ final class RequestSubmissionServiceTest extends RequestDepositTestCase
             $this->service(UploadedDocumentInspector::class),
             $this->service(ProposableZones::class),
             new \App\Request\Application\MunicipalDecisionApplier($this->service(AuditTrail::class), $this->service(\App\Event\Domain\EventZoneValidityRepository::class), new \App\Request\Infrastructure\NullApprovedPartListener()),
+            $this->service(\App\Event\Application\EventOperationalGuard::class),
         );
 
         try {

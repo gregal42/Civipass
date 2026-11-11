@@ -1,0 +1,12 @@
+{% extends 'layouts/auth.html.twig' %}
+{% set page_title = 'Événement clos' %}
+
+{% block content %}
+    {# Réponse identique pour tous les rôles : aucune donnée de dossier, aucun nom, aucune référence (LOT 05.6.2). #}
+    {% embed 'components/panel.html.twig' with { id: 'err-h', title: 'Événement clos', level: 1 } only %}
+        {% block body %}
+            <p>Cet événement est clos : les données de ses dossiers ne sont plus consultables dans l’espace de gestion.</p>
+            {% include 'components/button.html.twig' with { label: 'Retour à mon espace', href: path('app_municipal_select'), variant: 'secondary', icon: 'back' } only %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

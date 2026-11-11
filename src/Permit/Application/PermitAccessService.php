@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Permit\Application;
 
+use App\Event\Application\EventOperationalGuard;
 use App\Event\Application\Support\EventLocker;
 use App\Event\Application\Support\EventTransactions;
 use App\Event\Domain\ParticipationStatus;
@@ -28,6 +29,7 @@ use App\Shared\Application\AuditTrail;
 use App\Shared\Domain\AuditAction;
 use App\Shared\Domain\AuditActor;
 use App\Shared\Domain\AuditSubjectType;
+use App\Shared\Domain\ClosedEventAccess;
 use App\Shared\Domain\DomainRuleViolation;
 use App\Shared\Domain\OperationConflict;
 use App\Shared\Domain\OperationNotAllowed;
@@ -61,6 +63,7 @@ final readonly class PermitAccessService
         private NotificationStatusProvider $notifications,
         private ManualNotificationRequester $manualNotifications,
         private SystemAccessLinks $links,
+        private EventOperationalGuard $closure,
     ) {
     }
 
@@ -119,7 +122,11 @@ final readonly class PermitAccessService
         [, $permit, $authorization] = $this->authorize($agent, $municipalityId, $requestId);
 
         return $this->transactions->run(function () use ($agent, $municipalityId, $permit, $authorization): IssuedAccessLink {
-            $participation = $this->locker->participation($authorization->participation()->id(), $this->locker->sharedEvent($permit->event()->id()));
+            $event = $this->locker->sharedEvent($permit->event()->id());
+            if ($event->status()->isClosed()) {
+                throw ClosedEventAccess::create(); // clôture validée entre le contrôle initial et le verrou (LOT 05.6.2) : l'état relu sous verrou fait foi
+            }
+            $participation = $this->locker->participation($authorization->participation()->id(), $event);
             if (ParticipationStatus::Active !== $participation->status()) {
                 throw new PermitAccessUnavailable($participation->status()->value);
             }
@@ -161,7 +168,11 @@ final readonly class PermitAccessService
         }
 
         return $this->transactions->run(function () use ($agent, $municipalityId, $permit, $authorization, $nonce): ManualNotificationOutcome {
-            $participation = $this->locker->participation($authorization->participation()->id(), $this->locker->sharedEvent($permit->event()->id()));
+            $event = $this->locker->sharedEvent($permit->event()->id());
+            if ($event->status()->isClosed()) {
+                throw ClosedEventAccess::create(); // clôture validée entre le contrôle initial et le verrou (LOT 05.6.2) : l'état relu sous verrou fait foi
+            }
+            $participation = $this->locker->participation($authorization->participation()->id(), $event);
             if (ParticipationStatus::Active !== $participation->status()) {
                 throw new PermitAccessUnavailable($participation->status()->value);
             }
@@ -205,7 +216,11 @@ final readonly class PermitAccessService
         }
 
         return $this->transactions->run(function () use ($agent, $municipalityId, $permit, $authorization, $linkId): bool {
-            $participation = $this->locker->participation($authorization->participation()->id(), $this->locker->sharedEvent($permit->event()->id()));
+            $event = $this->locker->sharedEvent($permit->event()->id());
+            if ($event->status()->isClosed()) {
+                throw ClosedEventAccess::create(); // clôture validée entre le contrôle initial et le verrou (LOT 05.6.2) : l'état relu sous verrou fait foi
+            }
+            $participation = $this->locker->participation($authorization->participation()->id(), $event);
             if (ParticipationStatus::Active !== $participation->status()) {
                 throw new PermitAccessUnavailable($participation->status()->value);
             }
@@ -237,6 +252,7 @@ final readonly class PermitAccessService
         foreach (null === $permit ? [] : $permit->authorizations() as $authorization) {
             if ($authorization->municipality()->id()->equals($own)) {
                 $this->assertMay($membership, $authorization, $agent);
+                $this->closure->assertOpen($permit->event()->id()); // événement clos : plus de lien ni de notification (LOT 05.6.2)
 
                 return [$membership, $permit, $authorization];
             }

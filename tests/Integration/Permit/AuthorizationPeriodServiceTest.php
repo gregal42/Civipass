@@ -415,7 +415,7 @@ final class AuthorizationPeriodServiceTest extends MunicipalDecisionTestCase
             try {
                 $operation();
                 self::fail('Refus attendu.');
-            } catch (DomainRuleViolation) {
+            } catch (\App\Shared\Domain\ClosedEventAccess) { // LOT 05.6.2 : la garde de clôture refuse avant tout calcul de période
                 self::assertSame($before, $this->counts());
             }
         }

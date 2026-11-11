@@ -420,7 +420,7 @@ final class DirectIssuanceServiceTest extends MunicipalDecisionTestCase
     {
         $c = self::getContainer();
 
-        return new DirectIssuanceReader($c->get(\App\Municipality\Application\MunicipalityContext::class), $c->get(\App\Request\Domain\PermitRequestRepository::class));
+        return new DirectIssuanceReader($c->get(\App\Municipality\Application\MunicipalityContext::class), $c->get(\App\Request\Domain\PermitRequestRepository::class), $c->get(\App\Event\Application\EventOperationalGuard::class));
     }
 
     public function testOnlyTheIssuingAgentReadsTheConfirmationAndOnlyForHisOwnMunicipality(): void

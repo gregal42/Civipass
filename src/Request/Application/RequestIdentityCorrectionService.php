@@ -7,6 +7,7 @@ namespace App\Request\Application;
 use App\Event\Application\Support\EventLocker;
 use App\Event\Application\Support\EventTransactions;
 use App\Event\Domain\EventParticipation;
+use App\Event\Application\EventOperationalGuard;
 use App\Event\Domain\ParticipationStatus;
 use App\Identity\Domain\EmailAddress;
 use App\Identity\Domain\User;
@@ -59,6 +60,7 @@ final readonly class RequestIdentityCorrectionService
         private PermitRequestRepository $requests,
         private PhoneNumberNormalizer $phones,
         private AuditTrail $audit,
+        private EventOperationalGuard $closure,
     ) {
     }
 
@@ -83,6 +85,7 @@ final readonly class RequestIdentityCorrectionService
             return null;
         }
         $request = $part->request();
+        $this->closure->assertOpen($request->event()->id()); // événement clos : plus aucune identité (LOT 05.6.2), après habilitation et portion communale
 
         return new IdentityLookupResult($request->id()->toRfc4122(), $request->reference()->value, $request->event()->name(), $part->status(), $request->lastName(), $request->firstName(), ParticipationStatus::Active === $part->participation()->status(), self::reason($part->participation(), $part));
     }
@@ -201,6 +204,7 @@ final readonly class RequestIdentityCorrectionService
         if (null === $locator) {
             throw new OperationNotAllowed('Ressource inaccessible.');
         }
+        $this->closure->assertDossierOpen($membership->municipality()->id(), Uuid::fromString($requestId)); // événement clos : lecture et correction fermées (LOT 05.6.2)
 
         return [$membership, $locator];
     }

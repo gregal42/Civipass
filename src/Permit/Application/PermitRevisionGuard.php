@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Permit\Application;
 
+use App\Event\Application\EventOperationalGuard;
 use App\Event\Application\Support\EventLocker;
 use App\Event\Domain\ParticipationStatus;
 use App\Identity\Domain\User;
@@ -34,6 +35,7 @@ final readonly class PermitRevisionGuard
         private EventLocker $locker,
         private MunicipalityContext $context,
         private PermitRepository $permits,
+        private EventOperationalGuard $closure,
     ) {
     }
 
@@ -52,6 +54,9 @@ final readonly class PermitRevisionGuard
         $own = $membership->municipality()->id();
         foreach (null === $permit ? [] : $permit->authorizations() as $authorization) {
             if ($authorization->municipality()->id()->equals($own)) {
+                // Habilitation et portion communale vérifiées : un événement clos ne sert plus aucun droit (LOT 05.6.2).
+                $this->closure->assertOpen($permit->event()->id());
+
                 return new RevisionScope($membership, $permit, $authorization);
             }
         }

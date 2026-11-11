@@ -474,7 +474,7 @@ final class AuthorizationZoneServiceTest extends MunicipalDecisionTestCase
         $this->sql("UPDATE event_event SET status = 'CLOSED', closed_at = '2026-06-12 08:00:00'");
         $before = $this->counts();
 
-        $this->expectException(DomainRuleViolation::class);
+        $this->expectException(\App\Shared\Domain\ClosedEventAccess::class);
         try {
             $this->change($requestId, adds: [$this->zoneB]);
         } finally {

@@ -459,7 +459,7 @@ final class PermitTokenReplacementServiceTest extends MunicipalDecisionTestCase
         try {
             $this->replace($requestId);
             self::fail('Événement clos : refus attendu.');
-        } catch (DomainRuleViolation $e) {
+        } catch (\App\Shared\Domain\ClosedEventAccess $e) { // LOT 05.6.2 : la garde de clôture refuse avant la règle de remplacement
             self::assertStringContainsString('clos', $e->getMessage());
             self::assertSame($before, $this->counts());
         }
@@ -638,8 +638,8 @@ final class PermitTokenReplacementServiceTest extends MunicipalDecisionTestCase
         $this->sql("UPDATE event_event SET status = 'SUSPENDED'");
         self::assertTrue(($this->overview($this->adminOnly, $this->organizer, $requestId)->qr ?? self::fail())->canReplace);
         $this->sql("UPDATE event_event SET status = 'CLOSED'");
-        $closed = $this->overview($this->adminOnly, $this->organizer, $requestId)->qr ?? self::fail();
-        self::assertFalse($closed->canReplace);
-        self::assertStringContainsString('clos', $closed->blockedReason);
+        // LOT 05.6.2 : un événement clos ne sert plus aucun panneau (garde de clôture, 410 en HTTP).
+        $this->expectException(\App\Shared\Domain\ClosedEventAccess::class);
+        $this->overview($this->adminOnly, $this->organizer, $requestId);
     }
 }

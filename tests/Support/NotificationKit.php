@@ -110,6 +110,7 @@ final class NotificationKit
             $c->get(\App\Permit\Application\NotificationStatusProvider::class),
             $c->get(\App\Permit\Application\ManualNotificationRequester::class),
             self::links($c, $audit),
+            $c->get(\App\Event\Application\EventOperationalGuard::class),
         );
     }
 

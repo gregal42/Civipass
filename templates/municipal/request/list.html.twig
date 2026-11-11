@@ -7,7 +7,11 @@
 
   {% if not event %}
     {% embed 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Demandes', sub: 'Demandes de laissez-passer reçues' } only %}{% endembed %}
-    {% include 'components/empty_state.html.twig' with { icon: 'flag', title: 'Aucun événement', text: 'Les demandes apparaissent ici dès que votre commune participe à un événement.' } only %}
+    {% if listing.closedEventCount > 0 %}
+      {% include 'components/empty_state.html.twig' with { icon: 'flag', title: 'Aucun événement actif', text: 'Aucun événement actif n’est disponible pour votre commune. Les demandes des événements clos ne sont plus consultables ici.' } only %}
+    {% else %}
+      {% include 'components/empty_state.html.twig' with { icon: 'flag', title: 'Aucun événement', text: 'Les demandes apparaissent ici dès que votre commune participe à un événement.' } only %}
+    {% endif %}
   {% else %}
     {% set total_text = page.total ~ (page.total > 1 ? ' demandes' : ' demande') %}
     {% embed 'components/page_head.html.twig' with { eyebrow: 'Demandes · ' ~ active_municipality_name, title: event.name, sub: total_text ~ (query.hasFilters ? ' correspondant à votre recherche' : ' reçues pour cet événement') } only %}{% endembed %}

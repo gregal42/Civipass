@@ -546,7 +546,7 @@ final class PermitVehicleServiceTest extends MunicipalDecisionTestCase
         $this->sql("UPDATE event_event SET status = 'CLOSED'");
         $before = $this->counts();
 
-        $this->expectException(DomainRuleViolation::class);
+        $this->expectException(\App\Shared\Domain\ClosedEventAccess::class);
         try {
             $this->change($requestId, removes: ['EF-456-GH'], removeReason: 'ENTRY_ERROR');
         } finally {

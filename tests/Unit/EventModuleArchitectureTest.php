@@ -57,13 +57,17 @@ final class EventModuleArchitectureTest extends TestCase
     {
         // Seules exceptions : les politiques partagées du module Municipality (accès, création, contexte municipal).
         $allowedApplication = ['App\\Municipality\\Application\\MembershipAccessPolicy', 'App\\Municipality\\Application\\EventCreationPolicy', 'App\\Municipality\\Application\\MunicipalityContext'];
+        // Barrière HTTP de clôture (LOT 05.6.2) : seul écouteur de l'interface HTTP autorisé à consulter le contexte municipal (habilitation avant « clos »).
+        $httpBarrier = '/src/Event/UI/Http/ClosedEventBarrier.php';
         foreach (self::phpFiles('src/Event') as $file) {
             $content = (string) file_get_contents($file);
             self::assertDoesNotMatchRegularExpression('/App\\\\(Municipality|Identity)\\\\(Infrastructure|UI)/', $content, $file);
             preg_match_all('/use (App\\\\(?:Municipality|Identity)\\\\Application\\\\\w+);/', $content, $uses);
             foreach ($uses[1] as $used) {
                 self::assertContains($used, $allowedApplication, $file);
-                self::assertStringContainsString('/src/Event/Application/', $file, 'jamais depuis le domaine ni l\'infrastructure');
+                if (!str_ends_with($file, $httpBarrier)) {
+                    self::assertStringContainsString('/src/Event/Application/', $file, 'jamais depuis le domaine ni l\'infrastructure');
+                }
             }
         }
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Request\Application;
 
+use App\Event\Application\EventOperationalGuard;
 use App\Event\Domain\EventStatus;
 use App\Event\Domain\ParticipationStatus;
 use App\Identity\Domain\User;
@@ -18,6 +19,7 @@ use App\Request\Application\Read\RequestEventOption;
 use App\Request\Domain\MunicipalRequestStatus;
 use App\Request\Domain\RefusalReason;
 use App\Request\Domain\RefusalReasonRepository;
+use App\Shared\Domain\ClosedEventAccess;
 use App\Shared\Domain\OperationNotAllowed;
 use Symfony\Component\Uid\Uuid;
 
@@ -33,6 +35,7 @@ final readonly class MunicipalRequestReader
         private MunicipalityContext $context,
         private MunicipalRequestReadModel $read,
         private RefusalReasonRepository $refusalReasons,
+        private EventOperationalGuard $closure,
     ) {
     }
 
@@ -52,16 +55,23 @@ final readonly class MunicipalRequestReader
                 }
             }
             $selected ?? throw new OperationNotAllowed('Ressource inaccessible.');
+            // Événement clos (LOT 05.6.2) : habilitation déjà vérifiée, aucune ligne n'est servie.
+            if (EventStatus::Closed === $selected->status) {
+                throw ClosedEventAccess::create();
+            }
         }
+        $closedEventCount = \count(array_filter($events, static fn (RequestEventOption $e): bool => EventStatus::Closed === $e->status));
+        // Les événements clos ne sont plus des événements d'exploitation : ils ne sont ni proposés ni sélectionnés par défaut (aucune donnée ne s'y lit).
+        $events = array_values(array_filter($events, static fn (RequestEventOption $e): bool => EventStatus::Closed !== $e->status));
         // Par défaut : l'événement le plus récent qui accepte ou a accepté des dépôts (un brouillon n'a aucune demande).
-        $selected ??= $this->firstWithStatus($events, EventStatus::Active) ?? $this->firstWithStatus($events, EventStatus::Suspended, EventStatus::Closed) ?? $events[0] ?? null;
+        $selected ??= $this->firstWithStatus($events, EventStatus::Active) ?? $this->firstWithStatus($events, EventStatus::Suspended) ?? $events[0] ?? null;
         $categories = $this->read->categories();
         // Une catégorie inconnue n'est pas un filtre : elle est ignorée, jamais exécutée.
         if (null !== $query->categoryCode && [] === array_filter($categories, static fn (array $c): bool => $c['code'] === $query->categoryCode)) {
             $query = new MunicipalRequestQuery($query->search, null, $query->page, $query->status);
         }
 
-        return new MunicipalRequestListing($events, $selected, $categories, null === $selected ? null : $this->read->search($municipality, $selected, $query));
+        return new MunicipalRequestListing($events, $selected, $categories, null === $selected ? null : $this->read->search($municipality, $selected, $query), $closedEventCount);
     }
 
     /**
@@ -71,8 +81,13 @@ final readonly class MunicipalRequestReader
     public function detail(User $user, string $municipalityId, string $requestId): MunicipalRequestDetail
     {
         $municipality = $this->municipality($user, $municipalityId);
+        $detail = $this->read->detail($municipality, $this->uuid($requestId)) ?? throw new OperationNotAllowed('Ressource inaccessible.');
+        // Habilitation et portion communale vérifiées : un événement clos ne sert plus aucun dossier (LOT 05.6.2).
+        if (EventStatus::Closed === $detail->eventStatus) {
+            throw ClosedEventAccess::create();
+        }
 
-        return $this->read->detail($municipality, $this->uuid($requestId)) ?? throw new OperationNotAllowed('Ressource inaccessible.');
+        return $detail;
     }
 
     /**
@@ -115,8 +130,10 @@ final readonly class MunicipalRequestReader
     public function attachment(User $user, string $municipalityId, string $requestId, string $attachmentId): DownloadableAttachment
     {
         $municipality = $this->municipality($user, $municipalityId);
+        $request = $this->uuid($requestId);
+        $this->closure->assertDossierOpen($municipality, $request); // le fichier n'est pas ouvert si l'événement est clos (LOT 05.6.2)
 
-        return $this->read->attachment($municipality, $this->uuid($requestId), $this->uuid($attachmentId)) ?? throw new OperationNotAllowed('Ressource inaccessible.');
+        return $this->read->attachment($municipality, $request, $this->uuid($attachmentId)) ?? throw new OperationNotAllowed('Ressource inaccessible.');
     }
 
     /**

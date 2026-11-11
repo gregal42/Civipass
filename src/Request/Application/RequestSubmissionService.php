@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Request\Application;
 
+use App\Event\Application\EventOperationalGuard;
 use App\Event\Application\Support\EventLocker;
 use App\Event\Application\Support\EventTransactions;
 use App\Event\Domain\Event;
@@ -84,6 +85,7 @@ final readonly class RequestSubmissionService
         private UploadedDocumentInspector $documents,
         private ProposableZones $proposable,
         private MunicipalDecisionApplier $decisions,
+        private EventOperationalGuard $closure,
     ) {
     }
 
@@ -137,6 +139,11 @@ final readonly class RequestSubmissionService
         $keyHash = hash('sha256', $origin->value.(null === $duration ? '' : '+DIRECT').'|'.($agent?->id()->toRfc4122() ?? '').'|'.$idempotencyKey);
         $eventId = Uuid::fromString($command->eventId);
 
+        // Événement CLOS (LOT 05.6.2, N1) : aucun rejeu ne renvoie la référence, la décision ou la moindre information d'une demande existante. Refus rapide
+        // sur une lecture fraîche, réservé au dépôt public (l'état d'un événement y est public ; une saisie municipale est contrôlée après l'habilitation) ; le contrôle qui fait foi est refait sous verrou, avant la recherche du rejeu.
+        if (RequestOrigin::Public === $origin && !$this->closure->isOpen($eventId)) {
+            throw new DomainRuleViolation('Les demandes ne sont pas ouvertes pour cet événement.');
+        }
         // Une tentative déjà enregistrée se rejoue SANS toucher aux fichiers (les temporaires ont pu être supprimés depuis).
         if ([] !== $command->attachments && null !== ($existing = $this->requests->findByIdempotencyKey($eventId, $keyHash))) {
             return $this->replayed($existing);
@@ -180,6 +187,9 @@ final readonly class RequestSubmissionService
 
             [$enteredBy, $own] = null === $agent ? [null, null] : $this->authorizeAgent($agent, (string) $municipalityId, $event);
 
+            if ($event->status()->isClosed()) {
+                throw new DomainRuleViolation('Les demandes ne sont pas ouvertes pour cet événement.'); // avant tout rejeu (LOT 05.6.2, N1)
+            }
             $existing = $this->requests->findByIdempotencyKey($event->id(), $keyHash);
             if (null !== $existing) {
                 return $this->replayed($existing);

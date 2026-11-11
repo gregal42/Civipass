@@ -51,6 +51,7 @@ final class DirectIssuanceFactory
             $c->get(UploadedDocumentInspector::class),
             $c->get(ProposableZones::class),
             new MunicipalDecisionApplier($audit, $c->get(EventZoneValidityRepository::class), $listener ?? PermitIssuerFactory::create($c, $audit)),
+            $c->get(\App\Event\Application\EventOperationalGuard::class),
         );
     }
 }
