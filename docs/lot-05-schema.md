@@ -92,6 +92,8 @@ Outbox transactionnelle (ligne écrite dans la transaction métier, clé de déd
 
 ## 11. Matrice de conservation (durées à fixer avant la production)
 
+> **Mise à jour du 11 novembre 2026.** Cette matrice est remplacée par le cycle de vie de [DM-120](decisions/metier/DM-120-cycle-de-vie-des-evenements-archives-et-suppression.md) et la matrice des données de [lot-05-6-cadrage.md](lot-05-6-cadrage.md) §4 (clôture, archive intermédiaire, purge par dossier, suppression).
+
 | Donnée | Finalité | Contrainte | Mécanisme prévu | Durée |
 |---|---|---|---|---|
 | Demandes (identité, contact, plaques déclarées) | Instruction, preuve | Minimisation, droit à l'effacement | Anonymisation de l'identité après la durée retenue, décisions conservées | **à décider** |

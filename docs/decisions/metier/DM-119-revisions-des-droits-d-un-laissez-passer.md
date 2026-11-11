@@ -158,7 +158,9 @@ Les motifs sont des **codes** (énumération par opération, libellés français
 
 Le code est stocké (`reason_code`, 30 caractères) ; le catalogue vit dans le code (une énumération par opération) : tout ajout passe par une livraison.
 
-## 9. Conservation et anonymisation — **hypothèses**, non décisions [Validées comme hypothèses]
+## 9. Conservation et anonymisation — **hypothèses**, non décisions [Validées comme hypothèses] — **ABANDONNÉES le 11 novembre 2026**
+
+> **Note du 11 novembre 2026.** Les durées et l'anonymisation progressive de champs ci-dessous sont **remplacées** par le cycle de vie de [DM-120](DM-120-cycle-de-vie-des-evenements-archives-et-suppression.md) (clôture, archive intermédiaire cloisonnée, purge, suppression). La ligne « Lien bénéficiaire : purge existante » est **inexacte** : aucune purge ne touche `permit_access_token`. Le texte d'origine est conservé ci-dessous pour mémoire.
 
 Aucune durée n'est implémentée au LOT 05.5. À faire valider par le commanditaire et le responsable de la protection des données avant la production (DM-117 §3). Pivot : fin effective de l'événement (DM-118 §4).
 

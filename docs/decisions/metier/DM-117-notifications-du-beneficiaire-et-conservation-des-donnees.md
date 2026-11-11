@@ -27,3 +27,8 @@ Le bénéficiaire n'a pas de compte : e-mail sans compte (ou remise en main prop
 ## Écarts documentaires signalés
 
 Aucun écart.
+
+## Mise à jour du 11 novembre 2026 : politique de conservation
+
+La politique de conservation annoncée au §3 est définie par [DM-120](DM-120-cycle-de-vie-des-evenements-archives-et-suppression.md) (cycle de vie : clôture, archive intermédiaire, purge, suppression) ; les durées restent des **hypothèses** à confirmer avec le DPO et le service d'archives. L'exigence « aucune mise en production du LOT 05 sans politique de conservation documentée et mécanisme adapté » est **maintenue**.
+

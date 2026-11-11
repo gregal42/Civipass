@@ -4,7 +4,7 @@
 - **Thème** : LOT 05 — Laissez-passer
 - **Statut** : Validée
 - **Validation** : Validé par le commanditaire (arbitrages du LOT 05.0 et rectificatif Q5/Q6, 9 novembre 2026)
-- **Décisions remplacées** : Aucune.
+- **Décisions remplacées** : Aucune. **Amendée le 11 novembre 2026** (clôture : voir « Amendement du 11 novembre 2026 » ci-dessous).
 
 ## Contexte
 
@@ -28,3 +28,8 @@ Le bénéficiaire n'a pas de compte (CLAUDE.md règle 6) et doit récupérer son
 ## Écarts documentaires signalés
 
 Aucun écart.
+
+## Amendement du 11 novembre 2026 : fermeture à la clôture
+
+**Décision du commanditaire** : le lien bénéficiaire est **fermé immédiatement à la clôture de l'événement**, même si le délai de 30 jours après la fin effective (§2 de la décision) n'est pas écoulé. Après la clôture, le lien répond comme un lien inconnu ou expiré (même page, même code 404 : DM-118 §3). Le bénéficiaire conserve le PDF qu'il a déjà téléchargé (sans mention figée de validité, DM-119 §6). Voir [DM-120](DM-120-cycle-de-vie-des-evenements-archives-et-suppression.md) et [lot-05-6-cadrage.md](../../lot-05-6-cadrage.md) §3.1.
+

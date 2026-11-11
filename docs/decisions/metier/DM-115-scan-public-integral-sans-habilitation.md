@@ -41,3 +41,8 @@
 **Inchangé** : jeton retiré (QR remplacé) = HTTP 410 sans donnée, y compris après la clôture ; jeton inconnu ou mal formé = 404 neutre ; événement **suspendu** = statut « Droits suspendus », aucun droit présenté comme utilisable.
 
 **Hors périmètre** : les règles de conservation administrative (durées, anonymisation) restent au **LOT 05.6**. Le calcul interne des droits (page du bénéficiaire, PDF) est inchangé. Voir [lot-05-5-5-cadrage.md](../../lot-05-5-5-cadrage.md) §15 et §16.
+
+## Amendement du 11 novembre 2026 : comportement après la purge (option O1)
+
+**Décision du commanditaire** : **avant la purge** du dossier, les comportements publics validés sont **conservés** (QR remplacé : 410 ; QR inconnu : 404 ; événement clos : « Événement terminé »). **Après la purge définitive** du dossier, **tout jeton répond 404 neutre** (même page, même code, mêmes en-têtes que pour un jeton inconnu), **y compris un ancien QR remplacé** qui répondait 410 : aucune conservation résiduelle (ni valeur, ni empreinte). Évolution du contrat HTTP **dans le temps**, documentée ici et testée au sous-lot 05.6.4 ([lot-05-6-cadrage.md](../../lot-05-6-cadrage.md) §7). Voir [DM-120](DM-120-cycle-de-vie-des-evenements-archives-et-suppression.md).
+
