@@ -6,6 +6,7 @@ namespace App\Event\Application;
 
 use App\Event\Application\Read\ClosureStatisticsView;
 use App\Event\Domain\ClosureStatisticsPublication;
+use App\Event\Domain\PublishedClosureStatistics;
 use App\Event\Domain\EventRepository;
 use App\Identity\Domain\User;
 use App\Municipality\Application\MunicipalityContext;
@@ -48,11 +49,16 @@ final readonly class ClosureStatisticsReader
         }
         $audience = $this->policy->closureStatisticsAudience($user, $viewer, $event);
         $statistics = ClosureStatisticsAudience::None === $audience ? null : $event->closureStatistics();
-        if (null === $statistics) {
+        // Compteurs exacts (version 1) ou, après la purge du dernier dossier (LOT 05.6.4, L5-37), résumé publié (version 2) : plus aucun effectif exact.
+        $summary = ClosureStatisticsAudience::None === $audience || null !== $statistics ? null : $event->closureSummary();
+        if (null === $statistics && null === $summary) {
             return null;
         }
         $threshold = ClosureStatisticsPublication::threshold($this->threshold);
-        $own = ClosureStatisticsPublication::forMunicipality($statistics, $viewer->id()->toRfc4122(), $threshold);
+        $viewerId = $viewer->id()->toRfc4122();
+        $own = null !== $statistics
+            ? ClosureStatisticsPublication::forMunicipality($statistics, $viewerId, $threshold)
+            : (($summary?->municipalities[$viewerId] ?? null) ?? new PublishedClosureStatistics(PublishedClosureStatistics::SCOPE_COMMUNE, $threshold, 0, ['approved' => 0, 'refused' => 0, 'pending' => 0, 'authorizations' => 0], null, []));
         if (ClosureStatisticsAudience::Participant === $audience) {
             return new ClosureStatisticsView(null, $own, [], false);
         }
@@ -67,12 +73,20 @@ final readonly class ClosureStatisticsReader
             $byGrant = $byGrant || $membership->hasRole($role);
         }
         $breakdown = $byRight || ($byGrant && $this->coordination->hasActiveGrant($event->id(), $user->id()));
-        $global = ClosureStatisticsPublication::forOrganizer($statistics, $threshold, $breakdown);
+        if (null !== $statistics) {
+            $global = ClosureStatisticsPublication::forOrganizer($statistics, $threshold, $breakdown);
+            $municipalityCount = \count($statistics->municipalities);
+        } else {
+            $stored = $summary->global;
+            // Sans la coordination, la ventilation n'est pas lue : même règle que pour les compteurs.
+            $global = $breakdown ? $stored : new PublishedClosureStatistics($stored->scope, $stored->threshold, $stored->dossiers, $stored->byStatus, null, array_values(array_filter($stored->masked, static fn (string $m): bool => 'communes' !== $m)));
+            $municipalityCount = \count($summary->municipalities);
+        }
         $names = [];
         foreach ($global->communes ?? [] as $line) {
             $names[$line['municipalityId']] = $this->municipalities->find(Uuid::fromString($line['municipalityId']))?->name() ?? 'Commune';
         }
 
-        return new ClosureStatisticsView($global, $own, $names, 1 === \count($statistics->municipalities), $byRight);
+        return new ClosureStatisticsView($global, $own, $names, 1 === $municipalityCount, $byRight);
     }
 }

@@ -22,4 +22,5 @@ enum AuditSubjectType: string
     case ArchiveDesignation = 'ARCHIVE_DESIGNATION';
     case StatisticsCoordination = 'STATISTICS_COORDINATION';
     case LegalHold = 'LEGAL_HOLD';
+    case Retention = 'RETENTION';
 }

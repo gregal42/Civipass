@@ -99,6 +99,11 @@ enum AuditAction: string
     case LegalHoldReviewed = 'LEGAL_HOLD_REVIEWED';
     case LegalHoldLifted = 'LEGAL_HOLD_LIFTED';
 
+    // Rétention (LOT 05.6.4) : identifiants, comptes par table, jamais une donnée personnelle ; la ligne survit à la purge qu'elle décrit.
+    case RetentionDossierPurged = 'RETENTION_DOSSIER_PURGED';
+    case RetentionSharedPurged = 'RETENTION_SHARED_PURGED';
+    case RetentionEventDeleted = 'RETENTION_EVENT_DELETED';
+
     // Accès commerciaux CWS (DM-076, DT-030) : écrits par le lot Administration CWS.
     case CommercialAccessGranted = 'COMMERCIAL_ACCESS_GRANTED';
     case CommercialAccessRevoked = 'COMMERCIAL_ACCESS_REVOKED';

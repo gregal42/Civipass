@@ -45,8 +45,9 @@ class Permit
     private Event $event;
 
     #[ORM\ManyToOne(targetEntity: PermitRequestDecision::class, fetch: 'LAZY')]
-    #[ORM\JoinColumn(name: 'first_decision_id', nullable: false, onDelete: 'RESTRICT')]
-    private PermitRequestDecision $firstDecision;
+    /** Obligatoire à l'ÉMISSION ; `NULL` seulement quand cette décision a été effectivement PURGÉE (LOT 05.6.4, arbitrage R1 option 2). Jamais lue par le code. */
+    #[ORM\JoinColumn(name: 'first_decision_id', nullable: true, onDelete: 'RESTRICT')]
+    private ?PermitRequestDecision $firstDecision = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
@@ -148,7 +149,7 @@ class Permit
         return $this->event;
     }
 
-    public function firstDecision(): PermitRequestDecision
+    public function firstDecision(): ?PermitRequestDecision
     {
         return $this->firstDecision;
     }

@@ -212,9 +212,29 @@ class Event
         $this->closureStatistics = $statistics->toArray();
     }
 
+    /** Compteurs EXACTS (version 1) ; `null` s'ils n'existent pas ou ont été remplacés par le résumé publié (version 2) à la purge du dernier dossier. */
     public function closureStatistics(): ?ClosureStatistics
     {
-        return null === $this->closureStatistics ? null : ClosureStatistics::fromArray($this->closureStatistics);
+        return null === $this->closureStatistics || ClosureStatistics::VERSION !== ($this->closureStatistics['v'] ?? null) ? null : ClosureStatistics::fromArray($this->closureStatistics);
+    }
+
+    /** Résumé publié (version 2) : plus aucun effectif exact (LOT 05.6.4, L5-37). */
+    public function closureSummary(): ?ClosureStatisticsSummary
+    {
+        return null === $this->closureStatistics || ClosureStatisticsSummary::VERSION !== ($this->closureStatistics['v'] ?? null) ? null : ClosureStatisticsSummary::fromArray($this->closureStatistics);
+    }
+
+    /**
+     * Seule réécriture autorisée des compteurs : les compteurs exacts (version 1) sont REMPLACÉS par le résumé publié, une fois, à la purge du dernier dossier.
+     *
+     * @throws DomainRuleViolation hors événement clos, sans compteurs exacts (déjà réduits ou jamais calculés)
+     */
+    public function reduceClosureStatistics(ClosureStatisticsSummary $summary): void
+    {
+        if (!$this->status->isClosed() || null === $this->closureStatistics()) {
+            throw new DomainRuleViolation('Seuls des compteurs exacts d\'un événement clos peuvent être réduits à leur forme publiée.');
+        }
+        $this->closureStatistics = $summary->toArray();
     }
 
     public function closedAt(): ?\DateTimeImmutable
