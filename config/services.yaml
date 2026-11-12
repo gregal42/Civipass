@@ -35,6 +35,11 @@ parameters:
     env(ARCHIVE_RETENTION_MONTHS): '12'
     env(ARCHIVE_HOLD_REVIEW_MONTHS): '6'
     env(ARCHIVE_CONSULTATION_MINUTES): '30'
+    # Purge (LOT 05.6.4) : HYPOTHÈSES à valider avec le DPO et les archives avant production. Préavis aux administrateurs avant la purge d'un dossier ; INTERRUPTEUR de la
+    # purge (désactivé par défaut : `app:retention:purge --execute` est refusé tant qu'il vaut 0, jamais activé en production sans accord) ; registre hors base.
+    env(RETENTION_NOTICE_DAYS): '30'
+    env(RETENTION_PURGE_ENABLED): '0'
+    env(RETENTION_REGISTER_PATH): '%kernel.project_dir%/var/retention/purge-register.jsonl'
 
 services:
     # default configuration for services in *this* file
@@ -70,9 +75,15 @@ services:
             - '../src/Archive/Application/ArchiveAccess.php'
             - '../src/Archive/Application/ArchiveConsultationExpired.php'
             - '../src/Archive/Application/Read/'
+            - '../src/Retention/Application/PurgeOutcome.php'
+            - '../src/Retention/Application/RetentionRunReport.php'
+            - '../src/Retention/Application/RegisterReconciliationReport.php'
 
     # Objet de domaine sans dépendance obligatoire (le référentiel communal des fuseaux est fourni plus tard).
     App\Event\Domain\Time\TerritoryTimezoneResolver: ~
+
+    # Observateur d'étapes de purge : sans effet (remplacé par une panne injectable dans les tests, LOT 05.6.4).
+    App\Retention\Application\PurgeStepObserver: '@App\Retention\Application\NullPurgeStepObserver'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
@@ -81,8 +92,13 @@ when@test:
     parameters:
         # Stockage isolé des tests (jamais le stockage réel).
         env(PRIVATE_STORAGE_DIR): '%kernel.project_dir%/var/storage_test'
+        env(RETENTION_REGISTER_PATH): '%kernel.project_dir%/var/retention_test/purge-register.jsonl'
 
     services:
+        # Panne injectable à chaque étape d'une purge (tests de retour arrière et de reprise, LOT 05.6.4).
+        App\Tests\Support\ConfigurableStepObserver:
+            public: true
+        App\Retention\Application\PurgeStepObserver: '@App\Tests\Support\ConfigurableStepObserver'
         # Mêmes classes, mêmes alias (#[AsAlias]) et mêmes dépendances qu'en production : seule la visibilité change,
         # pour que le conteneur de test puisse lire les services (sinon supprimés car non référencés).
         _defaults:

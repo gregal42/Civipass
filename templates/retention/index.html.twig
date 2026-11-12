@@ -1,0 +1,53 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block content %}
+  {% embed 'components/page_head.html.twig' with { eyebrow: 'Conservation · ' ~ active_municipality_name, title: 'Registre de conservation', sub: 'Avis, purges de dossiers et suppressions d’événements de votre commune' } only %}{% endembed %}
+  <p class="cp-muted">Les durées sont des hypothèses à valider avec le DPO et le service d’archives. Le registre ne contient aucune donnée personnelle : seulement des références, des dates et des effectifs.</p>
+
+  <h2 class="cp-h2">Événements clos que vous organisez</h2>
+  {% if events is empty %}
+    <p class="cp-muted">Aucun événement clos.</p>
+  {% else %}
+    <ul class="cp-stack">
+      {% for e in events %}
+        <li>
+          {% embed 'components/panel.html.twig' with { id: 'ev-' ~ loop.index, title: e.name, e: e, mid: municipalityId, n: loop.index } only %}
+            {% block body %}
+              <p class="cp-muted">Référence {{ e.reference }}</p>
+              {% if e.blockers is empty %}
+                <form method="post" action="{{ path('app_retention_event_delete', { municipalityId: mid, eventId: e.id }) }}" novalidate>
+                  <input type="hidden" name="_token" value="{{ csrf_token('retention_delete_' ~ e.id) }}">
+                  <p>Tous les dossiers sont purgés. La suppression de l’événement est définitive : saisissez sa référence pour confirmer.</p>
+                  {% include 'components/field.html.twig' with { id: 'reference-' ~ n, name: 'reference', label: 'Référence de l’événement', type: 'text', value: '' } only %}
+                  <button class="cp-btn cp-btn--danger" type="submit">Supprimer définitivement</button>
+                </form>
+              {% else %}
+                <p>Suppression impossible tant que des données subsistent :{% for k, n in e.blockers %} {{ k }} ({{ n }}){% if not loop.last %},{% endif %}{% endfor %}.</p>
+              {% endif %}
+            {% endblock %}
+          {% endembed %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <h2 class="cp-h2">Registre</h2>
+  {% if records is empty %}
+    <p class="cp-muted">Aucune opération enregistrée.</p>
+  {% else %}
+    <table class="cp-table">
+      <thead><tr><th>Date</th><th>Opération</th><th>Événement</th><th>Échéance</th><th>Effectifs supprimés</th></tr></thead>
+      <tbody>
+        {% for r in records %}
+          <tr>
+            <td>{{ r.occurredAt|date('d/m/Y H:i') }}</td>
+            <td>{{ r.kind }}</td>
+            <td>{{ r.event }}</td>
+            <td>{% if r.dueAt %}{{ r.dueAt|date('d/m/Y') }}{% endif %}</td>
+            <td>{% for t, n in r.counts %}{{ t }} : {{ n }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+{% endblock %}
