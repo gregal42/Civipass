@@ -1,6 +1,6 @@
 # LOT 05.6.4 — Purge à deux niveaux, suppression de l'événement et 404 après purge : cadrage (12 novembre 2026)
 
-**Statut : CADRAGE soumis à validation (une seule fois, protocole de `CLAUDE.md`). Validé, il vaut mandat d'exécution pour tout le sous-lot.** Aucune implémentation, aucune migration exécutée. Références : [lot-05-6-cadrage.md](lot-05-6-cadrage.md) §3.3, §3.4, §7, §13 ; [DM-120](decisions/metier/DM-120-cycle-de-vie-des-evenements-archives-et-suppression.md) ; [rgpd-politique-conservation.md](rgpd-politique-conservation.md) ; [lot-05-6-3-cadrage.md](lot-05-6-3-cadrage.md) §8.
+**Statut : VALIDÉ le 12 novembre 2026 (R1 : option 2) ; RÉALISÉ en local (voir §10), non poussé.** Aucune implémentation, aucune migration exécutée. Références : [lot-05-6-cadrage.md](lot-05-6-cadrage.md) §3.3, §3.4, §7, §13 ; [DM-120](decisions/metier/DM-120-cycle-de-vie-des-evenements-archives-et-suppression.md) ; [rgpd-politique-conservation.md](rgpd-politique-conservation.md) ; [lot-05-6-3-cadrage.md](lot-05-6-3-cadrage.md) §8.
 
 ## 1. Objectif et périmètre
 
@@ -122,3 +122,13 @@ Tranché **sans arbitrage** (conforme aux décisions existantes) : unité = doss
 4. Suppression de l'événement (service, route `/retention/…`, politique).
 5. Tests (matrice du §7, reprise, concurrence réelle, jeu de données de purge sur base de test), 404 après purge.
 6. Documentation (`security.md`, DM-120, DM-115, contradictions), `bin/qa full`, `verify-docs.sh`, validation Doctrine ; **commits locaux** ; rapport synthétique.
+
+## 10. Réalisation (12 novembre 2026)
+
+- **Migrations exécutées** (bases `civipass_test` et `civipass`, sauvegardes vérifiées) : `Version20261112103402` = M6 (`retention_purge_record`) + M7 (`permit_permit.first_decision_id` nullable, `RESTRICT` conservé). `down()` refuse si le registre contient des lignes ou si une clé est NULL.
+- **Purge** : `app:retention:notice`, `app:retention:purge` (simulation par défaut ; `--execute` refusé tant que `RETENTION_PURGE_ENABLED=0`), `app:retention:register-check [--repair]`. Une transaction par dossier ; reprise des demandes orphelines (course entre deux derniers dossiers) au passage suivant.
+- **Suppression de l'événement** : `/communes/{m}/retention` (registre de la commune) et POST de suppression, `MUNICIPALITY_ADMIN` de l'organisatrice, référence saisie, 404 uniforme, droit avant CSRF.
+- **Registre** : table SQL + fichier JSONL hors base, écrit APRÈS la validation SQL (non atomique) ; divergences détectées ; seules les lignes SQL absentes du fichier sont réparées, les lignes de fichier sans SQL sont signalées. **Limites de restauration / rejeu : LOT 05.6.7.**
+- **Point à valider avec le DPO** : suppression des journaux de consultation d'archive (identité des consultants) avec le dossier ; durées (12 mois, préavis 30 jours) = hypothèses, pas des validations juridiques.
+- **Renommage** : le résumé publié de clôture s'appelle `ClosureStatisticsSummary` (le garde-fou « pas de cartographie » interdit le mot « snapshot » dans le module Event).
+- Aucune mise en production avant validation du DPO, du service d'archives et des recettes de terrain ; `PUBLIC_VERIFICATION_ENABLED` reste à `0`.
