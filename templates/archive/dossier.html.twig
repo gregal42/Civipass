@@ -44,6 +44,14 @@
     {% endif %}
   </section>
 
+  {% if view.mentions is not empty %}
+    <section aria-labelledby="mention-h">
+      {% include 'components/section_head.html.twig' with { id: 'mention-h', title: 'Mentions de rectification' } only %}
+      <p class="cp-muted">Ajoutées à la demande d’une personne : les valeurs d’origine ci-dessus ne sont pas modifiées.</p>
+      <ul>{% for m in view.mentions %}<li>{{ m.at|date('d/m/Y') }} — {{ m.fields }} : {{ m.text }}</li>{% endfor %}</ul>
+    </section>
+  {% endif %}
+
   <section aria-labelledby="hist-h">
     <h2 id="hist-h">Historique des droits de votre commune</h2>
     {% if view.history is empty %}<p class="cp-muted">Aucune modification.</p>{% else %}

@@ -162,7 +162,27 @@ final readonly class ArchiveDossierReader
             null === $hold ? '' : $hold->reason()->label(),
             $hold?->reviewDueAt(),
             $access->membership->hasRole(MunicipalityRole::MunicipalityAdmin),
+            $this->mentions($part->id()),
         );
+    }
+
+    /** @return list<array{fields: string, text: string, at: \DateTimeImmutable}> */
+    private function mentions(Uuid $dossierId): array
+    {
+        $labels = [];
+        foreach (\App\Rights\Domain\RectificationField::cases() as $field) {
+            $labels[$field->value] = $field->label();
+        }
+        $out = [];
+        foreach ($this->connection->fetchAllAssociative('SELECT fields, mention, created_at FROM archive_rectification_mention WHERE request_municipality_id = :d ORDER BY created_at, id', ['d' => $dossierId->toBinary()]) as $row) {
+            $out[] = [
+                'fields' => implode(', ', array_map(static fn (string $c): string => $labels[$c] ?? $c, explode(',', (string) $row['fields']))),
+                'text' => (string) $row['mention'],
+                'at' => new \DateTimeImmutable((string) $row['created_at'], new \DateTimeZone('UTC')),
+            ];
+        }
+
+        return $out;
     }
 
     /**

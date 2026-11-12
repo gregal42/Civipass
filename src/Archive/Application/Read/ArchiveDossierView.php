@@ -13,10 +13,11 @@ use App\Request\Domain\MunicipalRequestStatus;
 final readonly class ArchiveDossierView
 {
     /**
-     * @param list<string>                                                   $plates
-     * @param list<array{id: string, name: string, size: int, mime: string}> $attachments
-     * @param list<string>                                                   $zones
-     * @param list<array{type: string, at: \DateTimeImmutable}>              $history
+     * @param list<string>                                                      $plates
+     * @param list<array{id: string, name: string, size: int, mime: string}>    $attachments
+     * @param list<string>                                                      $zones
+     * @param list<array{type: string, at: \DateTimeImmutable}>                 $history
+     * @param list<array{fields: string, text: string, at: \DateTimeImmutable}> $mentions    mentions de rectification (LOT 05.6.6) : ajoutées à côté de la valeur d'origine, jamais en remplacement
      */
     public function __construct(
         public string $consultationId,
@@ -52,6 +53,7 @@ final readonly class ArchiveDossierView
         public string $holdReasonLabel,
         public ?\DateTimeImmutable $holdReviewDueAt,
         public bool $canManageHold,
+        public array $mentions = [],
     ) {
     }
 }

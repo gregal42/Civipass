@@ -43,6 +43,13 @@ parameters:
     env(EVENT_DORMANCY_REMINDER_DAYS): '30'
     env(EVENT_DORMANCY_LEASE_MINUTES): '30'
     env(ACCOUNT_INACTIVITY_MONTHS): '24'
+    # Droits des personnes (LOT 05.6.6) : délais et limites paramétrables, à confirmer juridiquement avant production. L'EXÉCUTION d'un effacement anticipé est DÉSACTIVÉE par défaut
+    # (arbitrage D1) : elle exige aussi RETENTION_PURGE_ENABLED=1 et n'est activée qu'après validation de la politique juridique.
+    env(RIGHTS_RESPONSE_DAYS): '30'
+    env(RIGHTS_EXTENSION_DAYS): '60'
+    env(RIGHTS_EXPORT_WINDOW_DAYS): '30'
+    env(RIGHTS_EXPORT_MAX_DOWNLOADS): '3'
+    env(RIGHTS_ERASURE_EXECUTION_ENABLED): '0'
     env(RETENTION_PURGE_ENABLED): '0'
     env(RETENTION_REGISTER_PATH): '%kernel.project_dir%/var/retention/purge-register.jsonl'
 

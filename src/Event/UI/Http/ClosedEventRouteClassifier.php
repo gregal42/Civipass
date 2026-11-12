@@ -47,6 +47,9 @@ final class ClosedEventRouteClassifier
             if ('archives' === $family || 'retention' === $family) {
                 return RouteClosure::Reserved;
             }
+            if ('droits' === $family) {
+                return RouteClosure::Reserved; // droits des personnes (LOT 05.6.6) : jamais derrière la barrière de clôture
+            }
             if ('evenements' === $family) {
                 return RouteClosure::Exempt;
             }

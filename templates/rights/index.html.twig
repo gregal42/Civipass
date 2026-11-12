@@ -1,0 +1,28 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block content %}
+  {% embed 'components/page_head.html.twig' with { eyebrow: 'Droits des personnes · ' ~ active_municipality_name, title: 'Demandes de droits', sub: 'Accès, rectification, effacement, opposition ou limitation : demandes reçues par votre commune' } only %}{% endembed %}
+  <p class="cp-muted">Civipass ne conserve aucune donnée du demandeur : les dossiers sont désignés par leur référence. La réponse à la personne est envoyée par votre commune, hors Civipass. Les délais sont des hypothèses à confirmer.</p>
+  {% if overdue > 0 %}{% include 'components/alert.html.twig' with { variant: 'warning', title: overdue ~ ' demande(s) en retard', text: 'L’échéance de réponse est dépassée : décidez, prorogez avec un motif ou clôturez.' } only %}{% endif %}
+  <p>{% include 'components/button.html.twig' with { label: 'Enregistrer une demande', variant: 'primary', href: path('app_rights_new', { municipalityId: municipalityId }) } only %}</p>
+  {% if requests is empty %}
+    <p class="cp-muted">Aucune demande enregistrée.</p>
+  {% else %}
+    <table class="cp-table">
+      <thead><tr><th>Référence</th><th>Nature</th><th>État</th><th>Reçue le</th><th>Échéance</th><th>Dossiers</th><th></th></tr></thead>
+      <tbody>
+        {% for r in requests %}
+          <tr>
+            <td>{{ r.reference }}</td>
+            <td>{{ r.kind.label }}</td>
+            <td>{{ r.status.label }}{% if r.decision %} · {{ r.decision.label }}{% endif %}</td>
+            <td>{{ r.receivedAt|date('d/m/Y') }}</td>
+            <td>{{ r.dueAt|date('d/m/Y') }}{% if r.overdue %} <strong>(en retard)</strong>{% endif %}</td>
+            <td>{{ r.dossiers }}</td>
+            <td><a href="{{ path('app_rights_show', { municipalityId: municipalityId, requestId: r.id }) }}">Ouvrir</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+{% endblock %}

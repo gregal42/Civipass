@@ -1,0 +1,120 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block content %}
+  {% embed 'components/page_head.html.twig' with { eyebrow: 'Droits des personnes · ' ~ active_municipality_name, title: r.reference, sub: r.kind.label ~ ' · ' ~ r.status.label } only %}{% endembed %}
+  {% if r.overdue %}{% include 'components/alert.html.twig' with { variant: 'warning', title: 'Demande en retard', text: 'L’échéance du ' ~ r.dueAt|date('d/m/Y') ~ ' est dépassée.' } only %}{% endif %}
+  <p class="cp-muted">Reçue le {{ r.receivedAt|date('d/m/Y') }} · échéance {{ r.dueAt|date('d/m/Y') }}{% if r.extended %} (prorogée){% endif %}{% if r.identityVerifiedAt %} · identité attestée le {{ r.identityVerifiedAt|date('d/m/Y') }}{% endif %}{% if r.decision %} · {{ r.decision.label }}{% endif %}{% if r.executedAt %} · exécutée le {{ r.executedAt|date('d/m/Y') }}{% endif %}</p>
+
+  <section aria-labelledby="doss-h">
+    <h2 id="doss-h">Dossiers de votre commune concernés</h2>
+    {% if r.dossiers is empty %}
+      <p class="cp-muted">Aucun dossier n’est plus rattaché à cette demande (purgé).</p>
+    {% else %}
+      <ul>
+        {% for d in r.dossiers %}
+          <li>{{ d.reference }} · {{ d.event }}{% if not d.eventClosed %} · événement en cours{% endif %}{% if d.hold %} · <strong>gel de conservation actif</strong>{% endif %}{% if d.mentions > 0 %} · {{ d.mentions }} mention(s){% endif %}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    <p class="cp-muted">Si la personne a aussi des données dans d’autres communes, elle doit s’adresser à chacune : Civipass ne transmet rien d’une commune à une autre.</p>
+  </section>
+
+  {% if r.status.value == 'RECEIVED' %}
+    <section aria-labelledby="id-h">
+      <h2 id="id-h">1. Attester l’identité du demandeur</h2>
+      <p class="cp-muted">Civipass ne prouve pas l’identité : il enregistre qui l’atteste et comment. Aucune lecture, aucun export ni décision n’est possible avant.</p>
+      <form method="post" action="{{ path('app_rights_attest', { municipalityId: municipalityId, requestId: r.id }) }}" novalidate>
+        <input type="hidden" name="_token" value="{{ csrf_token('rights_attest_' ~ r.id) }}">
+        <div class="cp-field"><label class="cp-field__label" for="method">Moyen de vérification</label>
+          <span class="cp-select-wrap"><select class="cp-select" id="method" name="method" required><option value="">Choisir…</option>{% for m in methods %}<option value="{{ m.value }}">{{ m.label }}</option>{% endfor %}</select></span></div>
+        <button class="cp-btn" type="submit">J’atteste l’identité</button>
+      </form>
+    </section>
+  {% endif %}
+
+  {% if r.status.value in ['RECEIVED', 'IDENTITY_VERIFIED'] and not r.extended %}
+    <section aria-labelledby="ext-h">
+      <h2 id="ext-h">Proroger le délai</h2>
+      <form method="post" action="{{ path('app_rights_extend', { municipalityId: municipalityId, requestId: r.id }) }}" novalidate>
+        <input type="hidden" name="_token" value="{{ csrf_token('rights_extend_' ~ r.id) }}">
+        <div class="cp-field"><label class="cp-field__label" for="reason">Motif</label>
+          <span class="cp-select-wrap"><select class="cp-select" id="reason" name="reason" required><option value="">Choisir…</option>{% for e in extensions %}<option value="{{ e.value }}">{{ e.label }}</option>{% endfor %}</select></span></div>
+        <button class="cp-btn cp-btn--secondary" type="submit">Proroger</button>
+      </form>
+    </section>
+  {% endif %}
+
+  {% if r.status.value == 'IDENTITY_VERIFIED' %}
+    {% if r.kind.value == 'RECTIFICATION' and r.dossiers is not empty %}
+      <section aria-labelledby="men-h">
+        <h2 id="men-h">Ajouter une mention de rectification</h2>
+        <p class="cp-muted">Événement clos seulement : la mention est ajoutée à côté de la valeur d’origine, qui n’est jamais modifiée. Pendant l’événement, utilisez la correction d’identité. N’y mettez que ce qui est nécessaire.</p>
+        <form method="post" action="{{ path('app_rights_mention', { municipalityId: municipalityId, requestId: r.id }) }}" novalidate>
+          <input type="hidden" name="_token" value="{{ csrf_token('rights_mention_' ~ r.id) }}">
+          <div class="cp-field"><label class="cp-field__label" for="dossier">Dossier</label>
+            <span class="cp-select-wrap"><select class="cp-select" id="dossier" name="dossier" required>{% for d in r.dossiers %}<option value="{{ d.id }}">{{ d.reference }}</option>{% endfor %}</select></span></div>
+          <fieldset><legend>Champs concernés</legend>{% for f in fields %}<label><input type="checkbox" name="fields[]" value="{{ f.value }}"> {{ f.label }}</label> {% endfor %}</fieldset>
+          {% include 'components/field.html.twig' with { id: 'mention', name: 'mention', label: 'Mention', type: 'textarea', value: '', attrs: 'maxlength="500"', help: '500 caractères au plus.' } only %}
+          <button class="cp-btn cp-btn--secondary" type="submit">Ajouter la mention</button>
+        </form>
+      </section>
+    {% endif %}
+    <section aria-labelledby="dec-h">
+      <h2 id="dec-h">2. Décider</h2>
+      <form method="post" action="{{ path('app_rights_decide', { municipalityId: municipalityId, requestId: r.id }) }}" novalidate>
+        <input type="hidden" name="_token" value="{{ csrf_token('rights_decide_' ~ r.id) }}">
+        <div class="cp-field"><label class="cp-field__label" for="decision">Décision</label>
+          <span class="cp-select-wrap"><select class="cp-select" id="decision" name="decision" required><option value="">Choisir…</option>{% for d in decisions %}<option value="{{ d.value }}">{{ d.label }}</option>{% endfor %}</select></span></div>
+        <div class="cp-field"><label class="cp-field__label" for="refusal">Motif du refus <span class="cp-field__opt">(obligatoire en cas de refus)</span></label>
+          <span class="cp-select-wrap"><select class="cp-select" id="refusal" name="refusal"><option value="">—</option>{% for f in refusals %}<option value="{{ f.value }}">{{ f.label }}</option>{% endfor %}</select></span></div>
+        {% if r.kind.value == 'ERASURE' %}
+          <label><input type="checkbox" name="conservation" value="1"> J’ai vérifié les obligations et finalités de conservation applicables à ces dossiers (gel, preuve, obligation légale).</label>
+          <p class="cp-muted">Un gel actif ou un événement non clos empêchent toute décision d’effacement. L’exécution reste désactivée tant que la politique juridique n’est pas validée : la décision est enregistrée, aucune donnée n’est supprimée.</p>
+        {% endif %}
+        <button class="cp-btn" type="submit">Enregistrer la décision</button>
+      </form>
+    </section>
+  {% endif %}
+
+  {% if r.kind.value == 'ACCESS' and r.status.value == 'DECIDED' and r.decision and r.decision.value == 'GRANTED' %}
+    <section aria-labelledby="exp-h">
+      <h2 id="exp-h">Export des données</h2>
+      {% if r.exportOpen %}
+        <p>Généré à la demande, jamais conservé : {{ r.exportRemaining }} téléchargement(s) restant(s) sur {{ maxDownloads }}, jusqu’au {{ r.exportUntil|date('d/m/Y') }}. Chaque téléchargement est journalisé. Remettez-le à la personne par votre propre canal sécurisé.</p>
+        <form method="post" action="{{ path('app_rights_export', { municipalityId: municipalityId, requestId: r.id }) }}">
+          <input type="hidden" name="_token" value="{{ csrf_token('rights_export_' ~ r.id) }}">
+          <button class="cp-btn" type="submit">Télécharger l’export</button>
+        </form>
+      {% else %}
+        <p class="cp-muted">L’export n’est plus disponible (fenêtre expirée, limite de téléchargements atteinte ou aucun dossier rattaché).</p>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  {% if r.erasurePending %}
+    <section aria-labelledby="era-h">
+      <h2 id="era-h">Exécution de l’effacement</h2>
+      {% if r.erasureExecutionEnabled %}
+        <form method="post" action="{{ path('app_rights_erase', { municipalityId: municipalityId, requestId: r.id }) }}">
+          <input type="hidden" name="_token" value="{{ csrf_token('rights_erase_' ~ r.id) }}">
+          <p>Les dossiers de votre commune sont supprimés définitivement ; les données partagées ne le sont que si aucun autre dossier ne les justifie.</p>
+          <button class="cp-btn cp-btn--danger" type="submit">Exécuter l’effacement</button>
+        </form>
+      {% else %}
+        <p class="cp-muted">Exécution désactivée tant que la politique juridique applicable n’est pas validée : la décision est enregistrée, aucune donnée n’est supprimée.</p>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  {% if r.status.value == 'DECIDED' %}
+    <section aria-labelledby="clo-h">
+      <h2 id="clo-h">3. Clôturer</h2>
+      <form method="post" action="{{ path('app_rights_close', { municipalityId: municipalityId, requestId: r.id }) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('rights_close_' ~ r.id) }}">
+        <p class="cp-muted">À faire une fois la réponse envoyée à la personne, hors Civipass. Tant qu’une demande n’est pas clôturée, la purge ordinaire des dossiers concernés est suspendue.</p>
+        <button class="cp-btn cp-btn--secondary" type="submit">Clôturer la demande</button>
+      </form>
+    </section>
+  {% endif %}
+  <p><a href="{{ path('app_rights_index', { municipalityId: municipalityId }) }}">Retour aux demandes</a></p>
+{% endblock %}

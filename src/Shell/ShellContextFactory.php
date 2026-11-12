@@ -71,6 +71,7 @@ final readonly class ShellContextFactory
         if ($membership->hasRole(MunicipalityRole::MunicipalityAdmin)) {
             // Lien seulement : l'accès réel au registre est décidé par ArchiveAccessPolicy::administrator à chaque requête (LOT 05.6.4).
             $nav[] = ['label' => 'Conservation des données', 'icon' => 'file', 'href' => $this->urls->generate('app_retention_index', ['municipalityId' => $municipality->id()->toRfc4122()]), 'current' => 'retention' === $section];
+            $nav[] = ['label' => 'Droits des personnes', 'icon' => 'user', 'href' => $this->urls->generate('app_rights_index', ['municipalityId' => $municipality->id()->toRfc4122()]), 'current' => 'rights' === $section];
         }
         $options = [];
         foreach ($this->readableMemberships($user) as $candidate) {

@@ -37,6 +37,8 @@ final class DossierPurgeService
     public const LEGAL_HOLD = 'LEGAL_HOLD';
     public const NO_NOTICE = 'NO_NOTICE';
     public const NOTICE_TOO_RECENT = 'NOTICE_TOO_RECENT';
+    /** Une demande de droits non clôturée porte sur ce dossier (LOT 05.6.6) : la purge ne détruit jamais les données qu'une personne demande à consulter. */
+    public const RIGHTS_REQUEST_OPEN = 'RIGHTS_REQUEST_OPEN';
 
     public function __construct(
         private readonly TransactionRunner $transaction,
@@ -53,23 +55,27 @@ final class DossierPurgeService
     /**
      * @param bool $execute faux : SIMULATION (comptes, aucune écriture, aucun verrou)
      */
-    public function purge(string $dossierId, bool $execute, ?User $actor = null, ?Uuid $batchId = null): PurgeOutcome
+    /**
+     * @param bool $early effacement ANTICIPÉ accordé par une demande de droits (LOT 05.6.6, `$batchId` = la demande) : seuls l'échéance et l'avis préalable sont écartés ; événement
+     *                    clos, absence de gel et absence d'une AUTRE demande de droits ouverte restent exigés (jamais contournés)
+     */
+    public function purge(string $dossierId, bool $execute, ?User $actor = null, ?Uuid $batchId = null, bool $early = false): PurgeOutcome
     {
         if (!Uuid::isValid($dossierId)) {
             return PurgeOutcome::skipped(PurgeOutcome::ALREADY_DONE, 'Dossier inconnu.');
         }
         $id = Uuid::fromString($dossierId);
         if (!$execute) {
-            return $this->evaluate($id, false, null, null);
+            return $this->evaluate($id, false, null, null, $early);
         }
 
         /** @var PurgeOutcome $outcome */
-        $outcome = $this->transaction->run(fn (): PurgeOutcome => $this->evaluate($id, true, $actor, $batchId));
+        $outcome = $this->transaction->run(fn (): PurgeOutcome => $this->evaluate($id, true, $actor, $batchId, $early));
 
         return $outcome;
     }
 
-    private function evaluate(Uuid $dossierId, bool $execute, ?User $actor, ?Uuid $batchId): PurgeOutcome
+    private function evaluate(Uuid $dossierId, bool $execute, ?User $actor, ?Uuid $batchId, bool $early): PurgeOutcome
     {
         $lock = $execute ? ' FOR UPDATE OF rm' : '';
         $row = $this->connection->fetchAssociative(
@@ -86,7 +92,7 @@ final class DossierPurgeService
         $eventId = Uuid::fromBinary((string) $row['event_id']);
         $now = $this->clock->now();
 
-        $reason = $this->ineligibility($row, $dossierId, $eventId, $municipalityId, $now, $execute);
+        $reason = $this->ineligibility($row, $dossierId, $eventId, $municipalityId, $now, $execute, $early, $early ? $batchId : null);
         if (null !== $reason) {
             return PurgeOutcome::skipped(PurgeOutcome::NOT_ELIGIBLE, $reason);
         }
@@ -133,6 +139,8 @@ final class DossierPurgeService
         // Audit de CETTE commune sur la demande et le laissez-passer : identifiants collectés AVANT (aucune clé étrangère). Les lignes sans commune et celles des autres
         // communes appartiennent au niveau partagé.
         $step('audit_log', 'audit_log', 'subject_type IN (\'PERMIT_REQUEST\', \'PERMIT\') AND municipality_id = :m AND subject_id IN (:ids)', ['m' => $municipalityId->toBinary()], $auditSubjects);
+        $step('archive_rectification_mention', 'archive_rectification_mention', 'request_municipality_id = :d', ['d' => $dossierId->toBinary()]);
+        $step('rights_request_dossier', 'rights_request_dossier', 'request_municipality_id = :d', ['d' => $dossierId->toBinary()]);
         $step('request_permit_request_municipality', 'request_permit_request_municipality', 'id = :d', ['d' => $dossierId->toBinary()]);
 
         // Après la suppression de la ligne du dossier (en simulation : sans elle, on déduit ce qu'il resterait).
@@ -175,19 +183,29 @@ final class DossierPurgeService
      *
      * @param array<string, mixed> $row
      */
-    private function ineligibility(array $row, Uuid $dossierId, Uuid $eventId, Uuid $municipalityId, \DateTimeImmutable $now, bool $lock): ?string
+    private function ineligibility(array $row, Uuid $dossierId, Uuid $eventId, Uuid $municipalityId, \DateTimeImmutable $now, bool $lock, bool $early = false, ?Uuid $ownRightsRequest = null): ?string
     {
         if ('CLOSED' !== $row['status'] || null === $row['closed_at']) {
             return self::NOT_CLOSED;
         }
         $closedAt = new \DateTimeImmutable((string) $row['closed_at'], new \DateTimeZone('UTC'));
-        if ($this->archive->purgeEligibleAt($closedAt) > $now) {
+        if (!$early && $this->archive->purgeEligibleAt($closedAt) > $now) {
             return self::RETENTION_NOT_REACHED;
         }
         // Lecture verrouillante : un gel posé concurremment (qui verrouille la même ligne de dossier) est vu ; jamais l'instantané d'une transaction plus ancienne.
         $hold = (int) $this->connection->fetchOne('SELECT COUNT(*) FROM archive_legal_hold WHERE request_municipality_id = :d AND active_marker = 1'.($lock ? ' FOR SHARE' : ''), ['d' => $dossierId->toBinary()]);
         if ($hold > 0) {
             return self::LEGAL_HOLD;
+        }
+        $open = (int) $this->connection->fetchOne(
+            'SELECT COUNT(*) FROM rights_request_dossier l JOIN rights_request q ON q.id = l.rights_request_id WHERE l.request_municipality_id = :d AND q.status <> \'CLOSED\''.(null === $ownRightsRequest ? '' : ' AND q.id <> :own').($lock ? ' FOR SHARE' : ''),
+            ['d' => $dossierId->toBinary()] + (null === $ownRightsRequest ? [] : ['own' => $ownRightsRequest->toBinary()]),
+        );
+        if ($open > 0) {
+            return self::RIGHTS_REQUEST_OPEN;
+        }
+        if ($early) {
+            return null; // effacement anticipé : ni avis préalable, ni échéance (gel, clôture et autres demandes de droits ont été contrôlés ci-dessus)
         }
         $notice = $this->connection->fetchOne('SELECT MIN(occurred_at) FROM retention_purge_record WHERE kind = \'NOTICE\' AND event_id = :e AND municipality_id = :m', ['e' => $eventId->toBinary(), 'm' => $municipalityId->toBinary()]);
         if (!\is_string($notice)) {

@@ -38,8 +38,13 @@ final class AccountReferenceCatalog
         'municipality_commercial_access.revoked_by',
         'municipality_membership.user_id',
         'onboarding_invitation_link.created_by',
+        'archive_rectification_mention.created_by_user_id',
         'permit_revision.actor_user_id',
         'request_permit_request.entered_by_user_id',
+        'rights_request.conservation_checked_by_user_id',
+        'rights_request.decided_by_user_id',
+        'rights_request.identity_verified_by_user_id',
+        'rights_request.received_by_user_id',
         'request_permit_request_decision.decided_by_user_id',
     ];
 

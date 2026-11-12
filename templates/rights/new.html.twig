@@ -1,0 +1,21 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block content %}
+  {% embed 'components/page_head.html.twig' with { eyebrow: 'Droits des personnes · ' ~ active_municipality_name, title: 'Enregistrer une demande', sub: 'Désignez le ou les dossiers de votre commune par leur référence ; aucun nom ni adresse n’est enregistré' } only %}{% endembed %}
+  {% if problem %}{% include 'components/alert.html.twig' with { variant: 'error', text: problem } only %}{% endif %}
+  <form method="post" action="{{ path('app_rights_new', { municipalityId: municipalityId }) }}" novalidate>
+    <input type="hidden" name="_token" value="{{ csrf_token('rights_new') }}">
+    <div class="cp-field">
+      <label class="cp-field__label" for="kind">Nature de la demande</label>
+      <span class="cp-select-wrap">
+        <select class="cp-select" id="kind" name="kind" required>
+          <option value="">Choisir…</option>
+          {% for k in kinds %}<option value="{{ k.value }}"{% if values.kind == k.value %} selected{% endif %}>{{ k.label }}</option>{% endfor %}
+        </select>
+      </span>
+    </div>
+    {% include 'components/field.html.twig' with { id: 'references', name: 'references', label: 'Références des dossiers', type: 'textarea', value: values.references, help: '1 à 10 références de demandes de votre commune, séparées par des espaces ou des virgules.', mono: true } only %}
+    {% include 'components/field.html.twig' with { id: 'received', name: 'received', label: 'Date de réception', type: 'date', value: values.received, optional: true, help: 'Par défaut : aujourd’hui. Douze mois au plus dans le passé.' } only %}
+    <button class="cp-btn" type="submit">Enregistrer</button>
+  </form>
+{% endblock %}
