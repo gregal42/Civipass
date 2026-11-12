@@ -104,6 +104,12 @@ enum AuditAction: string
     case RetentionSharedPurged = 'RETENTION_SHARED_PURGED';
     case RetentionEventDeleted = 'RETENTION_EVENT_DELETED';
 
+    // Dormance des événements et rapport de comptes (LOT 05.6.5) : identifiants, effectifs et codes, jamais une donnée personnelle ni la liste des candidats.
+    case DormancyAlertSent = 'DORMANCY_ALERT_SENT';
+    case DormancyAlertFailed = 'DORMANCY_ALERT_FAILED';
+    case DormancySnoozed = 'DORMANCY_SNOOZED';
+    case AccountCandidatesReported = 'ACCOUNT_CANDIDATES_REPORTED';
+
     // Accès commerciaux CWS (DM-076, DT-030) : écrits par le lot Administration CWS.
     case CommercialAccessGranted = 'COMMERCIAL_ACCESS_GRANTED';
     case CommercialAccessRevoked = 'COMMERCIAL_ACCESS_REVOKED';

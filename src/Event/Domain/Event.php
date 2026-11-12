@@ -88,6 +88,15 @@ class Event
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $closureStatistics = null;
 
+    /**
+     * Dormance (LOT 05.6.5, M8) : prise de l'alerte (écrite par une mise à jour conditionnelle atomique, jamais par l'entité) et fin du report motivé. Aucun effet sur le statut ni les droits.
+     */
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $dormancyAlertedAt = null; // @phpstan-ignore property.unusedType (hydraté par Doctrine, écrit par SQL conditionnel)
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $dormancySnoozedUntil = null; // @phpstan-ignore property.unusedType (hydraté par Doctrine, écrit par SQL conditionnel)
+
     #[ORM\ManyToOne(targetEntity: User::class, fetch: 'LAZY')]
     #[ORM\JoinColumn(name: 'created_by', nullable: false, onDelete: 'RESTRICT')]
     private User $createdBy;
@@ -235,6 +244,16 @@ class Event
             throw new DomainRuleViolation('Seuls des compteurs exacts d\'un événement clos peuvent être réduits à leur forme publiée.');
         }
         $this->closureStatistics = $summary->toArray();
+    }
+
+    public function dormancyAlertedAt(): ?\DateTimeImmutable
+    {
+        return $this->dormancyAlertedAt;
+    }
+
+    public function dormancySnoozedUntil(): ?\DateTimeImmutable
+    {
+        return $this->dormancySnoozedUntil;
     }
 
     public function closedAt(): ?\DateTimeImmutable
