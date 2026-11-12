@@ -117,7 +117,7 @@ Liste complète en section 8.
 
 ---
 
-## 5. Droits des personnes (principes ; procédures au 05.6.6)
+## 5. Droits des personnes (principes ; procédures livrées au LOT 05.6.6, voir [lot-05-6-6-cadrage.md](lot-05-6-6-cadrage.md) §10)
 
 | Droit | Principe proposé | Point d'attention |
 |---|---|---|

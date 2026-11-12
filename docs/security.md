@@ -86,6 +86,13 @@ Espace **distinct** des écrans opérationnels (`/communes/{m}/archives/…`, pr
 - **Rapport de comptes** : lecture seule, super-administrateur CWS actif uniquement (aucune exposition aux administrateurs communaux) ; adresses masquées ; la liste n'est pas persistée, l'exécution est journalisée (opérateur, effectifs). `DELETABLE` et `ANONYMISE_ONLY` sont des indicateurs techniques : l'absence de référence ne vaut jamais autorisation juridique de supprimer ou d'anonymiser.
 - **Dormance** : seuls l'administrateur et l'organisateur de la commune organisatrice reçoivent l'alerte, voient le bandeau et reportent le rappel (droit relu côté serveur avant le jeton CSRF, 404 uniforme). L'alerte ne contient aucune donnée personnelle, ne clôture jamais l'événement et ne modifie aucun droit.
 
+## Droits des personnes (LOT 05.6.6)
+
+- **Qui** : `MUNICIPALITY_ADMIN` de la commune concernée, seulement ; 404 uniforme avant le jeton CSRF ; CWS sans accès ; aucune donnée du demandeur enregistrée (dossiers désignés par leur référence).
+- **Export** : après attestation d'identité, à la volée, jamais conservé, 3 téléchargements et 30 jours au plus, habilitations recontrôlées et téléchargement journalisé à chaque fois ; jamais le contenu propre d'une autre commune.
+- **Rectification d'archive** : mention ajoutée, jamais de remplacement ; supprimée avec le dossier.
+- **Effacement anticipé** : exécution **désactivée** (`RIGHTS_ERASURE_EXECUTION_ENABLED=0`) tant que la politique juridique n'est pas validée ; ne contourne jamais un gel, la clôture, une autre demande ouverte ni le partage des données.
+
 ## Secrets des notifications (LOT 05.3.2, DT-049)
 
 Le secret du lien automatique n'est conservé que chiffré (XChaCha20-Poly1305, données associées liant message, type et laissez-passer), dans une table séparée, 48 heures au plus, supprimé dès le traitement définitif. Les clés viennent de l'environnement (`NOTIFICATION_KEYRING`), jamais du dépôt ; contrôle : `app:notifications:check-crypto`. Clé absente ou invalide : fail-closed (aucun lien, aucun clair, message en attente, approbation jamais bloquée, remise manuelle possible, échec définitif après 7 jours). Aucun secret ni valeur de clé dans les journaux, audits, exceptions ou sorties de commandes (testé). Détails : `docs/lot-05-schema.md` §19.

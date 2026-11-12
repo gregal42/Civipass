@@ -65,7 +65,7 @@ Les données d'**administration** (contrats, facturation) suivent d'**autres rè
 
 ## 7. Comment les personnes exercent-elles leurs droits ?
 
-La personne s'adresse à la **commune** concernée *(point de contact à définir par chaque collectivité)*. La commune vérifie l'identité, répond *(délai à confirmer, un mois)* et trace la demande. Civipass permet à l'administrateur d'exporter le dossier de sa commune (jamais celui d'une autre) et de purger un dossier de façon anticipée si aucune finalité ne s'y oppose ; sinon la demande est refusée avec un motif.
+La personne s'adresse à la **commune** concernée *(point de contact à définir par chaque collectivité)*. La commune vérifie l'identité, répond *(délai à confirmer, un mois)* et trace la demande. Civipass permet à l'administrateur d'enregistrer la demande, d'attester l'identité, d'exporter le dossier de sa commune (jamais celui d'une autre ; trois téléchargements et trente jours au plus), d'ajouter une mention de rectification à une archive et d'instruire une demande d'effacement. **L'exécution d'un effacement anticipé est désactivée** tant que la politique juridique applicable n'est pas validée ; la réponse à la personne se fait hors Civipass.
 
 ## 8. À compléter par la collectivité (non rédigé ici)
 
