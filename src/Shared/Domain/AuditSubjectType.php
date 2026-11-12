@@ -23,4 +23,5 @@ enum AuditSubjectType: string
     case StatisticsCoordination = 'STATISTICS_COORDINATION';
     case LegalHold = 'LEGAL_HOLD';
     case Retention = 'RETENTION';
+    case RightsRequest = 'RIGHTS_REQUEST';
 }

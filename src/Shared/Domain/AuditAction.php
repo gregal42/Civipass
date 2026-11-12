@@ -110,6 +110,16 @@ enum AuditAction: string
     case DormancySnoozed = 'DORMANCY_SNOOZED';
     case AccountCandidatesReported = 'ACCOUNT_CANDIDATES_REPORTED';
 
+    // Droits des personnes (LOT 05.6.6) : identifiants, codes et effectifs ; jamais une donnée du demandeur, ni le texte d'une mention.
+    case RightsRequestRegistered = 'RIGHTS_REQUEST_REGISTERED';
+    case RightsIdentityAttested = 'RIGHTS_IDENTITY_ATTESTED';
+    case RightsRequestExtended = 'RIGHTS_REQUEST_EXTENDED';
+    case RightsRequestDecided = 'RIGHTS_REQUEST_DECIDED';
+    case RightsRequestClosed = 'RIGHTS_REQUEST_CLOSED';
+    case RightsExportDownloaded = 'RIGHTS_EXPORT_DOWNLOADED';
+    case RightsMentionAdded = 'RIGHTS_MENTION_ADDED';
+    case RightsErasureExecuted = 'RIGHTS_ERASURE_EXECUTED';
+
     // Accès commerciaux CWS (DM-076, DT-030) : écrits par le lot Administration CWS.
     case CommercialAccessGranted = 'COMMERCIAL_ACCESS_GRANTED';
     case CommercialAccessRevoked = 'COMMERCIAL_ACCESS_REVOKED';

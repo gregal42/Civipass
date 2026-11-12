@@ -61,6 +61,11 @@ doctrine:
                 is_bundle: false
                 dir: '%kernel.project_dir%/src/Retention/Domain'
                 prefix: 'App\Retention\Domain'
+            Rights:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Rights/Domain'
+                prefix: 'App\Rights\Domain'
             Shared:
                 type: attribute
                 is_bundle: false
