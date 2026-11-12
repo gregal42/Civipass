@@ -81,6 +81,11 @@ Espace **distinct** des écrans opérationnels (`/communes/{m}/archives/…`, pr
 - **Suppression de l'événement** : seulement par le `MUNICIPALITY_ADMIN` de l'organisatrice, après purge de tous les dossiers, référence saisie ; 404 uniforme sinon. Comptes, communes et référentiels intacts.
 - **À valider avec le DPO** : suppression des journaux de consultation (identité des consultants) avec le dossier ; durées provisoires.
 
+## Comptes candidats et dormance des événements (LOT 05.6.5)
+
+- **Rapport de comptes** : lecture seule, super-administrateur CWS actif uniquement (aucune exposition aux administrateurs communaux) ; adresses masquées ; la liste n'est pas persistée, l'exécution est journalisée (opérateur, effectifs). `DELETABLE` et `ANONYMISE_ONLY` sont des indicateurs techniques : l'absence de référence ne vaut jamais autorisation juridique de supprimer ou d'anonymiser.
+- **Dormance** : seuls l'administrateur et l'organisateur de la commune organisatrice reçoivent l'alerte, voient le bandeau et reportent le rappel (droit relu côté serveur avant le jeton CSRF, 404 uniforme). L'alerte ne contient aucune donnée personnelle, ne clôture jamais l'événement et ne modifie aucun droit.
+
 ## Secrets des notifications (LOT 05.3.2, DT-049)
 
 Le secret du lien automatique n'est conservé que chiffré (XChaCha20-Poly1305, données associées liant message, type et laissez-passer), dans une table séparée, 48 heures au plus, supprimé dès le traitement définitif. Les clés viennent de l'environnement (`NOTIFICATION_KEYRING`), jamais du dépôt ; contrôle : `app:notifications:check-crypto`. Clé absente ou invalide : fail-closed (aucun lien, aucun clair, message en attente, approbation jamais bloquée, remise manuelle possible, échec définitif après 7 jours). Aucun secret ni valeur de clé dans les journaux, audits, exceptions ou sorties de commandes (testé). Détails : `docs/lot-05-schema.md` §19.

@@ -1,6 +1,6 @@
 # LOT 05.6.5 — Comptes candidats et dormance des événements : cadrage (12 novembre 2026)
 
-**Statut : CADRAGE soumis à validation (une seule fois, protocole de `CLAUDE.md`). Aucune implémentation, aucune migration exécutée.** Références : [lot-05-6-cadrage.md](lot-05-6-cadrage.md) §5.2 et fiche 05.6.5, [lot-05-6-4-cadrage.md](lot-05-6-4-cadrage.md), DM-120. Les seuils ci-dessous sont des **hypothèses paramétrables**, jamais des validations juridiques.
+**Statut : VALIDÉ le 12 novembre 2026 (D1 : rapport réservé aux super-administrateurs CWS ; D2 : M8 approuvée ; D3 : règle R-b seule) ; RÉALISÉ en local (voir §8), non poussé.** Références : [lot-05-6-cadrage.md](lot-05-6-cadrage.md) §5.2 et fiche 05.6.5, [lot-05-6-4-cadrage.md](lot-05-6-4-cadrage.md), DM-120. Les seuils ci-dessous sont des **hypothèses paramétrables**, jamais des validations juridiques.
 
 ## 1. Objectif et périmètre
 
@@ -59,3 +59,12 @@ Comptes : candidats exacts ; **non candidats** (appartenance active, super-admin
 3. **Règles de dormance** : **R-b seule** (conforme à la demande, **recommandé**) ou aussi « fin planifiée dépassée de 30 jours » et « autorisations toutes expirées » de la fiche initiale.
 
 Confirmations implicites, sans arbitrage : seuils paramétrables (24 mois, 90 jours, 30 jours, report 90 jours maximum) ; aucune suppression, anonymisation, désactivation ni clôture ; aucun push ni déploiement ; `PUBLIC_VERIFICATION_ENABLED` reste à `0`.
+
+## 8. Réalisation (12 novembre 2026)
+
+- **Migration exécutée** (`civipass_test` et `civipass`, sauvegardes `mysqldump` restaurées dans une base temporaire puis comparées : 43 tables, événements, audit, comptes identiques) : `Version20261112140000` = M8 (`event_event.dormancy_alerted_at`, `dormancy_snoozed_until`, nullables). `doctrine:schema:validate` OK sur les deux bases ; les 24 événements existants sont à `NULL`.
+- **Comptes** : `app:accounts:candidates --operator=<super-administrateur>` ; éligibilité = pas de super-administrateur, **aucune appartenance active**, dernière activité (connexion, création, dernière modification du compte) ≥ `ACCOUNT_INACTIVITY_MONTHS` (24). `DELETABLE` / `ANONYMISE_ONLY` sont des **indicateurs techniques, jamais une autorisation juridique**. Catalogue des clés vers `identity_user` lu dans le schéma (`AccountReferenceCatalog`) ; une clé non classée est traitée comme conservée, signalée, et fait échouer un test. E-mail masqué, rien de persisté, audit sans liste.
+- **Dormance** : `app:event:dormancy-report`, `app:event:dormancy-alert [--execute --limit]` (simulation par défaut), bandeau sur la fiche de l'événement et report motivé (30, 60 ou 90 jours, **motif codé obligatoire**, sans texte libre) pour l'administrateur et l'organisateur de l'organisatrice (`EventPermission::dormancyRoles`). Aucune clôture, aucun changement de statut ni de droit.
+- **Envoi et reprise** : l'outbox existante est propre aux laissez-passer (`permit_id` obligatoire) et n'a **pas** été modifiée ; l'alerte utilise le mécanisme d'envoi des courriels d'agents (comme l'avis de rétention). Prise **atomique** (`UPDATE … WHERE dormancy_alerted_at <=> :vu`), une prise n'est un **envoi** qu'avec la ligne d'audit `DORMANCY_ALERT_SENT` ; sinon c'est un **bail** (`EVENT_DORMANCY_LEASE_MINUTES`, 30) repris à son expiration ; échec d'envoi : valeur restaurée et échec tracé. **Limite** : un plantage entre l'envoi et l'audit peut rejouer UN courriel après le bail (au moins une fois, jamais en concurrence).
+- **Paramètres** (hypothèses à confirmer juridiquement) : `EVENT_DORMANCY_DAYS` 90, `EVENT_DORMANCY_REMINDER_DAYS` 30, `EVENT_DORMANCY_LEASE_MINUTES` 30, `ACCOUNT_INACTIVITY_MONTHS` 24. Aucune planification créée (05.6.7).
+- Les dates brutes écrites en SQL sont converties en UTC (l'horloge applicative est en heure de Paris).
