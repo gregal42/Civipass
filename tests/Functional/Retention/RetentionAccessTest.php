@@ -52,6 +52,23 @@ final class RetentionAccessTest extends RetentionScenarioTestCase
         self::assertResponseRedirects();
     }
 
+    public function testTheNavigationLinkIsOnlyShownToAdministratorsAndNeverReplacesTheServerCheck(): void
+    {
+        $link = 'href="'.$this->url($this->organizerId).'"';
+        $this->as($this->admin);
+        $this->client->request('GET', '/communes/'.$this->organizerId.'/evenements');
+        self::assertStringContainsString('Conservation des données', (string) $this->client->getResponse()->getContent());
+        self::assertStringContainsString($link, (string) $this->client->getResponse()->getContent());
+
+        foreach ([$this->manager, $this->instructor] as $user) {
+            $this->as($user);
+            $this->client->request('GET', '/communes/'.$this->organizerId.'/evenements');
+            self::assertStringNotContainsString('Conservation des données', (string) $this->client->getResponse()->getContent());
+            $this->client->request('GET', $this->url($this->organizerId));
+            self::assertSame(404, $this->client->getResponse()->getStatusCode(), 'masquer le lien ne remplace pas le contrôle serveur');
+        }
+    }
+
     public function testEventDeletionThroughTheFormNeedsRightThenTokenThenEmptyDossiersThenTheReference(): void
     {
         $this->dueForPurge();

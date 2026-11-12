@@ -32,7 +32,7 @@ final class RetentionController extends AbstractController
     {
         $user = $this->user();
         $data = $this->registry->forAdministrator($user, $municipalityId);
-        $response = $this->render('retention/index.html.twig', array_merge($this->shell->forMunicipality($user, $municipalityId, 'archives', 'Conservation'), ['page_title' => 'Conservation', 'municipalityId' => $municipalityId], $data));
+        $response = $this->render('retention/index.html.twig', array_merge($this->shell->forMunicipality($user, $municipalityId, 'retention', 'Conservation'), ['page_title' => 'Conservation', 'municipalityId' => $municipalityId], $data));
         $response->headers->set('Cache-Control', 'no-store, private');
 
         return $response;
