@@ -1,0 +1,16 @@
+[Unit]
+Description=Civipass — vérification de la dernière sauvegarde
+OnFailure=civipass-failure@%n.service
+
+[Service]
+Type=oneshot
+User=civipass
+WorkingDirectory=/opt/civipass
+EnvironmentFile=/etc/civipass/civipass.env
+ExecStart=/opt/civipass/ops/bin/run-job backup-verify --timeout 3600 -- /opt/civipass/ops/backup/verify-backup.sh
+SuccessExitStatus=75
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/civipass/var -/var/backups/civipass

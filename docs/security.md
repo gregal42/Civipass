@@ -93,6 +93,13 @@ Espace **distinct** des écrans opérationnels (`/communes/{m}/archives/…`, pr
 - **Rectification d'archive** : mention ajoutée, jamais de remplacement ; supprimée avec le dossier.
 - **Effacement anticipé** : exécution **désactivée** (`RIGHTS_ERASURE_EXECUTION_ENABLED=0`) tant que la politique juridique n'est pas validée ; ne contourne jamais un gel, la clôture, une autre demande ouverte ni le partage des données, **même lorsque les deux interrupteurs sont activés**. Valeurs par défaut `0` dans `config/services.yaml`, jamais activées par un fichier du dépôt : seule une variable d'environnement explicite du serveur le peut (test `ErasureSwitchesDefaultTest`).
 
+## Exploitation, restauration et rejeu (LOT 05.6.7)
+
+- **Registre v2 chaîné et ancré** : une ligne supprimée, modifiée ou réordonnée rompt la chaîne ; les points d'ancrage (fichier séparé, journal, courriel d'exploitation) détectent une réécriture complète ou une troncature. **Non qualifié d'inviolable** tant que l'indépendance de l'ancrage n'est pas confirmée en exploitation.
+- **Rejeu après restauration** : jamais automatique ni planifié ; opérateur CWS, référence d'approbation écrite tracée, empreinte du rapport présenté, preuve externe saine, interrupteur de purge ; recontrôle de la clôture, des gels et des demandes de droits sous verrou ; aucune suppression d'événement ; aucun droit réactivé.
+- **Remise en service** : `var/ops/MAINTENANCE` bloque toute tâche planifiée ; levée uniquement par `app:ops:release` (aucune anomalie bloquante, pertes reconnues par écrit).
+- **Planification** : unités systemd livrées et non installées ; tâches destructives ou émettrices dans `ops/systemd/optional/`, non activées.
+
 ## Secrets des notifications (LOT 05.3.2, DT-049)
 
 Le secret du lien automatique n'est conservé que chiffré (XChaCha20-Poly1305, données associées liant message, type et laissez-passer), dans une table séparée, 48 heures au plus, supprimé dès le traitement définitif. Les clés viennent de l'environnement (`NOTIFICATION_KEYRING`), jamais du dépôt ; contrôle : `app:notifications:check-crypto`. Clé absente ou invalide : fail-closed (aucun lien, aucun clair, message en attente, approbation jamais bloquée, remise manuelle possible, échec définitif après 7 jours). Aucun secret ni valeur de clé dans les journaux, audits, exceptions ou sorties de commandes (testé). Détails : `docs/lot-05-schema.md` §19.

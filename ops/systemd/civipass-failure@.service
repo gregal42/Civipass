@@ -1,0 +1,11 @@
+[Unit]
+Description=Civipass — alerte d'échec de l'unité %i
+
+[Service]
+Type=oneshot
+User=civipass
+WorkingDirectory=/opt/civipass
+EnvironmentFile=/etc/civipass/civipass.env
+ExecStart=/usr/bin/php /opt/civipass/bin/console app:ops:notify-failure %i
+NoNewPrivileges=true
+PrivateTmp=true

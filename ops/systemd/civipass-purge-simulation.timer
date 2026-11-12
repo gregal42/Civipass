@@ -1,0 +1,10 @@
+[Unit]
+Description=Civipass — planification : simulation de purge (aucune écriture)
+
+[Timer]
+OnCalendar=Mon *-*-* 03:00:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

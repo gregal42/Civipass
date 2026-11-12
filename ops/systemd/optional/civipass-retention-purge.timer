@@ -1,0 +1,11 @@
+# NON ACTIVÉ — livré dans optional/ : ne l'installer qu'après les validations nécessaires (voir README).
+[Unit]
+Description=Civipass — planification : PURGE RÉELLE (destructive ; exige l'interrupteur de purge activé)
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

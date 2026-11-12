@@ -1,0 +1,10 @@
+[Unit]
+Description=Civipass — planification : cohérence du registre de purge (lecture seule)
+
+[Timer]
+OnCalendar=*-*-* 03:10:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

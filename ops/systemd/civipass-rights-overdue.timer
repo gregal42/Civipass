@@ -1,0 +1,10 @@
+[Unit]
+Description=Civipass — planification : demandes de droits en retard (lecture seule)
+
+[Timer]
+OnCalendar=*-*-* 07:30:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,11 @@
+# NON ACTIVÉ — livré dans optional/ : ne l'installer qu'après les validations nécessaires (voir README).
+[Unit]
+Description=Civipass — planification : avis de conservation (envoie des courriels)
+
+[Timer]
+OnCalendar=*-*-* 06:00:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

@@ -21,6 +21,11 @@ use Symfony\Component\Console\Tester\CommandTester;
  */
 final class RetentionRunTest extends RetentionScenarioTestCase
 {
+    private function rightsAuditCount(string $action): int
+    {
+        return (int) $this->em()->getConnection()->fetchOne('SELECT COUNT(*) FROM audit_log WHERE action = :a', ['a' => $action]);
+    }
+
     private function runPurge(bool $execute = true): \App\Retention\Application\RetentionRunReport
     {
         $report = static::getContainer()->get(RetentionPurgeService::class)->run($execute, 100, null, null, $this->managed($this->admin));
@@ -94,28 +99,62 @@ final class RetentionRunTest extends RetentionScenarioTestCase
         self::assertTrue(static::getContainer()->get(RegisterReconciliation::class)->check(false)->consistent());
     }
 
-    public function testASqlFileDivergenceIsDetectedAndOnlyTheMissingFileLinesAreRepaired(): void
+    public function testASqlOnlyLineIsRepairedByAppendingItOnApprovalOnly(): void
+    {
+        $this->dueForPurge();
+        $this->runPurge(true);
+        $reconciliation = static::getContainer()->get(RegisterReconciliation::class);
+        $operator = $this->managed($this->superAdmin);
+        self::assertTrue($reconciliation->check()->consistent());
+
+        // Écriture du fichier perdue APRÈS la validation SQL : un enregistrement SQL que le fichier ne porte pas.
+        $this->em()->persist(new \App\Retention\Domain\PurgeRecord(\App\Retention\Domain\PurgeRecordKind::Notice, $this->event->id(), 'EVT-X', null, null, null, new \DateTimeImmutable('now', new \DateTimeZone('UTC')), null, null, null, 0, 1, null));
+        $this->em()->flush();
+        $report = $reconciliation->check();
+        self::assertCount(1, $report->missingInFile);
+        self::assertFalse($report->consistent());
+
+        foreach ([[$this->admin, 'INSTRUCTION-2026-001', OperationNotAllowed::class], [$this->superAdmin, '', \App\Retention\Application\ReplayRefused::class]] as [$user, $ref, $exception]) {
+            try {
+                $reconciliation->repair($this->managed($user), $ref, false);
+                self::fail('Réparation non approuvée.');
+            } catch (\Throwable $e) {
+                self::assertInstanceOf($exception, $e);
+            }
+        }
+        self::assertCount(1, $reconciliation->check()->missingInFile, 'rien n\'a été réparé sans habilitation ni référence');
+
+        self::assertSame(1, $reconciliation->repair($operator, 'INSTRUCTION-2026-001', false)->repaired);
+        self::assertTrue($reconciliation->check()->consistent());
+        self::assertSame(1, $this->rightsAuditCount('RETENTION_REGISTER_REPAIRED'));
+    }
+
+    public function testATruncatedTailAndAnOutOfChainLineAreIncidentsNeverRepaired(): void
     {
         $this->dueForPurge();
         $this->runPurge(true);
         $reconciliation = static::getContainer()->get(RegisterReconciliation::class);
         $path = static::getContainer()->get(RetentionSettings::class)->registerPath();
+        $operator = $this->managed($this->superAdmin);
 
-        // Écriture du fichier perdue après la validation SQL.
+        // Queue tronquée après l'ancrage : chaîne intacte mais plus courte que le point d'ancrage.
         $lines = file($path, \FILE_IGNORE_NEW_LINES) ?: [];
-        file_put_contents($path, implode("\n", \array_slice($lines, 1))."\n");
-        $report = $reconciliation->check(false);
-        self::assertCount(1, $report->missingInFile);
+        file_put_contents($path, implode("\n", \array_slice($lines, 0, -1))."\n");
+        $report = $reconciliation->check();
+        self::assertContains('CHAIN_SHORTER_THAN_ANCHOR', $report->anchorProblems);
         self::assertFalse($report->consistent());
-        self::assertSame(1, $reconciliation->check(true)->repaired);
-        self::assertTrue($reconciliation->check(false)->consistent());
 
-        // Ligne de fichier sans ligne SQL : signalée, jamais « réparée ».
+        // Ligne de fichier hors chaîne et sans ligne SQL : rupture signalée, réparation refusée.
         file_put_contents($path, '{"id":"0190a000-0000-7000-8000-000000000000","kind":"DOSSIER"}'."\n", \FILE_APPEND);
-        $report = $reconciliation->check(true);
-        self::assertSame(['0190a000-0000-7000-8000-000000000000'], $report->fileOnly);
-        self::assertSame(0, $report->repaired);
-        self::assertFalse($reconciliation->check(false)->consistent());
+        $report = $reconciliation->check();
+        self::assertContains('0190a000-0000-7000-8000-000000000000', $report->fileOnly);
+        self::assertNotSame([], $report->chainBreaks);
+        try {
+            $reconciliation->repair($operator, 'INSTRUCTION-2026-002', true);
+            self::fail('Réparation sur une chaîne rompue.');
+        } catch (\App\Retention\Application\ReplayRefused $e) {
+            self::assertSame('CHAIN_BROKEN', $e->reasonCode);
+        }
     }
 
     public function testCommandsSimulateByDefaultAndRefuseExecutionWhileDisabled(): void
@@ -126,7 +165,8 @@ final class RetentionRunTest extends RetentionScenarioTestCase
         self::assertSame(0, $purge->execute([]));
         self::assertStringContainsString('SIMULATION', $purge->getDisplay());
         self::assertSame(2, $this->rows('request_permit_request_municipality'));
-        self::assertSame(0, (new CommandTester($app->find('app:retention:register-check')))->execute([]), 'registre vide et fichier vide : cohérent');
+        static::getContainer()->get(\App\Retention\Application\RegisterAnchors::class)->emit();
+        self::assertSame(0, (new CommandTester($app->find('app:retention:register-check')))->execute([]), 'registre et point d\'ancrage cohérents');
     }
 
     public function testTheEventIsDeletedOnlyAfterEveryDossierIsPurgedByItsOrganizerAdministrator(): void
@@ -174,6 +214,7 @@ final class RetentionRunTest extends RetentionScenarioTestCase
         self::assertSame($communes, $this->rows('municipality'), 'communes intactes');
         self::assertSame(1, $this->rows('retention_purge_record', 'kind = \'EVENT_DELETED\''));
         self::assertSame(1, $this->rows('audit_log', 'action = \'RETENTION_EVENT_DELETED\''));
-        self::assertTrue(static::getContainer()->get(RegisterReconciliation::class)->check(false)->consistent(), 'la suppression est aussi inscrite au registre hors base');
+        static::getContainer()->get(\App\Retention\Application\RegisterAnchors::class)->emit();
+        self::assertTrue(static::getContainer()->get(RegisterReconciliation::class)->check()->consistent(), 'la suppression est aussi inscrite au registre hors base');
     }
 }

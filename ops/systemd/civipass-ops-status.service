@@ -1,0 +1,15 @@
+[Unit]
+Description=Civipass — supervision des tâches d'exploitation (battements de cœur)
+OnFailure=civipass-failure@%n.service
+
+[Service]
+Type=oneshot
+User=civipass
+WorkingDirectory=/opt/civipass
+EnvironmentFile=/etc/civipass/civipass.env
+ExecStart=/usr/bin/php /opt/civipass/bin/console app:ops:status
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/civipass/var

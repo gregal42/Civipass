@@ -1,0 +1,10 @@
+[Unit]
+Description=Civipass — planification : point d'ancrage du registre de purge
+
+[Timer]
+OnCalendar=*-*-* *:07:00
+Persistent=true
+RandomizedDelaySec=0
+
+[Install]
+WantedBy=timers.target

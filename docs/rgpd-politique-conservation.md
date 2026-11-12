@@ -112,7 +112,7 @@ Liste complète en section 8.
 
 - La suppression logique est effective à l'instant de la purge ; la **copie en sauvegarde subsiste** jusqu'à rotation.
 - Politique à choisir (exploitation) : **(a)** rotation courte alignée sur la durée de purge, ou **(b)** conservation plus longue avec **rejeu systématique de la purge** après toute restauration, à partir d'un **registre des purges tenu hors de la base** (sans donnée personnelle).
-- Interdit : restaurer une sauvegarde sans rejouer le registre.
+- Interdit : restaurer une sauvegarde sans rejouer le registre. **Retenu (LOT 05.6.7, A1)** : rotation de 35 jours (hypothèse à valider) **et** rejeu obligatoire après toute restauration, voir [runbooks/restauration.md](runbooks/restauration.md) ; le registre est chaîné et ancré, jamais qualifié d'inviolable.
 - À documenter dans la notice aux personnes (la donnée peut subsister dans une copie de sauvegarde pendant un délai borné).
 
 ---

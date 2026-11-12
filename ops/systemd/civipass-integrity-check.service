@@ -1,0 +1,16 @@
+[Unit]
+Description=Civipass — contrôle d'intégrité (lecture seule)
+OnFailure=civipass-failure@%n.service
+
+[Service]
+Type=oneshot
+User=civipass
+WorkingDirectory=/opt/civipass
+EnvironmentFile=/etc/civipass/civipass.env
+ExecStart=/opt/civipass/ops/bin/run-job integrity-check --timeout 1800 -- /usr/bin/php /opt/civipass/bin/console app:ops:integrity-check
+SuccessExitStatus=75
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/civipass/var

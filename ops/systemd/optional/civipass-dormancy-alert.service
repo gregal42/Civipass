@@ -1,0 +1,17 @@
+# NON ACTIVÉ — livré dans optional/ : ne l'installer qu'après les validations nécessaires (voir README).
+[Unit]
+Description=Civipass — alerte de dormance (envoie des courriels)
+OnFailure=civipass-failure@%n.service
+
+[Service]
+Type=oneshot
+User=civipass
+WorkingDirectory=/opt/civipass
+EnvironmentFile=/etc/civipass/civipass.env
+ExecStart=/opt/civipass/ops/bin/run-job dormancy-alert --timeout 1800 -- /usr/bin/php /opt/civipass/bin/console app:event:dormancy-alert --execute
+SuccessExitStatus=75
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/civipass/var

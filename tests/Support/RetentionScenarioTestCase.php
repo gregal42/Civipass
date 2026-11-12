@@ -20,6 +20,10 @@ abstract class RetentionScenarioTestCase extends ArchiveScenarioTestCase
         $_SERVER['RETENTION_PURGE_ENABLED'] = '1';
         ConfigurableStepObserver::reset();
         @unlink(__DIR__.'/../../var/retention_test/purge-register.jsonl');
+        @unlink(__DIR__.'/../../var/retention_test/anchors.jsonl');
+        foreach (glob(__DIR__.'/../../var/ops_test/{MAINTENANCE,heartbeat/*,locks/*}', \GLOB_BRACE) ?: [] as $file) {
+            @unlink($file);
+        }
         parent::setUp();
     }
 

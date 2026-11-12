@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Enveloppe d'exécution d'une tâche d'exploitation Civipass (LOT 05.6.7).
+#
+#   run-job <tâche> [--timeout SECONDES] -- <commande...>
+#
+# - refuse de s'exécuter tant que le fichier MAINTENANCE existe (code 75) ;
+# - verrou par tâche (flock) : jamais deux exécutions simultanées d'une même tâche (code 75) ;
+# - délai maximal (timeout) ; le code de sortie de la commande est conservé ;
+# - écrit le battement de cœur (dernier succès) SEULEMENT si la commande réussit.
+# Le code 75 (EX_TEMPFAIL) n'est pas un échec : les unités déclarent SuccessExitStatus=75 ; aucun battement n'est écrit.
+set -uo pipefail
+
+usage() { echo "usage: run-job <tâche> [--timeout SECONDES] -- <commande...>" >&2; exit 64; }
+
+[ $# -ge 3 ] || usage
+job="$1"; shift
+timeout_s=3600
+if [ "${1:-}" = "--timeout" ]; then
+  timeout_s="${2:-}"; shift 2 || usage
+fi
+[ "${1:-}" = "--" ] || usage
+shift
+[ $# -ge 1 ] || usage
+
+if ! [[ "$job" =~ ^[a-z][a-z0-9-]{1,40}$ ]]; then echo "run-job: nom de tâche invalide" >&2; exit 64; fi
+if ! [[ "$timeout_s" =~ ^[0-9]{1,6}$ ]] || [ "$timeout_s" -lt 1 ]; then echo "run-job: délai invalide" >&2; exit 64; fi
+
+root="${CIVIPASS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+ops_dir="${OPS_DIR:-$root/var/ops}"
+
+if [ -e "$ops_dir/MAINTENANCE" ]; then
+  echo "run-job: maintenance active, '$job' refusé" >&2
+  exit 75
+fi
+
+mkdir -p "$ops_dir/locks"
+exec 9>"$ops_dir/locks/$job.lock"
+if ! flock -n 9; then
+  echo "run-job: '$job' déjà en cours, exécution ignorée" >&2
+  exit 75
+fi
+
+timeout --kill-after=30 "$timeout_s" "$@"
+rc=$?
+if [ "$rc" -eq 124 ]; then echo "run-job: '$job' interrompu après ${timeout_s}s" >&2; fi
+if [ "$rc" -ne 0 ]; then exit "$rc"; fi
+
+heartbeat="${RUN_JOB_HEARTBEAT:-php $root/bin/console app:ops:heartbeat}"
+# shellcheck disable=SC2086
+if ! $heartbeat "$job"; then echo "run-job: battement de cœur non écrit pour '$job'" >&2; exit 1; fi
+exit 0

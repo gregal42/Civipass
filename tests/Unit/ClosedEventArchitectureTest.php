@@ -78,6 +78,7 @@ final class ClosedEventArchitectureTest extends TestCase
             ...self::files('src/Archive'),
             ...self::files('src/Retention'),
             ...self::files('src/Rights'),
+            ...self::files('src/Ops'),
             ...self::files('src/Event/UI/Console'),
             ...self::files('src/Notification/UI/Console'),
             ...self::files('src/Permit/UI/Console'),

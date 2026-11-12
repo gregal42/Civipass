@@ -168,7 +168,8 @@ final class RightsErasureTest extends RightsScenarioTestCase
         self::assertNotNull($row['executed_at'], 'la demande subsiste, exécutée, sans donnée personnelle');
         self::assertSame(1, $this->rows('retention_purge_record', 'kind = \'DOSSIER\' AND batch_id = UNHEX(\''.str_replace('-', '', $first).'\')'), 'le registre de purge porte la demande');
         self::assertSame(1, $this->rightsAuditCount('RIGHTS_ERASURE_EXECUTED'));
-        self::assertTrue(static::getContainer()->get(\App\Retention\Application\RegisterReconciliation::class)->check(false)->consistent(), 'registre hors base à jour');
+        static::getContainer()->get(\App\Retention\Application\RegisterAnchors::class)->emit();
+        self::assertTrue(static::getContainer()->get(\App\Retention\Application\RegisterReconciliation::class)->check()->consistent(), 'registre hors base à jour');
 
         $second = $this->grantErasure($secondCommune, $secondAdmin);
         $this->erasures()->execute($this->managed($secondAdmin), $secondCommune, $second);
