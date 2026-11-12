@@ -37,7 +37,7 @@ final class TestDatabase
     private const NOTIFICATION_TABLES = ['notification_secret', 'notification_outbox'];
 
     /** Tables du LOT 05.6.3 (module Archive), purgées dès qu'elles existent (elles référencent des dossiers, des participations, des événements et des utilisateurs). */
-    private const ARCHIVE_TABLES = ['retention_purge_record', 'archive_consultation', 'archive_legal_hold', 'archive_manager_designation', 'archive_statistics_coordination'];
+    private const ARCHIVE_TABLES = ['archive_rectification_mention', 'rights_request_dossier', 'rights_request', 'retention_purge_record', 'archive_consultation', 'archive_legal_hold', 'archive_manager_designation', 'archive_statistics_coordination'];
 
     public static function reset(EntityManagerInterface $em): void
     {
