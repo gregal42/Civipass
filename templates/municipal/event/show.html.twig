@@ -200,7 +200,7 @@
         {% block body %}{% include 'components/facts.html.twig' with { items: facts } only %}{% endblock %}
       {% endembed %}
       {% if closure_statistics is defined and closure_statistics %}
-        {% include 'municipal/event/_closure_statistics.html.twig' with { stats: closure_statistics } only %}
+        {% include 'municipal/event/_closure_statistics.html.twig' with { stats: closure_statistics, municipalityId: active_municipality_id|default(app.request.attributes.get('municipalityId')), eventId: detail.eventId } only %}
       {% endif %}
     </aside>
   </div>

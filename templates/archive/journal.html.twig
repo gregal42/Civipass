@@ -1,0 +1,24 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block content %}
+  {% embed 'components/page_head.html.twig' with { eyebrow: 'Archives · ' ~ active_municipality_name, title: 'Journal des consultations', sub: 'Consultations des dossiers de votre commune : consultant, date, dossier, action, motif' } only %}{% endembed %}
+  {% if entries is empty %}
+    {% include 'components/empty_state.html.twig' with { icon: 'file', title: 'Aucune consultation', text: 'Aucun dossier archivé n’a encore été consulté.' } only %}
+  {% else %}
+    <table class="cp-table" data-test="archive-journal">
+      <caption class="cp-sr-only">Journal des consultations</caption>
+      <thead><tr><th scope="col">Date (UTC)</th><th scope="col">Consultant</th><th scope="col">Dossier</th><th scope="col">Action</th><th scope="col">Motif</th></tr></thead>
+      <tbody>
+        {% for c in entries %}
+          <tr>
+            <td>{{ c.occurredAt|date('d/m/Y H:i:s') }}</td>
+            <td>{{ c.user.firstName }} {{ c.user.lastName }}</td>
+            <td>{{ c.dossier.request.reference.value }}</td>
+            <td>{{ c.action.value == 'DOSSIER_OUVERT' ? 'Ouverture du dossier' : 'Téléchargement d’une pièce' }}</td>
+            <td>{{ c.reason.label }}{% if c.reasonComment %} — {{ c.reasonComment }}{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+{% endblock %}

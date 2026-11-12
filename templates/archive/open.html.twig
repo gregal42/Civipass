@@ -1,0 +1,20 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block content %}
+  {% embed 'components/page_head.html.twig' with { eyebrow: 'Archives · ' ~ active_municipality_name, title: 'Motif de la consultation', sub: 'Obligatoire : votre identité, la date, le dossier et ce motif sont journalisés.' } only %}{% endembed %}
+  {% if problem %}{% include 'components/alert.html.twig' with { variant: 'error', text: problem } only %}{% endif %}
+  <form method="post" action="{{ path('app_archive_open', { municipalityId: municipalityId, dossierId: dossierId }) }}" novalidate>
+    <input type="hidden" name="_token" value="{{ csrf_token('archive_open_' ~ dossierId) }}">
+    <div class="cp-field">
+      <label class="cp-field__label" for="reason">Motif</label>
+      <span class="cp-select-wrap">
+        <select class="cp-select" id="reason" name="reason" required>
+          <option value="">Choisir un motif…</option>
+          {% for r in reasons %}<option value="{{ r.value }}"{% if values.reason == r.value %} selected{% endif %}>{{ r.label }}</option>{% endfor %}
+        </select>
+      </span>
+    </div>
+    {% include 'components/field.html.twig' with { id: 'comment', name: 'comment', label: 'Précision', type: 'textarea', value: values.comment, optional: true, help: 'Obligatoire pour « Autre motif ». 200 caractères au plus ; n’y mettez aucune donnée personnelle inutile.', attrs: 'maxlength="200"' } only %}
+    <button class="cp-btn" type="submit">Ouvrir le dossier</button>
+  </form>
+{% endblock %}

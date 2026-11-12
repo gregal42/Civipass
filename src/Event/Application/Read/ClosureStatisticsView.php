@@ -20,6 +20,8 @@ final readonly class ClosureStatisticsView
         public ?PublishedClosureStatistics $own,
         public array $communeNames,
         public bool $singleMunicipality,
+        /** Le lecteur peut gérer les habilitations de coordination (MUNICIPALITY_ADMIN de l'organisatrice) : simple affichage d'un lien, le contrôle reste serveur. */
+        public bool $canManageCoordination = false,
     ) {
     }
 }

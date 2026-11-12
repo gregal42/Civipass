@@ -1,6 +1,6 @@
 # LOT 05.6.3 — Archives sécurisées et gel de conservation : cadrage (12 novembre 2026)
 
-**Statut : CADRAGE soumis à validation (une seule fois, protocole de `CLAUDE.md`). Validé, il vaut mandat d'exécution pour tout le sous-lot.** Aucune implémentation, aucune migration exécutée. Références : [lot-05-6-cadrage.md](lot-05-6-cadrage.md) §6, §13 ; [DM-120](decisions/metier/DM-120-cycle-de-vie-des-evenements-archives-et-suppression.md) ; [rgpd-politique-conservation.md](rgpd-politique-conservation.md) ; [lot-05-6-2-plan-implementation.md](lot-05-6-2-plan-implementation.md) §11 et §12.
+**Statut : CADRAGE VALIDÉ le 12 novembre 2026 (A1 : oui ; A2 et A3 : valeurs par défaut) ; sous-lot IMPLÉMENTÉ le 12 novembre 2026 (voir §10).** Migration unique `Version20261112085714` (M2, M3, M4 et M5) exécutée sur `civipass_test` et `civipass`. Références : [lot-05-6-cadrage.md](lot-05-6-cadrage.md) §6, §13 ; [DM-120](decisions/metier/DM-120-cycle-de-vie-des-evenements-archives-et-suppression.md) ; [rgpd-politique-conservation.md](rgpd-politique-conservation.md) ; [lot-05-6-2-plan-implementation.md](lot-05-6-2-plan-implementation.md) §11 et §12.
 
 ## 1. Objectif et périmètre
 
@@ -155,3 +155,10 @@ Tranché **sans arbitrage** (conforme aux décisions existantes) : liste des cod
 4. Espace d'archives (liste, motif, consultation, pièces, journal), gabarits, classement des routes (`Reserved` → routes enregistrées et testées).
 5. Habilitation statistique (M5) **si A1 validé**.
 6. Tests (matrice, concurrence, forgés), documentation (`security.md`, DM-120, contradictions), `bin/qa full`, `verify-docs.sh`, validation Doctrine ; **commits locaux** cohérents ; rapport synthétique.
+
+## 10. Réalisation (12 novembre 2026)
+
+- **Migration** `Version20261112085714` : les quatre tables en une migration (M2 `archive_manager_designation`, M3 `archive_legal_hold`, M4 `archive_consultation`, M5 `archive_statistics_coordination`) ; la colonne du motif de consultation s'appelle `reason` (et non `reason_code`) ; SQL conforme au §5. Sauvegardes `mysqldump` des deux bases avant exécution, celle de `civipass` restaurée dans une base temporaire et comparée (38 tables, événements, audit) ; 20 migrations exécutées, 0 en attente, `doctrine:schema:validate` OK sur les deux bases ; tables vides ; `down()` refusé si une table contient des lignes.
+- **Module `src/Archive`** : `ArchiveAccessPolicy` (seule porte), `ArchiveDesignationService`, `StatisticsCoordinationService`, `LegalHoldService`, `ArchiveConsultationService`, `ArchiveDossierReader`, `ArchiveAccessLossObserver` (crochets de `MembershipManager` et `UserManager` via `AccessLossObserver`), contrôleurs `ArchiveController` et `StatisticsCoordinationController`, commande `app:archive:holds-report`. Paramètres : `ARCHIVE_RETENTION_MONTHS` (12), `ARCHIVE_HOLD_REVIEW_MONTHS` (6), `ARCHIVE_CONSULTATION_MINUTES` (30), hypothèses à valider.
+- **Statistiques** : la ventilation exige désormais le rôle `MUNICIPALITY_ADMIN` de l'organisatrice ou, pour un `EVENT_MANAGER`, une habilitation explicite (port `StatisticsCoordinationLookup`, rôles dans `EventPermission`).
+- **Précisions de conception** : le droit est contrôlé **avant** le jeton CSRF (404 uniforme même sur un POST non habilité) ; un gel peut être posé sur un dossier dont l'archive est échue (pour le protéger de la purge) ; la page d'accueil des archives est une liste filtrée (vide, jamais 404, pour un membre sans habilitation).

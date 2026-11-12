@@ -69,6 +69,23 @@ enum EventPermission: string
     }
 
     /**
+     * Ventilation du bilan de clôture par commune (LOT 05.6.3, L5-36) : rôle qui la lit DE PLEIN DROIT dans la commune organisatrice, et rôle qui ne la lit qu'avec une
+     * habilitation de coordination statistique EXPLICITE (module Archive). Source de vérité unique des rôles (voir `roles()`).
+     *
+     * @return list<MunicipalityRole>
+     */
+    public static function closureBreakdownRolesByRight(): array
+    {
+        return [MunicipalityRole::MunicipalityAdmin];
+    }
+
+    /** @return list<MunicipalityRole> */
+    public static function closureBreakdownRolesByGrant(): array
+    {
+        return [MunicipalityRole::EventManager];
+    }
+
+    /**
      * @return list<MunicipalityRole>|null null = lecture ouverte à tout membership effectif
      */
     public function roles(): ?array

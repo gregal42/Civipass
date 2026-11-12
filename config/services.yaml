@@ -30,6 +30,11 @@ parameters:
     env(EVENT_MAX_ZONES_PER_BULK_OPERATION): '100'
     # Seuil PROVISOIRE de confidentialité des bilans statistiques de clôture (LOT 05.6.2) : effectifs non nuls inférieurs au seuil masqués. À valider par le DPO.
     env(CLOSURE_STATISTICS_MIN_COUNT): '5'
+    # Archives (LOT 05.6.3) : HYPOTHÈSES à valider avec le DPO et les archives avant production. Durée de l'accès à l'archive après la clôture (sauf gel actif),
+    # période de revue d'un gel de conservation, validité d'un lien de consultation.
+    env(ARCHIVE_RETENTION_MONTHS): '12'
+    env(ARCHIVE_HOLD_REVIEW_MONTHS): '6'
+    env(ARCHIVE_CONSULTATION_MINUTES): '30'
 
 services:
     # default configuration for services in *this* file
@@ -62,6 +67,9 @@ services:
             - '../src/Request/Application/Result/'
             - '../src/Request/UI/Http/PublicRequestDraft.php'
             - '../src/Request/UI/Http/RequestFormContext.php'
+            - '../src/Archive/Application/ArchiveAccess.php'
+            - '../src/Archive/Application/ArchiveConsultationExpired.php'
+            - '../src/Archive/Application/Read/'
 
     # Objet de domaine sans dépendance obligatoire (le référentiel communal des fuseaux est fourni plus tard).
     App\Event\Domain\Time\TerritoryTimezoneResolver: ~

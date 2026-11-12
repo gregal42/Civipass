@@ -1,0 +1,77 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% set statuses = { PENDING: 'Non décidé', APPROVED: 'Approuvé', REFUSED: 'Refusé' } %}
+
+{% block content %}
+  {% embed 'components/page_head.html.twig' with { eyebrow: 'Archives · ' ~ active_municipality_name, title: 'Dossier ' ~ view.reference, sub: view.eventName ~ ' — lecture seule ; consultation valable jusqu’à ' ~ view.consultationValidUntil|date('H:i') } only %}{% endembed %}
+  {% include 'components/banner.html.twig' with { variant: 'info', text: 'Archive : données personnelles identifiantes, consultées pour un motif journalisé. Aucune action opérationnelle n’est possible.' } only %}
+  {% if view.holdActive %}
+    {% include 'components/banner.html.twig' with { variant: 'warning', text: 'Dossier gelé (' ~ view.holdReasonLabel ~ ') — revue avant le ' ~ view.holdReviewDueAt|date('d/m/Y') } only %}
+  {% endif %}
+
+  {% set identity = [
+    { label: 'Nom', value: view.lastName }, { label: 'Prénom', value: view.firstName },
+    { label: 'Adresse', value: view.address ?? '—' }, { label: 'E-mail', value: view.email ?? '—' }, { label: 'Téléphone', value: view.phone ?? '—' },
+    { label: 'Catégorie', value: view.categoryLabel }, { label: 'Motif de la demande', value: view.motifLabel }, { label: 'Déposée le', value: view.submittedAt|date('d/m/Y H:i') },
+    { label: 'Plaques déclarées', value: view.plates is empty ? '—' : view.plates|join(', ') },
+  ] %}
+  {% embed 'components/panel.html.twig' with { id: 'identity-h', title: 'Demande (données communes aux communes concernées)', items: identity } only %}
+    {% block body %}{% include 'components/facts.html.twig' with { items: items } only %}{% endblock %}
+  {% endembed %}
+
+  {% set decision = [
+    { label: 'Statut', value: statuses[view.status.value] },
+    { label: 'Décision', value: view.decidedAt ? (view.decidedAt|date('d/m/Y H:i')) : '—' },
+    { label: 'Motif de refus', value: view.refusalLabel ?? '—' },
+    { label: 'Commentaire de refus', value: view.refusalComment ?? '—' },
+    { label: 'Zones de votre commune', value: view.zones is empty ? '—' : view.zones|join(', ') },
+    { label: 'Laissez-passer', value: view.permitReference ?? '—' },
+    { label: 'Autorisation', value: view.authorizationRevoked is null ? '—' : (view.authorizationRevoked ? 'Révoquée' : 'Délivrée') },
+    { label: 'Validité', value: view.validFrom ? (view.validFrom|date('d/m/Y H:i') ~ ' → ' ~ (view.validUntil ? view.validUntil|date('d/m/Y H:i') : 'clôture de l’événement')) : '—' },
+  ] %}
+  {% embed 'components/panel.html.twig' with { id: 'decision-h', title: 'Décision de votre commune', items: decision } only %}
+    {% block body %}{% include 'components/facts.html.twig' with { items: items } only %}{% endblock %}
+  {% endembed %}
+
+  <section aria-labelledby="att-h">
+    <h2 id="att-h">Justificatifs</h2>
+    {% if view.attachments is empty %}<p class="cp-muted">Aucun justificatif.</p>{% else %}
+      <ul>
+        {% for a in view.attachments %}
+          <li><a href="{{ path('app_archive_attachment', { municipalityId: municipalityId, consultationId: view.consultationId, attachmentId: a.id }) }}">{{ a.name }}</a> ({{ (a.size / 1024)|round }} Ko) — chaque téléchargement est journalisé</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </section>
+
+  <section aria-labelledby="hist-h">
+    <h2 id="hist-h">Historique des droits de votre commune</h2>
+    {% if view.history is empty %}<p class="cp-muted">Aucune modification.</p>{% else %}
+      <ul>{% for h in view.history %}<li>{{ h.at|date('d/m/Y H:i') }} — {{ h.type }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if view.otherMunicipalityChanges > 0 %}<p class="cp-muted">{{ view.otherMunicipalityChanges }} modification(s) par une autre commune (détail non communiqué).</p>{% endif %}
+  </section>
+
+  {% if view.canManageHold %}
+    <section aria-labelledby="hold-h">
+      <h2 id="hold-h">Gel de conservation</h2>
+      {% if view.holdActive %}
+        <form method="post" action="{{ path('app_archive_hold', { municipalityId: municipalityId, dossierId: dossierIdForHold, action: 'revue' }) }}">
+          <input type="hidden" name="_token" value="{{ csrf_token('archive_hold_revue_' ~ dossierIdForHold) }}"><input type="hidden" name="back" value="{{ view.consultationId }}">
+          <button class="cp-btn cp-btn--secondary" type="submit">Confirmer le maintien</button>
+        </form>
+        <form method="post" action="{{ path('app_archive_hold', { municipalityId: municipalityId, dossierId: dossierIdForHold, action: 'lever' }) }}">
+          <input type="hidden" name="_token" value="{{ csrf_token('archive_hold_lever_' ~ dossierIdForHold) }}"><input type="hidden" name="back" value="{{ view.consultationId }}">
+          <button class="cp-btn cp-btn--secondary" type="submit">Lever le gel</button>
+        </form>
+      {% else %}
+        <form method="post" action="{{ path('app_archive_hold', { municipalityId: municipalityId, dossierId: dossierIdForHold, action: 'placer' }) }}">
+          <input type="hidden" name="_token" value="{{ csrf_token('archive_hold_placer_' ~ dossierIdForHold) }}"><input type="hidden" name="back" value="{{ view.consultationId }}">
+          <select name="reason" class="cp-select" required aria-label="Motif du gel"><option value="">Motif du gel…</option>{% for r in holdReasons %}<option value="{{ r.value }}">{{ r.label }}</option>{% endfor %}</select>
+          <input name="comment" class="cp-input" maxlength="200" aria-label="Commentaire du gel" placeholder="Commentaire (obligatoire pour « autre »)">
+          <button class="cp-btn cp-btn--secondary" type="submit">Geler ce dossier</button>
+        </form>
+      {% endif %}
+    </section>
+  {% endif %}
+{% endblock %}

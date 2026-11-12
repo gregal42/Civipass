@@ -49,12 +49,28 @@ Le bilan de clôture (compteurs agrégés, seuillés) est **distinct de l'accès
 
 | Lecteur (commune de l'écran = membership effectif, lecture) | Bilan global | Ventilation par commune | Sa propre répartition |
 |---|---|---|---|
-| `MUNICIPALITY_ADMIN` ou `EVENT_MANAGER` de la commune **organisatrice** | oui (total ; répartition par statut seulement pour un événement à une commune) | oui, avec la visibilité de coordination de l'organisatrice (`ParticipantListVisibility::Full`), si **tous** les effectifs communaux sont publiables | oui |
+| `MUNICIPALITY_ADMIN` ou `EVENT_MANAGER` de la commune **organisatrice** | oui (total ; répartition par statut seulement pour un événement à une commune) | `MUNICIPALITY_ADMIN` de plein droit ; `EVENT_MANAGER` **avec habilitation de coordination explicite** ; dans les deux cas si **tous** les effectifs communaux sont publiables | oui |
 | `MUNICIPALITY_ADMIN` ou `EVENT_MANAGER` d'une commune **participante** (réellement activée) | non | non | oui, **sa seule ligne** |
 | `INSTRUCTOR` (toute commune) | non | non | non |
 | Commune sans lien avec l'événement, identifiants forgés, CWS sans appartenance | rien (même réponse qu'un événement inexistant) | rien | rien |
 
-Aucune habilitation de coordination **distincte** n'existe avant le 05.6.3 : la ventilation par commune suit la visibilité de coordination déjà accordée à l'organisatrice ; c'est une limite connue (L5-36).
+Depuis le 05.6.3 (L5-36 résolue), la ventilation par commune est lue **de plein droit par le `MUNICIPALITY_ADMIN` de l'organisatrice** et, pour un `EVENT_MANAGER`, **seulement avec une habilitation de coordination statistique explicite** (voir « Archives sécurisées »).
+
+## Archives sécurisées (LOT 05.6.3, DM-120)
+
+Espace **distinct** des écrans opérationnels (`/communes/{m}/archives/…`, préfixe réservé, hors barrière de clôture), **lecture seule**, **une seule porte** : `ArchiveAccessPolicy`, vérifiée **côté serveur à chaque requête** (rien n'est mémorisé) : utilisateur actif ; appartenance effective à la commune de l'URL (lecture : une commune suspendue garde la lecture) ; rôle `MUNICIPALITY_ADMIN` **ou** rôle `EVENT_MANAGER` **et désignation active** pour (événement, commune) ; dossier cherché par sa **portion communale** ; événement **clos** (lecture fraîche) ; archive **ouverte** (clôture + `ARCHIVE_RETENTION_MONTHS`, 12 mois en hypothèse, **ou gel actif**). `INSTRUCTOR` seul, CWS sans appartenance, autre commune, identifiant forgé : **404 uniforme**, jamais « clos », « archive » ni « échue » (le droit est contrôlé **avant** le jeton CSRF).
+
+| Acte | Qui | Journal |
+|---|---|---|
+| Lister les événements clos et leurs dossiers (référence, catégorie, statut : **aucune donnée personnelle**) | administrateur de la commune ; gestionnaire **désigné** | non |
+| **Ouvrir un dossier** (motif obligatoire : code ; `AUTRE` exige un commentaire ≤ 200) | idem | `archive_consultation` (consultant, date UTC, dossier, action, motif), **écrit avant l'envoi** ; échec = accès refusé |
+| Télécharger une pièce (appartenant à la demande du dossier) | idem, pendant une consultation valide (30 min, `ARCHIVE_CONSULTATION_MINUTES`) | une ligne par téléchargement |
+| Désigner / révoquer un `EVENT_MANAGER` pour (événement, commune) | `MUNICIPALITY_ADMIN` de la commune | audit `ARCHIVE_MANAGER_DESIGNATED` / `REVOKED` (identifiants et cause) |
+| Geler / confirmer le maintien / lever le gel d'un dossier communal | `MUNICIPALITY_ADMIN` de la commune du dossier | audit `LEGAL_HOLD_*` (identifiants et codes, jamais le commentaire) |
+| Lire le journal des consultations | `MUNICIPALITY_ADMIN`, **sa** commune | — |
+| Coordination statistique : accorder / révoquer la lecture de la ventilation par commune (L5-36, arbitrage A1) | `MUNICIPALITY_ADMIN` de la commune **organisatrice** → `EVENT_MANAGER` de cette commune | audit `STATISTICS_COORDINATION_*` |
+
+**Désignation** (option B) : révoquée **explicitement** (cause tracée) quand l'utilisateur perd le rôle `EVENT_MANAGER`, son appartenance ou son compte (`AccessLossObserver`, dans la transaction de `MembershipManager` et `UserManager`), **définitive** (jamais rétablie par le retour du rôle ou du compte : nouvel acte de l'administrateur) ; **recontrôlée à chaque accès** même si un crochet était contourné. **Gel** : unité = dossier communal, un seul gel actif, épisodes conservés, revue explicite (6 mois, hypothèse), **jamais de prolongation ni de levée automatique** ; un gel en retard de revue **continue de protéger** et est signalé (`app:archive:holds-report`, sans donnée personnelle) ; un gel **n'ouvre rien à une autre commune**. **Coordination statistique et désignation d'archive sont deux permissions indépendantes** : aucune n'ouvre l'autre ; la coordination ne donne accès à aucun dossier. CWS : aucun droit communal implicite. Durées (12 mois, 6 mois, 30 minutes) et listes de motifs : **hypothèses à valider avec le DPO et les archives** avant production.
 
 ## Secrets des notifications (LOT 05.3.2, DT-049)
 

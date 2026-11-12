@@ -52,6 +52,10 @@ final class ClosedEventArchitectureTest extends TestCase
         $users = [];
         foreach (self::files('src') as $file) {
             $content = (string) file_get_contents(\dirname(__DIR__, 2).'/'.$file);
+            // L'archive (05.6.3) lit l'état de clôture par la sonde FRAÎCHE (lecture seule) mais n'appelle jamais la garde opérationnelle : vérifié par le test suivant.
+            if (str_starts_with($file, 'src/Archive/')) {
+                continue;
+            }
             if (str_contains($content, 'EventOperationalGuard') || str_contains($content, 'EventStatusProbe')) {
                 $users[] = $file;
             }

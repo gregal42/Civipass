@@ -8,6 +8,7 @@ use App\Identity\Domain\EmailAddress;
 use App\Identity\Domain\PlainPasswordPolicy;
 use App\Identity\Domain\User;
 use App\Identity\Domain\UserRepository;
+use App\Shared\Application\AccessLossObserver;
 use App\Shared\Application\AuditEvent;
 use App\Shared\Application\AuditTrail;
 use App\Shared\Application\TransactionRunner;
@@ -40,6 +41,9 @@ final readonly class UserManager
         private ClockInterface $clock,
         #[AutowireIterator(UserDeactivationGuard::TAG)]
         private iterable $deactivationGuards,
+        /** @var iterable<AccessLossObserver> */
+        #[AutowireIterator(AccessLossObserver::TAG)]
+        private iterable $accessLossObservers = [],
     ) {
     }
 
@@ -157,6 +161,9 @@ final readonly class UserManager
             $now = $this->clock->now();
             $target->deactivate($now);
             $this->recordActivation($target, false, $actor, $now);
+            foreach ($this->accessLossObservers as $observer) { // habilitations fines du compte : révoquées explicitement (LOT 05.6.3)
+                $observer->userDeactivated($target, $actor, $now);
+            }
         });
     }
 

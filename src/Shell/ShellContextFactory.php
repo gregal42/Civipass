@@ -64,6 +64,10 @@ final readonly class ShellContextFactory
         if ($membership->hasRole(MunicipalityRole::Instructor) || $membership->hasRole(MunicipalityRole::MunicipalityAdmin)) {
             $nav[] = ['label' => 'Corrections d’identité', 'icon' => 'user', 'href' => $this->urls->generate('app_municipal_identity_corrections', ['municipalityId' => $municipality->id()->toRfc4122()]), 'current' => 'identity' === $section];
         }
+        if ($membership->hasRole(MunicipalityRole::MunicipalityAdmin) || $membership->hasRole(MunicipalityRole::EventManager)) {
+            // Lien seulement : l'accès réel (administrateur, ou gestionnaire désigné) est décidé par ArchiveAccessPolicy à chaque requête (LOT 05.6.3).
+            $nav[] = ['label' => 'Archives', 'icon' => 'file', 'href' => $this->urls->generate('app_archive_index', ['municipalityId' => $municipality->id()->toRfc4122()]), 'current' => 'archives' === $section];
+        }
         $options = [];
         foreach ($this->readableMemberships($user) as $candidate) {
             $options[] = [

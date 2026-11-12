@@ -288,7 +288,9 @@ final class ClosureStatisticsTest extends ClosedEventScenarioTestCase
 
         self::assertStringNotContainsString($this->requestId, $html);
         self::assertStringNotContainsString('/demandes/'.$this->requestId, $html, 'aucun lien vers un dossier');
-        self::assertStringNotContainsString('/archives', $html, 'aucun lien vers le futur module d\'archives');
+        foreach (['/archives/dossiers', '/archives/consultations', '/archives/evenements'] as $archiveLink) {
+            self::assertStringNotContainsString($archiveLink, $html, 'le bilan ne mène à aucun dossier archivé');
+        }
         foreach (self::SENTINELS as $sentinel) {
             self::assertStringNotContainsStringIgnoringCase($sentinel, $html);
         }

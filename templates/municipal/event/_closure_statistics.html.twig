@@ -51,3 +51,6 @@
     {% block body %}{% include 'components/facts.html.twig' with { items: mine } only %}{% endblock %}
   {% endembed %}
 {% endif %}
+{% if stats.canManageCoordination %}
+  <p>{% include 'components/button.html.twig' with { label: 'Coordination statistique', variant: 'secondary', href: path('app_event_statistics_coordination', { municipalityId: municipalityId, eventId: eventId }) } only %}</p>
+{% endif %}

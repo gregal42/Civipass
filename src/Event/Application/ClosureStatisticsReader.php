@@ -20,8 +20,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * Permissions : commune de l'écran = identifiant NON FIABLE, relu par `MunicipalityContext` ; audience décidée par `EventAccessPolicy`. Renvoie `null` pour tout
  * lecteur non habilité, événement non clos ou événement clos avant M1 (compteurs absents : « bilan non disponible », jamais de recalcul).
- * Ventilation par commune : uniquement avec la coordination de l'organisatrice (visibilité « Full » des participations, rôles de gestion) ; une désignation
- * explicite plus fine relève de l'archive (05.6.3).
+ * Ventilation par commune : `MUNICIPALITY_ADMIN` de l'organisatrice, ou `EVENT_MANAGER` avec une habilitation de coordination statistique explicite (05.6.3, L5-36).
  */
 final readonly class ClosureStatisticsReader
 {
@@ -30,6 +29,7 @@ final readonly class ClosureStatisticsReader
         private EventRepository $events,
         private EventAccessPolicy $policy,
         private MunicipalityRepository $municipalities,
+        private StatisticsCoordinationLookup $coordination,
         #[Autowire('%env(int:CLOSURE_STATISTICS_MIN_COUNT)%')] private int $threshold,
     ) {
     }
@@ -37,7 +37,8 @@ final readonly class ClosureStatisticsReader
     public function forViewer(User $user, string $municipalityId, string $eventId): ?ClosureStatisticsView
     {
         try {
-            $viewer = $this->context->requireMembership($user, $municipalityId, write: false)->municipality();
+            $membership = $this->context->requireMembership($user, $municipalityId, write: false);
+            $viewer = $membership->municipality();
         } catch (OperationNotAllowed) {
             return null;
         }
@@ -55,13 +56,23 @@ final readonly class ClosureStatisticsReader
         if (ClosureStatisticsAudience::Participant === $audience) {
             return new ClosureStatisticsView(null, $own, [], false);
         }
-        $breakdown = ParticipantListVisibility::Full === $this->policy->participantListVisibility($user, $viewer, $event);
+        // Ventilation par commune (L5-36, arbitrage A1) : `MUNICIPALITY_ADMIN` de l'organisatrice de plein droit ; `EVENT_MANAGER` SEULEMENT avec une habilitation de
+        // coordination statistique explicite et active (relue ici à chaque lecture), DISTINCTE de la désignation d'archive.
+        $byRight = false;
+        foreach (EventPermission::closureBreakdownRolesByRight() as $role) {
+            $byRight = $byRight || $membership->hasRole($role);
+        }
+        $byGrant = false;
+        foreach (EventPermission::closureBreakdownRolesByGrant() as $role) {
+            $byGrant = $byGrant || $membership->hasRole($role);
+        }
+        $breakdown = $byRight || ($byGrant && $this->coordination->hasActiveGrant($event->id(), $user->id()));
         $global = ClosureStatisticsPublication::forOrganizer($statistics, $threshold, $breakdown);
         $names = [];
         foreach ($global->communes ?? [] as $line) {
             $names[$line['municipalityId']] = $this->municipalities->find(Uuid::fromString($line['municipalityId']))?->name() ?? 'Commune';
         }
 
-        return new ClosureStatisticsView($global, $own, $names, 1 === \count($statistics->municipalities));
+        return new ClosureStatisticsView($global, $own, $names, 1 === \count($statistics->municipalities), $byRight);
     }
 }

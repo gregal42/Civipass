@@ -11,6 +11,7 @@ use App\Municipality\Domain\MunicipalityMembership;
 use App\Municipality\Domain\MunicipalityRepository;
 use App\Municipality\Domain\MunicipalityRole;
 use App\Municipality\Domain\MunicipalityStatus;
+use App\Shared\Application\AccessLossObserver;
 use App\Shared\Application\AuditEvent;
 use App\Shared\Application\AuditTrail;
 use App\Shared\Domain\AuditAction;
@@ -20,6 +21,7 @@ use App\Shared\Domain\OperationNotAllowed;
 use App\Shared\Application\TransactionRunner;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
+use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
 
 /**
  * Seul chemin de modification des rôles et de l'activation d'un membership.
@@ -36,6 +38,9 @@ final readonly class MembershipManager
         private MembershipAccessPolicy $policy,
         private AuditTrail $audit,
         private ClockInterface $clock,
+        /** @var iterable<AccessLossObserver> */
+        #[AutowireIterator(AccessLossObserver::TAG)]
+        private iterable $accessLossObservers = [],
     ) {
     }
 
@@ -154,8 +159,14 @@ final readonly class MembershipManager
             if ($membership->hasRole(MunicipalityRole::MunicipalityAdmin) && !$probe->hasRole(MunicipalityRole::MunicipalityAdmin)) {
                 $this->assertNotLastAdmin($municipality, $membership);
             }
+            $lost = array_values(array_filter($membership->roles(), static fn (MunicipalityRole $r): bool => !\in_array($r, $probe->roles(), true)));
             $membership->changeRoles($roles, $now);
             $this->record($membership, AuditAction::MembershipRolesChanged, $actor, $previous, $now);
+            foreach ($lost as $role) { // habilitations fines adossées au rôle : révoquées explicitement, jamais rétablies (LOT 05.6.3)
+                foreach ($this->accessLossObservers as $observer) {
+                    $observer->roleLost($membership->user(), $municipality, $role, $actor, $now);
+                }
+            }
         });
     }
 
@@ -175,6 +186,9 @@ final readonly class MembershipManager
             $now = $this->clock->now();
             $membership->deactivate($now);
             $this->record($membership, AuditAction::MembershipDeactivated, $actor, $previous, $now);
+            foreach ($this->accessLossObservers as $observer) { // habilitations fines de la commune : révoquées explicitement (LOT 05.6.3)
+                $observer->membershipDeactivated($membership->user(), $municipality, $actor, $now);
+            }
         });
     }
 

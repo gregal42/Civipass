@@ -1,0 +1,89 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% set statuses = { PENDING: 'Non décidé', APPROVED: 'Approuvé', REFUSED: 'Refusé' } %}
+
+{% block content %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+  {% embed 'components/page_head.html.twig' with { eyebrow: 'Archives · ' ~ active_municipality_name, title: archiveEvent.name, sub: 'Dossiers de votre commune — référence, catégorie, statut : aucune donnée personnelle dans cette liste' } only %}{% endembed %}
+
+  {% if dossiers is empty %}
+    {% include 'components/empty_state.html.twig' with { icon: 'file', title: 'Aucun dossier', text: 'Votre commune n’a reçu aucune demande pour cet événement.' } only %}
+  {% else %}
+    <table class="cp-table" data-test="archive-dossiers">
+      <caption class="cp-sr-only">Dossiers archivés de votre commune</caption>
+      <thead><tr><th scope="col">Référence</th><th scope="col">Catégorie</th><th scope="col">Statut</th><th scope="col">Décision</th><th scope="col">Archive</th><th scope="col">Action</th></tr></thead>
+      <tbody>
+        {% for d in dossiers %}
+          <tr>
+            <td>{{ d.reference }}</td>
+            <td>{{ d.categoryLabel }}</td>
+            <td>{{ statuses[d.status.value] }}</td>
+            <td>{{ d.decidedAt ? d.decidedAt|date('d/m/Y') : '—' }}</td>
+            <td>{% if d.holdActive %}Gelé{% if d.holdOverdue %} — revue en retard{% endif %}{% elseif d.archiveOpen %}Ouverte{% else %}Échue{% endif %}</td>
+            <td>
+              {% if d.archiveOpen %}
+                {% include 'components/button.html.twig' with { label: 'Consulter', variant: 'secondary', href: path('app_archive_open', { municipalityId: municipalityId, dossierId: d.dossierId }) } only %}
+              {% endif %}
+              {% if canManage and not d.holdActive %}
+                <form method="post" action="{{ path('app_archive_hold', { municipalityId: municipalityId, dossierId: d.dossierId, action: 'placer' }) }}">
+                  <input type="hidden" name="_token" value="{{ csrf_token('archive_hold_placer_' ~ d.dossierId) }}">
+                  <label class="cp-sr-only" for="hr-{{ loop.index }}">Motif du gel</label>
+                  <select id="hr-{{ loop.index }}" name="reason" class="cp-select" required>
+                    <option value="">Motif du gel…</option>
+                    {% for r in holdReasons %}<option value="{{ r.value }}">{{ r.label }}</option>{% endfor %}
+                  </select>
+                  <label class="cp-sr-only" for="hc-{{ loop.index }}">Commentaire (obligatoire pour « autre »)</label>
+                  <input id="hc-{{ loop.index }}" name="comment" class="cp-input" maxlength="200" placeholder="Commentaire">
+                  <button class="cp-btn cp-btn--secondary" type="submit">Geler</button>
+                </form>
+              {% endif %}
+              {% if canManage and d.holdActive %}
+                <form method="post" action="{{ path('app_archive_hold', { municipalityId: municipalityId, dossierId: d.dossierId, action: 'revue' }) }}">
+                  <input type="hidden" name="_token" value="{{ csrf_token('archive_hold_revue_' ~ d.dossierId) }}">
+                  <button class="cp-btn cp-btn--secondary" type="submit">Confirmer le maintien</button>
+                </form>
+                <form method="post" action="{{ path('app_archive_hold', { municipalityId: municipalityId, dossierId: d.dossierId, action: 'lever' }) }}">
+                  <input type="hidden" name="_token" value="{{ csrf_token('archive_hold_lever_' ~ d.dossierId) }}">
+                  <button class="cp-btn cp-btn--secondary" type="submit">Lever le gel</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+
+  {% if management %}
+    {% embed 'components/panel.html.twig' with { id: 'desig-h', title: 'Gestionnaires désignés pour les archives de cet événement' } only %}
+      {% block body %}<p class="cp-muted">Seuls un administrateur de la commune et les gestionnaires désignés ici peuvent consulter ces archives. Une désignation révoquée est définitive.</p>{% endblock %}
+    {% endembed %}
+    <ul>
+      {% for d in management.designations %}
+        <li>
+          {{ d.user.firstName }} {{ d.user.lastName }} — désigné le {{ d.designatedAt|date('d/m/Y') }}
+          {% if d.isActive %}
+            <form method="post" action="{{ path('app_archive_designation_revoke', { municipalityId: municipalityId, designationId: d.id.toRfc4122 }) }}">
+              <input type="hidden" name="_token" value="{{ csrf_token('archive_revoke_' ~ d.id.toRfc4122) }}">
+              <input type="hidden" name="event" value="{{ archiveEvent.id.toRfc4122 }}">
+              <button class="cp-btn cp-btn--secondary" type="submit">Révoquer</button>
+            </form>
+          {% else %}
+            — révoqué le {{ d.revokedAt|date('d/m/Y') }}
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+    {% if management.candidates is not empty %}
+      <form method="post" action="{{ path('app_archive_designate', { municipalityId: municipalityId, eventId: archiveEvent.id.toRfc4122 }) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('archive_designate_' ~ archiveEvent.id.toRfc4122) }}">
+        <label for="designee">Désigner un gestionnaire d’événement</label>
+        <select id="designee" name="user" class="cp-select" required>
+          <option value="">Choisir…</option>
+          {% for u in management.candidates %}<option value="{{ u.id.toRfc4122 }}">{{ u.firstName }} {{ u.lastName }}</option>{% endfor %}
+        </select>
+        <button class="cp-btn" type="submit">Désigner</button>
+      </form>
+    {% endif %}
+  {% endif %}
+{% endblock %}

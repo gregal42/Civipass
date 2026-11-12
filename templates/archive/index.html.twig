@@ -1,0 +1,26 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block content %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+  {% embed 'components/page_head.html.twig' with { eyebrow: 'Archives · ' ~ active_municipality_name, title: 'Archives', sub: 'Consultation en lecture seule des événements clos' } only %}{% endembed %}
+
+  <p class="cp-muted">Les archives contiennent des données personnelles. Chaque ouverture de dossier exige un motif et est journalisée. Aucune action opérationnelle n’est possible ici.</p>
+
+  {% if events is empty %}
+    {% include 'components/empty_state.html.twig' with { icon: 'file', title: 'Aucune archive consultable', text: 'Aucun événement clos n’est consultable pour votre commune et votre habilitation.' } only %}
+  {% else %}
+    <ul class="cp-stack" aria-label="Événements clos">
+      {% for e in events %}
+        <li>
+          {% embed 'components/panel.html.twig' with { id: 'ev-' ~ loop.index, title: e.name, e: e, mid: municipalityId } only %}
+            {% block body %}
+              <p class="cp-muted">Référence {{ e.publicReference }} · clôturé le {{ e.closedAt|date('d/m/Y') }} · accès aux dossiers jusqu’au {{ e.archiveClosesAt|date('d/m/Y') }} (sauf gel)</p>
+              {% include 'components/button.html.twig' with { label: 'Voir les dossiers', variant: 'secondary', href: path('app_archive_event', { municipalityId: mid, eventId: e.eventId }) } only %}
+            {% endblock %}
+          {% endembed %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+  <p>{% include 'components/button.html.twig' with { label: 'Journal des consultations', variant: 'secondary', href: path('app_archive_journal', { municipalityId: municipalityId }) } only %}</p>
+{% endblock %}

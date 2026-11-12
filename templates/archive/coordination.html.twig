@@ -1,0 +1,27 @@
+{% extends 'layouts/app.html.twig' %}
+
+{% block content %}
+  {% embed 'components/page_head.html.twig' with { eyebrow: 'Événement · ' ~ active_municipality_name, title: 'Coordination statistique', sub: 'Qui peut lire la ventilation du bilan de clôture par commune' } only %}{% endembed %}
+  <p class="cp-muted">Un administrateur de la commune organisatrice lit la ventilation de plein droit. Un gestionnaire d’événement ne la lit qu’avec une habilitation explicite, accordée ici. Cette habilitation est <strong>distincte</strong> de l’accès aux archives : elle ne donne accès à aucun dossier. Une habilitation révoquée est définitive.</p>
+  <ul>
+    {% for g in grants %}
+      <li>
+        {{ g.user.firstName }} {{ g.user.lastName }} — accordée le {{ g.grantedAt|date('d/m/Y') }}
+        {% if g.isActive %}
+          <form method="post" action="{{ path('app_event_statistics_coordination_revoke', { municipalityId: municipalityId, eventId: eventId, grantId: g.id.toRfc4122 }) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('stats_coordination_revoke_' ~ g.id.toRfc4122) }}">
+            <button class="cp-btn cp-btn--secondary" type="submit">Révoquer</button>
+          </form>
+        {% else %}— révoquée le {{ g.revokedAt|date('d/m/Y') }}{% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+  {% if candidates is not empty %}
+    <form method="post" action="{{ path('app_event_statistics_coordination_grant', { municipalityId: municipalityId, eventId: eventId }) }}">
+      <input type="hidden" name="_token" value="{{ csrf_token('stats_coordination_grant_' ~ eventId) }}">
+      <label for="grantee">Accorder à un gestionnaire d’événement</label>
+      <select id="grantee" name="user" class="cp-select" required><option value="">Choisir…</option>{% for u in candidates %}<option value="{{ u.id.toRfc4122 }}">{{ u.firstName }} {{ u.lastName }}</option>{% endfor %}</select>
+      <button class="cp-btn" type="submit">Accorder</button>
+    </form>
+  {% endif %}
+{% endblock %}

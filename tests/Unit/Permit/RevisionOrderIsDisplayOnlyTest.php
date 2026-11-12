@@ -36,7 +36,7 @@ final class RevisionOrderIsDisplayOnlyTest extends TestCase
         }
         sort($readers);
 
-        self::assertSame(['src/Permit/Application/NotificationFactsReader.php', 'src/Permit/Application/PermitRightsOverviewReader.php'], $readers, 'seuls l\'affichage de l\'historique et la description d\'un message lisent l\'historique ordonné');
+        self::assertSame(['src/Archive/Application/ArchiveDossierReader.php', 'src/Permit/Application/NotificationFactsReader.php', 'src/Permit/Application/PermitRightsOverviewReader.php'], $readers, 'seuls l\'affichage de l\'historique (écran des droits, archive en lecture seule) et la description d\'un message lisent l\'historique ordonné');
     }
 
     public function testBatchGroupingAndExplicitReplacementLinksAreKept(): void
