@@ -36,6 +36,9 @@ final class TestDatabase
     /** Tables du LOT 05.3 (module Notification), purgées dès qu'elles existent. */
     private const NOTIFICATION_TABLES = ['notification_secret', 'notification_outbox'];
 
+    /** Tables du LOT 05.6.3 (module Archive), purgées dès qu'elles existent (elles référencent des dossiers, des participations, des événements et des utilisateurs). */
+    private const ARCHIVE_TABLES = ['archive_consultation', 'archive_legal_hold', 'archive_manager_designation', 'archive_statistics_coordination'];
+
     public static function reset(EntityManagerInterface $em): void
     {
         $connection = $em->getConnection();
@@ -49,7 +52,7 @@ final class TestDatabase
             Assert::fail(sprintf('Base "%s" refusée : les tests destructifs exigent une base de test (_test).', $database));
         }
 
-        $existing = array_filter([...self::NOTIFICATION_TABLES, ...self::PERMIT_TABLES, ...self::REQUEST_TABLES, ...self::EVENT_TABLES], static fn (string $table): bool => $connection->createSchemaManager()->tablesExist([$table]));
+        $existing = array_filter([...self::ARCHIVE_TABLES, ...self::NOTIFICATION_TABLES, ...self::PERMIT_TABLES, ...self::REQUEST_TABLES, ...self::EVENT_TABLES], static fn (string $table): bool => $connection->createSchemaManager()->tablesExist([$table]));
         $connection->executeStatement('SET FOREIGN_KEY_CHECKS = 0');
         foreach ([...$existing, ...self::TABLES] as $table) {
             $connection->executeStatement('DELETE FROM '.$table);

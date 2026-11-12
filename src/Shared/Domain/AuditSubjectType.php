@@ -19,4 +19,7 @@ enum AuditSubjectType: string
     case EventType = 'EVENT_TYPE';
     case PermitRequest = 'PERMIT_REQUEST';
     case Permit = 'PERMIT';
+    case ArchiveDesignation = 'ARCHIVE_DESIGNATION';
+    case StatisticsCoordination = 'STATISTICS_COORDINATION';
+    case LegalHold = 'LEGAL_HOLD';
 }

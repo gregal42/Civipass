@@ -90,6 +90,15 @@ enum AuditAction: string
     case PermitNotificationRequested = 'PERMIT_NOTIFICATION_REQUESTED';
     case NotificationSuppressed = 'NOTIFICATION_SUPPRESSED';
 
+    // Archives sécurisées (LOT 05.6.3) : identifiants et codes SEULEMENT, jamais un commentaire libre ni une valeur personnelle.
+    case ArchiveManagerDesignated = 'ARCHIVE_MANAGER_DESIGNATED';
+    case ArchiveManagerRevoked = 'ARCHIVE_MANAGER_REVOKED';
+    case StatisticsCoordinationGranted = 'STATISTICS_COORDINATION_GRANTED';
+    case StatisticsCoordinationRevoked = 'STATISTICS_COORDINATION_REVOKED';
+    case LegalHoldPlaced = 'LEGAL_HOLD_PLACED';
+    case LegalHoldReviewed = 'LEGAL_HOLD_REVIEWED';
+    case LegalHoldLifted = 'LEGAL_HOLD_LIFTED';
+
     // Accès commerciaux CWS (DM-076, DT-030) : écrits par le lot Administration CWS.
     case CommercialAccessGranted = 'COMMERCIAL_ACCESS_GRANTED';
     case CommercialAccessRevoked = 'COMMERCIAL_ACCESS_REVOKED';
