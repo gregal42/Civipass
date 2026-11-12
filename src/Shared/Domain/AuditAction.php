@@ -110,6 +110,12 @@ enum AuditAction: string
     case DormancySnoozed = 'DORMANCY_SNOOZED';
     case AccountCandidatesReported = 'ACCOUNT_CANDIDATES_REPORTED';
 
+    // Exploitation (LOT 05.6.7) : identifiants, codes, effectifs et référence d'approbation ; jamais une donnée personnelle ni la liste des éléments rejoués.
+    case RetentionReplayExecuted = 'RETENTION_REPLAY_EXECUTED';
+    case RetentionRegisterRepaired = 'RETENTION_REGISTER_REPAIRED';
+    case OpsMaintenanceEnabled = 'OPS_MAINTENANCE_ENABLED';
+    case OpsMaintenanceReleased = 'OPS_MAINTENANCE_RELEASED';
+
     // Droits des personnes (LOT 05.6.6) : identifiants, codes et effectifs ; jamais une donnée du demandeur, ni le texte d'une mention.
     case RightsRequestRegistered = 'RIGHTS_REQUEST_REGISTERED';
     case RightsIdentityAttested = 'RIGHTS_IDENTITY_ATTESTED';

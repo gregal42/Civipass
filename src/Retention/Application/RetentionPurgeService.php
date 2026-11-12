@@ -29,6 +29,7 @@ final class RetentionPurgeService
         private readonly RetentionSettings $settings,
         private readonly ArchiveSettings $archive,
         private readonly ClockInterface $clock,
+        private readonly RegisterAnchors $anchors,
     ) {
     }
 
@@ -111,7 +112,23 @@ final class RetentionPurgeService
             }
         }
 
+        if ($execute) {
+            $this->anchorAfterRun($report);
+        }
+
         return $report;
+    }
+
+    /** Point d'ancrage après un passage qui a écrit le registre (au mieux : l'échec est rattrapé par la tâche horaire d'ancrage). */
+    private function anchorAfterRun(RetentionRunReport $report): void
+    {
+        if (0 === $report->done + $report->sharedPurged) {
+            return;
+        }
+        try {
+            $this->anchors->emit();
+        } catch (\Throwable) {
+        }
     }
 
     private function purgeShared(RetentionRunReport $report, string $requestId, ?User $actor, Uuid $batch, bool $execute = true): void

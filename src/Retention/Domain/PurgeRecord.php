@@ -57,6 +57,35 @@ class PurgeRecord
         $this->id = Uuid::v7();
     }
 
+    /**
+     * Reconstitue un enregistrement SQL à partir d'une ligne du registre externe, AVEC son identifiant d'origine (adoption approuvée après une restauration, LOT 05.6.7).
+     *
+     * @param array<string, mixed> $line
+     */
+    public static function fromLine(array $line): self
+    {
+        $date = static fn (mixed $v): ?\DateTimeImmutable => \is_string($v) ? new \DateTimeImmutable($v, new \DateTimeZone('UTC')) : null;
+        $uuid = static fn (mixed $v): ?Uuid => \is_string($v) && Uuid::isValid($v) ? Uuid::fromString($v) : null;
+        $record = new self(
+            PurgeRecordKind::from((string) $line['kind']),
+            $uuid($line['event'] ?? null) ?? throw new \InvalidArgumentException('Ligne de registre sans événement.'),
+            (string) ($line['eventReference'] ?? ''),
+            $uuid($line['municipality'] ?? null),
+            $uuid($line['dossier'] ?? null),
+            $uuid($line['request'] ?? null),
+            $date($line['occurredAt'] ?? null) ?? throw new \InvalidArgumentException('Ligne de registre sans date.'),
+            $date($line['dueAt'] ?? null),
+            $uuid($line['actor'] ?? null),
+            \is_array($line['counts'] ?? null) ? array_map('intval', $line['counts']) : null,
+            (int) ($line['files'] ?? 0),
+            isset($line['recipients']) ? (int) $line['recipients'] : null,
+            $uuid($line['batch'] ?? null),
+        );
+        $record->id = $uuid($line['id'] ?? null) ?? throw new \InvalidArgumentException('Ligne de registre sans identifiant.');
+
+        return $record;
+    }
+
     public function id(): Uuid
     {
         return $this->id;

@@ -17,6 +17,7 @@ final readonly class RetentionSettings
         #[Autowire('%env(bool:RETENTION_PURGE_ENABLED)%')] private bool $purgeEnabled,
         #[Autowire('%env(RETENTION_REGISTER_PATH)%')] private string $registerPath,
         #[Autowire('%env(int:CLOSURE_STATISTICS_MIN_COUNT)%')] private int $statisticsThreshold = 5,
+        #[Autowire('%env(RETENTION_ANCHOR_PATH)%')] private string $anchorPath = '',
     ) {
     }
 
@@ -34,6 +35,12 @@ final readonly class RetentionSettings
     public function registerPath(): string
     {
         return $this->registerPath;
+    }
+
+    /** Points d'ancrage du registre : à placer HORS du répertoire du registre (autre volume, autre compte, copie hors serveur), sinon l'ancrage n'est pas indépendant. */
+    public function anchorPath(): string
+    {
+        return $this->anchorPath;
     }
 
     public function statisticsThreshold(): int

@@ -52,6 +52,10 @@ parameters:
     env(RIGHTS_ERASURE_EXECUTION_ENABLED): '0'
     env(RETENTION_PURGE_ENABLED): '0'
     env(RETENTION_REGISTER_PATH): '%kernel.project_dir%/var/retention/purge-register.jsonl'
+    # Ancrage du registre et exploitation (LOT 05.6.7) : emplacements à adapter ; l'ancrage n'est indépendant que s'il est placé ailleurs que le registre.
+    env(RETENTION_ANCHOR_PATH): '%kernel.project_dir%/var/retention/anchors.jsonl'
+    env(OPS_DIR): '%kernel.project_dir%/var/ops'
+    env(OPS_ALERT_EMAIL): ''
 
 services:
     # default configuration for services in *this* file
@@ -92,6 +96,8 @@ services:
             - '../src/Event/Application/Dormancy/DormantEvent.php'
             - '../src/Event/Application/Dormancy/DormancyRunReport.php'
             - '../src/Identity/Application/AccountCandidateLine.php'
+            - '../src/Ops/Application/ReleaseRefused.php'
+            - '../src/Retention/Application/ReplayRefused.php'
             - '../src/Retention/Application/RegisterReconciliationReport.php'
 
     # Objet de domaine sans dépendance obligatoire (le référentiel communal des fuseaux est fourni plus tard).
@@ -108,6 +114,8 @@ when@test:
         # Stockage isolé des tests (jamais le stockage réel).
         env(PRIVATE_STORAGE_DIR): '%kernel.project_dir%/var/storage_test'
         env(RETENTION_REGISTER_PATH): '%kernel.project_dir%/var/retention_test/purge-register.jsonl'
+        env(RETENTION_ANCHOR_PATH): '%kernel.project_dir%/var/retention_test/anchors.jsonl'
+        env(OPS_DIR): '%kernel.project_dir%/var/ops_test'
 
     services:
         # Panne injectable à chaque étape d'une purge (tests de retour arrière et de reprise, LOT 05.6.4).
