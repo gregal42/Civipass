@@ -84,7 +84,7 @@ abstract class ArchiveScenarioTestCase extends ClosedEventScenarioTestCase
         return (int) $this->em()->getConnection()->fetchOne('SELECT COUNT(*) FROM archive_consultation');
     }
 
-    /** Clôture, puis recule la clôture de `$months` mois (archive échue au-delà de la durée). */
+    /** Clôture, puis recule la clôture de `$months` mois (durée de conservation indicative dépassée : aucun effet sur l'accès, seulement sur l'éligibilité à la purge). */
     protected function closeAndAge(int $months): void
     {
         $this->close();

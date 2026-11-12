@@ -11,7 +11,8 @@ final readonly class ArchiveEventLine
         public string $name,
         public string $publicReference,
         public \DateTimeImmutable $closedAt,
-        public \DateTimeImmutable $archiveClosesAt,
+        /** Repère informatif d'éligibilité à la purge (jamais une fermeture d'accès). */
+        public \DateTimeImmutable $purgeEligibleAt,
         public bool $viaDesignation,
     ) {
     }

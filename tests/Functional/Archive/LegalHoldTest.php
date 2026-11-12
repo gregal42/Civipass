@@ -133,16 +133,18 @@ final class LegalHoldTest extends ArchiveScenarioTestCase
         $this->holds()->review($this->managed($this->admin), $this->organizerId, $dossier);
     }
 
-    public function testAnOverdueHoldKeepsTheDossierProtectedAndAccessibleAndALiftedHoldClosesAnExpiredArchive(): void
+    public function testAnOverdueHoldKeepsProtectingTheDossierAndNeverChangesAnyConsultationRight(): void
     {
         $this->closeAndAge(14);
         $dossier = $this->dossierOf($this->organizerId);
         $this->holds()->place($this->managed($this->admin), $this->organizerId, $dossier, 'LITIGE', null);
         $this->sql('UPDATE archive_legal_hold SET review_due_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 40 DAY)');
 
-        self::assertNotNull($this->openDossier($this->admin, $this->organizerId, $dossier), 'gel en retard de revue : accès maintenu (arbitrage A2)');
+        self::assertNotNull($this->openDossier($this->admin, $this->organizerId, $dossier), 'gel en retard de revue : accès inchangé (arbitrage A2)');
+        self::assertNull($this->openDossier($this->instructor, $this->organizerId, $dossier), 'le gel n\'ouvre aucun droit');
+        self::assertSame(1, $this->active($dossier), 'le gel en retard protège toujours le dossier');
         $this->holds()->lift($this->managed($this->admin), $this->organizerId, $dossier, null);
-        self::assertNull($this->openDossier($this->admin, $this->organizerId, $dossier), 'gel levé et archive échue : accès fermé');
+        self::assertNotNull($this->openDossier($this->admin, $this->organizerId, $dossier), 'gel levé : aucune fermeture d\'accès (correction A3)');
     }
 
     public function testAHoldOpensNothingToAnotherMunicipalityAndAuditCarriesNoComment(): void

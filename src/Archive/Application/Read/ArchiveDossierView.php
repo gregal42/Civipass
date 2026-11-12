@@ -47,7 +47,7 @@ final readonly class ArchiveDossierView
         public ?\DateTimeImmutable $validUntil,
         public array $history,
         public int $otherMunicipalityChanges,
-        public ?\DateTimeImmutable $archiveClosesAt,
+        public ?\DateTimeImmutable $purgeEligibleAt,
         public bool $holdActive,
         public string $holdReasonLabel,
         public ?\DateTimeImmutable $holdReviewDueAt,

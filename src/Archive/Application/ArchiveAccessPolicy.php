@@ -18,15 +18,15 @@ use App\Municipality\Domain\MunicipalityRole;
 use App\Request\Domain\PermitRequestMunicipality;
 use App\Request\Domain\PermitRequestRepository;
 use App\Shared\Domain\OperationNotAllowed;
-use Psr\Clock\ClockInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
  * SEULE porte de l'archive (LOT 05.6.3, DM-120) : aucun écran, service ou téléchargement d'archive ne lit un dossier sans passer ici. Tout est vérifié CÔTÉ SERVEUR à
  * CHAQUE requête (jamais mémorisé) : utilisateur actif et appartenance effective à la commune de l'URL (lecture : une commune suspendue garde la lecture), puis rôle
  * `MUNICIPALITY_ADMIN`, OU rôle `EVENT_MANAGER` ET désignation ACTIVE pour (événement, commune) ; dossier cherché par sa PORTION COMMUNALE ; événement CLOS (lecture
- * fraîche) ; archive ouverte (clôture + durée, ou gel actif). `INSTRUCTOR` seul, CWS sans appartenance, autre commune, identifiant forgé : refus UNIFORME (404),
- * jamais « clos », « archive » ni « échue ». N'appelle JAMAIS la garde opérationnelle de clôture (chemins de cycle de vie séparés).
+ * fraîche). L'accès ne se ferme JAMAIS à une échéance : il dépend des habilitations et de l'existence des données (correction A3). `INSTRUCTOR` seul, CWS sans
+ * appartenance, autre commune, identifiant forgé : refus UNIFORME (404), jamais « clos » ni « archive ». N'appelle JAMAIS la garde opérationnelle de clôture
+ * (chemins de cycle de vie séparés).
  */
 final readonly class ArchiveAccessPolicy
 {
@@ -39,7 +39,6 @@ final readonly class ArchiveAccessPolicy
         private RequestLegalHoldRepository $holds,
         private EventStatusProbe $closure,
         private ArchiveSettings $settings,
-        private ClockInterface $clock,
     ) {
     }
 
@@ -55,19 +54,16 @@ final readonly class ArchiveAccessPolicy
         $event = $part->request()->event();
         $this->requireClosed($event);
         $viaDesignation = $this->grant($user, $membership, $part->participation()) ?? throw self::deny();
-        $hold = $this->holds->findActive($part->id());
         $closedAt = $event->closedAt() ?? throw self::deny();
-        $closesAt = $this->settings->archiveClosesAt($closedAt);
-        if (null === $hold && $this->clock->now() >= $closesAt) {
-            throw self::deny(); // archive échue sans gel : fermée en attendant la purge (05.6.4)
-        }
 
-        return new ArchiveAccess($membership, $part, $viaDesignation, $hold, $closesAt);
+        // Aucune fermeture automatique à l'échéance (correction A3) : l'accès dépend des SEULES habilitations et de l'existence des données conservées. Le gel protège
+        // contre la purge ; il ne prolonge ni ne rétablit aucun droit de consultation.
+        return new ArchiveAccess($membership, $part, $viaDesignation, $this->holds->findActive($part->id()), $this->settings->purgeEligibleAt($closedAt));
     }
 
     /**
-     * Gestion d'un dossier (gel) : `MUNICIPALITY_ADMIN` de la commune, écriture (commune ACTIVE), événement clos. Pas de condition d'archive ouverte : on peut geler
-     * un dossier dont l'accès est échu pour le protéger de la purge.
+     * Gestion d'un dossier (gel) : `MUNICIPALITY_ADMIN` de la commune, écriture (commune ACTIVE), événement clos. Aucune condition d'échéance : on peut geler
+     * un dossier dont la durée de conservation est atteinte pour le protéger de la purge.
      *
      * @throws OperationNotAllowed
      */
@@ -79,7 +75,7 @@ final readonly class ArchiveAccessPolicy
         $this->requireClosed($event);
         $closedAt = $event->closedAt() ?? throw self::deny();
 
-        return new ArchiveAccess($membership, $part, false, $this->holds->findActive($part->id()), $this->settings->archiveClosesAt($closedAt));
+        return new ArchiveAccess($membership, $part, false, $this->holds->findActive($part->id()), $this->settings->purgeEligibleAt($closedAt));
     }
 
     /**

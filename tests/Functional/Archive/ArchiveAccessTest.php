@@ -128,21 +128,40 @@ final class ArchiveAccessTest extends ArchiveScenarioTestCase
         self::assertSame(0, $this->journalRows());
     }
 
-    public function testAnExpiredArchiveWithoutHoldIsClosedAndAHoldKeepsItOpen(): void
+    /**
+     * Correction A3 (12 novembre 2026) : AUCUNE fermeture automatique à « clôture + durée ». L'accès dépend des seules habilitations et de l'existence des données ;
+     * la durée n'est qu'un repère d'éligibilité à la purge ; un gel protège contre la purge sans modifier aucun droit de consultation.
+     */
+    public function testNoAutomaticClosureEverClosesTheAccessWhateverTheAgeOfTheArchiveAndAHoldChangesNoAccessRight(): void
     {
-        $this->closeAndAge(13);
+        $this->closeAndAge(14);
         $dossier = $this->dossierOf($this->organizerId);
+        $this->designate($this->manager, $this->organizerId, $this->admin);
 
+        self::assertNotNull($this->openDossier($this->admin, $this->organizerId, $dossier), 'durée dépassée : l\'administrateur lit toujours son archive');
+        self::assertNotNull($this->openDossier($this->manager, $this->organizerId, $dossier), 'idem pour le gestionnaire désigné');
+        self::assertNull($this->openDossier($this->instructor, $this->organizerId, $dossier), 'les habilitations décident, pas l\'âge');
         $this->as($this->admin);
-        self::assertSame(404, $this->get($this->archiveUrl($this->organizerId, '/dossiers/'.$dossier.'/ouvrir')), 'archive échue : accès fermé en attendant la purge');
-        self::assertStringNotContainsString('Ouvrir', $this->body());
-        self::assertSame(200, $this->get($this->archiveUrl($this->organizerId, '/evenements/'.$this->eventId())), 'l\'événement reste listé, ses dossiers « échus »');
-        self::assertStringContainsString('Échue', $this->body());
+        self::assertSame(200, $this->get($this->archiveUrl($this->organizerId, '/evenements/'.$this->eventId())));
+        self::assertStringContainsString('éligible à la purge', $this->body(), 'la durée n\'est qu\'un repère de purge');
+        self::assertStringNotContainsString('Échue', $this->body());
 
-        static::getContainer()->get(\App\Archive\Application\LegalHoldService::class)->place($this->managed($this->admin), $this->organizerId, $dossier, 'LITIGE', null);
+        $this->sql('UPDATE event_event SET closed_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 120 MONTH)');
+        self::assertNotNull($this->openDossier($this->admin, $this->organizerId, $dossier), 'même après dix ans : aucune fermeture automatique');
+
+        $holds = static::getContainer()->get(\App\Archive\Application\LegalHoldService::class);
+        $holds->place($this->managed($this->admin), $this->organizerId, $dossier, 'LITIGE', null);
         $this->em()->clear();
+        self::assertNotNull($this->openDossier($this->admin, $this->organizerId, $dossier));
+        self::assertNull($this->openDossier($this->instructor, $this->organizerId, $dossier), 'un gel n\'ouvre aucun droit de consultation');
+        $this->as($this->admin);
+        $this->get($this->archiveUrl($this->organizerId, '/evenements/'.$this->eventId()));
+        self::assertStringContainsString('Gelé', $this->body());
+        self::assertStringNotContainsString('éligible à la purge', $this->body(), 'un gel protège contre la purge');
 
-        self::assertNotNull($this->openDossier($this->admin, $this->organizerId, $dossier), 'le gel maintient l\'accès à CE dossier');
+        static::getContainer()->get(\App\Archive\Application\LegalHoldService::class)->lift($this->managed($this->admin), $this->organizerId, $dossier, null); // service relu : le noyau est redémarré par les requêtes HTTP
+        $this->em()->clear();
+        self::assertNotNull($this->openDossier($this->admin, $this->organizerId, $dossier), 'lever le gel ne ferme aucun accès');
     }
 
     // ------------------------------------------------------------------ motif, journal, lecture seule

@@ -40,8 +40,7 @@ final readonly class ArchiveDossierReader
     }
 
     /**
-     * Événements clos que l'utilisateur peut consulter dans SA commune (administrateur : tous ; gestionnaire : ceux pour lesquels il est désigné). Archive échue sans gel
-     * comprise : l'événement reste listé, ses dossiers non.
+     * Événements clos que l'utilisateur peut consulter dans SA commune (administrateur : tous ; gestionnaire : ceux pour lesquels il est désigné). Aucune fermeture à échéance (correction A3).
      *
      * @return list<ArchiveEventLine>
      */
@@ -61,7 +60,7 @@ final readonly class ArchiveDossierReader
                 continue;
             }
             $closedAt = new \DateTimeImmutable((string) $row['closed_at'], new \DateTimeZone('UTC'));
-            $lines[] = new ArchiveEventLine(Uuid::fromBinary((string) $row['event_id'])->toRfc4122(), (string) $row['name'], (string) $row['public_reference'], $closedAt, $this->settings->archiveClosesAt($closedAt), $via);
+            $lines[] = new ArchiveEventLine(Uuid::fromBinary((string) $row['event_id'])->toRfc4122(), (string) $row['name'], (string) $row['public_reference'], $closedAt, $this->settings->purgeEligibleAt($closedAt), $via);
         }
 
         return $lines;
@@ -83,7 +82,7 @@ final readonly class ArchiveDossierReader
         $ids = array_map(static fn (array $r): Uuid => Uuid::fromBinary((string) $r['dossier_id']), $rows);
         $holds = $this->holds->activeAmong($ids);
         $now = $this->clock->now();
-        $closesAt = $this->settings->archiveClosesAt($event->closedAt() ?? $now);
+        $eligibleAt = $this->settings->purgeEligibleAt($event->closedAt() ?? $now);
         $lines = [];
         foreach ($rows as $row) {
             $id = Uuid::fromBinary((string) $row['dossier_id'])->toRfc4122();
@@ -94,7 +93,7 @@ final readonly class ArchiveDossierReader
                 (string) $row['category'],
                 MunicipalRequestStatus::from((string) $row['status']),
                 null === $row['decided_at'] ? null : new \DateTimeImmutable((string) $row['decided_at'], new \DateTimeZone('UTC')),
-                null !== $hold || $now < $closesAt,
+                null === $hold && $now >= $eligibleAt,
                 null !== $hold,
                 null !== $hold && $hold->isOverdue($now),
             );
@@ -158,7 +157,7 @@ final readonly class ArchiveDossierReader
             $decision?->validUntil(),
             $history,
             $others,
-            $access->closesAt,
+            $access->purgeEligibleAt,
             null !== $hold,
             null === $hold ? '' : $hold->reason()->label(),
             $hold?->reviewDueAt(),

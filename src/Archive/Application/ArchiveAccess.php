@@ -16,7 +16,8 @@ final readonly class ArchiveAccess
         public PermitRequestMunicipality $dossier,
         public bool $viaDesignation,
         public ?RequestLegalHold $hold,
-        public \DateTimeImmutable $closesAt,
+        /** Repère informatif d'éligibilité à la purge : ne ferme JAMAIS l'accès. */
+        public \DateTimeImmutable $purgeEligibleAt,
     ) {
     }
 }

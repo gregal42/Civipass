@@ -14,7 +14,7 @@
         <li>
           {% embed 'components/panel.html.twig' with { id: 'ev-' ~ loop.index, title: e.name, e: e, mid: municipalityId } only %}
             {% block body %}
-              <p class="cp-muted">Référence {{ e.publicReference }} · clôturé le {{ e.closedAt|date('d/m/Y') }} · accès aux dossiers jusqu’au {{ e.archiveClosesAt|date('d/m/Y') }} (sauf gel)</p>
+              <p class="cp-muted">Référence {{ e.publicReference }} · clôturé le {{ e.closedAt|date('d/m/Y') }} · éligible à la purge à partir du {{ e.purgeEligibleAt|date('d/m/Y') }} (durée indicative, hypothèse à valider ; aucun effet sur votre accès)</p>
               {% include 'components/button.html.twig' with { label: 'Voir les dossiers', variant: 'secondary', href: path('app_archive_event', { municipalityId: mid, eventId: e.eventId }) } only %}
             {% endblock %}
           {% endembed %}

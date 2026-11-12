@@ -19,7 +19,7 @@ use Symfony\Component\Uid\Uuid;
 /**
  * Consultation d'un dossier archivé (LOT 05.6.3) : MOTIF OBLIGATOIRE, journal écrit AVANT l'envoi du contenu (un échec d'écriture REFUSE l'accès : fail-closed), lien de
  * consultation LIÉ à l'utilisateur et au dossier, de durée LIMITÉE, et RECONTRÔLÉ à chaque affichage par `ArchiveAccessPolicy` (désignation révoquée, rôle perdu, gel levé
- * et archive échue : accès coupé aussitôt). Chaque téléchargement de pièce ajoute sa propre ligne de journal. Aucune écriture métier, aucune réouverture de droits.
+ * : accès coupé aussitôt ; aucune échéance ne ferme l'accès). Chaque téléchargement de pièce ajoute sa propre ligne de journal. Aucune écriture métier, aucune réouverture de droits.
  */
 final readonly class ArchiveConsultationService
 {

@@ -19,11 +19,9 @@
             <td>{{ d.categoryLabel }}</td>
             <td>{{ statuses[d.status.value] }}</td>
             <td>{{ d.decidedAt ? d.decidedAt|date('d/m/Y') : '—' }}</td>
-            <td>{% if d.holdActive %}Gelé{% if d.holdOverdue %} — revue en retard{% endif %}{% elseif d.archiveOpen %}Ouverte{% else %}Échue{% endif %}</td>
+            <td>{% if d.holdActive %}Gelé{% if d.holdOverdue %} — revue en retard{% endif %}{% elseif d.purgeEligible %}Conservé — éligible à la purge{% else %}Conservé{% endif %}</td>
             <td>
-              {% if d.archiveOpen %}
-                {% include 'components/button.html.twig' with { label: 'Consulter', variant: 'secondary', href: path('app_archive_open', { municipalityId: municipalityId, dossierId: d.dossierId }) } only %}
-              {% endif %}
+              {% include 'components/button.html.twig' with { label: 'Consulter', variant: 'secondary', href: path('app_archive_open', { municipalityId: municipalityId, dossierId: d.dossierId }) } only %}
               {% if canManage and not d.holdActive %}
                 <form method="post" action="{{ path('app_archive_hold', { municipalityId: municipalityId, dossierId: d.dossierId, action: 'placer' }) }}">
                   <input type="hidden" name="_token" value="{{ csrf_token('archive_hold_placer_' ~ d.dossierId) }}">

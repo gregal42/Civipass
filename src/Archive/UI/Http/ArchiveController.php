@@ -29,7 +29,7 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * Espace d'archives (LOT 05.6.3) : LECTURE SEULE, distinct des écrans opérationnels (préfixe `/communes/{m}/archives/…`, réservé et hors barrière de clôture). CHAQUE
- * route passe par `ArchiveAccessPolicy` via un service applicatif ; tout refus est un 404 uniforme (jamais « clos », « archive » ni « échue »). Les seules écritures sont
+ * route passe par `ArchiveAccessPolicy` via un service applicatif ; tout refus est un 404 uniforme (jamais « clos » ni « archive »). Les seules écritures sont
  * des actes de GESTION de l'administrateur (désignation, gel) et le journal de consultation ; aucune n'agit sur le dossier lui-même. `no-store` partout.
  */
 final class ArchiveController extends AbstractController

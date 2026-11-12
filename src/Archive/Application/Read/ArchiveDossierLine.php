@@ -15,7 +15,7 @@ final readonly class ArchiveDossierLine
         public string $categoryLabel,
         public MunicipalRequestStatus $status,
         public ?\DateTimeImmutable $decidedAt,
-        public bool $archiveOpen,
+        public bool $purgeEligible,
         public bool $holdActive,
         public bool $holdOverdue,
     ) {
