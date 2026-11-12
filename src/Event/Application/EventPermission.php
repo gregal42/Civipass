@@ -79,6 +79,16 @@ enum EventPermission: string
         return [MunicipalityRole::MunicipalityAdmin];
     }
 
+    /**
+     * Dormance des événements (LOT 05.6.5) : rôles de la commune ORGANISATRICE qui reçoivent l'alerte, voient le bandeau et peuvent reporter le rappel. Source de vérité unique.
+     *
+     * @return list<MunicipalityRole>
+     */
+    public static function dormancyRoles(): array
+    {
+        return [MunicipalityRole::MunicipalityAdmin, MunicipalityRole::EventManager];
+    }
+
     /** @return list<MunicipalityRole> */
     public static function closureBreakdownRolesByGrant(): array
     {

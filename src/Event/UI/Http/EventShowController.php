@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Event\UI\Http;
 
 use App\Event\Application\ClosureStatisticsReader;
+use App\Event\Application\Dormancy\DormancySettings;
+use App\Event\Application\Dormancy\EventDormancyBanner;
 use App\Event\Application\EventDetailReader;
+use App\Event\Domain\DormancyReason;
 use App\Identity\Domain\User;
 use App\Shell\CommuneSelectionController;
 use App\Shell\ShellContextFactory;
@@ -28,6 +31,7 @@ final class EventShowController extends AbstractController
         private readonly ShellContextFactory $shell,
         private readonly EventViewFactory $views,
         private readonly ClosureStatisticsReader $statistics,
+        private readonly EventDormancyBanner $dormancy,
     ) {
     }
 
@@ -42,6 +46,14 @@ final class EventShowController extends AbstractController
             $request->getSession()->set(CommuneSelectionController::SESSION_KEY, $municipalityId);
         }
 
-        return $this->render('municipal/event/show.html.twig', $this->views->page($shell, $detail, $municipalityId, $detail->name, extra: ['closure_statistics' => $this->statistics->forViewer($user, $municipalityId, $eventId)]));
+        return $this->render('municipal/event/show.html.twig', $this->views->page($shell, $detail, $municipalityId, $detail->name, extra: ['dormancy' => $this->dormancyContext($user, $municipalityId, $eventId), 'closure_statistics' => $this->statistics->forViewer($user, $municipalityId, $eventId)]));
+    }
+
+    /** @return array{event: \App\Event\Application\Dormancy\DormantEvent, reasons: list<DormancyReason>, days: list<int>}|null */
+    private function dormancyContext(User $user, string $municipalityId, string $eventId): ?array
+    {
+        $event = $this->dormancy->forViewer($user, $municipalityId, $eventId);
+
+        return null === $event ? null : ['event' => $event, 'reasons' => DormancyReason::cases(), 'days' => DormancySettings::SNOOZE_DAYS];
     }
 }

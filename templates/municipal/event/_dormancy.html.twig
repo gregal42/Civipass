@@ -1,0 +1,30 @@
+{# Bandeau de dormance (LOT 05.6.5) : information et report motivé seulement ; aucune clôture, aucun changement de droit. Visible de l'administrateur et de l'organisateur de la commune organisatrice. #}
+{% set e = dormancy.event %}
+{% if e.state == 'SNOOZED' %}
+  {% include 'components/alert.html.twig' with { variant: 'quiet', title: 'Rappel d’inactivité reporté', text: 'Cet événement n’a pas de date de fin et aucune activité depuis ' ~ e.inactiveDays ~ ' jours. Le rappel est reporté jusqu’au ' ~ e.snoozedUntil|date('d/m/Y') ~ '.' } only %}
+{% else %}
+  <section class="cp-section" aria-labelledby="dormancy-h">
+    {% include 'components/alert.html.twig' with { variant: 'warning', title: 'Événement sans date de fin et sans activité depuis ' ~ e.inactiveDays ~ ' jours', text: 'Si l’événement est terminé, clôturez-le. Civipass ne clôture jamais un événement automatiquement et ne modifie aucun droit. S’il se poursuit, reportez ce rappel en indiquant un motif.' } only %}
+    <form method="post" action="{{ path('app_event_dormancy_snooze', { municipalityId: e.organizerId, eventId: e.eventId }) }}" novalidate>
+      <input type="hidden" name="_token" value="{{ csrf_token('event_dormancy_snooze_' ~ e.eventId) }}">
+      <div class="cp-field">
+        <label class="cp-field__label" for="dormancy-reason">Motif du report</label>
+        <span class="cp-select-wrap">
+          <select class="cp-select" id="dormancy-reason" name="reason" required>
+            <option value="">Choisir un motif…</option>
+            {% for r in dormancy.reasons %}<option value="{{ r.value }}">{{ r.label }}</option>{% endfor %}
+          </select>
+        </span>
+      </div>
+      <div class="cp-field">
+        <label class="cp-field__label" for="dormancy-days">Durée du report</label>
+        <span class="cp-select-wrap">
+          <select class="cp-select" id="dormancy-days" name="days" required>
+            {% for d in dormancy.days %}<option value="{{ d }}">{{ d }} jours</option>{% endfor %}
+          </select>
+        </span>
+      </div>
+      <button class="cp-btn cp-btn--secondary" type="submit">Reporter le rappel</button>
+    </form>
+  </section>
+{% endif %}

@@ -38,6 +38,11 @@ parameters:
     # Purge (LOT 05.6.4) : HYPOTHÈSES à valider avec le DPO et les archives avant production. Préavis aux administrateurs avant la purge d'un dossier ; INTERRUPTEUR de la
     # purge (désactivé par défaut : `app:retention:purge --execute` est refusé tant qu'il vaut 0, jamais activé en production sans accord) ; registre hors base.
     env(RETENTION_NOTICE_DAYS): '30'
+    # Dormance des événements et comptes candidats (LOT 05.6.5) : hypothèses paramétrables, à confirmer juridiquement avant production.
+    env(EVENT_DORMANCY_DAYS): '90'
+    env(EVENT_DORMANCY_REMINDER_DAYS): '30'
+    env(EVENT_DORMANCY_LEASE_MINUTES): '30'
+    env(ACCOUNT_INACTIVITY_MONTHS): '24'
     env(RETENTION_PURGE_ENABLED): '0'
     env(RETENTION_REGISTER_PATH): '%kernel.project_dir%/var/retention/purge-register.jsonl'
 
@@ -77,6 +82,9 @@ services:
             - '../src/Archive/Application/Read/'
             - '../src/Retention/Application/PurgeOutcome.php'
             - '../src/Retention/Application/RetentionRunReport.php'
+            - '../src/Event/Application/Dormancy/DormantEvent.php'
+            - '../src/Event/Application/Dormancy/DormancyRunReport.php'
+            - '../src/Identity/Application/AccountCandidateLine.php'
             - '../src/Retention/Application/RegisterReconciliationReport.php'
 
     # Objet de domaine sans dépendance obligatoire (le référentiel communal des fuseaux est fourni plus tard).

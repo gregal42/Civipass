@@ -9,6 +9,7 @@
 {% block content %}
   {% import 'municipal/event/_actions.html.twig' as act %}
   {% include 'municipal/event/_head.html.twig' with { current: 'fiche' } %}
+  {% if dormancy is defined and dormancy %}{% include 'municipal/event/_dormancy.html.twig' with { dormancy: dormancy } only %}{% endif %}
 
   <div class="app-split">
     <div class="app-stack">
