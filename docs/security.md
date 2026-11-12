@@ -91,7 +91,7 @@ Espace **distinct** des écrans opérationnels (`/communes/{m}/archives/…`, pr
 - **Qui** : `MUNICIPALITY_ADMIN` de la commune concernée, seulement ; 404 uniforme avant le jeton CSRF ; CWS sans accès ; aucune donnée du demandeur enregistrée (dossiers désignés par leur référence).
 - **Export** : après attestation d'identité, à la volée, jamais conservé, 3 téléchargements et 30 jours au plus, habilitations recontrôlées et téléchargement journalisé à chaque fois ; jamais le contenu propre d'une autre commune.
 - **Rectification d'archive** : mention ajoutée, jamais de remplacement ; supprimée avec le dossier.
-- **Effacement anticipé** : exécution **désactivée** (`RIGHTS_ERASURE_EXECUTION_ENABLED=0`) tant que la politique juridique n'est pas validée ; ne contourne jamais un gel, la clôture, une autre demande ouverte ni le partage des données.
+- **Effacement anticipé** : exécution **désactivée** (`RIGHTS_ERASURE_EXECUTION_ENABLED=0`) tant que la politique juridique n'est pas validée ; ne contourne jamais un gel, la clôture, une autre demande ouverte ni le partage des données, **même lorsque les deux interrupteurs sont activés**. Valeurs par défaut `0` dans `config/services.yaml`, jamais activées par un fichier du dépôt : seule une variable d'environnement explicite du serveur le peut (test `ErasureSwitchesDefaultTest`).
 
 ## Secrets des notifications (LOT 05.3.2, DT-049)
 
