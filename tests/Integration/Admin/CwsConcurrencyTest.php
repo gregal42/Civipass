@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Admin;
 
-use App\Municipality\Domain\Municipality;
 use App\Municipality\Domain\MunicipalityRole;
 use App\Municipality\Domain\NationalCommune;
 use App\Municipality\Domain\NationalCommuneRecord;
@@ -95,7 +94,7 @@ final class CwsConcurrencyTest extends DatabaseTestCase
 
         $this->race([['accept', $mails->lastToken(), $invited->id()->toRfc4122()], ['resend', $issued->invitation->id()->toRfc4122(), $cws->id()->toRfc4122()], ['resend', $issued->invitation->id()->toRfc4122(), $cws->id()->toRfc4122()]]);
 
-        $usable = (int) $this->db()->fetchOne("SELECT COUNT(*) FROM municipality_admin_invitation WHERE consumed_at IS NULL AND revoked_at IS NULL AND expires_at > UTC_TIMESTAMP()");
+        $usable = (int) $this->db()->fetchOne('SELECT COUNT(*) FROM municipality_admin_invitation WHERE consumed_at IS NULL AND revoked_at IS NULL AND expires_at > UTC_TIMESTAMP()');
         self::assertLessThanOrEqual(1, $usable, 'au plus un lien utilisable');
         self::assertLessThanOrEqual(1, (int) $this->db()->fetchOne('SELECT COUNT(*) FROM municipality_membership'));
     }
@@ -149,7 +148,7 @@ final class CwsConcurrencyTest extends DatabaseTestCase
 
         $outcomes = $this->race([['open', '33503', $cws->id()->toRfc4122()], ['open', '33503', $cws->id()->toRfc4122()]]);
 
-        self::assertSame(2, $this->ok($outcomes), 'idempotent : les deux appels aboutissent ' . json_encode($outcomes));
+        self::assertSame(2, $this->ok($outcomes), 'idempotent : les deux appels aboutissent '.json_encode($outcomes));
         self::assertSame(1, (int) $this->db()->fetchOne('SELECT COUNT(*) FROM municipality WHERE insee_code = ?', ['33503']), 'jamais de doublon');
         self::assertLessThanOrEqual(1, (int) $this->db()->fetchOne("SELECT COUNT(*) FROM audit_log WHERE action = 'MUNICIPALITY_OPENED_BY_CWS'"));
     }

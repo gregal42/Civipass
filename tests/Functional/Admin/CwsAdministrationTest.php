@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Admin;
 
 use App\Identity\Domain\User;
-use App\Municipality\Domain\Municipality;
-use App\Municipality\Domain\MunicipalityMembership;
 use App\Municipality\Domain\MunicipalityRole;
 use App\Municipality\Domain\NationalCommune;
 use App\Municipality\Domain\NationalCommuneRecord;

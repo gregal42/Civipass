@@ -38,6 +38,10 @@ final class AccountReferenceCatalog
         'municipality_commercial_access.revoked_by',
         'municipality_membership.user_id',
         'onboarding_invitation_link.created_by',
+        // LOT 07.1 : auteur, accepteur et révocateur d'une invitation d'administrateur (traçabilité conservée comme les autres liens d'invitation).
+        'municipality_admin_invitation.consumed_by',
+        'municipality_admin_invitation.created_by',
+        'municipality_admin_invitation.revoked_by',
         'archive_rectification_mention.created_by_user_id',
         'permit_revision.actor_user_id',
         'request_permit_request.entered_by_user_id',
