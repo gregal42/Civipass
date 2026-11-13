@@ -18,6 +18,12 @@ interface MembershipRepository
     /**
      * Administrateurs EFFECTIFS : membership actif, compte actif, rôle MUNICIPALITY_ADMIN (requête COUNT).
      */
+    /**
+     * L'utilisateur est-il, MAINTENANT, administrateur effectif de la commune (compte et rattachement actifs, rôle administrateur) ?
+     * Lecture COURANTE (verrouillante) : à appeler sous le verrou de la commune, jamais d'après un instantané antérieur de la transaction.
+     */
+    public function isEffectiveAdmin(User $user, Municipality $municipality): bool;
+
     public function countEffectiveAdmins(Municipality $municipality, ?Uuid $excludingMembershipId = null, ?Uuid $excludingUserId = null): int;
 
     /**

@@ -10,8 +10,8 @@ use App\Identity\Domain\UserRepository;
 use App\Municipality\Domain\MembershipRepository;
 use App\Municipality\Domain\Municipality;
 use App\Municipality\Domain\MunicipalityRepository;
+use App\Municipality\Domain\MunicipalityRole;
 use App\Municipality\Domain\MunicipalityStatus;
-use App\Onboarding\Domain\InvitationDeliveryStatus;
 use App\Onboarding\Domain\InvitationToken;
 use App\Onboarding\Domain\MunicipalityAdminInvitation;
 use App\Onboarding\Domain\MunicipalityAdminInvitationRepository;
@@ -24,7 +24,6 @@ use App\Shared\Domain\AuditSubjectType;
 use App\Shared\Domain\DomainRuleViolation;
 use App\Shared\Domain\OperationNotAllowed;
 use Psr\Clock\ClockInterface;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
@@ -46,10 +45,9 @@ final readonly class MunicipalityAdminInvitationService
         private MunicipalityAdminInvitationRepository $invitations,
         private MembershipRepository $memberships,
         private UserRepository $users,
-        private AdminInvitationNotifier $notifier,
+        private InvitationDelivery $delivery,
         private AuditTrail $audit,
         private ClockInterface $clock,
-        private LoggerInterface $logger,
         #[Autowire('%env(int:ADMIN_INVITATION_DAYS)%')]
         int $days = 7,
     ) {
@@ -65,7 +63,7 @@ final readonly class MunicipalityAdminInvitationService
         $address = EmailAddress::fromString($email);
         $this->assertInvitable($municipality, $address);
 
-        return $this->createAndSend($municipality, $address, $actor, null, AuditAction::AdminInvitationIssued);
+        return $this->createAndSend($municipality, $address, $actor, null, AuditAction::AdminInvitationIssued, [MunicipalityRole::MunicipalityAdmin]);
     }
 
     /**
@@ -77,18 +75,24 @@ final readonly class MunicipalityAdminInvitationService
     {
         $this->assertSuperAdmin($actor);
         $fresh = $this->invitations->find($invitation->id()) ?? throw new OperationNotAllowed('Invitation introuvable.');
+        if (!$fresh->grantsAdministrator()) {
+            throw new OperationNotAllowed('Invitation introuvable.'); // CWS ne gère jamais les invitations ordinaires des agents (R10)
+        }
         if (null !== $fresh->consumedAt()) {
             throw new DomainRuleViolation('Cette invitation a déjà été acceptée.');
         }
         $address = EmailAddress::fromString($fresh->recipientEmail());
         $this->assertInvitable($fresh->municipality(), $address);
 
-        return $this->createAndSend($fresh->municipality(), $address, $actor, $fresh, AuditAction::AdminInvitationResent);
+        return $this->createAndSend($fresh->municipality(), $address, $actor, $fresh, AuditAction::AdminInvitationResent, $fresh->roles());
     }
 
     public function revoke(MunicipalityAdminInvitation $invitation, User $actor): void
     {
         $this->assertSuperAdmin($actor);
+        if (!$invitation->grantsAdministrator()) {
+            throw new OperationNotAllowed('Invitation introuvable.');
+        }
         $id = $invitation->id();
         $municipalityId = $invitation->municipality()->id();
         $this->transaction->run(function () use ($id, $municipalityId, $actor): void {
@@ -102,45 +106,33 @@ final readonly class MunicipalityAdminInvitationService
         });
     }
 
-    private function createAndSend(Municipality $municipality, EmailAddress $address, User $actor, ?MunicipalityAdminInvitation $parent, AuditAction $action): AdminInvitationIssued
+    /**
+     * @param list<MunicipalityRole> $roles
+     */
+    private function createAndSend(Municipality $municipality, EmailAddress $address, User $actor, ?MunicipalityAdminInvitation $parent, AuditAction $action, array $roles): AdminInvitationIssued
     {
         $token = InvitationToken::generate();
-        $invitation = $this->transaction->run(function () use ($municipality, $address, $actor, $parent, $action, $token): MunicipalityAdminInvitation {
+        $invitation = $this->transaction->run(function () use ($municipality, $address, $actor, $parent, $action, $token, $roles): MunicipalityAdminInvitation {
             $locked = $this->municipalities->lock($municipality->id()) ?? throw new OperationNotAllowed('Commune introuvable.');
             if (!\in_array($locked->status(), [MunicipalityStatus::Active, MunicipalityStatus::Suspended], true)) {
                 throw new OperationNotAllowed('Cette commune n\'est pas disponible.');
             }
             $now = $this->clock->now();
             $this->invitations->revokeOpen($locked->id(), $address->value, $actor->id(), $now);
-            $invitation = new MunicipalityAdminInvitation($locked, $address->value, $token->hash(), $actor, $now, $this->lifetime, $parent);
+            $invitation = new MunicipalityAdminInvitation($locked, $address->value, $token->hash(), $actor, $now, $this->lifetime, $parent, $roles);
             $this->invitations->add($invitation);
-            $this->audit->record(new AuditEvent($now, $action, AuditSubjectType::MunicipalityAdminInvitation, $invitation->id(), $locked->id(), AuditActor::user($actor->id()), null, ['expiresAt' => $invitation->expiresAt()->format(\DATE_ATOM)]));
+            $this->audit->record(new AuditEvent($now, $action, AuditSubjectType::MunicipalityAdminInvitation, $invitation->id(), $locked->id(), AuditActor::user($actor->id()), null, ['expiresAt' => $invitation->expiresAt()->format(\DATE_ATOM), 'roles' => $this->roleValues($invitation)]));
 
             return $invitation;
         });
 
-        return new AdminInvitationIssued($invitation, $this->deliver($invitation, $token, $actor));
+        return new AdminInvitationIssued($invitation, $this->delivery->deliver($invitation, $token, $actor));
     }
 
-    /** Envoi hors de la transaction d'émission (le lien est déjà enregistré) ; le résultat est noté sans jamais perdre le lien. */
-    private function deliver(MunicipalityAdminInvitation $invitation, InvitationToken $token, User $actor): bool
+    /** @return list<string> */
+    private function roleValues(MunicipalityAdminInvitation $invitation): array
     {
-        $sent = false;
-        try {
-            $this->notifier->send($invitation, $token->plain);
-            $sent = true;
-        } catch (\Throwable $e) {
-            $this->logger->error('Échec d\'envoi d\'une invitation d\'administrateur communal.', ['exception' => $e::class, 'invitationId' => $invitation->id()->toRfc4122()]);
-        }
-        $id = $invitation->id();
-        $this->transaction->run(function () use ($id, $sent, $actor): void {
-            $fresh = $this->invitations->find($id) ?? throw new OperationNotAllowed('Invitation introuvable.');
-            $now = $this->clock->now();
-            $fresh->markDelivery($sent ? InvitationDeliveryStatus::Sent : InvitationDeliveryStatus::Failed, $now);
-            $this->audit->record(new AuditEvent($now, $sent ? AuditAction::AdminInvitationEmailSent : AuditAction::AdminInvitationEmailFailed, AuditSubjectType::MunicipalityAdminInvitation, $fresh->id(), $fresh->municipality()->id(), AuditActor::user($actor->id()), null, ['delivery' => $sent ? 'SENT' : 'FAILED']));
-        });
-
-        return $sent;
+        return array_map(static fn (MunicipalityRole $r): string => $r->value, $invitation->roles());
     }
 
     private function assertInvitable(Municipality $municipality, EmailAddress $address): void

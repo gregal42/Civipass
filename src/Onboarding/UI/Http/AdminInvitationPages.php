@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Onboarding\UI\Http;
 
 use App\Identity\Domain\User;
+use App\Municipality\Application\RoleLabels;
 use App\Onboarding\Application\AdminInvitationEnrollment;
 use App\Onboarding\Application\AdminInvitationResolution;
 use App\Onboarding\Application\InvitationDispatcher;
@@ -102,7 +103,7 @@ final class AdminInvitationPages extends AbstractController
             $this->security->login($user, 'form_login', 'main'); // compte créé à l'instant : connexion directe
         }
         $request->getSession()->remove(self::SESSION_KEY);
-        $this->addFlash('success', 'Vous êtes administrateur de la commune. Vous pouvez inviter vos collaborateurs et préparer vos événements.');
+        $this->addFlash('success', 'Bienvenue : votre accès à la commune est actif avec les rôles qui vous ont été proposés.');
 
         return $this->redirectToRoute('app_municipal_events', ['municipalityId' => $municipalityId], Response::HTTP_SEE_OTHER);
     }
@@ -132,6 +133,7 @@ final class AdminInvitationPages extends AbstractController
         return $this->secured($this->render('onboarding/admin_invitation.html.twig', $extra + [
             'case' => 'admin_'.$step,
             'commune_name' => $resolution->invitation->municipality()->name(),
+            'roles' => array_map(static fn ($r): array => ['label' => RoleLabels::label($r), 'description' => RoleLabels::description($r)], $resolution->invitation->roles()),
             'error' => null,
             'form' => ['first_name' => '', 'last_name' => ''],
             'invited_email_masked' => InvitationDispatcher::mask($resolution->invitation->recipientEmail()),

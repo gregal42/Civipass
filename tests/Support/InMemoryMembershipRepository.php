@@ -45,6 +45,11 @@ final class InMemoryMembershipRepository implements MembershipRepository
         return null;
     }
 
+    public function isEffectiveAdmin(User $user, Municipality $municipality): bool
+    {
+        throw new \LogicException('Non utilisé par les politiques du module Event.');
+    }
+
     public function countEffectiveAdmins(Municipality $municipality, ?Uuid $excludingMembershipId = null, ?Uuid $excludingUserId = null): int
     {
         throw new \LogicException('Non utilisé par les politiques du module Event.');

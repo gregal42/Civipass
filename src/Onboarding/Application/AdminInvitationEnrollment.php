@@ -116,12 +116,13 @@ final readonly class AdminInvitationEnrollment
 
         $municipality = $invitation->municipality();
         $invitationId = $invitation->id();
-        $this->memberships->enrollInvitedAdministrator($user, $municipality, function () use ($invitationId, $user, $municipality): bool {
+        $this->memberships->enrollInvited($user, $municipality, $invitation->roles(), function () use ($invitationId, $user, $municipality, $invitation): bool {
             $now = $this->clock->now();
             if (!$this->invitations->consume($invitationId, $user->id(), $now)) {
                 return false; // consommée, révoquée ou expirée entre-temps : une seule acceptation par invitation
             }
             $this->audit->record(new AuditEvent($now, AuditAction::AdminInvitationAccepted, AuditSubjectType::MunicipalityAdminInvitation, $invitationId, $municipality->id(), AuditActor::user($user->id()), null, [
+                'roles' => array_map(static fn ($r): string => $r->value, $invitation->roles()),
                 'attestedRepresentation' => true,
                 'emailControlProven' => true,
                 'officialHabilitationVerified' => false,

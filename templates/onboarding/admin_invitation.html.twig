@@ -1,5 +1,5 @@
 {% extends 'layouts/auth.html.twig' %}
-{% set page_title = 'Invitation à administrer une commune' %}
+{% set page_title = 'Invitation à rejoindre une commune' %}
 {% block meta %}<meta name="referrer" content="no-referrer"><meta name="robots" content="noindex, nofollow">{% endblock %}
 
 {#
@@ -10,21 +10,22 @@
 {% block content %}
   {% for message in app.flashes('success') %}{% include 'components/alert.html.twig' with { variant: 'success', title: message, focus: true } only %}{% endfor %}
 
-  {% embed 'components/panel.html.twig' with { id: 'adm-inv-h', title: 'Administrer ' ~ commune_name ~ ' sur Civipass', level: 1, case: case, error: error, form: form, invited_email_masked: invited_email_masked, commune_name: commune_name, csrf_accept: csrf_token('admin_invitation_accept'), login_url: path('app_login') } only %}
+  {% embed 'components/panel.html.twig' with { id: 'adm-inv-h', roles: roles, title: 'Rejoindre ' ~ commune_name ~ ' sur Civipass', level: 1, case: case, error: error, form: form, invited_email_masked: invited_email_masked, commune_name: commune_name, csrf_accept: csrf_token('admin_invitation_accept'), login_url: path('app_login') } only %}
     {% block body %}
-      <p class="cp-help">Civipass permet aux communes de gérer les laissez-passer en situation de crise. L’administrateur communal invite les agents de la commune, prépare les événements et leurs zones. Cette invitation ne vous donne aucun droit tant que vous ne l’avez pas acceptée ci-dessous.</p>
+      <p class="cp-help">Civipass permet aux communes de gérer les laissez-passer en situation de crise. Cette invitation ne vous donne aucun droit tant que vous ne l’avez pas acceptée ci-dessous.</p>
 
       {% if error %}{% include 'components/alert.html.twig' with { variant: 'error', id: 'form-error', title: 'Rien n’a été enregistré', text: error } only %}{% endif %}
 
       {% if case == 'admin_login_required' %}
-        <p>Un compte Civipass existe déjà pour l’adresse <b>{{ invited_email_masked }}</b>. Connectez-vous avec ce compte pour devenir administrateur de {{ commune_name }}.</p>
+        <p>Un compte Civipass existe déjà pour l’adresse <b>{{ invited_email_masked }}</b>. Connectez-vous avec ce compte pour rejoindre {{ commune_name }}.</p>
         {% include 'components/button.html.twig' with { label: 'Se connecter', href: login_url, icon: 'right' } only %}
 
       {% elseif case == 'admin_wrong_account' %}
         <p><b>Vous êtes connecté(e) avec un autre compte.</b> Cette invitation est destinée à l’adresse {{ invited_email_masked }}. Déconnectez-vous, puis reconnectez-vous avec le compte de cette adresse.</p>
 
       {% elseif case == 'admin_confirm' or case == 'admin_signup' %}
-        <p>Vous avez été invité(e) à devenir <b>administrateur communal de {{ commune_name }}</b> (adresse {{ invited_email_masked }}).</p>
+        <p>Vous avez été invité(e) à rejoindre l’équipe de <b>{{ commune_name }}</b> (adresse {{ invited_email_masked }}) avec {{ roles|length > 1 ? 'les rôles suivants' : 'le rôle suivant' }} :</p>
+        <ul>{% for r in roles %}<li><b>{{ r.label }}</b> : {{ r.description }}</li>{% endfor %}</ul>
         <form method="post" action="{{ path('app_invitation_join') }}" novalidate data-controller="cp--submit-state" class="cp-stack" style="gap: var(--space-4)">
           {% if case == 'admin_signup' %}
             {% include 'components/field.html.twig' with { id: 'first-name', name: 'first_name', label: 'Prénom', required: true, value: form.first_name, autocomplete: 'given-name' } only %}
@@ -32,8 +33,8 @@
             {% include 'components/field.html.twig' with { id: 'password', name: 'password', type: 'password', label: 'Mot de passe', required: true, autocomplete: 'new-password', attrs: 'minlength="12"', help: '12 caractères minimum : préférez une phrase longue.' } only %}
             {% include 'components/field.html.twig' with { id: 'password-confirm', name: 'password_confirm', type: 'password', label: 'Confirmez le mot de passe', required: true, autocomplete: 'new-password', attrs: 'minlength="12"' } only %}
           {% endif %}
-          {% include 'components/check.html.twig' with { id: 'attest', name: 'attest', value: '1', label: 'J’atteste être habilité(e) à représenter ' ~ commune_name ~ ' et à administrer son accès à Civipass.' } only %}
-          {% include 'components/alert.html.twig' with { variant: 'quiet', icon: 'shield', text: 'Ouvrir ce lien depuis votre boîte e-mail prouve que vous la contrôlez ; cela ne prouve pas à lui seul votre habilitation officielle, que vous attestez ici. Vous recevrez uniquement le rôle d’administrateur communal.' } only %}
+          {% include 'components/check.html.twig' with { id: 'attest', name: 'attest', value: '1', label: 'J’atteste être habilité(e) à représenter ' ~ commune_name ~ ' et à travailler pour elle sur Civipass.' } only %}
+          {% include 'components/alert.html.twig' with { variant: 'quiet', icon: 'shield', text: 'Ouvrir ce lien depuis votre boîte e-mail prouve que vous la contrôlez ; cela ne prouve pas à lui seul votre habilitation officielle, que vous attestez ici. Vous recevrez uniquement ' ~ (roles|length > 1 ? 'les rôles indiqués' : 'le rôle indiqué') ~ ' ci-dessus.' } only %}
           <input type="hidden" name="_token" value="{{ csrf_accept }}">
           {% include 'components/button.html.twig' with { label: case == 'admin_signup' ? 'Créer mon compte et accepter' : 'Accepter l’invitation', type: 'submit', icon: 'check', loading_label: 'Enregistrement…' } only %}
         </form>

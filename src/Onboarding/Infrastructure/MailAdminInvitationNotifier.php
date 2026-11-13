@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Onboarding\Infrastructure;
 
+use App\Municipality\Application\RoleLabels;
 use App\Onboarding\Application\AdminInvitationNotifier;
 use App\Onboarding\Application\InvitationDeliveryFailed;
 use App\Onboarding\Domain\MunicipalityAdminInvitation;
@@ -29,16 +30,20 @@ final readonly class MailAdminInvitationNotifier implements AdminInvitationNotif
     ) {
     }
 
-    public function send(MunicipalityAdminInvitation $invitation, #[\SensitiveParameter] string $plainToken): void
+    public function send(MunicipalityAdminInvitation $invitation, #[\SensitiveParameter] string $plainToken, ?string $inviterName = null): void
     {
         $path = $this->urls->generate('app_invitation_link', ['token' => $plainToken], UrlGeneratorInterface::ABSOLUTE_PATH);
         $email = (new TemplatedEmail())
             ->to(new Address($invitation->recipientEmail()))
-            ->subject(sprintf('Administrer %s sur Civipass : votre invitation', $invitation->municipality()->name()))
+            ->subject(null === $inviterName
+                ? sprintf('Administrer %s sur Civipass : votre invitation', $invitation->municipality()->name())
+                : sprintf('%s vous invite à rejoindre l’équipe de %s sur Civipass', $inviterName, $invitation->municipality()->name()))
             ->textTemplate('email/admin_invitation.txt.twig')
             ->htmlTemplate('email/admin_invitation.html.twig')
             ->context([
                 'communeName' => $invitation->municipality()->name(),
+                'inviterName' => $inviterName,
+                'roles' => array_map(static fn ($r): array => ['label' => RoleLabels::label($r), 'description' => RoleLabels::description($r)], $invitation->roles()),
                 'joinUrl' => rtrim($this->baseUrl, '/').$path,
                 'expiresAt' => $invitation->expiresAt(),
             ]);

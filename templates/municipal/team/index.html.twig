@@ -1,0 +1,74 @@
+{% extends 'layouts/app.html.twig' %}
+
+{# Équipe de la commune (LOT 07.2) : collaborateurs actifs, invitations. Variables : members, invitations, administrators, self_id, writable. #}
+{% block content %}
+  {% for message in app.flashes('success') %}{% include 'components/alert.html.twig' with { variant: 'success', title: message, focus: true } only %}{% endfor %}
+  {% for message in app.flashes('warning') %}{% include 'components/alert.html.twig' with { variant: 'warning', title: message, focus: true } only %}{% endfor %}
+  {% for message in app.flashes('error') %}{% include 'components/alert.html.twig' with { variant: 'error', title: 'Rien n’a été modifié', text: message, focus: true } only %}{% endfor %}
+  {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Équipe', sub: 'Les personnes qui travaillent avec Civipass pour votre commune, et ce qu’elles peuvent faire.' } only %}
+
+  {% if writable %}
+    <p>{% include 'components/button.html.twig' with { label: 'Inviter un collaborateur', icon: 'plus', href: path('app_team_invite', { municipalityId: active_municipality_id }) } only %}</p>
+  {% else %}
+    {% include 'components/alert.html.twig' with { variant: 'info', title: 'Commune suspendue : équipe en lecture seule', text: 'Vous pouvez consulter l’équipe mais pas la modifier tant que la commune est suspendue.' } only %}
+  {% endif %}
+
+  <h2 class="cp-h2" id="team-members">Collaborateurs ({{ members|length }})</h2>
+  {% if administrators <= 1 %}
+    {% include 'components/alert.html.twig' with { variant: 'info', icon: 'shield', text: 'Une commune doit toujours garder au moins un administrateur actif : le dernier ne peut être ni retiré ni rétrogradé. Invitez un second administrateur pour sécuriser l’accès.' } only %}
+  {% endif %}
+  <div class="cp-table-wrap">
+    <table class="cp-table" aria-labelledby="team-members">
+      <thead><tr><th scope="col">Personne</th><th scope="col">Rôles</th><th scope="col">Dernière connexion</th><th scope="col">Actions</th></tr></thead>
+      <tbody>
+      {% for m in members %}
+        <tr>
+          <td data-label="Personne"><strong>{{ m.name }}</strong>{% if m.id == self_id or m.userId == self_id %} <span class="cp-muted">(vous)</span>{% endif %}<br><span class="cp-muted">{{ m.email }}</span></td>
+          <td data-label="Rôles">{{ m.roles }}{% if not m.accountActive %}<br><span class="cp-muted">Compte désactivé</span>{% endif %}</td>
+          <td data-label="Dernière connexion">{{ m.lastLogin ? m.lastLogin|date('d/m/Y H:i', 'Europe/Paris') : 'Jamais' }}</td>
+          <td data-label="Actions" class="cp-table__actions">
+            {% if m.userId == self_id %}
+              <span class="cp-muted">Vos propres droits ne se modifient pas ici : demandez à un autre administrateur.</span>
+            {% elseif not writable %}
+              <span class="cp-muted">—</span>
+            {% elseif m.lastAdministrator %}
+              <span class="cp-muted">Dernier administrateur : invitez-en un autre avant toute modification.</span>
+            {% else %}
+              <a class="cp-table__link" href="{{ path('app_team_roles', { municipalityId: active_municipality_id, membershipId: m.id }) }}">Modifier les rôles</a>
+              · <a class="cp-table__link" href="{{ path('app_team_remove', { municipalityId: active_municipality_id, membershipId: m.id }) }}">Retirer</a>
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4">Aucun collaborateur.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="cp-h2" id="team-invitations">Invitations</h2>
+  <div class="cp-table-wrap">
+    <table class="cp-table" aria-labelledby="team-invitations">
+      <thead><tr><th scope="col">Adresse</th><th scope="col">Rôles proposés</th><th scope="col">État</th><th scope="col">Expire le</th><th scope="col">Actions</th></tr></thead>
+      <tbody>
+      {% for i in invitations %}
+        <tr>
+          <td data-label="Adresse">{{ i.email }}</td>
+          <td data-label="Rôles proposés">{{ i.roles }}</td>
+          <td data-label="État">{{ i.stateLabel }}{% if i.state == 'PENDING' or i.state == 'EXPIRED' %}<br><span class="cp-muted">{{ i.delivery }}</span>{% endif %}</td>
+          <td data-label="Expire le">{{ i.expiresAt|date('d/m/Y', 'Europe/Paris') }}</td>
+          <td data-label="Actions" class="cp-table__actions">
+            {% if writable and (i.state == 'PENDING' or i.state == 'EXPIRED') %}
+              <a class="cp-table__link" href="{{ path('app_team_invitation', { municipalityId: active_municipality_id, invitationId: i.id, action: 'renvoyer' }) }}">Renvoyer</a>
+              {% if i.state == 'PENDING' %}· <a class="cp-table__link" href="{{ path('app_team_invitation', { municipalityId: active_municipality_id, invitationId: i.id, action: 'revoquer' }) }}">Révoquer</a>{% endif %}
+            {% else %}<span class="cp-muted">—</span>{% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5">Aucune invitation.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

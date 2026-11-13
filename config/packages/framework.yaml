@@ -68,6 +68,16 @@ framework:
             policy: sliding_window
             limit: 30
             interval: '15 minutes'
+        # Invitations d'équipe émises par une commune (LOT 07.2) : évite d'utiliser la plateforme comme relais d'e-mails.
+        # 20 envois / heure par commune, 10 / heure par administrateur.
+        team_invitation_commune:
+            policy: sliding_window
+            limit: 20
+            interval: '1 hour'
+        team_invitation_admin:
+            policy: sliding_window
+            limit: 10
+            interval: '1 hour'
         invitation_delegation:
             policy: sliding_window
             limit: 5

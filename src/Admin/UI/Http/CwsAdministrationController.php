@@ -126,7 +126,7 @@ final class CwsAdministrationController extends AbstractController
             'situation' => $this->situations->read($municipality),
             'accesses' => $this->accesses->findByMunicipality($municipality->id()),
             'administrators' => $administrators,
-            'invitations' => $this->invitations->findByMunicipality($municipality),
+            'invitations' => array_values(array_filter($this->invitations->findByMunicipality($municipality), static fn (MunicipalityAdminInvitation $i): bool => $i->grantsAdministrator())), // jamais les invitations ordinaires des agents (LOT 07.2)
             'history' => $this->history->forMunicipality($municipality),
             'now' => $this->clock->now(),
             // Indicateur d'exploitation SANS valeur sensible : seul le fait que le transport ne soit pas « null » est exposé.
@@ -272,6 +272,9 @@ final class CwsAdministrationController extends AbstractController
         }
         if ($target instanceof User) {
             return [$target, 'admin_cws_user', ['id' => $id]];
+        }
+        if ($target instanceof MunicipalityAdminInvitation && !$target->grantsAdministrator()) {
+            throw $this->createNotFoundException(); // invitation ordinaire d'un agent : hors du périmètre de CWS
         }
         if ($target instanceof MunicipalityMembership && !$target->hasRole(MunicipalityRole::MunicipalityAdmin)) {
             throw $this->createNotFoundException(); // CWS ne touche qu'aux administrateurs (A3)

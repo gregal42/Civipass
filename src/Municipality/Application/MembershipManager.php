@@ -134,20 +134,25 @@ final readonly class MembershipManager
     }
 
     /**
-     * Inscrit `$user` comme administrateur communal à l'ACCEPTATION d'une invitation émise par CWS (LOT 07.1). Contrairement à
-     * `enrollFirstAdministrator`, la commune peut déjà avoir des administrateurs (remplacement, récupération d'accès) : l'autorité
-     * est l'invitation CWS, consommée dans la même transaction (`$withinTransaction`, faux = refus, rien d'écrit). Garde-fous
-     * conservés : rôle administrateur UNIQUEMENT, commune ACTIVE ou SUSPENDED (jamais INACTIVE), compte actif, jamais un
-     * super-administrateur CWS (séparation, A3), jamais un compte déjà rattaché (ses rôles se gèrent ensuite), tout sous le
-     * verrou de la commune.
+     * Inscrit `$user` avec les rôles de son invitation, à l'ACCEPTATION d'une invitation à rejoindre la commune (LOT 07.1 : administrateur
+     * émis par CWS ; LOT 07.2 : collaborateur émis par un administrateur communal). L'autorité est l'invitation, consommée dans la
+     * même transaction (`$withinTransaction`, faux = refus, rien d'écrit). Garde-fous : au moins un rôle, uniquement ceux de
+     * l'invitation, commune ACTIVE ou SUSPENDED (jamais INACTIVE), compte actif, jamais un super-administrateur CWS (séparation),
+     * jamais un compte déjà rattaché ACTIF (ses rôles se modifient dans l'équipe) ; un rattachement INACTIF est réactivé avec les
+     * rôles invités (jamais de doublon) ; tout sous le verrou de la commune.
      *
-     * @param \Closure(): bool $withinTransaction
+     * @param list<MunicipalityRole> $roles
+     * @param \Closure(): bool       $withinTransaction
      *
      * @throws OperationNotAllowed
      */
-    public function enrollInvitedAdministrator(User $user, Municipality $municipality, \Closure $withinTransaction): MunicipalityMembership
+    public function enrollInvited(User $user, Municipality $municipality, array $roles, \Closure $withinTransaction): MunicipalityMembership
     {
-        return $this->transaction->run(function () use ($user, $municipality, $withinTransaction): MunicipalityMembership {
+        if ([] === $roles) {
+            throw new OperationNotAllowed('Aucun rôle à attribuer.');
+        }
+
+        return $this->transaction->run(function () use ($user, $municipality, $roles, $withinTransaction): MunicipalityMembership {
             $municipality = $this->lockedMunicipality($municipality);
             if (!\in_array($municipality->status(), [MunicipalityStatus::Active, MunicipalityStatus::Suspended], true)) {
                 throw new OperationNotAllowed('Cette commune n\'est pas disponible.');
@@ -168,20 +173,62 @@ final readonly class MembershipManager
 
             $now = $this->clock->now();
             if (null === $existing) {
-                $membership = new MunicipalityMembership($user, $municipality, [MunicipalityRole::MunicipalityAdmin], $now);
+                $membership = new MunicipalityMembership($user, $municipality, $roles, $now);
                 $this->memberships->add($membership);
                 $action = AuditAction::MembershipCreated;
                 $previous = null;
             } else {
                 $previous = $this->snapshot($existing);
-                $existing->activate([MunicipalityRole::MunicipalityAdmin], $now);
+                $existing->activate($roles, $now);
                 $membership = $existing;
                 $action = AuditAction::MembershipActivated;
             }
-            $this->audit->record(new AuditEvent($now, $action, AuditSubjectType::MunicipalityMembership, $membership->id(), $municipality->id(), AuditActor::user($user->id()), $previous, $this->snapshot($membership) + ['origin' => 'CWS_ADMIN_INVITATION']));
+            $this->audit->record(new AuditEvent($now, $action, AuditSubjectType::MunicipalityMembership, $membership->id(), $municipality->id(), AuditActor::user($user->id()), $previous, $this->snapshot($membership) + ['origin' => 'INVITATION']));
 
             return $membership;
         });
+    }
+
+    /**
+     * Modification des rôles d'un collaborateur par un ADMINISTRATEUR de la commune (LOT 07.2). Le rattachement doit appartenir à la
+     * commune (sinon refus uniforme) ; l'acteur doit être administrateur effectif de CETTE commune (un super-administrateur sans
+     * rattachement n'a aucun droit ici, DM-005) ; jamais ses propres rôles ; le dernier administrateur est protégé ; les habilitations
+     * fines adossées à un rôle perdu sont révoquées (`changeRoles`).
+     *
+     * @param list<MunicipalityRole> $roles
+     *
+     * @throws OperationNotAllowed
+     */
+    public function changeTeamRoles(Municipality $municipality, MunicipalityMembership $membership, array $roles, User $actor): void
+    {
+        $this->assertTeamScope($municipality, $membership, $actor);
+        $this->changeRoles($membership, $roles, $actor);
+    }
+
+    /**
+     * Retrait d'un collaborateur de la commune par un administrateur (LOT 07.2) : désactive le rattachement de CETTE commune seulement
+     * (le compte et ses autres communes ne sont pas touchés). Jamais son propre rattachement ; le dernier administrateur est protégé.
+     *
+     * @throws OperationNotAllowed
+     */
+    public function removeFromTeam(Municipality $municipality, MunicipalityMembership $membership, User $actor): void
+    {
+        $this->assertTeamScope($municipality, $membership, $actor);
+        if ($actor->id()->equals($membership->user()->id())) {
+            throw new OperationNotAllowed('Vous ne pouvez pas vous retirer vous-même : demandez à un autre administrateur.');
+        }
+        $this->deactivate($membership, $actor);
+    }
+
+    /** Périmètre d'une opération d'équipe : rattachement de la commune de l'URL, acteur administrateur communal (non CWS). */
+    private function assertTeamScope(Municipality $municipality, MunicipalityMembership $membership, User $actor): void
+    {
+        if (!$membership->municipality()->id()->equals($municipality->id())) {
+            throw new OperationNotAllowed('Ressource inaccessible.');
+        }
+        if (!$this->policy->hasRole($actor, $municipality, MunicipalityRole::MunicipalityAdmin)) {
+            throw new OperationNotAllowed('Droit insuffisant pour gérer l\'équipe de cette commune.');
+        }
     }
 
     /**
@@ -282,7 +329,14 @@ final readonly class MembershipManager
 
     private function assertActorCanManage(?User $actor, Municipality $municipality): void
     {
-        if (null !== $actor && !$this->policy->canManageMembers($actor, $municipality)) {
+        if (null === $actor) {
+            return;
+        }
+        // Super-administrateur actif (supervision, DM-121) OU administrateur effectif de la commune ACTIVE, relu MAINTENANT sous le verrou
+        // de la commune : un administrateur rétrogradé à l'instant par un pair ne conserve aucun pouvoir (pas d'instantané périmé).
+        $allowed = $this->policy->isActiveSuperAdmin($actor)
+            || (MunicipalityStatus::Active === $municipality->status() && $this->memberships->isEffectiveAdmin($actor, $municipality));
+        if (!$allowed) {
             throw new OperationNotAllowed('Droit insuffisant pour gérer les membres de cette commune.');
         }
     }

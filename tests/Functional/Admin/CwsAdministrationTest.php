@@ -95,7 +95,7 @@ final class CwsAdministrationTest extends WebTestCase
         self::assertResponseRedirects('/invitation');
         $this->client->followRedirect();
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('body', 'Administrer Saumos');
+        self::assertSelectorTextContains('body', 'Rejoindre Saumos');
         $this->client->request('POST', '/invitation/rejoindre', [
             '_token' => $this->tokenIn('form[action$="/invitation/rejoindre"]'),
             'first_name' => 'Claire', 'last_name' => 'Martin', 'password' => 'une phrase de passe longue', 'password_confirm' => 'une phrase de passe longue', 'attest' => '1',

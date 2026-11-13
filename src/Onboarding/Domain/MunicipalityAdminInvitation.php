@@ -6,13 +6,16 @@ namespace App\Onboarding\Domain;
 
 use App\Identity\Domain\User;
 use App\Municipality\Domain\Municipality;
+use App\Municipality\Domain\MunicipalityRole;
+use App\Shared\Domain\DomainRuleViolation;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Invitation d'un administrateur communal émise par CWS (LOT 07.1), distincte des liens d'invitation à un événement.
+ * Invitation à rejoindre une commune avec des rôles donnés (LOT 07.1 : administrateur émis par CWS ; LOT 07.2 : collaborateur émis par un
+ * administrateur communal), distincte des liens d'invitation à un événement. Le nom de table (`municipality_admin_invitation`) est historique.
  *
  * Elle ne donne AUCUN droit par elle-même : l'appartenance n'est créée qu'à l'acceptation (aucun administrateur « fantôme »,
  * une invitation en attente ne compte jamais comme administrateur effectif). Seule l'empreinte du jeton est stockée ; l'adresse
@@ -49,12 +52,19 @@ class MunicipalityAdminInvitation
     #[ORM\JoinColumn(name: 'revoked_by', nullable: true, onDelete: 'RESTRICT')]
     private ?User $revokedBy = null;
 
+    /** @var list<string> valeurs de MunicipalityRole : rôles qui seront donnés À L'ACCEPTATION (jamais avant) */
+    #[ORM\Column(type: Types::JSON)]
+    private array $roles;
+
     #[ORM\Column(type: Types::STRING, length: 10, enumType: InvitationDeliveryStatus::class)]
     private InvitationDeliveryStatus $deliveryStatus = InvitationDeliveryStatus::Pending;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $deliveryAttemptedAt = null;
 
+    /**
+     * @param list<MunicipalityRole> $roles
+     */
     public function __construct(
         #[ORM\ManyToOne(targetEntity: Municipality::class, fetch: 'LAZY')]
         #[ORM\JoinColumn(name: 'municipality_id', nullable: false, onDelete: 'RESTRICT')]
@@ -72,9 +82,29 @@ class MunicipalityAdminInvitation
         #[ORM\ManyToOne(targetEntity: self::class, fetch: 'LAZY')]
         #[ORM\JoinColumn(name: 'parent_id', nullable: true, onDelete: 'RESTRICT')]
         private ?self $parent = null,
+        array $roles = [MunicipalityRole::MunicipalityAdmin],
     ) {
+        $this->roles = self::normalizeRoles($roles);
         $this->id = Uuid::v7();
         $this->expiresAt = $createdAt->add(new \DateInterval($lifetime));
+    }
+
+    /**
+     * Rôles dédupliqués, non vides, dans l'ordre canonique de l'énumération.
+     *
+     * @param list<MunicipalityRole> $roles
+     *
+     * @return list<string>
+     */
+    public static function normalizeRoles(array $roles): array
+    {
+        $values = array_map(static fn (MunicipalityRole $r): string => $r->value, $roles);
+        $ordered = array_values(array_filter(array_map(static fn (MunicipalityRole $r): string => $r->value, MunicipalityRole::cases()), static fn (string $v): bool => \in_array($v, $values, true)));
+        if ([] === $ordered) {
+            throw new DomainRuleViolation('Choisissez au moins un rôle.');
+        }
+
+        return $ordered;
     }
 
     public function id(): Uuid
@@ -111,6 +141,17 @@ class MunicipalityAdminInvitation
     public function expiresAt(): \DateTimeImmutable
     {
         return $this->expiresAt;
+    }
+
+    /** @return list<MunicipalityRole> */
+    public function roles(): array
+    {
+        return array_map(static fn (string $v): MunicipalityRole => MunicipalityRole::from($v), $this->roles);
+    }
+
+    public function grantsAdministrator(): bool
+    {
+        return \in_array(MunicipalityRole::MunicipalityAdmin->value, $this->roles, true);
     }
 
     public function parent(): ?self

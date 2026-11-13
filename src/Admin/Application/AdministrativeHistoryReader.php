@@ -48,7 +48,12 @@ final readonly class AdministrativeHistoryReader
         $rows = $this->connection->fetchAllAssociative(
             'SELECT a.occurred_at AS at, a.action AS action, u.first_name AS fn, u.last_name AS ln'
             .' FROM audit_log a LEFT JOIN identity_user u ON u.id = a.actor_id'
-            .' WHERE a.municipality_id = :m AND a.action IN (:actions) ORDER BY a.occurred_at DESC, a.id DESC LIMIT '.max(1, min(200, $limit)),
+            .' WHERE a.municipality_id = :m AND a.action IN (:actions)'
+            // Confidentialité des équipes (LOT 07.2) : CWS ne voit que ce qui concerne les ADMINISTRATEURS, jamais les invitations ni les
+            // rattachements ordinaires des agents.
+            .' AND (a.action NOT LIKE \'ADMIN\\_INVITATION\\_%\' OR EXISTS (SELECT 1 FROM municipality_admin_invitation i WHERE i.id = a.subject_id AND JSON_CONTAINS(i.roles, \'"MUNICIPALITY_ADMIN"\')))'
+            .' AND (a.action NOT LIKE \'MEMBERSHIP\\_%\' OR EXISTS (SELECT 1 FROM municipality_membership mm WHERE mm.id = a.subject_id AND JSON_CONTAINS(mm.roles, \'"MUNICIPALITY_ADMIN"\')))'
+            .' ORDER BY a.occurred_at DESC, a.id DESC LIMIT '.max(1, min(200, $limit)),
             ['m' => $municipality->id()->toBinary(), 'actions' => array_keys(self::LABELS)],
             ['actions' => ArrayParameterType::STRING],
         );

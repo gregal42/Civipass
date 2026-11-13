@@ -78,6 +78,8 @@ security:
         # exigeront IS_AUTHENTICATED_FULLY.
         # Écriture (formulaires de création, de modification, d'invitation et actions de participation, GET comme POST) : authentification COMPLÈTE, jamais « se souvenir de moi ».
         - { path: '^/communes/[^/]+/evenements/(nouveau|[^/]+/(modifier|inviter(/communes)?|invitations/[0-9a-f-]+/renvoyer|participation/[a-z]+|cycle/[a-z]+)|[^/]+/zones/(nouvelle|[^/]+/(modifier|confirmer|suspendre|reactiver|supprimer|validite(/.*)?)))$', roles: IS_AUTHENTICATED_FULLY }
+        # Équipe (LOT 07.2) : toute page d'écriture (formulaires, confirmations, actions) exige l'authentification COMPLÈTE ; seule la liste reste lisible en session mémorisée.
+        - { path: '^/communes/[^/]+/equipe/.+', roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/communes(?:/|$), roles: IS_AUTHENTICATED_REMEMBERED }
 
 when@test:

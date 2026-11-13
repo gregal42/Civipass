@@ -1,8 +1,11 @@
 Bonjour,
 
-L'équipe Civipass vous invite à devenir administrateur communal de {{ communeName }} sur Civipass, la plateforme de gestion des laissez-passer en situation de crise.
+{% if inviterName %}{{ inviterName }} vous invite à rejoindre l'équipe de {{ communeName }} sur Civipass, la plateforme de gestion des laissez-passer en situation de crise.{% else %}L'équipe Civipass vous invite à devenir administrateur communal de {{ communeName }} sur Civipass, la plateforme de gestion des laissez-passer en situation de crise.{% endif %}
 
-L'administrateur communal invite les agents de la commune, gère ses événements et ses zones. Cette invitation ne vous donne aucun droit tant que vous ne l'avez pas acceptée.
+Rôle{{ roles|length > 1 ? 's' : '' }} proposé{{ roles|length > 1 ? 's' : '' }} :
+{% for r in roles %}- {{ r.label }} : {{ r.description }}
+{% endfor %}
+Cette invitation ne vous donne aucun droit tant que vous ne l'avez pas acceptée.
 
 Pour créer votre compte (ou vous connecter) et accepter, ouvrez ce lien personnel, valable jusqu'au {{ expiresAt|date('d/m/Y', 'Europe/Paris') }} et utilisable une seule fois :
 

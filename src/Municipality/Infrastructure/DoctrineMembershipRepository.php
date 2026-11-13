@@ -37,6 +37,17 @@ final readonly class DoctrineMembershipRepository implements MembershipRepositor
             ->findOneBy(['user' => $user, 'municipality' => $municipality]);
     }
 
+    public function isEffectiveAdmin(User $user, Municipality $municipality): bool
+    {
+        $found = $this->entityManager->getConnection()->fetchOne(
+            'SELECT 1 FROM municipality_membership mm JOIN identity_user u ON u.id = mm.user_id'
+            .' WHERE mm.user_id = :user AND mm.municipality_id = :municipality AND mm.active = 1 AND u.active = 1 AND JSON_CONTAINS(mm.roles, :role) FOR SHARE',
+            ['user' => $user->id()->toBinary(), 'municipality' => $municipality->id()->toBinary(), 'role' => json_encode(MunicipalityRole::MunicipalityAdmin->value, \JSON_THROW_ON_ERROR)],
+        );
+
+        return false !== $found;
+    }
+
     public function countEffectiveAdmins(Municipality $municipality, ?Uuid $excludingMembershipId = null, ?Uuid $excludingUserId = null): int
     {
         $sql = 'SELECT COUNT(*) FROM municipality_membership mm JOIN identity_user u ON u.id = mm.user_id'

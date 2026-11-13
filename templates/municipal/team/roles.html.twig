@@ -1,0 +1,17 @@
+{% extends 'layouts/app.html.twig' %}
+
+{# Modifier les rôles d'un collaborateur (LOT 07.2). Variables : person, form{roles}, error, role_options, csrf, action_url, cancel_url. #}
+{% block content %}
+  {% include 'components/breadcrumb.html.twig' with { items: [{ label: 'Équipe', href: cancel_url }, { label: 'Modifier les rôles' }], back: { label: 'Équipe', href: cancel_url } } only %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Modifier les rôles de ' ~ person, sub: 'Le changement prend effet immédiatement, y compris si la personne est connectée.' } only %}
+  {% if error %}{% include 'components/alert.html.twig' with { variant: 'error', title: 'Rien n’a été enregistré', text: error, focus: true } only %}{% endif %}
+  <form class="cp-stack" style="gap: var(--space-5)" method="post" action="{{ action_url }}" novalidate data-controller="cp--unsaved-guard cp--submit-state">
+    <input type="hidden" name="_token" value="{{ csrf_token(csrf) }}">
+    {% include 'municipal/team/_roles_fieldset.html.twig' with { role_options: role_options, selected: form.roles } only %}
+    {% include 'components/alert.html.twig' with { variant: 'info', icon: 'shield', text: 'Retirer un rôle révoque les habilitations qui en dépendent (par exemple une désignation d’archive). Le dernier administrateur actif ne peut pas perdre son rôle.' } only %}
+    <div class="cp-form-actions">
+      {% include 'components/button.html.twig' with { label: 'Enregistrer', icon: 'check', type: 'submit', loading_label: 'Enregistrement…' } only %}
+      {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', href: cancel_url } only %}
+    </div>
+  </form>
+{% endblock %}

@@ -11,16 +11,16 @@ use App\Onboarding\Domain\MunicipalityAdminInvitation;
 /** Notifier de test : n'envoie rien, mémorise le jeton EN CLAIR (seule trace hors e-mail) ; peut simuler une panne SMTP. */
 final class RecordingAdminInvitationNotifier implements AdminInvitationNotifier
 {
-    /** @var list<array{to: string, token: string}> */
+    /** @var list<array{to: string, token: string, inviter: ?string, roles: list<string>}> */
     public array $sent = [];
     public bool $failing = false;
 
-    public function send(MunicipalityAdminInvitation $invitation, #[\SensitiveParameter] string $plainToken): void
+    public function send(MunicipalityAdminInvitation $invitation, #[\SensitiveParameter] string $plainToken, ?string $inviterName = null): void
     {
         if ($this->failing) {
             throw new InvitationDeliveryFailed('Envoi impossible (test).');
         }
-        $this->sent[] = ['to' => $invitation->recipientEmail(), 'token' => $plainToken];
+        $this->sent[] = ['to' => $invitation->recipientEmail(), 'token' => $plainToken, 'inviter' => $inviterName, 'roles' => array_map(static fn ($r): string => $r->value, $invitation->roles())];
     }
 
     public function lastToken(): string
