@@ -181,6 +181,30 @@ final readonly class UserManager
         });
     }
 
+    /**
+     * Désactivation d'un compte depuis le back-office CWS (LOT 07.1) : jamais un compte CWS (la console reste la seule voie),
+     * jamais son propre compte ; garde du dernier administrateur communal appliquée par `deactivate`.
+     */
+    public function deactivateByCws(User $target, User $actor): void
+    {
+        $this->assertCwsTarget($target, $actor);
+        $this->deactivate($target, $actor);
+    }
+
+    public function activateByCws(User $target, User $actor): void
+    {
+        $this->assertCwsTarget($target, $actor);
+        $this->activate($target, $actor);
+    }
+
+    private function assertCwsTarget(User $target, User $actor): void
+    {
+        $this->assertActorIsSuperAdminOrConsole($actor);
+        if ($target->isSuperAdmin() || $target->id()->equals($actor->id())) {
+            throw new OperationNotAllowed('Ce compte ne peut pas être modifié depuis le back-office.');
+        }
+    }
+
     private function newUserWithHashedPassword(EmailAddress $address, #[\SensitiveParameter] string $plainPassword, string $firstName, string $lastName): User
     {
         $user = new User($address, 'pending', $firstName, $lastName, $this->clock->now());

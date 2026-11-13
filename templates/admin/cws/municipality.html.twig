@@ -1,0 +1,166 @@
+{% extends 'admin/cws/base.html.twig' %}
+{% set mid = m.id.toRfc4122 %}
+{% set labels = {ACTIVE: 'Active', SUSPENDED: 'Suspendue', INACTIVE: 'Inactive'} %}
+{% block cws_title %}{{ m.name }} <small>INSEE {{ m.inseeCode.value }}</small>{% endblock %}
+
+{% block cws_content %}
+  {# Situation : l'état d'ouverture et la continuité de service, séparés (DM-073). #}
+  <div class="box {{ situation.isReady ? 'box-success' : 'box-warning' }}">
+    <div class="box-header"><h3 class="box-title">Situation de la commune</h3></div>
+    <div class="box-body">
+      {% if situation.awaitingAdministrator %}
+        <div class="alert alert-warning"><strong>En attente d’administrateur.</strong> Cette commune n’a aucun administrateur actif{% if situation.pendingInvitations > 0 %} ; {{ situation.pendingInvitations }} invitation(s) en attente (une invitation n’est pas un administrateur){% else %} et aucune invitation en attente : invitez-en un ci-dessous{% endif %}.</div>
+      {% endif %}
+      <ul class="list-unstyled">
+        <li>{{ situation.status.value == 'ACTIVE' ? '✔' : '✖' }} Statut administratif : <strong>{{ labels[situation.status.value] }}</strong></li>
+        <li>{{ situation.canCreateEvents ? '✔' : '✖' }} Droit de créer de <strong>nouveaux</strong> événements :
+          {% if situation.canCreateEvents %}valide{% if situation.currentAccess and situation.currentAccess.expiresAt %} jusqu’au {{ situation.currentAccess.expiresAt|date('d/m/Y', 'Europe/Paris') }} (exclu){% elseif situation.currentAccess %} sans date d’expiration{% endif %}
+          {% elseif situation.scheduledAccess %}programmé à partir du {{ situation.scheduledAccess.grantedAt|date('d/m/Y', 'Europe/Paris') }}
+          {% else %}<strong>aucun</strong>{% endif %}</li>
+        <li>{{ situation.activeAdministrators > 0 ? '✔' : '✖' }} Administrateurs actifs : <strong>{{ situation.activeAdministrators }}</strong></li>
+        <li>{{ mailer_ready ? '✔' : '⚠' }} Messagerie d’envoi : <strong>{{ mailer_ready ? 'configurée' : 'non configurée (les invitations ne partiront pas)' }}</strong></li>
+      </ul>
+      <p class="text-muted">Continuité : l’expiration ou la révocation d’un accès commercial n’empêche que la création de nouveaux événements ; les événements déjà ouverts, leurs demandes et leurs laissez-passer continuent (DM-073). Seule la suspension de la commune restreint ses opérations (DM-034).</p>
+      <p>
+        {% if situation.status.value == 'ACTIVE' %}
+          <a class="btn btn-warning" href="{{ path('admin_cws_confirm', {action: 'commune_suspend', id: mid}) }}">Suspendre</a>
+          <a class="btn btn-default" href="{{ path('admin_cws_confirm', {action: 'commune_deactivate', id: mid}) }}">Désactiver</a>
+        {% elseif situation.status.value == 'SUSPENDED' %}
+          <a class="btn btn-success" href="{{ path('admin_cws_confirm', {action: 'commune_reactivate', id: mid}) }}">Réactiver</a>
+          <a class="btn btn-default" href="{{ path('admin_cws_confirm', {action: 'commune_deactivate', id: mid}) }}">Désactiver</a>
+        {% else %}
+          <a class="btn btn-success" href="{{ path('admin_cws_confirm', {action: 'commune_reactivate', id: mid}) }}">Réactiver</a>
+        {% endif %}
+        <a class="btn btn-link" href="{{ path('admin_communes_commune_show', {id: mid}) }}">Fiche de consultation</a>
+      </p>
+    </div>
+  </div>
+
+  {# Accès commerciaux #}
+  <div class="box">
+    <div class="box-header"><h3 class="box-title">Accès commerciaux</h3></div>
+    <div class="box-body">
+      <p class="text-muted">Gérés manuellement, sans paiement ni facturation. Un accès ne conditionne que la création de nouveaux événements.</p>
+      <table class="table table-bordered">
+        <thead><tr><th>Début</th><th>Expiration</th><th>État</th><th>Motif</th><th></th></tr></thead>
+        <tbody>
+        {% for a in accesses %}
+          {% set state = a.revoked ? 'Révoqué' : (a.expiresAt and a.expiresAt <= now ? 'Échu' : (a.grantedAt > now ? 'Programmé' : 'En cours')) %}
+          <tr>
+            <td>{{ a.grantedAt|date('d/m/Y', 'Europe/Paris') }}</td>
+            <td>{{ a.expiresAt ? a.expiresAt|date('d/m/Y', 'Europe/Paris') : 'Sans expiration' }}</td>
+            <td>{{ state }}</td>
+            <td>{{ a.reason }}</td>
+            <td>{% if state in ['En cours', 'Programmé'] %}<a class="btn btn-xs btn-warning" href="{{ path('admin_cws_confirm', {action: 'access_revoke', id: a.id.toRfc4122}) }}">Révoquer</a>{% endif %}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5">Aucun accès commercial.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <form method="post" action="{{ path('admin_cws_access', {id: mid}) }}" class="form-inline">
+        <input type="hidden" name="_token" value="{{ csrf_token('cws_access_' ~ mid) }}">
+        <label>Expire le (fin de journée comprise) <input type="date" name="expires_on" class="form-control"></label>
+        <label>Motif <input type="text" name="reason" class="form-control" maxlength="1000" required placeholder="Ex. pilote 2026"></label>
+        <button type="submit" name="kind" value="grant" class="btn btn-primary">Attribuer un accès</button>
+        <button type="submit" name="kind" value="renew" class="btn btn-default">Renouveler l’accès en cours</button>
+      </form>
+      <p class="help-block">Attribuer : nouvel accès à compter de maintenant (refusé s’il en existe déjà un en cours). Renouveler : accès qui prend la suite à l’échéance de l’accès en cours. Date vide = sans expiration.</p>
+    </div>
+  </div>
+
+  {# Administrateurs et invitations #}
+  <div class="box">
+    <div class="box-header"><h3 class="box-title">Administrateurs communaux</h3></div>
+    <div class="box-body">
+      <table class="table table-bordered">
+        <thead><tr><th>Nom</th><th>E-mail</th><th>Dernière connexion</th><th>État</th><th></th></tr></thead>
+        <tbody>
+        {% for a in administrators %}
+          <tr>
+            <td>{{ a.user.firstName }} {{ a.user.lastName }}</td>
+            <td>{{ a.user.email }}</td>
+            <td>{{ a.user.lastLoginAt ? a.user.lastLoginAt|date('d/m/Y H:i', 'Europe/Paris') : 'Jamais' }}</td>
+            <td>{{ a.active ? (a.user.active ? 'Actif' : 'Compte désactivé') : 'Retiré' }}</td>
+            <td>
+              {% if a.active %}<a class="btn btn-xs btn-warning" href="{{ path('admin_cws_confirm', {action: 'admin_remove', id: a.id.toRfc4122}) }}">Retirer</a>{% endif %}
+              <a class="btn btn-xs btn-default" href="{{ path('admin_cws_user', {id: a.user.id.toRfc4122}) }}">Compte</a>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5">Aucun administrateur.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+
+      <h4>Invitations</h4>
+      <table class="table table-bordered">
+        <thead><tr><th>Adresse</th><th>Émise le</th><th>Expire le</th><th>État</th><th>E-mail</th><th></th></tr></thead>
+        <tbody>
+        {% set stateLabels = {PENDING: 'En attente', EXPIRED: 'Expirée', USED: 'Acceptée', REVOKED: 'Révoquée / remplacée'} %}
+        {% set deliveryLabels = {PENDING: 'Non envoyé', SENT: 'Envoyé', FAILED: 'Échec d’envoi'} %}
+        {% for i in invitations %}
+          {% set s = i.stateAt(now) %}
+          <tr>
+            <td>{{ i.recipientEmail }}</td>
+            <td>{{ i.createdAt|date('d/m/Y H:i', 'Europe/Paris') }}</td>
+            <td>{{ i.expiresAt|date('d/m/Y H:i', 'Europe/Paris') }}</td>
+            <td>{{ stateLabels[s] }}</td>
+            <td>{{ deliveryLabels[i.deliveryStatus.value] }}</td>
+            <td>
+              {% if s in ['PENDING', 'EXPIRED'] %}<a class="btn btn-xs btn-default" href="{{ path('admin_cws_confirm', {action: 'invitation_resend', id: i.id.toRfc4122}) }}">Renvoyer</a>{% endif %}
+              {% if s == 'PENDING' %}<a class="btn btn-xs btn-warning" href="{{ path('admin_cws_confirm', {action: 'invitation_revoke', id: i.id.toRfc4122}) }}">Révoquer</a>{% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6">Aucune invitation.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <form method="post" action="{{ path('admin_cws_invite', {id: mid}) }}" class="form-inline">
+        <input type="hidden" name="_token" value="{{ csrf_token('cws_invite_' ~ mid) }}">
+        <label>Adresse e-mail du futur administrateur <input type="email" name="email" class="form-control" required maxlength="180" autocomplete="off"></label>
+        <button type="submit" class="btn btn-primary">Inviter un administrateur</button>
+      </form>
+      <p class="help-block">Le lien envoyé est personnel, à usage unique, valable quelques jours, et ne donne aucun droit avant acceptation. Il n’est jamais affiché ici : en cas d’échec d’envoi, utilisez « Renvoyer ». Un compte CWS ne peut pas être invité.</p>
+    </div>
+  </div>
+
+  {# Contact #}
+  <div class="box">
+    <div class="box-header"><h3 class="box-title">Contact de la commune</h3></div>
+    <div class="box-body">
+      <form method="post" action="{{ path('admin_cws_contact', {id: mid}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('cws_contact_' ~ mid) }}">
+        <div class="row">
+          <div class="col-md-4 form-group"><label for="c-name">Nom du contact</label><input id="c-name" name="contact_name" class="form-control" maxlength="150" value="{{ m.contactName }}"></div>
+          <div class="col-md-4 form-group"><label for="c-email">E-mail</label><input id="c-email" name="contact_email" type="email" class="form-control" maxlength="180" value="{{ m.contactEmail }}"></div>
+          <div class="col-md-4 form-group"><label for="c-phone">Téléphone</label><input id="c-phone" name="contact_phone" class="form-control" value="{{ m.contactPhone }}"></div>
+        </div>
+        <div class="row">
+          <div class="col-md-6 form-group"><label for="c-addr">Adresse</label><input id="c-addr" name="address_line" class="form-control" maxlength="255" value="{{ m.addressLine }}"></div>
+          <div class="col-md-2 form-group"><label for="c-zip">Code postal</label><input id="c-zip" name="postal_code" class="form-control" maxlength="5" value="{{ m.postalCode }}"></div>
+          <div class="col-md-4 form-group"><label for="c-city">Ville</label><input id="c-city" name="city" class="form-control" maxlength="100" value="{{ m.city }}"></div>
+        </div>
+        <button type="submit" class="btn btn-default">Enregistrer le contact</button>
+      </form>
+    </div>
+  </div>
+
+  {# Historique administratif : liste blanche, aucune donnée opérationnelle #}
+  <div class="box">
+    <div class="box-header"><h3 class="box-title">Historique administratif</h3></div>
+    <div class="box-body table-responsive no-padding">
+      <table class="table table-striped">
+        <thead><tr><th>Date</th><th>Opération</th><th>Auteur</th></tr></thead>
+        <tbody>
+        {% for h in history %}
+          <tr><td>{{ h.at|date('d/m/Y H:i', 'Europe/Paris') }}</td><td>{{ h.label }}</td><td>{{ h.actor }}</td></tr>
+        {% else %}
+          <tr><td colspan="3">Aucune opération.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

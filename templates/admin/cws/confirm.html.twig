@@ -1,0 +1,13 @@
+{% extends 'admin/cws/base.html.twig' %}
+{% block cws_title %}{{ title }}{% endblock %}
+{% block cws_content %}
+  <div class="box box-warning"><div class="box-body">
+    <h3>Ce qui se passera</h3>
+    <p>{{ effect }}</p>
+    <form method="post" action="{{ path('admin_cws_execute', {action: cws_action, id: id}) }}">
+      <input type="hidden" name="_token" value="{{ csrf_token('cws_exec_' ~ cws_action ~ '_' ~ id) }}">
+      <button type="submit" class="btn btn-danger">Confirmer : {{ title|lower }}</button>
+      <a class="btn btn-default" href="{{ return }}">Annuler</a>
+    </form>
+  </div></div>
+{% endblock %}

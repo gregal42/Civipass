@@ -51,7 +51,10 @@ final readonly class DoctrineMembershipRepository implements MembershipRepositor
             $params['excludedUser'] = $excludingUserId->toBinary();
         }
 
-        return (int) $this->entityManager->getConnection()->fetchOne($sql, $params);
+        // Lecture COURANTE (FOR SHARE), jamais l'instantané REPEATABLE READ pris par une lecture antérieure de la transaction : après
+        // l'attente du verrou de la commune, on doit voir ce qu'une opération concurrente vient de valider (sinon deux retraits
+        // simultanés laisseraient la commune sans administrateur : constaté par CwsConcurrencyTest).
+        return (int) $this->entityManager->getConnection()->fetchOne($sql.' FOR SHARE', $params);
     }
 
     public function findActiveMunicipalityIdsAdministeredBy(User $user): array

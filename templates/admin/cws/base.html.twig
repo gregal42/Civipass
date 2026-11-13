@@ -1,0 +1,16 @@
+{# Base des pages d'actions CWS (LOT 07.1) : mise en page Sonata, sans fil d'Ariane ni actions génériques. Messages : success | warning | error. #}
+{% extends '@SonataAdmin/standard_layout.html.twig' %}
+
+{% block sonata_breadcrumb %}{% endblock %}
+{% block sonata_page_content_header %}
+  <section class="content-header"><h1>{% block cws_title %}Administration CWS{% endblock %}</h1></section>
+{% endblock %}
+
+{% block sonata_admin_content %}
+  {% for type, messages in app.flashes %}
+    {% for message in messages %}
+      <div class="alert alert-{{ type == 'error' ? 'danger' : type }}" role="alert">{{ message }}</div>
+    {% endfor %}
+  {% endfor %}
+  {% block cws_content %}{% endblock %}
+{% endblock %}

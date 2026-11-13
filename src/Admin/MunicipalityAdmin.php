@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Admin;
 
+use App\Admin\Application\MunicipalitySituationReader;
 use App\Municipality\Domain\Municipality;
 use App\Municipality\Domain\MunicipalityMembership;
 use App\Municipality\Domain\MunicipalityStatus;
@@ -27,6 +28,11 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 #[AutoconfigureTag('sonata.admin', ['model_class' => Municipality::class, 'manager_type' => 'orm', 'label' => 'Communes', 'group' => 'Communes', 'icon' => '<i class="fa fa-building"></i>'])]
 final class MunicipalityAdmin extends ReadOnlyAdmin
 {
+    public function __construct(private readonly MunicipalitySituationReader $situations)
+    {
+        parent::__construct();
+    }
+
     public const STATUS_LABELS = [
         MunicipalityStatus::Active->value => 'Active',
         MunicipalityStatus::Suspended->value => 'Suspendue',
@@ -69,7 +75,12 @@ final class MunicipalityAdmin extends ReadOnlyAdmin
             ->addIdentifier('name', null, ['label' => 'Nom', 'route' => ['name' => 'show']])
             ->add('inseeCode', null, ['label' => 'Code INSEE', 'accessor' => static fn (Municipality $m): string => $m->inseeCode()->value])
             ->add('status', 'string', ['label' => 'Statut', 'accessor' => static fn (Municipality $m): string => self::STATUS_LABELS[$m->status()->value]])
-            ->add('postalCode', null, ['label' => 'Code postal'])
+            ->add('events', 'string', ['label' => 'Nouveaux événements', 'sortable' => false, 'accessor' => fn (Municipality $m): string => $this->situations->read($m)->canCreateEvents ? 'Autorisés' : 'Non autorisés'])
+            ->add('admins', 'string', ['label' => 'Administrateurs actifs', 'sortable' => false, 'accessor' => function (Municipality $m): string {
+                $s = $this->situations->read($m);
+
+                return $s->awaitingAdministrator() ? '⚠ En attente d\'administrateur'.($s->pendingInvitations > 0 ? ' ('.$s->pendingInvitations.' invitation)' : '') : (string) $s->activeAdministrators;
+            }])
             ->add('city', null, ['label' => 'Ville'])
             ->add('updatedAt', 'datetime', ['label' => 'Modifiée le'] + $this->dateOptions());
     }
@@ -95,12 +106,22 @@ final class MunicipalityAdmin extends ReadOnlyAdmin
             ->end();
     }
 
+    protected function configureActionButtons(array $buttonList, string $action, ?object $object = null): array
+    {
+        if ('list' === $action) {
+            $buttonList['open_municipality'] = ['template' => 'admin/cws/button_open.html.twig'];
+        }
+
+        return $buttonList;
+    }
+
     protected function configureTabMenu(ItemInterface $menu, string $action, ?AdminInterface $childAdmin = null): void
     {
         $municipality = $this->hasSubject() ? $this->getSubject() : null;
         if ('show' !== $action || !$municipality instanceof Municipality) {
             return;
         }
+        $menu->addChild('Gestion CWS (accès, administrateurs, statut)', ['uri' => '/admin/cws/communes/'.$municipality->id()->toRfc4122()]);
         $memberships = $this->getConfigurationPool()->getAdminByClass(MunicipalityMembership::class);
         $menu->addChild('Appartenances de la commune', ['uri' => $memberships->generateUrl('list', ['filter' => ['municipality__inseeCode' => ['value' => $municipality->inseeCode()->value, 'type' => StringOperatorType::TYPE_EQUAL]]])]);
     }

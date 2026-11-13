@@ -129,4 +129,15 @@ enum AuditAction: string
     // Accès commerciaux CWS (DM-076, DT-030) : écrits par le lot Administration CWS.
     case CommercialAccessGranted = 'COMMERCIAL_ACCESS_GRANTED';
     case CommercialAccessRevoked = 'COMMERCIAL_ACCESS_REVOKED';
+
+    // Administration CWS (LOT 07.1) : ouverture de commune, renouvellement, invitations d'administrateur communal.
+    case MunicipalityOpenedByCws = 'MUNICIPALITY_OPENED_BY_CWS';
+    case CommercialAccessRenewed = 'COMMERCIAL_ACCESS_RENEWED';
+    case AdminInvitationIssued = 'ADMIN_INVITATION_ISSUED';
+    case AdminInvitationResent = 'ADMIN_INVITATION_RESENT';
+    case AdminInvitationRevoked = 'ADMIN_INVITATION_REVOKED';
+    case AdminInvitationAccepted = 'ADMIN_INVITATION_ACCEPTED';
+    case AdminInvitationEmailSent = 'ADMIN_INVITATION_EMAIL_SENT';
+    case AdminInvitationEmailFailed = 'ADMIN_INVITATION_EMAIL_FAILED';
+    case UserResetRequestedByCws = 'USER_RESET_REQUESTED_BY_CWS';
 }

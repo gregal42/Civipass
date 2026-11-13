@@ -134,6 +134,84 @@ final readonly class MembershipManager
     }
 
     /**
+     * Inscrit `$user` comme administrateur communal à l'ACCEPTATION d'une invitation émise par CWS (LOT 07.1). Contrairement à
+     * `enrollFirstAdministrator`, la commune peut déjà avoir des administrateurs (remplacement, récupération d'accès) : l'autorité
+     * est l'invitation CWS, consommée dans la même transaction (`$withinTransaction`, faux = refus, rien d'écrit). Garde-fous
+     * conservés : rôle administrateur UNIQUEMENT, commune ACTIVE ou SUSPENDED (jamais INACTIVE), compte actif, jamais un
+     * super-administrateur CWS (séparation, A3), jamais un compte déjà rattaché (ses rôles se gèrent ensuite), tout sous le
+     * verrou de la commune.
+     *
+     * @param \Closure(): bool $withinTransaction
+     *
+     * @throws OperationNotAllowed
+     */
+    public function enrollInvitedAdministrator(User $user, Municipality $municipality, \Closure $withinTransaction): MunicipalityMembership
+    {
+        return $this->transaction->run(function () use ($user, $municipality, $withinTransaction): MunicipalityMembership {
+            $municipality = $this->lockedMunicipality($municipality);
+            if (!\in_array($municipality->status(), [MunicipalityStatus::Active, MunicipalityStatus::Suspended], true)) {
+                throw new OperationNotAllowed('Cette commune n\'est pas disponible.');
+            }
+            if (!$user->isActive()) {
+                throw new OperationNotAllowed('Un compte désactivé ne peut pas être rattaché à une commune.');
+            }
+            if ($user->isSuperAdmin()) {
+                throw new OperationNotAllowed('Un compte CWS ne peut pas être rattaché à une commune.');
+            }
+            $existing = $this->memberships->findOneByUserAndMunicipality($user, $municipality);
+            if (null !== $existing && $existing->isActive()) {
+                throw new OperationNotAllowed('Ce compte est déjà rattaché à la commune.');
+            }
+            if (!$withinTransaction()) {
+                throw new OperationNotAllowed('Ce lien n\'est plus utilisable.');
+            }
+
+            $now = $this->clock->now();
+            if (null === $existing) {
+                $membership = new MunicipalityMembership($user, $municipality, [MunicipalityRole::MunicipalityAdmin], $now);
+                $this->memberships->add($membership);
+                $action = AuditAction::MembershipCreated;
+                $previous = null;
+            } else {
+                $previous = $this->snapshot($existing);
+                $existing->activate([MunicipalityRole::MunicipalityAdmin], $now);
+                $membership = $existing;
+                $action = AuditAction::MembershipActivated;
+            }
+            $this->audit->record(new AuditEvent($now, $action, AuditSubjectType::MunicipalityMembership, $membership->id(), $municipality->id(), AuditActor::user($user->id()), $previous, $this->snapshot($membership) + ['origin' => 'CWS_ADMIN_INVITATION']));
+
+            return $membership;
+        });
+    }
+
+    /**
+     * Retrait du rôle d'administrateur par CWS (LOT 07.1) : seul rôle que CWS peut toucher (A3). Un rattachement qui ne porte
+     * que ce rôle est désactivé ; un rattachement qui en porte d'autres les conserve. Le dernier administrateur effectif est
+     * toujours protégé (verrou de la commune), un super-administrateur ne modifie jamais son propre rattachement.
+     *
+     * @throws OperationNotAllowed
+     */
+    public function removeAdministratorByCws(MunicipalityMembership $membership, User $actor): void
+    {
+        if (!$actor->isActive() || !$actor->isSuperAdmin()) {
+            throw new OperationNotAllowed('Réservé à un super-administrateur CWS actif.');
+        }
+        if ($actor->id()->equals($membership->user()->id())) {
+            throw new OperationNotAllowed('Vous ne pouvez pas modifier votre propre rattachement.');
+        }
+        $this->entityManager->refresh($membership);
+        if (!$membership->isActive() || !$membership->hasRole(MunicipalityRole::MunicipalityAdmin)) {
+            throw new OperationNotAllowed('Ce rattachement n\'est pas celui d\'un administrateur actif.');
+        }
+        $others = array_values(array_filter($membership->roles(), static fn (MunicipalityRole $r): bool => MunicipalityRole::MunicipalityAdmin !== $r));
+        if ([] === $others) {
+            $this->deactivate($membership, $actor);
+        } else {
+            $this->changeRoles($membership, $others, $actor);
+        }
+    }
+
+    /**
      * @param list<MunicipalityRole> $roles
      */
     public function changeRoles(MunicipalityMembership $membership, array $roles, ?User $actor): void

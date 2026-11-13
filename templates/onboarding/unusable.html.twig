@@ -16,6 +16,13 @@
     INACTIVE: 'Cette invitation a déjà reçu une réponse, a été clôturée, ou l’événement est terminé. Rien d’autre n’est à faire avec ce lien.',
     TOO_MANY: 'Trop de demandes depuis votre connexion. Patientez quelques minutes puis réessayez.',
   } %}
+  {% if kind|default('event') == 'admin' %}
+    {% set texts = texts|merge({
+      EXPIRED: 'Pour des raisons de sécurité, ce lien n’est plus utilisable. Demandez à l’équipe Civipass de vous renvoyer l’invitation : un nouveau lien vous sera adressé.',
+      USED: 'Ce lien personnel a déjà servi. Si vous avez créé votre compte, connectez-vous à Civipass.',
+      INACTIVE: 'Cette invitation n’est plus en attente. Contactez l’équipe Civipass si vous pensez qu’il s’agit d’une erreur.',
+    }) %}
+  {% endif %}
   {% embed 'components/panel.html.twig' with { id: 'inv-h', title: titles[status]|default('Lien introuvable'), level: 1, text: texts[status]|default(texts.UNKNOWN), status: status } only %}
     {% block body %}
       <p>{{ text }}</p>

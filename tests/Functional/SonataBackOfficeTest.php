@@ -237,7 +237,9 @@ final class SonataBackOfficeTest extends WebTestCase
         }
 
         $names = array_keys(static::getContainer()->get('router')->getRouteCollection()->all());
-        $adminRoutes = array_values(array_filter($names, static fn (string $n): bool => str_starts_with($n, 'admin_')));
+        // Les actions NOMMÉES `admin_cws_*` (LOT 07.1, DT-018 amendée) sont éprouvées par CwsAdministrationTest ; les admins Sonata, eux,
+        // restent en lecture seule stricte.
+        $adminRoutes = array_values(array_filter($names, static fn (string $n): bool => str_starts_with($n, 'admin_') && !str_starts_with($n, 'admin_cws_')));
         sort($adminRoutes);
         self::assertSame([
             'admin_communes_appartenance_list', 'admin_communes_appartenance_show',

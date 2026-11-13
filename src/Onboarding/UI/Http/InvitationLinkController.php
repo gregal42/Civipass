@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Onboarding\UI\Http;
 
 use App\Identity\Domain\User;
+use App\Onboarding\Application\AdminInvitationEnrollment;
 use App\Onboarding\Application\AdministratorDelegation;
 use App\Onboarding\Application\AdministratorEnrollment;
 use App\Onboarding\Application\InvitationDispatcher;
@@ -46,6 +47,8 @@ final class InvitationLinkController extends AbstractController
         private readonly AdministratorDelegation $delegation,
         private readonly AdministratorEnrollment $enrollment,
         private readonly Security $security,
+        private readonly AdminInvitationPages $adminPages,
+        private readonly AdminInvitationEnrollment $adminEnrollment,
         #[Autowire(service: 'limiter.invitation_link_ip')]
         private readonly RateLimiterFactory $linkIpLimiter,
         #[Autowire(service: 'limiter.invitation_delegation')]
@@ -62,10 +65,17 @@ final class InvitationLinkController extends AbstractController
             return $this->tooMany();
         }
         $resolution = $this->resolver->resolve($token);
+        if (LinkStatus::Unknown === $resolution->status && LinkStatus::Unknown !== $this->adminEnrollment->resolve($token)->status) {
+            // Invitation d'administrateur communal émise par CWS (LOT 07.1) : mêmes URL, pages dédiées.
+            $request->getSession()->remove(self::SESSION_KEY);
+
+            return $this->adminPages->open($token, $request);
+        }
         if (!$resolution->isUsable()) {
             return $this->unusable($resolution);
         }
         // Le jeton quitte l'URL (Referer, historique, journaux) avant tout affichage.
+        $request->getSession()->remove(AdminInvitationPages::SESSION_KEY);
         $request->getSession()->set(self::SESSION_KEY, $token);
 
         return $this->secured(new Response('', Response::HTTP_SEE_OTHER, ['Location' => $this->generateUrl('app_invitation')]));
@@ -74,6 +84,9 @@ final class InvitationLinkController extends AbstractController
     #[Route('/invitation', name: 'app_invitation', methods: ['GET'])]
     public function landing(Request $request): Response
     {
+        if ($request->getSession()->has(AdminInvitationPages::SESSION_KEY)) {
+            return $this->adminPages->landing($request);
+        }
         $resolution = $this->current($request);
         if (!$resolution->isUsable()) {
             $request->getSession()->remove(self::SESSION_KEY);
@@ -118,6 +131,9 @@ final class InvitationLinkController extends AbstractController
     #[Route('/invitation/rejoindre', name: 'app_invitation_join', methods: ['POST'])]
     public function join(Request $request): Response
     {
+        if ($request->getSession()->has(AdminInvitationPages::SESSION_KEY)) {
+            return $this->adminPages->accept($request);
+        }
         $resolution = $this->current($request);
         if (!$resolution->isUsable()) {
             return $this->unusable($resolution);

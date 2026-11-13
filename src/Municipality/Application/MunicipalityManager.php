@@ -76,6 +76,15 @@ final readonly class MunicipalityManager
         });
     }
 
+    /** Changement de statut depuis le back-office CWS (LOT 07.1) : acteur super-administrateur actif obligatoire (jamais la console). */
+    public function setStatusByCws(Municipality $municipality, MunicipalityStatus $status, User $actor): void
+    {
+        if (!$actor->isActive() || !$actor->isSuperAdmin()) {
+            throw new OperationNotAllowed('Réservé à un super-administrateur CWS actif.');
+        }
+        $this->changeStatus($municipality, $status, $actor);
+    }
+
     /**
      * Contact modifiable par un administrateur de la commune (ou le superadmin) : transactionnel, verrouillé
      * et audité (auteur, anciennes et nouvelles valeurs). Les valeurs sont normalisées avant toute écriture.

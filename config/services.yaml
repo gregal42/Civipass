@@ -28,6 +28,8 @@ parameters:
     env(VERIFICATION_ACCESS_LIMIT): '300'
     env(VERIFICATION_FAILURE_LIMIT): '20'
     env(EVENT_MAX_ZONES_PER_BULK_OPERATION): '100'
+    # Invitations d'administrateur communal émises par CWS (LOT 07.1) : validité en jours (paramètre technique, 1 à 30).
+    env(ADMIN_INVITATION_DAYS): '7'
     # Seuil PROVISOIRE de confidentialité des bilans statistiques de clôture (LOT 05.6.2) : effectifs non nuls inférieurs au seuil masqués. À valider par le DPO.
     env(CLOSURE_STATISTICS_MIN_COUNT): '5'
     # Archives (LOT 05.6.3) : HYPOTHÈSES à valider avec le DPO et les archives avant production. Durée de l'accès à l'archive après la clôture (sauf gel actif),
@@ -96,6 +98,10 @@ services:
             - '../src/Event/Application/Dormancy/DormantEvent.php'
             - '../src/Event/Application/Dormancy/DormancyRunReport.php'
             - '../src/Identity/Application/AccountCandidateLine.php'
+            # LOT 07.1 : DTO de lecture/résultat (non services).
+            - '../src/Admin/Application/MunicipalitySituation.php'
+            - '../src/Onboarding/Application/AdminInvitationIssued.php'
+            - '../src/Onboarding/Application/AdminInvitationResolution.php'
             - '../src/Ops/Application/ReleaseRefused.php'
             - '../src/Retention/Application/ReplayRefused.php'
             - '../src/Retention/Application/RegisterReconciliationReport.php'

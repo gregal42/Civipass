@@ -89,6 +89,9 @@ final class UserAdmin extends ReadOnlyAdmin
         if ('show' !== $action || !$user instanceof User) {
             return;
         }
+        if (!$user->isSuperAdmin()) {
+            $menu->addChild('Gérer le compte (CWS)', ['uri' => '/admin/cws/comptes/'.$user->id()->toRfc4122()]);
+        }
         $memberships = $this->getConfigurationPool()->getAdminByClass(MunicipalityMembership::class);
         $menu->addChild('Appartenances communales', ['uri' => $memberships->generateUrl('list', ['filter' => ['user__email' => ['value' => $user->email(), 'type' => StringOperatorType::TYPE_EQUAL]]])]);
     }
