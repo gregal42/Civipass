@@ -56,6 +56,8 @@ Accessibles depuis la liste des communes (bouton « Ouvrir une commune ») et l'
 | Administrateur | `…/administrateurs/inviter`, `…/confirmer/invitation_*`, `…/confirmer/admin_remove` | inviter, renvoyer, révoquer, retirer (`MunicipalityAdminInvitationService`, `MembershipManager`) ; dernier administrateur protégé |
 | Compte | `/admin/cws/comptes/{id}` | désactiver, réactiver, envoyer un lien de réinitialisation (jamais un compte CWS) |
 
+Depuis le LOT 07.2, la fiche et l'historique n'exposent **que les invitations et rattachements administrateurs** : les invitations ordinaires des agents (gérées par l'administrateur communal dans l'écran « Équipe », DM-122) ne sont jamais visibles de CWS.
+
 Chaque POST exige un jeton CSRF propre à l'action et à la cible ; les GET (fiches, confirmations) n'écrivent jamais. Le lien d'invitation n'est **jamais affiché** : un échec d'envoi se traite par « Renvoyer ».
 
 ## Limites et évolutions

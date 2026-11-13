@@ -5,7 +5,9 @@ declare(strict_types=1);
 /**
  * Processus de test (concurrence, LOT 07.1) : exécute UNE opération d'administration CWS ou d'invitation. Arguments : opération puis
  * ses paramètres. Opérations : accept <jeton> <userId> | revoke <invitationId> <actorId> | resend <invitationId> <actorId> |
- * remove <membershipId> <actorId> | grant <municipalityId> <actorId> | open <insee> <actorId> | deactivate <userId> <actorId>.
+ * remove <membershipId> <actorId> | grant <municipalityId> <actorId> | open <insee> <actorId> | deactivate <userId> <actorId> |
+ * team-remove <municipalityId> <membershipId> <actorId> | team-roles <municipalityId> <membershipId> <rôles séparés par des virgules> <actorId> |
+ * team-invite <municipalityId> <email> <rôles séparés par des virgules> <actorId> | team-revoke <municipalityId> <invitationId> <actorId>.
  * Imprime {"ok":true} ou le refus en JSON. Base de TEST uniquement.
  */
 
@@ -19,7 +21,9 @@ use App\Municipality\Domain\Municipality;
 use App\Municipality\Domain\MunicipalityMembership;
 use App\Municipality\Domain\NationalCommune;
 use App\Onboarding\Application\AdminInvitationEnrollment;
+use App\Municipality\Domain\MunicipalityRole;
 use App\Onboarding\Application\MunicipalityAdminInvitationService;
+use App\Onboarding\Application\TeamInvitationService;
 use App\Onboarding\Domain\MunicipalityAdminInvitation;
 use Symfony\Component\Uid\Uuid;
 
@@ -63,6 +67,20 @@ try {
             break;
         case 'deactivate':
             $container->get(UserManager::class)->deactivateByCws($find(User::class, $argv[2]), $find(User::class, $argv[3]));
+            break;
+        case 'team-remove':
+            $container->get(MembershipManager::class)->removeFromTeam($find(Municipality::class, $argv[2]), $find(MunicipalityMembership::class, $argv[3]), $find(User::class, $argv[4]));
+            break;
+        case 'team-roles':
+            $roles = array_map(static fn (string $r): MunicipalityRole => MunicipalityRole::from($r), explode(',', $argv[4]));
+            $container->get(MembershipManager::class)->changeTeamRoles($find(Municipality::class, $argv[2]), $find(MunicipalityMembership::class, $argv[3]), $roles, $find(User::class, $argv[5]));
+            break;
+        case 'team-invite':
+            $roles = array_map(static fn (string $r): MunicipalityRole => MunicipalityRole::from($r), explode(',', $argv[4]));
+            $container->get(TeamInvitationService::class)->issue($find(Municipality::class, $argv[2]), $argv[3], $roles, $find(User::class, $argv[5]));
+            break;
+        case 'team-revoke':
+            $container->get(TeamInvitationService::class)->revoke($find(Municipality::class, $argv[2]), $find(MunicipalityAdminInvitation::class, $argv[3]), $find(User::class, $argv[4]));
             break;
         default:
             throw new RuntimeException('Opération inconnue.');

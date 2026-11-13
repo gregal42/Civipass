@@ -1,6 +1,6 @@
 # LOT 07.2 — Gestion autonome des équipes communales : cadrage
 
-**Statut : PROPOSÉ, en attente de validation (une seule fois, protocole A).** Aucune implémentation, aucune migration exécutée.
+**Statut : VALIDÉ (A1 à A3) ; RÉALISÉ en local, non poussé (voir §11).**
 Références : [lot-06-audit.md](lot-06-audit.md) (P0-4), [lot-07-1-cadrage.md](lot-07-1-cadrage.md), DM-005, DM-009, DM-036, DM-057, DM-107, DM-121, DT-005, DT-024, DT-037, DT-052, DT-053.
 Interrupteurs inchangés : `PUBLIC_VERIFICATION_ENABLED=0`, `RIGHTS_ERASURE_EXECUTION_ENABLED=0`, `RETENTION_PURGE_ENABLED=0`.
 
@@ -109,3 +109,16 @@ Hors arbitrage (paramètres techniques modifiables) : validité d'invitation 7 j
 **Critères d'acceptation** : un administrateur constitue et gère son équipe sans SQL, console ni Sonata ; aucun accès entre communes ; dernier administrateur toujours protégé, y compris sous concurrence ; audit complet sans adresse ni jeton ; `bin/qa full`, `schema:validate` et `verify-docs.sh` au vert.
 
 **Risques résiduels** : SMTP de production requis pour les invitations ; habilitation officielle du représentant non vérifiable (attestation) ; pas de double authentification ; les comptes eux-mêmes (mot de passe oublié) restent hors périmètre communal ; revue ergonomique sur navigateur et avec des agents réels à prévoir (UX §6 de l'audit).
+
+
+---
+
+## 11. Réalisation
+
+Livré conformément au cadrage : écran « Équipe » (`/communes/{id}/equipe`, liste, invitation, rôles, retrait, renvoi/révocation, confirmations), `TeamInvitationService`, `MembershipManager::changeTeamRoles / removeFromTeam / enrollInvited`, `TeamReader`, `InvitationDelivery`, `RoleLabels`, M2 `Version20261113191749` exécutée sur `civipass` (sauvegarde vérifiée avant : 47 tables, dump complet) et `civipass_test`. Décisions : [DM-122](decisions/metier/DM-122-gestion-autonome-des-equipes-communales.md), [DT-054](decisions/technique/DT-054-invitations-communales-roles-et-controle-d-acteur-courant.md).
+
+Précisions par rapport au cadrage :
+- Le droit de l'acteur est **relu en lecture courante sous le verrou** (un administrateur rétrogradé à l'instant ne peut plus agir : testé en concurrence et en parcours HTTP).
+- Un membre d'un autre rôle voit **403** sur l'équipe ; une commune inconnue ou étrangère et tout identifiant hors périmètre ou forgé donnent le **404 uniforme**.
+- La fiche et l'historique CWS sont filtrés sur les seuls administrateurs (R10) ; CWS ne peut ni renvoyer ni révoquer une invitation d'agent.
+- Les pages d'acceptation (`/invitation*`) affichent désormais les rôles proposés.

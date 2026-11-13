@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Onboarding;
 
+use App\Municipality\Domain\MunicipalityRole;
 use App\Onboarding\Domain\InvitationDeliveryStatus;
 use App\Onboarding\Domain\InvitationToken;
 use App\Onboarding\Domain\MunicipalityAdminInvitation;
 use App\Tests\Support\MunicipalityBuilder;
 use App\Tests\Support\UserBuilder;
+use App\Shared\Domain\DomainRuleViolation;
 use PHPUnit\Framework\TestCase;
 
 final class MunicipalityAdminInvitationTest extends TestCase
@@ -61,5 +63,21 @@ final class MunicipalityAdminInvitationTest extends TestCase
         $i->markDelivery(InvitationDeliveryStatus::Failed, self::at('2026-06-01 10:01'));
         self::assertSame(InvitationDeliveryStatus::Failed, $i->deliveryStatus());
         self::assertSame(64, \strlen($i->tokenHash()), 'seule l’empreinte SHA-256 est conservée');
+    }
+
+    public function testRolesDefaultToAdministratorAreOrderedAndDeduplicated(): void
+    {
+        $cws = UserBuilder::aUser()->superAdmin()->build();
+        self::assertSame([MunicipalityRole::MunicipalityAdmin], $this->invitation()->roles());
+        $team = new MunicipalityAdminInvitation(MunicipalityBuilder::aMunicipality()->build(), 'a@mairie.example', InvitationToken::generate()->hash(), $cws, self::at('2026-06-01 10:00'), 'P7D', null, [MunicipalityRole::Instructor, MunicipalityRole::EventManager, MunicipalityRole::Instructor]);
+        self::assertSame([MunicipalityRole::EventManager, MunicipalityRole::Instructor], $team->roles());
+        self::assertFalse($team->grantsAdministrator());
+        self::assertTrue($this->invitation()->grantsAdministrator());
+    }
+
+    public function testAnInvitationWithoutRoleIsRefused(): void
+    {
+        $this->expectException(DomainRuleViolation::class);
+        new MunicipalityAdminInvitation(MunicipalityBuilder::aMunicipality()->build(), 'a@mairie.example', InvitationToken::generate()->hash(), UserBuilder::aUser()->build(), self::at('2026-06-01 10:00'), 'P7D', null, []);
     }
 }

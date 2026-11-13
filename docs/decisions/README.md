@@ -123,6 +123,7 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DM-119](metier/DM-119-revisions-des-droits-d-un-laissez-passer.md) | Révisions des droits : révocation, périodes, zones, plaques, remplacement du QR (arbitrages validés ; règles de détail et schéma à valider) | LOT 05 — Laissez-passer | Proposée |
 | [DM-120](metier/DM-120-cycle-de-vie-des-evenements-archives-et-suppression.md) | Cycle de vie des événements : clôture, archive intermédiaire, purge et suppression (orientation et arbitrages D1 à D4 validés le 11 novembre 2026 ; durées à valider avant la production) | LOT 05.6 — Conservation RGPD | Proposée |
 | [DM-121](metier/DM-121-administration-cws-des-communes-et-garde-fous.md) | Administration CWS des communes : séparation, accès commerciaux, invitations (A3, A4, 13 novembre 2026) | LOT 07.1 — Administration CWS | Validée |
+| [DM-122](metier/DM-122-gestion-autonome-des-equipes-communales.md) | Gestion autonome des équipes communales (A2, A3) | LOT 07.2 — Équipes communales | Validée |
 
 ## Décisions techniques
 
@@ -181,6 +182,7 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DT-051](technique/DT-051-page-beneficiaire-pdf-et-protection-des-secrets.md) | Page bénéficiaire, PDF, rendu du QR et protection des secrets | LOT 05 — Architecture | Validée |
 | [DT-052](technique/DT-052-actions-nommees-d-ecriture-dans-le-back-office-cws.md) | Actions d'écriture nommées dans le back-office CWS (amende DT-018, A1) | Back-office | Validée |
 | [DT-053](technique/DT-053-invitation-d-administrateur-communal-table-dediee.md) | Invitation d'administrateur communal émise par CWS : table dédiée (A2, M1) | Données, onboarding | Validée |
+| [DT-054](technique/DT-054-invitations-communales-roles-et-controle-d-acteur-courant.md) | Invitations communales avec rôles (M2) et contrôle d'acteur en lecture courante | Données, sécurité | Validée |
 
 ## Modèle de fiche
 
