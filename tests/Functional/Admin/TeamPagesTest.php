@@ -354,7 +354,7 @@ final class TeamPagesTest extends WebTestCase
         $agentInvitation = (string) $this->db()->fetchOne('SELECT LOWER(CONCAT(SUBSTR(HEX(id),1,8),\'-\',SUBSTR(HEX(id),9,4),\'-\',SUBSTR(HEX(id),13,4),\'-\',SUBSTR(HEX(id),17,4),\'-\',SUBSTR(HEX(id),21))) FROM municipality_admin_invitation WHERE recipient_email = ?', ['agent-secret@mairie.example']);
         $this->client->request('GET', "/admin/cws/confirmer/invitation_revoke/$agentInvitation");
         self::assertResponseStatusCodeSame(404);
-        self::assertStringNotContainsString('agent-secret', (string) $this->db()->fetchOne('SELECT GROUP_CONCAT(action) FROM audit_log') . $html);
+        self::assertStringNotContainsString('agent-secret', (string) $this->db()->fetchOne('SELECT GROUP_CONCAT(action) FROM audit_log').$html);
     }
 
     // ───────────────────────── Règles d'équipe ─────────────────────────

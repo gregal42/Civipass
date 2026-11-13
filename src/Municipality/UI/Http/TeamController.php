@@ -195,10 +195,18 @@ final class TeamController extends AbstractController
             return $this->back($municipalityId);
         }
 
-        return $this->confirmPage($user, $municipalityId, $resend ? 'Renvoyer l’invitation' : 'Révoquer l’invitation', $resend
+        return $this->confirmPage(
+            $user,
+            $municipalityId,
+            $resend ? 'Renvoyer l’invitation' : 'Révoquer l’invitation',
+            $resend
             ? ['Un nouveau lien est envoyé à la même adresse.', 'L’ancien lien cesse de fonctionner.']
-            : ['Le lien envoyé ne fonctionnera plus.'], ['Aucun droit n’avait été donné par cette invitation.'],
-            $resend ? 'Renvoyer' : 'Révoquer', $this->generateUrl('app_team_invitation', ['municipalityId' => $municipalityId, 'invitationId' => $invitationId, 'action' => $action]), 'team_invitation_'.$action.'_'.$invitationId);
+            : ['Le lien envoyé ne fonctionnera plus.'],
+            ['Aucun droit n’avait été donné par cette invitation.'],
+            $resend ? 'Renvoyer' : 'Révoquer',
+            $this->generateUrl('app_team_invitation', ['municipalityId' => $municipalityId, 'invitationId' => $invitationId, 'action' => $action]),
+            'team_invitation_'.$action.'_'.$invitationId
+        );
     }
 
     /**

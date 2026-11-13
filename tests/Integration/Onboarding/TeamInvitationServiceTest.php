@@ -48,9 +48,14 @@ final class TeamInvitationServiceTest extends DatabaseTestCase
         $this->communeB = MunicipalityBuilder::aMunicipality()->withInseeCode('69123')->build();
         $this->adminA = UserBuilder::aUser()->withEmail('admin-a@mairie.example')->build();
         $this->adminB = UserBuilder::aUser()->withEmail('admin-b@mairie.example')->build();
-        $this->save($this->communeA, $this->communeB, $this->adminA, $this->adminB,
+        $this->save(
+            $this->communeA,
+            $this->communeB,
+            $this->adminA,
+            $this->adminB,
             MembershipBuilder::aMembership($this->adminA, $this->communeA)->withRoles(MunicipalityRole::MunicipalityAdmin)->build(),
-            MembershipBuilder::aMembership($this->adminB, $this->communeB)->withRoles(MunicipalityRole::MunicipalityAdmin)->build());
+            MembershipBuilder::aMembership($this->adminB, $this->communeB)->withRoles(MunicipalityRole::MunicipalityAdmin)->build()
+        );
     }
 
     private function signup(): SignupData
@@ -181,9 +186,13 @@ final class TeamInvitationServiceTest extends DatabaseTestCase
         $manager = UserBuilder::aUser()->build();
         $instructor = UserBuilder::aUser()->build();
         $cws = UserBuilder::aUser()->superAdmin()->build();
-        $this->save($manager, $instructor, $cws,
+        $this->save(
+            $manager,
+            $instructor,
+            $cws,
             MembershipBuilder::aMembership($manager, $this->communeA)->withRoles(MunicipalityRole::EventManager)->build(),
-            MembershipBuilder::aMembership($instructor, $this->communeA)->withRoles(MunicipalityRole::Instructor)->build());
+            MembershipBuilder::aMembership($instructor, $this->communeA)->withRoles(MunicipalityRole::Instructor)->build()
+        );
         $issued = $this->service->issue($this->communeA, 'x@mairie.example', [MunicipalityRole::Instructor], $this->adminA);
         $refused = 0;
         foreach ([$manager, $instructor, $this->adminB, $cws] as $intruder) {
