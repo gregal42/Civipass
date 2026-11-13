@@ -122,6 +122,7 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DM-118](metier/DM-118-liens-d-acces-beneficiaire-cycle-de-vie-et-remise-par-l-agent.md) | Liens d'accès bénéficiaire : cycle de vie, expiration, remise par l'agent | LOT 05 — Laissez-passer | Validée |
 | [DM-119](metier/DM-119-revisions-des-droits-d-un-laissez-passer.md) | Révisions des droits : révocation, périodes, zones, plaques, remplacement du QR (arbitrages validés ; règles de détail et schéma à valider) | LOT 05 — Laissez-passer | Proposée |
 | [DM-120](metier/DM-120-cycle-de-vie-des-evenements-archives-et-suppression.md) | Cycle de vie des événements : clôture, archive intermédiaire, purge et suppression (orientation et arbitrages D1 à D4 validés le 11 novembre 2026 ; durées à valider avant la production) | LOT 05.6 — Conservation RGPD | Proposée |
+| [DM-121](metier/DM-121-administration-cws-des-communes-et-garde-fous.md) | Administration CWS des communes : séparation, accès commerciaux, invitations (A3, A4, 13 novembre 2026) | LOT 07.1 — Administration CWS | Validée |
 
 ## Décisions techniques
 
@@ -178,6 +179,8 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DT-049](technique/DT-049-outbox-transactionnelle-des-notifications.md) | Outbox transactionnelle et distributeur périodique des notifications | LOT 05 — Architecture | Validée |
 | [DT-050](technique/DT-050-qr-et-pdf-bibliotheques-et-rendu-a-la-demande.md) | QR code et PDF : bibliothèques et rendu à la demande | LOT 05 — Architecture | Validée |
 | [DT-051](technique/DT-051-page-beneficiaire-pdf-et-protection-des-secrets.md) | Page bénéficiaire, PDF, rendu du QR et protection des secrets | LOT 05 — Architecture | Validée |
+| [DT-052](technique/DT-052-actions-nommees-d-ecriture-dans-le-back-office-cws.md) | Actions d'écriture nommées dans le back-office CWS (amende DT-018, A1) | Back-office | Validée |
+| [DT-053](technique/DT-053-invitation-d-administrateur-communal-table-dediee.md) | Invitation d'administrateur communal émise par CWS : table dédiée (A2, M1) | Données, onboarding | Validée |
 
 ## Modèle de fiche
 

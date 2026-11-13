@@ -2,7 +2,7 @@
 
 - **Identifiant** : DT-018
 - **Thème** : Back-office
-- **Statut** : Validée
+- **Statut** : Validée (amendée par [DT-052](DT-052-actions-nommees-d-ecriture-dans-le-back-office-cws.md) : actions d'écriture nommées sous `/admin/cws/`)
 - **Validation** : Validée par le commanditaire (back-office Sonata) ; date de validation non renseignée
 - **Décisions remplacées** : Aucune.
 

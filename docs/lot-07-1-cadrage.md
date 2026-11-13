@@ -1,6 +1,6 @@
 # LOT 07.1 — Administration CWS (Sonata) : cadrage
 
-**Statut : PROPOSÉ, en attente de validation (une seule fois, protocole A).** Aucune implémentation, aucune migration exécutée.
+**Statut : VALIDÉ le 13 novembre 2026 (A1 à A4, M1, invitations 7 jours configurables) ; RÉALISÉ en local, non poussé (voir §14).**
 Références : [lot-06-audit.md](lot-06-audit.md) (P0-1 à P0-3), DM-005, DM-031/032/034/035/036, DM-065 (hors lot), DM-070/073/076/078/079, DT-018, DT-029, DT-030, `docs/backoffice.md`.
 Interrupteurs inchangés : `PUBLIC_VERIFICATION_ENABLED=0`, `RIGHTS_ERASURE_EXECUTION_ENABLED=0`, `RETENTION_PURGE_ENABLED=0`.
 
@@ -200,3 +200,16 @@ Non soumis à arbitrage (paramètres techniques, modifiables) : validité d'invi
 **Critères d'acceptation** : parcours §5 réalisé sans SQL ni console (hors préalable) ; aucun dossier opérationnel lisible par CWS ; dernier administrateur toujours protégé ; audit complet sans donnée personnelle ; `bin/qa full`, `schema:validate` et `verify-docs.sh` au vert.
 
 **Hors lot / risques résiduels** : SMTP de production, lien jamais montré à CWS (renvoi seulement), habilitation officielle du représentant non vérifiable (attestation uniquement), double authentification CWS (P2), réexamen des sessions actives après désactivation (effet à la requête suivante).
+
+
+---
+
+## 14. Réalisation (13 novembre 2026)
+
+Livré conformément au cadrage : actions nommées `/admin/cws/*` (DT-052), services `MunicipalityOpening`, `CommercialAccessManager`, `MunicipalityAdminInvitationService`, `AdminInvitationEnrollment`, `CwsAccountRecovery`, M1 `Version20261113160211` exécutée sur les bases locales `civipass` et `civipass_test` (sauvegarde de `civipass` vérifiée avant : 46 tables, dump complet), décisions DM-121, DT-052, DT-053, runbook [recuperation-acces.md](runbooks/recuperation-acces.md).
+
+Écarts assumés par rapport au cadrage :
+- **Motif de révocation** : non conservé (aucune colonne ; `revoked_by` et la date le sont, DM-079) — pas de migration supplémentaire.
+- **Correction de concurrence** dans un composant existant : `countEffectiveAdmins` lit en lecture courante (`FOR SHARE`) ; sans cela deux retraits/désactivations simultanés pouvaient laisser une commune sans administrateur (DT-053).
+- Les pages d'acceptation réutilisent les routes `/invitation*` existantes (masquage nginx inchangé) au lieu de routes nouvelles.
+- Pas de limitation de débit sur l'émission d'invitations (acteur : super-administrateur authentifié) ; à reconsidérer avec une double authentification CWS (P2).

@@ -1,6 +1,6 @@
 # Civipass — Back-office CWS (Sonata Admin)
 
-Réservé aux **super-administrateurs CWS**. Lecture seule intégrale : navigation dans les données, aucune écriture.
+Réservé aux **super-administrateurs CWS**. Les modules Sonata sont en **lecture seule stricte** ; les écritures passent exclusivement par des **actions métier nommées** sous `/admin/cws/` ([DT-052](decisions/technique/DT-052-actions-nommees-d-ecriture-dans-le-back-office-cws.md), LOT 07.1).
 
 ## Accès
 
@@ -43,9 +43,25 @@ Autres : `/admin/dashboard`, `/admin/` (redirige), `/admin/search`.
 
 Les rôles communaux, les statuts de commune et les privilèges superadmin ne se modifient que par `MembershipManager`, `MunicipalityManager` et `UserManager` (transaction, verrou, audit).
 
+## Actions nommées d'administration (LOT 07.1)
+
+Accessibles depuis la liste des communes (bouton « Ouvrir une commune ») et l'onglet « Gestion CWS » d'une commune ; compte : onglet « Gérer le compte (CWS) » d'un utilisateur non CWS.
+
+| Action | Route | Effet (service audité) |
+|---|---|---|
+| Ouvrir une commune | `/admin/cws/communes/ouvrir` | depuis le référentiel national (nom et INSEE jamais saisis), idempotent (`MunicipalityOpening`) |
+| Fiche de gestion | `/admin/cws/communes/{id}` | situation (statut, droit de créer de **nouveaux** événements, continuité, administrateurs actifs, messagerie), accès, administrateurs, invitations, contact, historique administratif (liste blanche, aucune donnée opérationnelle) |
+| Statut, contact | `…/confirmer/commune_*`, `…/contact` | `MunicipalityManager` (suspendre, réactiver, désactiver ; contact) |
+| Accès commerciaux | `…/acces`, `…/confirmer/access_revoke` | attribuer, renouveler, révoquer (`CommercialAccessManager`) ; sans paiement |
+| Administrateur | `…/administrateurs/inviter`, `…/confirmer/invitation_*`, `…/confirmer/admin_remove` | inviter, renvoyer, révoquer, retirer (`MunicipalityAdminInvitationService`, `MembershipManager`) ; dernier administrateur protégé |
+| Compte | `/admin/cws/comptes/{id}` | désactiver, réactiver, envoyer un lien de réinitialisation (jamais un compte CWS) |
+
+Chaque POST exige un jeton CSRF propre à l'action et à la cible ; les GET (fiches, confirmations) n'écrivent jamais. Le lien d'invitation n'est **jamais affiché** : un échec d'envoi se traite par « Renvoyer ».
+
 ## Limites et évolutions
 
-- Écrire depuis Sonata exigerait de passer par ces services (jamais par le formulaire d'entité) et de rouvrir explicitement les barrières ci-dessus, avec leurs tests.
+- Toute nouvelle écriture suit le même modèle (action nommée, CSRF, service audité, tests) ; aucun formulaire générique d'entité. Les barrières 1 à 4 ci-dessus concernent les admins Sonata, inchangés ; la barrière 2 exclut désormais `/admin/cws/`.
+- Non couvert : création/retrait de super-administrateur (console `app:super-admin:create`), clôture forcée (DM-065) et impersonation (DM-061).
 - L'audit (`audit_log`) et les demandes de réinitialisation n'ont volontairement aucun module.
 - Les assets Sonata (`public/bundles/`) ne sont pas versionnés : `assets:install` (script Composer) doit tourner au déploiement.
 - Apparence : native Sonata (seuls le titre et le logo sont ceux de Civipass) ; le design system n'est pas chargé dans les pages Sonata.

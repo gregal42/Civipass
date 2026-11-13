@@ -30,6 +30,9 @@ final class RestoreReplayTest extends RestoreScenarioTestCase
     {
         $this->dueForPurge();
         $this->backupDatabase();
+        // Les repères de perte comparent des instants à la SECONDE : sans cette pause, une sauvegarde et une purge faites dans la même seconde
+        // (machine rapide) rendent la perte indétectable et le test aléatoire. Ce n'est pas un assouplissement : l'assertion reste inchangée.
+        sleep(1);
         $report = static::getContainer()->get(RetentionPurgeService::class)->run(true, 100, null, null, $this->managed($this->admin));
         $this->em()->clear();
         self::assertSame(2, $report->done);

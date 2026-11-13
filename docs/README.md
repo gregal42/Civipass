@@ -13,6 +13,8 @@
 | [`lot-03-schema.md`](lot-03-schema.md) | **Schéma de données LOT 03 (demandes) proposé, en attente de validation** |
 | [`lot-04-schema.md`](lot-04-schema.md) | Modèle de décision municipale LOT 04.1 (DM-106 à DM-111, DT-040 à DT-045) |
 | [`runbooks/`](runbooks/README.md) | **Runbooks d'exploitation** (LOT 05.6.7) : sauvegarde, restauration et rejeu, cohérence, incidents, remise en service |
+| [`lot-06-audit.md`](lot-06-audit.md) | Audit global et préparation de la V1 pilote (LOT 06) |
+| [`lot-07-1-cadrage.md`](lot-07-1-cadrage.md) | Administration CWS dans Sonata (LOT 07.1) : cadrage validé et réalisation ; décisions [DM-121](decisions/metier/DM-121-administration-cws-des-communes-et-garde-fous.md), [DT-052](decisions/technique/DT-052-actions-nommees-d-ecriture-dans-le-back-office-cws.md), [DT-053](decisions/technique/DT-053-invitation-d-administrateur-communal-table-dediee.md) |
 | [`lot-05-6-7-cadrage.md`](lot-05-6-7-cadrage.md) | Cadrage et réalisation du lot 05.6.7 (exploitation, restauration, rejeu, registre chaîné et ancrage) |
 | [`exploitation-notifications.md`](exploitation-notifications.md) | Exploitation des notifications du bénéficiaire : clés, rotation, SMTP, distributeur, cron (exemple), supervision, purges, diagnostic, reprise, points ouverts avant production |
 | [`../ops/nginx/README.md`](../ops/nginx/README.md) | nginx de production (V1 mono-instance) : journaux sans secret, rotation et filtrage, TLS/HSTS, installation et contrôles |

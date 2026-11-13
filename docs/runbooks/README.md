@@ -14,5 +14,6 @@ Procédures **exploitables** par l'exploitation (VPS, nginx natif, systemd). Ell
 | Incident de notification | [incident-notification.md](incident-notification.md) |
 | Incident de sécurité (registre rompu, accès suspect) | [incident-securite.md](incident-securite.md) |
 | Liste de vérification avant remise en service | [remise-en-service.md](remise-en-service.md) |
+| Récupération d'accès (comptes, administrateurs communaux) | [recuperation-acces.md](recuperation-acces.md) |
 
 Les interrupteurs `PUBLIC_VERIFICATION_ENABLED`, `RIGHTS_ERASURE_EXECUTION_ENABLED` et `RETENTION_PURGE_ENABLED` valent **0** tant que les validations de [lot-05-6-7-cadrage.md](../lot-05-6-7-cadrage.md) §9 ne sont pas données. Les durées (sauvegardes 35 jours, seuils) sont des **hypothèses à valider**.
