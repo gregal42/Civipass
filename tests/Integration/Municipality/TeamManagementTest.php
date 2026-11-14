@@ -92,6 +92,24 @@ final class TeamManagementTest extends DatabaseTestCase
         self::assertContains('MEMBERSHIP_ROLES_CHANGED', $this->em->getConnection()->fetchFirstColumn('SELECT action FROM audit_log'));
     }
 
+    public function testGrantingAdministrationCumulatesTheThreeRolesByDefaultButAnExistingAdministratorKeepsHisExplicitChoice(): void
+    {
+        // Un agent promu administrateur reçoit par défaut les trois rôles (DM-124).
+        $this->manager->changeTeamRoles($this->a, $this->mAgent, [MunicipalityRole::MunicipalityAdmin], $this->admin);
+        $this->reload();
+        self::assertSame(['EVENT_MANAGER', 'INSTRUCTOR', 'MUNICIPALITY_ADMIN'], $this->roles($this->mAgent));
+
+        // Un administrateur existant dont l'administrateur retire des rôles les voit retirés : le cumul n'est qu'un défaut.
+        $this->manager->changeTeamRoles($this->a, $this->mPeer, [MunicipalityRole::MunicipalityAdmin, MunicipalityRole::EventManager], $this->admin);
+        $this->reload();
+        self::assertSame(['EVENT_MANAGER', 'MUNICIPALITY_ADMIN'], $this->roles($this->mPeer));
+
+        // Sans administration, aucun rôle n'est ajouté.
+        $this->manager->changeTeamRoles($this->a, $this->mAgent, [MunicipalityRole::Instructor], $this->admin);
+        $this->reload();
+        self::assertSame(['INSTRUCTOR'], $this->roles($this->mAgent));
+    }
+
     public function testAnAdministratorMayDemoteAPeerButNeverHimselfNorTheLastAdministrator(): void
     {
         $this->refused(fn () => $this->manager->changeTeamRoles($this->a, $this->mAdmin, [MunicipalityRole::Instructor], $this->admin)); // lui-même

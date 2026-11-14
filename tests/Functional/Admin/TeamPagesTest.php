@@ -156,7 +156,7 @@ final class TeamPagesTest extends WebTestCase
         $arrival = $this->acceptByLink($this->mails->lastToken(), 'Marie');
         self::assertMatchesRegularExpression('~^/communes/[0-9a-f-]{36}/evenements$~', $arrival);
         $commune = $this->em()->getRepository(Municipality::class)->findOneBy(['name' => 'Saumos']) ?? throw new \LogicException();
-        self::assertSame(['MUNICIPALITY_ADMIN'], $this->roles('maire@saumos.example', $commune));
+        self::assertSame(['EVENT_MANAGER', 'INSTRUCTOR', 'MUNICIPALITY_ADMIN'], $this->roles('maire@saumos.example', $commune));
 
         // 3. Il invite un instructeur et un gestionnaire depuis l'écran Équipe (aucun accès à Sonata).
         $this->client->request('GET', $this->team($commune));

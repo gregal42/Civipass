@@ -19,7 +19,7 @@ final class RoleLabels
     ];
 
     private const DESCRIPTIONS = [
-        'MUNICIPALITY_ADMIN' => 'Gère l’équipe, les événements et les zones de la commune.',
+        'MUNICIPALITY_ADMIN' => 'Gère l’équipe, les événements et les zones de la commune. Reçoit par défaut les rôles de gestionnaire d’événements et d’instructeur.',
         'EVENT_MANAGER' => 'Crée et pilote les événements, invite des communes. Ne gère pas les zones.',
         'INSTRUCTOR' => 'Instruit les demandes de laissez-passer de la commune.',
     ];

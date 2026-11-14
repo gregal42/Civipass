@@ -124,6 +124,8 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DM-120](metier/DM-120-cycle-de-vie-des-evenements-archives-et-suppression.md) | Cycle de vie des événements : clôture, archive intermédiaire, purge et suppression (orientation et arbitrages D1 à D4 validés le 11 novembre 2026 ; durées à valider avant la production) | LOT 05.6 — Conservation RGPD | Proposée |
 | [DM-121](metier/DM-121-administration-cws-des-communes-et-garde-fous.md) | Administration CWS des communes : séparation, accès commerciaux, invitations (A3, A4, 13 novembre 2026) | LOT 07.1 — Administration CWS | Validée |
 | [DM-122](metier/DM-122-gestion-autonome-des-equipes-communales.md) | Gestion autonome des équipes communales (A2, A3) | LOT 07.2 — Équipes communales | Validée |
+| [DM-123](metier/DM-123-activation-automatique-des-evenements-a-l-heure-de-debut.md) | Activation automatique des événements à l'heure de début | Cycle de vie des événements | Validée |
+| [DM-124](metier/DM-124-cumul-des-roles-par-defaut-d-un-administrateur-communal.md) | Cumul des rôles par défaut d'un administrateur communal | LOT 07.2 — Équipes communales | Validée |
 
 ## Décisions techniques
 

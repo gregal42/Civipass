@@ -202,6 +202,11 @@ final readonly class MembershipManager
     public function changeTeamRoles(Municipality $municipality, MunicipalityMembership $membership, array $roles, User $actor): void
     {
         $this->assertTeamScope($municipality, $membership, $actor);
+        // Administration ACCORDÉE à quelqu'un qui ne l'avait pas : cumul par défaut (DM-124). Un administrateur existant dont on modifie les rôles
+        // les voit respectés tels que choisis (par exemple administrateur seul).
+        if (!$membership->hasRole(MunicipalityRole::MunicipalityAdmin)) {
+            $roles = MunicipalityRole::withAdministratorDefaults($roles);
+        }
         $this->changeRoles($membership, $roles, $actor);
     }
 

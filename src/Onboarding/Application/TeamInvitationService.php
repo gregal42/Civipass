@@ -71,6 +71,7 @@ final readonly class TeamInvitationService
     {
         $this->assertAdministrator($actor, $municipality);
         MunicipalityAdminInvitation::normalizeRoles($roles); // refuse un choix vide avant toute écriture
+        $roles = MunicipalityRole::withAdministratorDefaults($roles); // un administrateur invité reçoit par défaut tous les rôles (DM-124)
         $address = EmailAddress::fromString($email);
         $this->assertInvitable($municipality, $address);
 

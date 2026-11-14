@@ -105,7 +105,7 @@ final class TeamInvitationServiceTest extends DatabaseTestCase
     public function testAnAdministratorMayInviteAnotherAdministratorAndRolesAreMandatory(): void
     {
         $this->service->issue($this->communeA, 'pair@mairie.example', [MunicipalityRole::MunicipalityAdmin], $this->adminA);
-        self::assertSame(['MUNICIPALITY_ADMIN'], $this->mails->sent[0]['roles']);
+        self::assertSame(['MUNICIPALITY_ADMIN', 'EVENT_MANAGER', 'INSTRUCTOR'], $this->mails->sent[0]['roles']);
         $this->expectException(DomainRuleViolation::class);
         $this->service->issue($this->communeA, 'vide@mairie.example', [], $this->adminA);
     }

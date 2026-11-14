@@ -144,7 +144,7 @@ final class MunicipalityAdminInvitationServiceTest extends DatabaseTestCase
 
         self::assertSame('maire@mairie.example', $user->email());
         self::assertSame(1, $this->adminCount());
-        self::assertSame(['MUNICIPALITY_ADMIN'], (array) json_decode((string) $this->em->getConnection()->fetchOne('SELECT roles FROM municipality_membership WHERE user_id = ?', [$user->id()->toBinary()]), true));
+        self::assertSame(['EVENT_MANAGER', 'INSTRUCTOR', 'MUNICIPALITY_ADMIN'], (array) json_decode((string) $this->em->getConnection()->fetchOne('SELECT roles FROM municipality_membership WHERE user_id = ?', [$user->id()->toBinary()]), true));
         self::assertSame(LinkStatus::Used, $this->resolve($token)->status);
         $accepted = $this->em->getConnection()->fetchOne("SELECT new_value FROM audit_log WHERE action = 'ADMIN_INVITATION_ACCEPTED'");
         self::assertStringContainsString('"officialHabilitationVerified": false', (string) $accepted);

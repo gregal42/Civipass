@@ -109,7 +109,7 @@ final class CwsAdministrationTest extends WebTestCase
         self::assertResponseIsSuccessful();
         $this->client->request('GET', $events.'/nouveau');
         self::assertResponseIsSuccessful();
-        self::assertSame(['MUNICIPALITY_ADMIN'], (array) json_decode((string) $this->db()->fetchOne('SELECT roles FROM municipality_membership'), true));
+        self::assertSame(['EVENT_MANAGER', 'INSTRUCTOR', 'MUNICIPALITY_ADMIN'], (array) json_decode((string) $this->db()->fetchOne('SELECT roles FROM municipality_membership'), true));
 
         // 6. Le lien est épuisé.
         $this->client->getCookieJar()->clear();

@@ -1,7 +1,7 @@
 {# Choix des rôles (cumulables), décrits sans jargon. Variables : role_options, selected (valeurs), error. #}
 <fieldset class="cp-fieldset">
   <legend class="cp-fieldset__legend">Rôles *</legend>
-  <p class="cp-help">Une personne peut cumuler plusieurs rôles. Choisissez au moins un rôle.</p>
+  <p class="cp-help">Une personne peut cumuler plusieurs rôles. Choisissez au moins un rôle. Un administrateur reçoit par défaut les trois rôles (administrateur, gestionnaire d’événements, instructeur) : vous pourrez ensuite en retirer depuis l’écran Équipe.</p>
   {% for o in role_options %}
     <div class="cp-stack" style="gap: var(--space-1); margin-bottom: var(--space-3)">
       {% include 'components/check.html.twig' with { id: 'role-' ~ o.value, name: 'roles[]', value: o.value, label: o.label, checked: o.value in selected } only %}

@@ -63,7 +63,7 @@ final readonly class MunicipalityAdminInvitationService
         $address = EmailAddress::fromString($email);
         $this->assertInvitable($municipality, $address);
 
-        return $this->createAndSend($municipality, $address, $actor, null, AuditAction::AdminInvitationIssued, [MunicipalityRole::MunicipalityAdmin]);
+        return $this->createAndSend($municipality, $address, $actor, null, AuditAction::AdminInvitationIssued, MunicipalityRole::administratorDefaults());
     }
 
     /**
