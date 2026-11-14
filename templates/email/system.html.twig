@@ -1,0 +1,8 @@
+{% extends 'email/layout.html.twig' %}
+{# E-mails d'exploitation et de rappel livrés en texte seul : le texte est repris tel quel dans la charte (voir BrandedTextEmailListener). #}
+{% block content %}
+{% if heading %}<h2>{{ heading }}</h2>{% endif %}
+{% for b in blocks %}
+{% if b.pre %}<pre>{{ b.text }}</pre>{% else %}<p>{{ b.text|raw }}</p>{% endif %}
+{% endfor %}
+{% endblock %}

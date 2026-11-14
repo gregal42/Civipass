@@ -1,3 +1,5 @@
+{% extends 'email/layout.html.twig' %}
+{% block content %}
 <p>Bonjour {{ firstName }},</p>
 <p>La commune de <strong>{{ municipality }}</strong> a modifié les zones de votre autorisation sur votre laissez-passer <strong>{{ reference }}</strong> (événement « {{ eventName }} »).</p>
 {% if removedZones|length %}<p>Zones retirées (vous n'avez plus de droit dans ces zones) : <strong>{{ removedZones|join(', ') }}</strong>.</p>{% endif %}
@@ -13,3 +15,4 @@
 {% endfor %}
 </ul>
 <p>Votre lien et votre QR code restent ceux que vous avez déjà reçus : le QR code affiche toujours votre situation du moment. Seul le contrôle du QR code fait foi.<br>Pour toute question, contactez la commune concernée.</p>
+{% endblock %}

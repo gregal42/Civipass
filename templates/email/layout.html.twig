@@ -1,0 +1,76 @@
+{#
+  Gabarit commun de tous les e-mails Civipass (design system : tokens de design-system/tokens.json).
+  Mise en page en tableaux et styles en ligne (compatibilité des clients de messagerie) ; le mode sombre passe par prefers-color-scheme.
+  Chaque e-mail étend ce gabarit et ne remplit que `content` (HTML simple : p, ul, ol, li, strong, a, h2 ; `<p class="cta"><a href>` = bouton ;
+  `<p class="note">` = mention secondaire). Le filtre `email_html` applique la charte à ce contenu.
+  Blocs : `preheader` (aperçu de la boîte de réception, facultatif), `content`.
+#}
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>{{ subject|default('Civipass') }}</title>
+<style>
+  body, table, td, a { -webkit-text-size-adjust: 100%; }
+  img { border: 0; }
+  @media (max-width: 620px) {
+    .cp-wrap { width: 100% !important; }
+    .cp-pad { padding-left: 20px !important; padding-right: 20px !important; }
+  }
+  @media (prefers-color-scheme: dark) {
+    .cp-paper { background-color: #0d131c !important; }
+    .cp-card { background-color: #151c27 !important; border-color: #2a3546 !important; }
+    .cp-ink, .cp-p, .cp-li, .cp-h2 { color: #e9eef5 !important; }
+    .cp-ink-3, .cp-note { color: #93a0b2 !important; }
+    .cp-a { color: #8db0ee !important; }
+    .cp-btn-cell { background-color: #8db0ee !important; }
+    .cp-btn { color: #0d131c !important; background-color: #8db0ee !important; }
+    .cp-brandband { background-color: #1b2a42 !important; }
+    .cp-line { border-color: #2a3546 !important; }
+    .cp-pre { background-color: #1c2532 !important; color: #e9eef5 !important; border-color: #2a3546 !important; }
+  }
+</style>
+</head>
+<body class="cp-paper" style="margin:0;padding:0;background-color:#f2f4f7;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;mso-hide:all;">{% block preheader %}{{ subject|default('') }}{% endblock %}&#8199;&#847;&#8199;&#847;&#8199;&#847;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="cp-paper" style="background-color:#f2f4f7;">
+  <tr>
+    <td align="center" style="padding:24px 12px;">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" class="cp-wrap" style="width:600px;max-width:600px;">
+        <tr>
+          <td style="padding:0 0 12px 0;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="cp-wrap" style="width:100%;">
+              <tr>
+                <td class="cp-brandband" style="background-color:#1d3f73;border-radius:14px 14px 0 0;padding:16px 28px;font-family:'Atkinson Hyperlegible Next',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td width="30" height="30" align="center" valign="middle" style="width:30px;height:30px;background-color:#ffffff;border-radius:8px;color:#1d3f73;font-size:15px;line-height:30px;font-weight:800;letter-spacing:-0.02em;font-family:'Atkinson Hyperlegible Next',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;">Cp</td>
+                      <td style="padding-left:12px;color:#ffffff;font-size:20px;line-height:30px;font-weight:800;letter-spacing:-0.015em;font-family:'Atkinson Hyperlegible Next',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;">Civipass</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr><td height="4" style="height:4px;line-height:4px;font-size:0;background-color:#f2a12e;">&nbsp;</td></tr>
+              <tr>
+                <td class="cp-card cp-pad" style="background-color:#ffffff;border:1px solid #d2d9e2;border-top:0;border-radius:0 0 14px 14px;padding:28px;font-family:'Atkinson Hyperlegible Next',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:16px;line-height:1.55;color:#0f1e36;">
+                  {% apply email_html %}{% block content %}{% endblock %}{% endapply %}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td class="cp-ink-3 cp-pad" style="padding:8px 28px 0 28px;font-family:'Atkinson Hyperlegible Next',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:13px;line-height:1.5;color:#56637a;text-align:center;">
+            Civipass, la plateforme de gestion des laissez-passer en situation de crise.<br>
+            Message automatique : merci de ne pas y répondre.
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
