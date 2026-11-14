@@ -9,6 +9,9 @@
 {% block content %}
   {% import 'municipal/event/_actions.html.twig' as act %}
   {% include 'municipal/event/_head.html.twig' with { current: 'fiche' } %}
+  {% if detail.status.value == 'DRAFT' and detail.startsAt <= date() and (detail.endsAt is null or detail.endsAt > date()) %}
+    {% include 'components/alert.html.twig' with { variant: 'warning', title: 'L’heure de début est passée : l’événement n’est pas activé', text: 'L’activation automatique à l’heure de début n’a pas pu avoir lieu. Confirmez au moins une zone et configurez sa validité : l’événement sera alors activé automatiquement au prochain passage (chaque minute), ou activez-le vous-même.' } only %}
+  {% endif %}
   {% if dormancy is defined and dormancy %}{% include 'municipal/event/_dormancy.html.twig' with { dormancy: dormancy } only %}{% endif %}
 
   <div class="app-split">
@@ -177,6 +180,25 @@
     </div>
 
     <aside class="cp-stack" aria-label="Synthèse de l’événement">
+      {% if rel != 'invited' %}
+        {% embed 'components/panel.html.twig' with { id: 'public-link-h', title: 'Lien de dépôt public', status_value: status_key, link: event_public_url(detail.publicReference), qr: status_key == 'active' ? event_public_qr(detail.publicReference) : '' } only %}
+          {% block body %}
+            {% if status_value == 'active' %}
+              <p class="app-note">À communiquer aux citoyens (site de la mairie, affichage, réseaux) : ils y déposent leur demande de laissez-passer, sans compte.</p>
+              <div class="pp-copy" data-controller="copy">
+                <input class="cp-input cp-mono" type="text" readonly value="{{ link }}" data-copy-target="source" aria-label="Lien de dépôt public de l’événement" id="public-link-value">
+                <button class="cp-btn cp-btn--primary" type="button" data-action="copy#copy" data-copy-target="button">{% include 'components/icon.html.twig' with { name: 'check' } only %}<span>Copier le lien</span></button>
+              </div>
+              <div class="app-qr" role="img" aria-label="QR code du lien de dépôt public">{{ qr|raw }}</div>
+              <p class="app-note">Ce QR code ouvre le même lien : à imprimer pour l’affichage en mairie ou sur le terrain.</p>
+            {% elseif status_value == 'draft' %}
+              <p class="app-note">Le lien sera disponible dès l’activation de l’événement : tant qu’il est en brouillon, la page publique n’existe pas.</p>
+            {% else %}
+              <p class="app-note">Le lien de dépôt n’est proposé que pour un événement actif.</p>
+            {% endif %}
+          {% endblock %}
+        {% endembed %}
+      {% endif %}
       {% if life %}
         {% embed 'components/panel.html.twig' with { id: 'life-p', title: 'Cycle de vie', status: status_key, life: life, tz: tz } only %}
           {% block body %}

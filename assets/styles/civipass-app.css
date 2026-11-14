@@ -96,6 +96,11 @@ button.cp-nav__link { width: 100%; border: 0; background: none; font: inherit; t
 .pp-note { margin: 0; padding: 0 var(--space-4) var(--space-4); color: var(--ink-3); font-size: var(--cp-fs-caption); }
 .pp-body { display: grid; gap: var(--space-3); padding: var(--space-4); justify-items: start; }
 .pp-body .pp-note { padding: 0; }
+/* QR code du lien de dépôt public : fond blanc (lisibilité du scan en thème sombre), taille fixe. */
+.app-qr { display: inline-block; padding: var(--space-2); background: #fff; border: 1px solid var(--line); border-radius: var(--radius-s); line-height: 0; }
+.app-qr svg { width: 168px; height: 168px; display: block; }
+.app-qr--mini { padding: 4px; }
+.app-qr--mini svg { width: 56px; height: 56px; }
 .pp-copy { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); margin-block: var(--space-2); }
 @container cp-app (max-width: 559px) { .pp-copy { grid-template-columns: minmax(0, 1fr); } }
 .pp-links { display: grid; gap: var(--space-2); margin: var(--space-4) 0 0; padding: 0; list-style: none; }

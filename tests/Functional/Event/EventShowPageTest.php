@@ -284,4 +284,51 @@ final class EventShowPageTest extends MunicipalPagesTestCase
         self::assertStringContainsString('Rubriques de l’événement', $html);
         self::assertStringContainsString('Événement', $html);
     }
+
+    // ── Lien de dépôt public ─────────────────────────────────────────────────
+
+    public function testThePublicDepositLinkIsOfferedOnlyOnceTheEventIsActive(): void
+    {
+        $reference = (string) $this->em()->getConnection()->fetchOne('SELECT public_reference FROM event_event WHERE id = ?', [(string) hex2bin(str_replace('-', '', $this->fire))]);
+        self::assertMatchesRegularExpression('/^EVT-\d{4}-\d{6,}$/', $reference);
+
+        $this->loginAs($this->w->adminO);
+        $draft = $this->get($this->eventUrl($this->w->org, $this->fire));
+        self::assertStringContainsString('Lien de dépôt public', $draft);
+        self::assertStringContainsString('dès l’activation', $draft);
+        self::assertStringNotContainsString('id="public-link-value"', $draft, 'brouillon : la page publique n\'existe pas');
+
+        $admin = $this->user($this->w->adminO);
+        $zone = $this->proposedZone($this->fire);
+        $zones = static::getContainer()->get(EventZoneService::class);
+        $zones->confirm($admin, $zone);
+        $zones->configureValidity($admin, $zone, new ZoneValidityCommand('EVENT_DURATION'));
+        $this->lifecycle()->activate($this->user($this->w->adminO), $this->fire);
+
+        $this->loginAs($this->w->adminO);
+        $active = $this->get($this->eventUrl($this->w->org, $this->fire));
+        self::assertStringContainsString('id="public-link-value"', $active);
+        self::assertStringContainsString('value="http', $active);
+        self::assertStringContainsString('/demandes/'.$reference.'"', $active, 'adresse complète, bâtie depuis la configuration');
+        self::assertStringContainsString('Copier le lien', $active);
+        self::assertStringContainsString('<svg', substr($active, (int) strpos($active, 'app-qr')), 'QR code du lien');
+        self::assertLessThan((int) strpos($active, 'Cycle de vie'), (int) strpos($active, 'Lien de dépôt public'), 'le lien est en haut de la colonne');
+
+        $this->lifecycle()->suspend($this->user($this->w->adminO), $this->fire, 'Alerte');
+        $this->loginAs($this->w->adminO);
+        $suspended = $this->get($this->eventUrl($this->w->org, $this->fire));
+        self::assertStringNotContainsString('id="public-link-value"', $suspended);
+        self::assertStringContainsString('n’est proposé que pour un événement actif', $suspended);
+    }
+
+    public function testNoPublicLinkOnAClosedEventNorForASimplyInvitedMunicipality(): void
+    {
+        $this->loginAs($this->w->adminO);
+        self::assertStringNotContainsString('id="public-link-value"', $this->get($this->eventUrl($this->w->org, $this->flood)));
+
+        $this->loginAs($this->w->adminX);
+        $invited = $this->get($this->eventUrl($this->w->other, $this->accident));
+        self::assertStringNotContainsString('Lien de dépôt public', $invited);
+        self::assertStringNotContainsString('/demandes/EVT-', $invited);
+    }
 }

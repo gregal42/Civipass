@@ -20,5 +20,6 @@ final class JobRegistry
         'rights-overdue' => 129600,
         'purge-simulation' => 691200,
         'notifications-dispatch' => 600, // chaque minute : 10 min
+        'event-activation' => 600,       // chaque minute : 10 min (DM-123)
     ];
 }

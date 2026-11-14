@@ -68,6 +68,7 @@
           end: { text: e.endsAt ? e.endsAt|cp_datetime(e.timezone) : '—' },
           org: { text: e.organizerMunicipalityName ~ ' · ' ~ relation },
           ref: { text: e.publicReference, mono: true },
+          qr: e.status.value == 'ACTIVE' ? { html: '<a class="app-qr app-qr--mini" href="' ~ event_public_url(e.publicReference)|e('html_attr') ~ '" title="Lien de dépôt public : ' ~ event_public_url(e.publicReference)|e('html_attr') ~ '" aria-label="QR code du lien de dépôt public de ' ~ e.name|e('html_attr') ~ '">' ~ event_public_qr(e.publicReference) ~ '</a>' } : { text: '—', muted: true },
       } }]) %}
     {% endfor %}
     {% include 'components/data_table.html.twig' with {
@@ -80,6 +81,7 @@
         { key: 'end', label: 'Fin', wide: true, card: 'hide' },
         { key: 'org', label: 'Organisatrice', card: 'full' },
         { key: 'ref', label: 'Référence', wide: true, card: 'hide' },
+        { key: 'qr', label: 'Lien public', wide: true, card: 'hide' },
       ],
       rows: rows,
     } only %}

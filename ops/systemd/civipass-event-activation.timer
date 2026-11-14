@@ -1,0 +1,11 @@
+# Activation automatique des événements à l'heure de début (DM-123). Livré, jamais installé par le dépôt (voir README).
+[Unit]
+Description=Civipass — planification : activation des événements à l'heure de début (chaque minute)
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+AccuracySec=10s
+Persistent=true
+
+[Install]
+WantedBy=timers.target
