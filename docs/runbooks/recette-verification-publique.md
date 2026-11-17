@@ -1,6 +1,6 @@
 # Recette du contrôle public `/v/{jeton}` sur un VPS HTTPS dédié (LOT 07.3.5)
 
-**Statut : procédure préparée au LOT 07.3.4. Rien n'est créé, déployé ni activé par ce document.** L'exécution (07.3.5) exige une **autorisation explicite distincte** (§ 2). Cadrage : [lot-07-3-cadrage.md](../lot-07-3-cadrage.md) §§ 15 à 17 ; décisions [DM-125](../decisions/metier/DM-125-rappel-de-rapprochement-et-avertissement-de-non-diffusion-du-qr.md) à [DM-128](../decisions/metier/DM-128-messages-nationaux-fixes-des-erreurs-du-controle-public.md), [DT-055](../decisions/technique/DT-055-limitation-de-debit-du-controle-public-echecs-et-garde-fou-d-acces.md) ; exploitation : [exploitation-verification-publique.md](../exploitation-verification-publique.md).
+**Statut : procédure préparée au LOT 07.3.4. Rien n'est créé, déployé ni activé par ce document.** Civipass reste en développement exclusivement local : **cette recette est reportée à la phase finale de préparation de la mise en service** (décision du 17 novembre 2026) et son exécution (07.3.5) exige une **autorisation explicite distincte** (§ 2). Écarts ouverts : [ecarts-techniques-connus.md](../ecarts-techniques-connus.md). Cadrage : [lot-07-3-cadrage.md](../lot-07-3-cadrage.md) §§ 15 à 17 ; décisions [DM-125](../decisions/metier/DM-125-rappel-de-rapprochement-et-avertissement-de-non-diffusion-du-qr.md) à [DM-128](../decisions/metier/DM-128-messages-nationaux-fixes-des-erreurs-du-controle-public.md), [DT-055](../decisions/technique/DT-055-limitation-de-debit-du-controle-public-echecs-et-garde-fou-d-acces.md) ; exploitation : [exploitation-verification-publique.md](../exploitation-verification-publique.md).
 
 ## 0. Règles
 
@@ -140,7 +140,7 @@ Rejouer **VP-01 à VP-12** (mêmes attendus ; identifiants `VP-01-i` à `VP-12-i
 |---|---|---|---|
 | VP-40 | `curl -sI https://recette.<domaine>/v/<jeton>` (200, 404, 410, 429, 503 quand c'est possible) | `Cache-Control: no-store, private`, `Pragma: no-cache`, `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex, nofollow, noarchive`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, CSP ; **aucun `Set-Cookie`** | P0 |
 | VP-41 | Aucun cookie ni stockage local créé sur l'appareil (outils du navigateur ou `chrome://inspect`/Safari Web Inspector) | Aucun | P0 |
-| VP-42 | **Historique du navigateur** | L'URL scannée **y est conservée** (elle porte le jeton). Limite connue à documenter ; consigne de terrain à étudier (navigation privée recommandée pour les contrôleurs) | P1 |
+| VP-42 | **Historique du navigateur** | L'URL scannée **y est conservée** (elle porte le jeton) : risque **accepté et documenté** ([ecarts-techniques-connus.md](../ecarts-techniques-connus.md)). **La navigation privée n'est pas une condition du contrôle** ; elle est conseillée sur les appareils partagés. Vérifier seulement que rien d'autre que l'historique local ne conserve l'URL | P1 |
 | VP-43 | Aucune ressource tierce : onglet réseau du navigateur | Toutes les ressources sont de `recette.<domaine>` | P0 |
 
 ### 8.6 Serveur
