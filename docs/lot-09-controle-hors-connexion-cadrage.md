@@ -1,6 +1,6 @@
 # LOT 09 — Contrôle hors connexion (PWA) : étude d'architecture et cadrage
 
-**Date** : 17 novembre 2026 · **Statut** : **cadrage soumis à validation — aucune décision de ce document n'est validée** · **Numérotation** : « LOT 09 » est proposé (les lots d'audit 09 et 10 deviendraient 10 et 11) ; à confirmer.
+**Date** : 17 novembre 2026 · **Statut** : **V1 (§§1–12) et V2 (§§13–22)**. Le **principe** (approche 1, sans QR signés) et les arbitrages A1, A2, A4, A9, A10, A15 (principe) sont **validés** le 17 nov. 2026 ; la **V2 prévaut sur la V1** là où elles diffèrent (notamment le chiffrement local : voir §13.4). Les autres arbitrages restent à valider · **Numérotation** : « LOT 09 » est proposé (les lots d'audit 09 et 10 deviendraient 10 et 11) ; à confirmer.
 **Nature** : cadrage seul. Aucun développement de PWA, aucune migration, aucun déploiement, aucun VPS ; interrupteurs inchangés (`PUBLIC_VERIFICATION_ENABLED=0`, `RIGHTS_ERASURE_EXECUTION_ENABLED=0`, `RETENTION_PURGE_ENABLED=0`). Travail exclusivement local ; aucun push sans autorisation.
 
 **Origine** : décision métier du 17 novembre 2026 — le contrôle hors connexion devient **obligatoire en V1, avant le premier pilote**, sous forme de PWA, sans application native ni compte permanent de contrôleur. Elle **remplace** le report de la PWA (DM-115 §5, roadmap « lot ultérieur non planifié »).
@@ -297,3 +297,309 @@ Les **lots d'audit 08.1–08.6** restent indépendants (sauf 08.2 « entrée Con
 
 ## 12. Ce que ce cadrage ne tranche pas
 Le choix du décodeur et de l'outillage de test, la valeur finale des durées, le texte juridique et les consignes de terrain, l'environnement HTTPS de recette et la politique de PIN : ils dépendent des arbitrages A1–A15. **Aucun développement ne commence avant leur validation.**
+
+
+---
+---
+
+# PARTIE II — V2 : compléments de cadrage (17 novembre 2026)
+
+**Décisions reçues** : approche 1 (synchronisation temporaire, sans QR signés) ; A2 (données limitées à la commune activatrice) ; A4 (activation par un administrateur communal, code 30 min, plafond initial 10 appareils, **sous réserve de protections contre l'usage abusif des codes**, §17) ; A9 (décodeur QR embarqué et tests JS, **après audit des dépendances**, §16) ; A10 (`OFFLINE_CONTROL_ENABLED`, défaut 0) ; A15 (principe des deux tables ; **schéma et migration à approuver avant exécution**, §18). **Non validés** : A3 (précisé §13), A6 (§14), A5, A7, A8, A11, A13, A14 (§19).
+**Développement** : sur localhost, avec tests automatisés et navigateurs de développement ; **recette sur smartphones réels obligatoire avant le pilote, organisée à la fin du développement local** ; **aucun VPS créé maintenant**.
+
+---
+
+## 13. A3 — Modèle de confiance hors connexion (version finale proposée)
+
+### 13.1 Paramètres
+| Paramètre | Valeur par défaut | Bornes | Porté par |
+|---|---|---|---|
+| Seuil d'avertissement `warn` | 12 h | 1 h – `hard` | activation (§18), copié au jeu de données |
+| Seuil dur `hard` | 24 h | 2 h – 24 h | idem |
+| Mode d'assurance | `STANDARD` | `STANDARD` / `STRICT` (§14) | idem |
+| Tolérance d'horloge | 2 min | fixe | application |
+
+Le seuil dur ne peut **jamais dépasser 24 h** (CDC §9.2) ; une commune peut seulement le **raccourcir**.
+
+### 13.2 Âge et verdicts
+L'**âge** du jeu est `maintenant − instant de synchronisation`, mesuré avec l'horloge de l'appareil, **corrigé** par le décalage constaté à la synchronisation (§13.3). Verdicts, **mode STANDARD** :
+
+| Âge | Laissez-passer reconnu avec fenêtre active | Reconnu mais sans fenêtre active (expiré, à venir, suspendu à la synchro) | Révoqué / remplacé connu | Jeton inconnu / hors périmètre |
+|---|---|---|---|---|
+| **0 – `warn`** | **Valide selon la dernière synchronisation** — orange « hors ligne », bandeau permanent | Non valide selon la dernière synchronisation | Révoqué selon la dernière synchronisation | **Indéterminé** (« inconnu de cet appareil ») |
+| **`warn` – `hard`** (12–24 h) | **Valide selon des données anciennes** — orange renforcé, icône sablier, bandeau rouge-orange : « Données de plus de 12 h. Une révocation a pu échapper à cet appareil. **Vérifiez en ligne dès que possible ou contactez votre poste de commandement.** » | Non valide selon des données anciennes | Révoqué (information ancienne) | **Indéterminé** |
+| **> `hard`** (> 24 h) | **Indéterminé** : « Données trop anciennes : aucune validation hors connexion. Synchronisez ou vérifiez en ligne. » | **Indéterminé** | **Révoqué (information ancienne, non actualisée)** — voir 13.5 | **Indéterminé** |
+
+**Règles** : (1) un verdict positif hors ligne **ne comporte jamais** les mots « vérifié », « confirmé » ou « à jour » ; (2) le bandeau « Vérification hors connexion — données du JJ/MM à HH:MM (il y a N h) — ne reflète pas les modifications récentes » est **permanent et non masquable** ; (3) entre `warn` et `hard`, le verdict reste **positif mais dégradé** (c'est le sens du SFD §7.3 « avertissement renforcé ») ; la dégradation à « indéterminé » s'applique **à `hard`**, non à `warn` ; (4) tout verdict « non valide » est lui aussi **qualifié** (une prolongation postérieure à la synchronisation est invisible).
+
+### 13.3 Horloge du téléphone modifiée
+Ce qui est **mesuré** : à chaque synchronisation le serveur renvoie son heure `S` ; l'appareil lit son heure `D`, stocke `D`, `S`, `décalage = D − S` et une **« dernière heure locale vue »** `L`, mise à jour à chaque ouverture et à chaque scan.
+| Situation | Détection | Verdict |
+|---|---|---|
+| Décalage `|D − S| > 2 min` **à la synchronisation** | oui | le jeu est reçu mais marqué **inutilisable** : « Réglez l'heure de l'appareil (automatique) puis synchronisez » → tout est **indéterminé** |
+| Horloge **reculée** après synchronisation (`maintenant < L − 2 min` ou `< D − 2 min`) | oui | **indéterminé : horloge incohérente** |
+| Horloge **avancée** après synchronisation | **non détectable seule** ; l'âge calculé augmente (donc l'avertissement vient plus tôt, la mort dure plus tôt) | l'âge corrigé joue en faveur de la prudence ; mais une fenêtre « à venir » peut apparaître active |
+| Fuseau modifié | sans effet : tous les calculs sont en **instants UTC** | — |
+| Redémarrage / mise à jour du navigateur | `L` persistant ; l'âge est relu | — |
+
+**Limite assumée** : une horloge avancée **volontairement** peut faire paraître active une période qui commence dans les heures suivantes (≤ horizon de 24 h) ; elle ne peut pas rendre valide ce qui n'est **pas dans le jeu**. Le risque est borné par `hard`, et ne peut pas être supprimé sans connexion. Les tests simuleront reculs et avances d'horloge.
+
+### 13.4 Correction de la V1 : chiffrement local
+La V1 (§3.2, §5.1, §5.3) parlait d'un stockage « chiffré (AES-GCM, clé non extractable) » comme mesure de protection. **Cette affirmation n'est pas défendable** : une clé stockée dans le même profil de navigateur que les données ne protège pas contre une copie du profil ni contre un code exécuté dans l'origine. Elle est **retirée** ; voir §15 et A8.
+
+### 13.5 Que faire des laissez-passer révoqués après `hard` (nouveauté, A19)
+Les empreintes de laissez-passer **révoqués ou remplacés** ne sont pas des données personnelles lisibles (pas de nom) et leur état est **irréversible** (DM-116). **Recommandation** : au-delà de `hard`, l'appareil **supprime toutes les données identifiantes** (noms, plaques, fenêtres) mais **conserve les seules empreintes révoquées** jusqu'à la fin de l'événement ou la prochaine synchronisation, afin qu'un QR connu comme compromis ne devienne pas « indéterminé » mais « révoqué (information ancienne) ». Si le juriste y voit une donnée à caractère personnel (pseudonymisée), la suppression totale est le repli.
+
+---
+
+## 14. A6 — Révocations : garde-fous métier et procédure
+
+**Principe non négociable** : un verdict hors ligne n'est **jamais** une confirmation en temps réel. Le risque (révocation, suspension, remplacement de QR, clôture anticipée, prolongation) est **réduit et rendu visible**, pas supprimé. Délai maximal pendant lequel une révocation reste invisible : **`min(hard, prochaine synchronisation)`**, donc **≤ 24 h** (≤ 12 h si la commune raccourcit).
+
+### 14.1 Quatre niveaux de protection
+| # | Garde-fou | Effet |
+|---|---|---|
+| **G1** | **Préférence au temps réel** : dès que le réseau répond (délai ~3 s), la PWA ouvre le contrôle en ligne ; le hors ligne n'est qu'un repli | la majorité des contrôles avec couverture est à jour |
+| **G2** | **Durée de confiance réglable à la baisse** (2–24 h) et **resynchronisation fréquente** (à l'ouverture, toutes les 15 min en ligne) | réduit la fenêtre d'aveuglement |
+| **G3** | **Mode `STRICT`** (choisi par l'administrateur à l'activation) : hors ligne, le verdict **n'est jamais positif** — l'écran affiche identité, plaques, zones « selon la dernière synchronisation » sous le verdict **« Indéterminé : confirmation en ligne requise »** ; seuls les cas négatifs connus (révoqué, expiré) restent affichés | adapté aux zones ou périodes sensibles ; le contrôleur dispose de l'information mais **doit** confirmer par ailleurs |
+| **G4** | **Consigne de terrain « vérification impérativement à jour »** (ci-dessous) | traitement humain des cas où l'erreur est coûteuse |
+
+### 14.2 Distinction contrôle ordinaire / vérification impérativement à jour (proposition)
+| Situation | Traitement | Appui par l'application |
+|---|---|---|
+| **Contrôle ordinaire** (zone courante, données ≤ `warn`, aucun doute) | verdict hors ligne qualifié, acceptable | bandeau, âge, rapprochement nom/plaques |
+| **Données entre `warn` et `hard`** | vérification en ligne **recommandée** ; sinon verdict dégradé | bandeau renforcé, bouton « Vérifier en ligne » |
+| **Doute sur la personne, le véhicule ou la zone** | **escalade** : appel du poste de commandement ou contrôle en ligne ; ne pas décider sur le seul verdict hors ligne | texte de rappel sur l'écran de résultat |
+| **Zone ou point « sensible »** (désigné par la commune) | **vérification en ligne obligatoire**, ou mode `STRICT` | option de mode `STRICT` ; (option **A16** : indicateur par zone, §19) |
+| **Incident déclaré** (fraude, vol de QR, révocation urgente) | la commune **diffuse l'alerte hors outil** (radio, téléphone) ; **resynchronisation immédiate** demandée aux contrôleurs en ligne ; l'administrateur peut **désactiver** un appareil ou **raccourcir** la durée de confiance pour les nouvelles activations | écran « Appareils », message d'alerte lors de la synchronisation |
+| **Après une longue période hors ligne** (> `warn`) | première action : **synchroniser** | l'application ouvre sur l'état de fraîcheur |
+
+### 14.3 Procédure de révocation urgente (à intégrer au runbook)
+1. L'agent révoque dans Civipass (effet **immédiat** en ligne, DM-116).
+2. L'administrateur évalue la sensibilité : **alerte radio** aux postes concernés (le métier fournit le texte) et, si besoin, **désactivation** des appareils d'une zone.
+3. Les appareils connectés se resynchronisent ; les autres le feront à la reconnexion ; **le délai maximal est affiché et accepté** (A6).
+4. En cas de compromission d'un **QR**, le remplacement de QR (DM-113 §4) invalide l'ancien jeton en ligne ; hors ligne, l'ancien jeton reste « valide selon synchronisation » jusqu'à la synchronisation suivante.
+
+### 14.4 Ce que le métier doit accepter ou refuser (A6, version précisée)
+- **Accepter** : le délai maximal d'invisibilité (**≤ `hard`, paramétrable à la baisse**) pour les contrôles ordinaires ; la consigne d'escalade ; la possibilité du mode `STRICT`.
+- **Décider** : le mode par défaut (`STANDARD` ou `STRICT`) pour le **pilote** ; la durée par défaut (12 h recommandée pour le début du pilote, 24 h ensuite) ; la liste des situations « impérativement à jour » ; le texte des bandeaux.
+- **Hors périmètre technique** : la protection contre une révocation intervenue **pendant** la période d'aveuglement ne peut être obtenue que par la connexion.
+
+---
+
+## 15. Données personnelles sur les terminaux
+
+### 15.1 Volumétrie (estimations à confirmer par mesure en 09.3)
+Hypothèses par laissez-passer : enregistrement JSON compact : empreinte (43 octets en base64url), nom et prénom (~40), 1,5 plaque (~15), 1,5 autorisation avec 3 fenêtres UTC (~110) et libellés de zones **dédupliqués** par dictionnaire (~30), clés et séparateurs (~60) → **~300 – 450 octets**. Pire cas réaliste (10 plaques, 5 zones, 20 fenêtres) : **~4 ko**. Compression `gzip` du transfert : ×5 à ×8 environ.
+
+| Laissez-passer | Jeu typique | Pire cas | Transfert compressé (typique) | Stockage local (IndexedDB, 1 ligne par laissez-passer) | Commentaire |
+|---|---|---|---|---|---|
+| **100** | ~45 ko | ~0,4 Mo | < 10 ko | < 0,1 Mo | négligeable |
+| **1 000** | ~0,45 Mo | ~4 Mo | ~70–90 ko | ~0,5 Mo | confortable sur 3G |
+| **10 000** | ~4,5 Mo | ~40 Mo | ~0,6–0,9 Mo (3–6 s en 3G faible) | ~5 Mo | **instantané complet toutes les 15 min** devient coûteux ; **seuil recommandé** pour passer à la synchronisation différentielle : > 2 000 laissez-passer ou > 1 Mo compressé (A13) |
+
+Recherche : accès direct par clé (empreinte), **O(1)**, sans charger le jeu entier. Les limites de stockage navigateur (centaines de Mo) ne sont pas en jeu. **Côté serveur** : le constructeur évalue chaque autorisation avec le moteur existant ; coût proportionnel au nombre d'autorisations ; **mesure obligatoire en 09.3** pour 10 000 ; mise en cache du jeu par commune/événement invalidée par les changements de droits.
+
+### 15.2 Conservation et suppression des données locales
+| Déclencheur | Effet | Garantie |
+|---|---|---|
+| Synchronisation réussie | **remplacement atomique** du jeu précédent | oui |
+| Âge > `hard` | suppression des **données identifiantes** (§13.5) à la prochaine **ouverture** de l'application | **pas de purge sans ouverture** : une PWA ne peut garantir d'exécution en arrière-plan (surtout sur iPhone) |
+| Appareil désactivé (constaté à la synchronisation) | suppression complète | seulement **à la reconnexion** |
+| Événement clos ou terminé (constaté à la synchronisation, ou fin planifiée connue localement) | suppression complète | idem pour la clôture anticipée |
+| Effacement/rectification d'un laissez-passer (droits des personnes) | disparaît du jeu suivant | effet **≤ `hard`** après le changement ; à documenter dans l'information des personnes |
+| Bouton « Effacer les données de cet appareil » | suppression immédiate | oui (action volontaire) |
+| Désinstallation de l'application ou purge du navigateur par l'utilisateur / par iOS (≈ 7 jours sans usage hors installation) | suppression | non maîtrisée par Civipass |
+
+**Côté serveur** : `control_activation` et `control_device` ne contiennent **aucune donnée personnelle de contrôleur** ; ils sont conservés avec le dossier de l'événement et **purgés par le même mécanisme que celui-ci** (DM-120) — à ajouter au service de purge (adaptation de code, aucune migration supplémentaire).
+
+### 15.3 Perte ou vol d'un appareil
+| Étape | Action | Limite |
+|---|---|---|
+| Signalement | le contrôleur prévient son poste, qui prévient l'administrateur communal | délai humain |
+| Désactivation | écran « Appareils » : action **« Désactiver — perdu / volé »** (motif codé) | **agit à la prochaine connexion de l'appareil ; inefficace s'il reste hors ligne** |
+| Exposition maximale | jeu **de la seule commune**, **laissez-passer valides ou à venir** seulement, nom + plaques + zones ; durée jusqu'à purge à l'ouverture | l'extraction reste possible tant que le stockage n'est pas purgé |
+| Information | si le jeu contient des données de personnes, l'appréciation d'une **violation de données** (notification CNIL / personnes) relève du responsable de traitement ; le runbook donne la liste des données exposées et la période | décision juridique |
+| Remédiation | l'administrateur peut **révoquer le code** et **raccourcir la durée** ; les laissez-passer ne sont **pas** remplacés en masse | — |
+
+### 15.4 Extraction depuis le navigateur : risques réels
+| Vecteur | Possible ? | Commentaire |
+|---|---|---|
+| Autre application installée | **non** (bac à sable du navigateur) | hors appareil « rooté » ou logiciel malveillant privilégié |
+| Quelqu'un utilisant le téléphone **déverrouillé** | **oui** (ouvrir l'application ; inspecter le stockage via les outils de développement si activés) | le verrouillage de l'appareil est la protection principale |
+| Débogage USB (Android) / Web Inspector (iOS) | oui avec accès au téléphone déverrouillé et appairé | idem |
+| Sauvegardes de l'appareil | **à vérifier** (le contenu d'applications web installées peut être inclus dans certaines sauvegardes) ; **[M]** à mesurer pendant la recette réelle | à documenter dans l'AIPD |
+| Extraction forensique du stockage de l'appareil | possible ; le chiffrement du système (Android FBE, iOS Data Protection) protège **appareil verrouillé**, pas contre un attaquant disposant du déverrouillage | hors contrôle de Civipass |
+| **Script injecté dans l'origine** (XSS) | oui : les données locales sont **par origine**, pas par chemin | **la PWA partage l'origine du reste de Civipass** : une faille de script ailleurs exposerait le stockage ; recommandation : **sous-domaine dédié** pour la PWA (A17) et CSP stricte (sans script tiers) |
+| Navigation privée / effacement des données du navigateur | perte des données (pas de fuite) | resynchronisation |
+
+### 15.5 Protections réellement possibles (et celles qui ne le sont pas)
+| Mesure | Effective ? | Raison |
+|---|---|---|
+| **Minimisation** (commune seule, valides/à venir, nom + plaques) | **oui** | réduit le contenu exposé |
+| **Durée de vie courte** + purge à l'ouverture | **partielle** | la purge exige l'ouverture |
+| **Empreinte à la place du jeton** | **oui** | un jeu volé ne permet pas de fabriquer un QR |
+| **Désactivation à distance** | **partielle** | seulement à la reconnexion |
+| **Chiffrement applicatif avec clé stockée sur l'appareil** (AES-GCM, clé « non extractable ») | **non démontrée** | la clé et les données résident dans le même profil ; **ne pas l'annoncer** |
+| **Chiffrement avec clé dérivée d'un code PIN** (PBKDF2/Argon, WebCrypto) | **partielle** | protège un profil copié tant que le PIN résiste ; un PIN à 4–6 chiffres se casse hors ligne ; coût d'usage pour les agents ; **option V1.1** si l'AIPD l'exige |
+| **Authentification par biométrie (WebAuthn)** pour ouvrir l'application | possible sur Android et iOS récents | conditionne l'accès **à l'interface**, pas aux fichiers ; complexité ; **hors V1** |
+| **Verrouillage de l'appareil et chiffrement du système** | **oui, hors contrôle de Civipass** | **consigne obligatoire** et condition d'utilisation ; non vérifiable par une PWA |
+| **Séparation par commune** | **oui** (jeu serveur par commune ; test d'isolation) | voir 15.6 |
+
+**Ce que Civipass promet** : minimisation, durée bornée, purge à l'ouverture, désactivation à la reconnexion, isolation par commune. **Ce que Civipass ne promet pas** : l'impossibilité d'extraire les données d'un appareil déverrouillé ou compromis.
+
+### 15.6 Séparation entre communes
+- Le jeu est construit **côté serveur** à partir de l'appareil authentifié (secret d'appareil → commune et événement de l'activation) ; **aucun identifiant fourni par le client** n'est cru (règle 5).
+- Un appareil = **un profil** (commune + événement) en V1 ; une nouvelle activation avec une autre commune **remplace** le profil après confirmation (purge) — alternative : 2 profils (A14).
+- L'appareil ne contient **jamais** de laissez-passer d'une commune qui ne l'a pas activé ; hors périmètre = « inconnu de cet appareil ».
+- Tests : appareil de A, empreintes de B → inconnues ; secret de B sur l'activation de A → refus ; `municipality_id` forgé ignoré.
+
+### 15.7 Éléments nécessaires à l'AIPD / aux obligations RGPD (liste de travail)
+1. **Description du traitement** : contrôle hors connexion de laissez-passer, copie temporaire sur terminaux.
+2. **Finalité et base légale** : à qualifier par les responsables de traitement (communes) avec leur DPO ; **ne pas anticiper** (DM-117, DM-115 §7).
+3. **Rôles** : communes = responsables ; CWS = sous-traitant ; **contrôleurs** (forces de l'ordre, police municipale, bénévoles) = destinataires/utilisateurs : **convention ou autorisation** à prévoir (cadre juridique du CDC §17).
+4. **Données** : catégories, minimisation, exclusions (§3.2) ; absence de données sensibles.
+5. **Durées** : sur terminal ≤ `hard` / événement ; côté serveur : alignées sur DM-120.
+6. **Mesures de sécurité** : §15.5 (avec les limites), authentification d'appareil, isolation, journalisation sans donnée personnelle.
+7. **Risques et vraisemblance** : accès illégitime (perte/vol, XSS), modification (horloge), disparition (purge iOS) ; **risque résiduel** assumé et chiffré.
+8. **Droits des personnes** : information (texte du dépôt à compléter : « copie temporaire sur les appareils de contrôle »), effacement/rectification (effet ≤ `hard`, §15.2), opposition (limitée par la mission).
+9. **Registre des traitements, documentation des violations** (runbook perte/vol).
+10. **Consultation du DPO**, éventuelle consultation préalable de la CNIL si le risque résiduel reste élevé.
+
+---
+
+## 16. A9 — Audit préalable des dépendances JavaScript
+
+**Règle** : aucune dépendance n'est ajoutée sans audit validé (règle 10). L'audit est **livrable de 09.1**, **avant tout code** de scan.
+
+| Point d'audit | Décodeur QR | Outillage de test |
+|---|---|---|
+| Candidats à comparer | `jsQR` (sans dépendance), `qr-scanner` (utilise `BarcodeDetector` si présent, sinon un moteur embarqué), `@zxing/*` (plus volumineux) ; **aucun n'est retenu à ce stade** (versions, licences et maintenance à vérifier) | `node:test` natif (**zéro dépendance**) pour la logique pure ; pilotage de Chrome sans bibliothèque (protocole DevTools) pour l'e2e hors ligne ; **éviter** une chaîne lourde de développement |
+| Critères | licence compatible, maintenance, taille (< 150 ko minifié souhaité), **absence de réseau** à l'exécution, absence de dépendances transitives, absence de scripts d'installation, comparaison de performance sur QR noir et blanc, **iPhone sans `BarcodeDetector`** | Node disponible sur l'hôte (v26) et dans le conteneur PHP (**version à vérifier**) ; aucune modification de l'image Docker souhaitée |
+| Intégration | **copie figée et versionnée** dans `assets/vendor/`, somme de contrôle consignée, importmap locale ; **aucun CDN** ; pas de transpilation (règle 9) | tests dans `tests/Js/`, exécutés par `bin/qa` seulement si approuvé ; sinon commande séparée |
+| Chaîne d'approvisionnement | version exacte, hachage, justification, plan de mise à jour | idem |
+
+---
+
+## 17. A4 — Protection des codes d'activation contre l'abus
+
+**Risque principal** : un code d'activation divulgué (photo d'un écran, message transféré) donne accès au **jeu de données de la commune**. Les mesures suivantes limitent la probabilité et l'impact.
+
+| # | Mesure | Détail |
+|---|---|---|
+| P1 | **Code fort, durée courte** | 12 caractères d'un alphabet de 32 (60 bits), affiché **une fois** (QR et texte), stocké **uniquement sous forme d'empreinte SHA-256** ; validité **30 min** (réglable de 10 à 60 min) |
+| P2 | **Usage borné et atomique** | `uses_count < max_devices` et `expires_at > maintenant` et non révoqué, **dans une seule mise à jour conditionnelle** (comme les invitations) ; plafond initial **10**, **absolu 10** en V1 sauf décision |
+| P3 | **Limiteurs** | échecs d'activation : 10 / 15 min / IP et plafond global (sans stocker d'IP en clair dans les journaux) ; réponse **uniforme** pour code inconnu, expiré, épuisé, révoqué ; échec de stockage = 503 (comme DT-055) |
+| P4 | **Plafonds par commune** | au plus **3 codes actifs** simultanés et **N appareils actifs** (fixe, par exemple 50) par commune et événement ; création de code limitée par heure |
+| P5 | **Habilitation et contexte** | `MUNICIPALITY_ADMIN` en authentification **complète** (jamais « se souvenir de moi », désactivé en V1) ; commune **ACTIVE**, participation **ACTIVE**, événement opérationnel ; CSRF ; confirmation explicite |
+| P6 | **Visibilité et réaction** | l'administrateur voit **qui s'est activé et quand** (libellé **obligatoire** saisi par le contrôleur, plateforme grossière Android/iOS, heure) ; il peut **désactiver** un appareil et **annuler** un code ; alerte visuelle sur « appareil inattendu » (dépassement du nombre prévu) |
+| P7 | **Secret d'appareil** | 256 bits, **hors de l'URL** (en-tête `Authorization`), stocké sous forme d'empreinte, jamais journalisé ; **jamais ré-affichable** ; durée de vie de l'appareil bornée (§18) |
+| P8 | **Audit** | `CONTROL_ACTIVATION_CREATED / REVOKED`, `CONTROL_DEVICE_ACTIVATED / DEACTIVATED`, `CONTROL_SYNC_REFUSED` (sans code, secret ni donnée personnelle) via `AuditTrail` |
+| P9 | **Option « validation manuelle »** (A18) | l'appareil s'enregistre en attente ; l'administrateur l'**approuve** avant tout jeu de données. Protège contre le vol de code au prix de la présence de l'administrateur ; **recommandé comme option par commune**, **désactivée par défaut** |
+| P10 | **Rotation du secret** (optionnelle) | secret renouvelé à chaque synchronisation avec fenêtre de tolérance ; détecte le clonage d'un appareil ; complexité de reprise après coupure ; **V1.1** |
+
+**Limite** : P1–P8 réduisent fortement l'exploitation ; **seul P9 empêche** qu'un code divulgué dans sa fenêtre de validité fournisse un jeu de données. Décision A18.
+
+---
+
+## 18. A15 — Schéma des deux tables (**proposition à approuver ; aucune migration créée ni exécutée**)
+
+Conventions du dépôt : UUID v7 en `BINARY(16)`, dates en UTC (`DATETIME` côté base, `datetime_immutable` côté domaine), clés étrangères `ON DELETE RESTRICT`, empreintes en `CHAR(64) COLLATE utf8mb4_bin`, index nommés `idx_…` / `uniq_…`, noms de tables `module_entite` (ici `control_*`).
+
+### 18.1 `control_activation`
+| Colonne | Type | Null | Rôle |
+|---|---|---|---|
+| `id` | `BINARY(16)` | non | PK, UUID v7 |
+| `municipality_id` | `BINARY(16)` | non | FK `municipality(id)` |
+| `event_id` | `BINARY(16)` | non | FK `event_event(id)` |
+| `code_hash` | `CHAR(64) utf8mb4_bin` | non | SHA-256 du code normalisé |
+| `expires_at` | `DATETIME` | non | fin de validité du code (≤ 60 min) |
+| `max_devices` | `SMALLINT UNSIGNED` | non | plafond (≤ 10 en V1, invariant du domaine) |
+| `uses_count` | `SMALLINT UNSIGNED` | non | compteur atomique, défaut 0 |
+| `trust_warn_seconds` | `INT UNSIGNED` | non | seuil d'avertissement |
+| `trust_hard_seconds` | `INT UNSIGNED` | non | seuil dur (≤ 86 400) |
+| `assurance_mode` | `VARCHAR(10)` | non | `STANDARD` / `STRICT` |
+| `manual_approval` | `TINYINT(1)` | non | A18, défaut 0 |
+| `created_by` | `BINARY(16)` | non | FK `identity_user(id)` |
+| `created_at` | `DATETIME` | non | |
+| `revoked_at` | `DATETIME` | oui | annulation avant usage complet |
+| `revoked_by` | `BINARY(16)` | oui | FK `identity_user(id)` |
+Index : `UNIQUE uniq_control_activation_code_hash(code_hash)` ; `idx_control_activation_scope(municipality_id, event_id, created_at)` ; index automatiques des FK. **Invariants** (domaine, testés) : `uses_count ≤ max_devices` ; `trust_warn ≤ trust_hard ≤ 86 400` ; une activation n'existe que pour une participation **ACTIVE**.
+
+### 18.2 `control_device`
+| Colonne | Type | Null | Rôle |
+|---|---|---|---|
+| `id` | `BINARY(16)` | non | PK |
+| `activation_id` | `BINARY(16)` | non | FK `control_activation(id)` (source des paramètres de confiance) |
+| `municipality_id` | `BINARY(16)` | non | FK `municipality(id)` ; **doit égaler** celui de l'activation (invariant testé) |
+| `event_id` | `BINARY(16)` | non | FK `event_event(id)` ; idem |
+| `label` | `VARCHAR(60)` | non | nom saisi (« Barrage Nord ») ; **aucune donnée personnelle de contrôleur** |
+| `platform` | `VARCHAR(10)` | non | `ANDROID` / `IOS` / `OTHER` (indication d'assistance) |
+| `secret_hash` | `CHAR(64) utf8mb4_bin` | non | SHA-256 du secret d'appareil |
+| `status` | `VARCHAR(12)` | non | `PENDING` (si A18), `ACTIVE`, `DEACTIVATED` ; **l'expiration est calculée** à partir de `expires_at` |
+| `activated_at` | `DATETIME` | non | |
+| `expires_at` | `DATETIME` | non | fin de vie de l'appareil : min(fin effective de l'événement, activation + durée plafond à fixer) |
+| `last_sync_at` | `DATETIME` | oui | |
+| `last_snapshot_hash` | `CHAR(64)` | oui | `ETag` du dernier jeu servi |
+| `sync_count` | `INT UNSIGNED` | non | défaut 0 |
+| `deactivated_at` | `DATETIME` | oui | |
+| `deactivated_by` | `BINARY(16)` | oui | FK `identity_user(id)` |
+| `deactivation_reason` | `VARCHAR(12)` | oui | `LOST`, `COMPROMISED`, `END_OF_USE`, `OTHER` (codes, pas de texte libre) |
+Index : `UNIQUE uniq_control_device_secret_hash(secret_hash)` ; `idx_control_device_scope(municipality_id, event_id, activated_at)` ; `idx_control_device_activation(activation_id)` ; index automatiques des FK.
+
+### 18.3 Colonnes volontairement **absentes**
+Adresse IP, agent utilisateur complet, position, identité du contrôleur, contenu du jeu de données, journaux de scan. Pas de colonne ajoutée à `permit_permit` : **instantané complet** en V1 (A13).
+
+### 18.4 Option hors périmètre approuvé (A16)
+Un indicateur `requires_live_check` sur la zone (`event_zone`) permettrait de marquer des zones « vérification en ligne obligatoire ». C'est une **colonne supplémentaire** non couverte par la validation des « deux tables » : à approuver séparément, sinon le mode `STRICT` par activation reste la seule réponse.
+
+### 18.5 Risques et retour arrière
+Nouvelles tables sans impact sur les données existantes ; sauvegarde vérifiée avant exécution locale ; retour arrière = `DROP TABLE control_device, control_activation` ; **purge** de l'événement à adapter (code) ; **aucune migration n'est exécutée avant approbation de ce schéma**.
+
+---
+
+## 19. Arbitrages ouverts avec recommandations
+
+| # | Sujet | Options | Recommandation | État |
+|---|---|---|---|---|
+| **A3** | Durées | voir §13 | `warn` 12 h, `hard` 24 h (plafond), raccourcissables par commune ; entre 12 et 24 h : **positif dégradé** ; > 24 h : indéterminé ; horloge : §13.3 | à valider |
+| **A5** | **Vocabulaire hors ligne** | (a) vert « valide » + bandeau ; (b) **orange « valide selon la dernière synchronisation »** + bandeau ; (c) pas de verdict positif | **(b)** (mode `STANDARD`) et **(c)** en mode `STRICT` ; jamais de vert plein, ni « vérifié / confirmé / à jour » ; textes fournis par le métier | à valider |
+| **A6** | Révocations | §14 | G1–G4, procédure §14.3, mode par défaut à choisir pour le pilote | **à valider** |
+| **A7** | **Journal des scans** | (a) aucun ; (b) journal local remonté à la reconnexion (SFD §9.3) ; (c) compteurs agrégés | **(a)** : cohérent avec DM-127 ; la détection d'abus repose sur les limiteurs et l'audit d'activation/synchronisation (sans donnée personnelle) ; (b) exigerait une base légale, une durée et une table | à valider |
+| **A8** | **Protection locale** | (a) minimisation + durée + purge, **sans chiffrement applicatif** ; (b) chiffrement avec clé locale ; (c) chiffrement avec **clé dérivée d'un PIN** ; (d) biométrie WebAuthn | **(a) en V1, honnêtement documenté** ; (c) en option V1.1 si l'AIPD l'exige ; (b) **à ne pas retenir** (sécurité illusoire) ; consigne de **verrouillage de l'appareil** obligatoire | à valider |
+| **A11** | **Données sur l'appareil** | nom + prénom + plaques + zones/fenêtres + état ; sans contact ni pièce ni motif ; empreinte du jeton | **confirmer** ; données des laissez-passer **valides ou à venir** de la commune seulement ; AIPD et validation juridique **avant donnée réelle** | à valider |
+| **A13** | **Synchronisation** | instantané complet / différentiel | **instantané complet en V1** avec `ETag` ; bascule différentielle si > 2 000 laissez-passer ou > 1 Mo compressé (mesure en 09.3) ; fréquence **15 min application ouverte** et à l'ouverture ; pas d'arrière-plan sur iPhone | à valider |
+| **A14** | **Plusieurs communes sur un appareil** | (a) un profil par appareil ; (b) plusieurs profils | **(a)** : réactiver avec une autre commune **remplace** et purge le profil (confirmation) ; un point de contrôle commun à deux communes utilise **un appareil par commune** ; (b) à reconsidérer après le pilote | à valider |
+| **A16** | Indicateur « contrôle à jour obligatoire » par zone | oui (colonne) / non | **non en V1** ; mode `STRICT` suffit ; à reconsidérer | à valider |
+| **A17** | **Origine de la PWA** | même origine / **sous-domaine dédié** | **sous-domaine dédié** à l'installation (isole le stockage) ; non bloquant pour le développement local | à valider |
+| **A18** | Approbation manuelle des appareils | auto / approbation | **option par commune, désactivée par défaut** ; plafond P1–P8 en tout état de cause | à valider |
+| **A19** | Conservation des empreintes révoquées > `hard` | oui / non | **oui** (§13.5), sous réserve de l'AIPD | à valider |
+
+---
+
+## 20. Incréments définitifs (proposition)
+
+| Incr. | Contenu | Livrables | Dépend de | Migration | Taille |
+|---|---|---|---|---|---|
+| **09.0** | Fiches de décision (DM d'architecture et de confiance, amendements DM-115 §5, DM-116 §4), **dossier AIPD (liste §15.7)**, validation de A3, A5–A8, A11, A13, A14, A16–A19, **approbation du schéma §18** | documents | — | — | S |
+| **09.1** | **Socle PWA en ligne et outillage** : audit des dépendances (§16), décodeur embarqué, `node:test`, route `/controle`, manifeste, Service Worker (coquille hors ligne), scan dans l'application, ouverture du contrôle en ligne, `OFFLINE_CONTROL_ENABLED` | application installable (localhost), aucune donnée locale | 09.0 | non | M |
+| **09.2** | **Appareils** : migration approuvée (2 tables), activation (P1–P9), secret d'appareil, écran « Appareils », désactivation, audit, limiteurs | gestion complète des appareils | 09.1 | **oui** | M |
+| **09.3** | **Jeu de données serveur** : constructeur sur `PermitRightsEvaluator`, fenêtres UTC, périmètre commune, empreintes, révoqués/remplacés, API de synchronisation, `ETag`, **mesure 100 / 1 000 / 10 000** | API testée sur identifiants forgés ; budget de performance | 09.2 | non | M-L |
+| **09.4** | **Magasin local et verdicts** : IndexedDB, module de verdict pur (§13) testé, horloge, modes `STANDARD`/`STRICT`, bandeaux, préférence au temps réel | contrôle hors ligne fonctionnel en navigateur de développement | 09.3 | non | L |
+| **09.5** | **Cycle de vie** : synchronisation auto/manuelle, purge (§15.2), désactivation, clôture, propagation d'effacement, intégration à la purge d'événement, runbook perte/vol/compromission, alerte de resynchronisation | exploitation | 09.4 | non | M |
+| **09.6** | **Durcissement et tests** : scénarios de sécurité (isolation, abus de codes, horloge, rejeu), tests e2e hors ligne sur Chrome de développement, accessibilité, mesures de performance, revue du dossier AIPD | critères 1–13 et 17–18 | 09.5 | non | M |
+| **09.7** | **Recette sur smartphones réels** (Android, iPhone), à la **fin du développement local** ; exige un **accès HTTPS** (autorisation d'infrastructure séparée) et la **sous-origine dédiée** | critères 14–16 | 09.6 + autorisation | non | M |
+
+**Rappel d'ordonnancement** : 09.7 est un **prérequis du pilote** mais hors de la phase de développement local ; elle ne crée ni VPS ni déploiement tant qu'aucune autorisation n'est donnée. Les lots d'audit 08.1–08.6 restent indépendants ; 08.2 (entrée « Contrôle ») doit exposer l'entrée « Appareils ».
+
+---
+
+## 21. Critères d'acceptation (mise à jour de §10)
+Les critères 1 à 18 de §10 sont maintenus avec les précisions suivantes : (2)–(5) selon le tableau de §13.2 ; (5) **inclut** la détection d'horloge reculée et de décalage à la synchronisation ; (8) désactivation **à la reconnexion** ; (9) isolation vérifiée **avec empreintes et secrets forgés** ; (11) **aucun** journal de scan ; nouveaux : **(19)** les protections P1–P8 de §17 sont testées (code expiré, épuisé, révoqué, limiteur, réponse uniforme, concurrence sur le dernier appareil) ; **(20)** le délai maximal d'invisibilité d'une révocation est affiché dans la consigne et accepté par écrit (A6) ; **(21)** le jeu 10 000 laissez-passer est construit et synchronisé dans le budget de performance fixé en 09.3 ; **(22)** aucune promesse de chiffrement local n'apparaît dans l'interface ni la documentation.
+
+---
+
+## 22. Interrupteurs, migrations, périmètre
+- **Interrupteurs** : `PUBLIC_VERIFICATION_ENABLED=0`, `RIGHTS_ERASURE_EXECUTION_ENABLED=0`, `RETENTION_PURGE_ENABLED=0` inchangés ; `OFFLINE_CONTROL_ENABLED` sera créé à **0** en 09.1 (aucune route active tant qu'il est à 0).
+- **Migrations** : **aucune** avant approbation du schéma §18 ; une seule migration prévue (09.2), additive.
+- **Local** : aucun VPS, aucun déploiement, aucun push sans autorisation.
