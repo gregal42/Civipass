@@ -28,6 +28,7 @@
         {% include 'components/qr_code.html.twig' with { svg: qr_svg, ref: pass.reference, size: 'l', caption: 'À présenter lors d’un contrôle' } only %}
       </div>
       <p class="pp-qr__help">Ce QR code affiche toujours vos droits du moment, même si une commune en ajoute, les modifie ou les retire. Il n’est remplacé qu’exceptionnellement (perte ou compromission) : vous en êtes alors prévenu, l’ancien QR code ne fonctionne plus et ce lien affiche toujours le QR code en vigueur.</p>
+      <p class="pp-note" id="pp-qr-warning"><b>Ne diffusez pas ce QR code</b> : toute personne qui le possède peut afficher votre nom et vos plaques.</p>
       <a class="cp-btn cp-btn--secondary pp-qr__open" href="#qr">{% include 'components/icon.html.twig' with { name: 'search' } only %}<span>Agrandir le QR code</span></a>
       <a class="cp-btn cp-btn--secondary pp-qr__close" href="#main">{% include 'components/icon.html.twig' with { name: 'x' } only %}<span>Fermer</span></a>
     </section>

@@ -113,8 +113,16 @@ button.cp-nav__link { width: 100%; border: 0; background: none; font: inherit; t
 .vp-col { display: grid; gap: var(--space-4); min-width: 0; }
 .vp-verdict { overflow-wrap: anywhere; }
 .vp-verdict__count { margin: 0; font-size: var(--cp-fs-h3, 1.25rem); font-weight: 800; }
-.vp-plates { padding: var(--space-4); display: grid; gap: var(--space-3); }
-.vp-plates__title, .vp-refresh__title { margin: 0; }
+.vp-id { gap: var(--space-3); }
+.vp-id__label { margin: 0; }
+.vp-plates { gap: var(--space-2) 10px; }
+.vp-refresh__title { margin: 0; }
+.vp-check { display: flex; align-items: flex-start; gap: var(--space-2); margin: 0; padding: var(--space-3); border-left: 4px solid var(--brand); border-radius: var(--radius-md, 10px); background: var(--surface-2); color: var(--ink); font-size: var(--cp-fs-small, .9375rem); line-height: 1.35; }
+.vp-check svg { flex: none; margin-top: 2px; }
+.vp-check span { flex: 1; min-width: 0; }
+.vp-visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+/* Lisibilité en plein soleil : aucune transparence sur les textes du verdict (mesure LOT 07.3 : contraste AAA en thème clair, AA en thème sombre, sans la transparence de 90 à 95 % du composant). */
+.vp-verdict .cp-verdict__text, .vp-verdict .cp-verdict__when { opacity: 1; }
 .vp-none { margin: 0; color: var(--ink-2); font-size: var(--cp-fs-small); }
 .vp-rights { display: grid; gap: var(--space-4); padding: var(--space-4); }
 .vp-revoked { display: flex; align-items: center; gap: var(--space-2); margin: 0; color: var(--bad); font-weight: 700; }

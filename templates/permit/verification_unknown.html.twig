@@ -7,6 +7,6 @@
 
 {% block content %}
   <div class="vp-col">
-    {% include 'components/alert.html.twig' with { variant: 'warning', title: 'QR code non reconnu', text: 'Ce QR code n’est pas reconnu. Appliquez la procédure de terrain : ce n’est pas une validation.', role: 'alert' } only %}
+    {% include 'components/alert.html.twig' with { variant: 'warning', title: 'QR code non reconnu', text: 'Ce QR code n’est pas reconnu. Ne concluez pas à une fraude : demandez une autre pièce justificative et signalez le cas à votre responsable. Ce n’est pas une validation.', role: 'alert' } only %}
   </div>
 {% endblock %}

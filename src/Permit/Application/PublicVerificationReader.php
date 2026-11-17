@@ -10,6 +10,7 @@ use App\Permit\Application\Read\PublicPeriod;
 use App\Permit\Application\Read\PublicVerification;
 use App\Permit\Application\Read\PublicZone;
 use App\Permit\Application\Result\PublicVerificationLookup;
+use App\Permit\Domain\AuthorizationRights;
 use App\Permit\Domain\PermitRepository;
 use App\Permit\Domain\PermitVehicle;
 use App\Permit\Domain\PublicVerdict;
@@ -64,7 +65,27 @@ final readonly class PublicVerificationReader
             PublicVerdict::derive(array_map(static fn (ZoneRight $z): RightState => $z->state, $current)),
             $rights->validZoneCount(),
             \count($current),
-            array_map(static fn ($a): PublicAuthorization => new PublicAuthorization(
+            self::validFirst($rights->authorizations),
+            $now,
+        ));
+    }
+
+    /**
+     * Ordre d'affichage (LOT 07.3, A3) : les autorisations qui ont au moins une zone valide d'abord, et, dans chacune, les zones valides d'abord ; tri
+     * STABLE (l'ordre d'origine est conservé à égalité). Aucune donnée n'est ajoutée ni retirée : seul l'ordre change.
+     *
+     * @param list<AuthorizationRights> $authorizations autorisations évaluées par PermitRightsEvaluator
+     *
+     * @return list<PublicAuthorization>
+     */
+    private static function validFirst(array $authorizations): array
+    {
+        $isValid = static fn (ZoneRight $z): bool => RightState::Valid === $z->state;
+        $mapped = array_map(static function (AuthorizationRights $a) use ($isValid): PublicAuthorization {
+            $zones = $a->zones;
+            usort($zones, static fn (ZoneRight $x, ZoneRight $y): int => (int) $isValid($y) <=> (int) $isValid($x));
+
+            return new PublicAuthorization(
                 $a->municipalityName,
                 $a->validFrom,
                 $a->validUntil,
@@ -74,9 +95,12 @@ final readonly class PublicVerificationReader
                     $z->state,
                     array_map(static fn ($i): PublicPeriod => new PublicPeriod($i->start, $i->end), $z->periods),
                     $z->removedAt,
-                ), $a->zones),
-            ), $rights->authorizations),
-            $now,
-        ));
+                ), $zones),
+            );
+        }, $authorizations);
+        $hasValid = static fn (PublicAuthorization $a): bool => [] !== array_filter($a->zones, static fn (PublicZone $z): bool => RightState::Valid === $z->state);
+        usort($mapped, static fn (PublicAuthorization $x, PublicAuthorization $y): int => (int) $hasValid($y) <=> (int) $hasValid($x));
+
+        return $mapped;
     }
 }

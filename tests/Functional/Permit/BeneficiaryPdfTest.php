@@ -122,6 +122,14 @@ final class BeneficiaryPdfTest extends PublicRequestTestCase
         self::assertStringNotContainsString($this->token(), $text, 'le jeton n\'est jamais écrit en clair');
     }
 
+    public function testTheGeneratedPdfWarnsNotToShareTheDocumentBecauseTheQrShowsTheNameAndPlates(): void
+    {
+        $text = $this->pdf($this->secret())->text();
+
+        self::assertStringContainsString(self::squash('toute personne qui le possède peut afficher votre nom et vos plaques'), $text);
+        self::assertStringContainsString(self::squash('ne diffusez pas ce document'), $text);
+    }
+
     public function testARevokedAuthorizationIsNotListedInANewPdf(): void
     {
         $secret = $this->secret();

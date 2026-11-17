@@ -3,7 +3,8 @@
 {#
   Vérification publique d'un laissez-passer (LOT 05.4.2, DM-115) : écran lu sur le terrain après un scan, SANS compte, SANS JavaScript, sans
   ressource tierce. Une colonne dès 390 px. Ordre : statut global, bénéficiaire, référence et événement, plaques, communes et zones (périodes,
-  zones retirées à part), horodatage, bouton Actualiser. Le jeton n'est écrit nulle part dans la page (le bouton recharge l'URL courante).
+  zones retirées à part), horodatage, bouton Actualiser. LOT 07.3 : nom, plaques et rappel de rapprochement regroupés dans UN bloc juste sous le verdict
+  (mesure sur 360 px : le bloc des plaques seul finissait à 631 px, hors d'un écran visible de 553 px) ; zones valides d'abord (A3). Le jeton n'est écrit nulle part dans la page (le bouton recharge l'URL courante).
   Variables : verification (PublicVerification).
 #}
 {% block main_class %}vp-main{% endblock %}
@@ -22,20 +23,17 @@
       <p class="cp-verdict__when">Vérifié le {{ verification.checkedAt|cp_datetime(verification.timezone) }} ({{ tz }}). Droits valables au moment de cette vérification.</p>
     </section>
 
-    <section class="cp-box pp-id" aria-labelledby="vp-name">
-      <p class="cp-eyebrow">Bénéficiaire</p>
-      <h2 class="pp-id__name" id="vp-name">{{ verification.firstName }} {{ verification.lastName|upper }}</h2>
-      <p class="pp-id__event">Laissez-passer <span class="cp-mono">{{ verification.reference }}</span></p>
-      <p class="pp-id__event">{% include 'components/icon.html.twig' with { name: 'flag', size: 's' } only %} {{ verification.eventName }}</p>
-    </section>
-
-    <section class="cp-box vp-plates" aria-labelledby="vp-plates-title">
-      <h2 class="cp-box__title vp-plates__title" id="vp-plates-title">Plaques autorisées</h2>
+    <section class="cp-box pp-id vp-id" aria-labelledby="vp-name">
+      <h2 class="pp-id__name" id="vp-name"><span class="cp-sr-only">Bénéficiaire : </span>{{ verification.firstName }} {{ verification.lastName|upper }}</h2>
+      <h3 class="cp-eyebrow vp-id__label" id="vp-plates-title">Plaques autorisées</h3>
       {% if verification.plates %}
-        <div class="cp-plates">{% for plate in verification.plates %}{% include 'components/plate.html.twig' with { number: plate, size: 'lg' } only %}{% endfor %}</div>
+        <div class="cp-plates vp-plates">{% for plate in verification.plates %}{% include 'components/plate.html.twig' with { number: plate, size: 'lg' } only %}{% endfor %}</div>
       {% else %}
         <p class="vp-none">Aucun véhicule associé.</p>
       {% endif %}
+      <p class="vp-check" id="vp-check">{% include 'components/icon.html.twig' with { name: 'search', size: 's' } only %}<span><strong>Rapprochez le nom et les plaques de la personne et du véhicule.</strong> Ce QR code ne prouve pas l’identité.</span></p>
+      <p class="pp-id__event">Laissez-passer <span class="cp-mono">{{ verification.reference }}</span></p>
+      <p class="pp-id__event">{% include 'components/icon.html.twig' with { name: 'flag', size: 's' } only %} {{ verification.eventName }}</p>
     </section>
 
     {% include 'permit/verification_zones.html.twig' with { verification: verification, tz: tz } only %}

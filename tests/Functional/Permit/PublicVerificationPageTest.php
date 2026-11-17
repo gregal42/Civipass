@@ -140,6 +140,96 @@ final class PublicVerificationPageTest extends PublicRequestTestCase
         self::assertFalse($h->has('Location'), $context.' : aucune redirection');
     }
 
+    // ------------------------------------------------------------------ LOT 07.3 : rappel, ordre des zones, messages, champs exposés
+
+    public function testTheReminderToMatchNameAndPlatesComesRightAfterThePlatesAndBeforeTheZones(): void
+    {
+        $html = $this->open();
+
+        self::assertStringContainsString('Rapprochez le nom et les plaques de la personne et du véhicule.', $html);
+        self::assertStringContainsString('Ce QR code ne prouve pas l’identité.', $html);
+        $name = (int) strpos($html, 'Camille MARTIN');
+        $plates = (int) strpos($html, 'GH-482-KT');
+        $reminder = (int) strpos($html, 'Rapprochez le nom');
+        $zones = (int) strpos($html, 'Communes et zones');
+        self::assertTrue($name < $plates && $plates < $reminder && $reminder < $zones, 'ordre : verdict, nom, plaques, rappel, puis zones');
+        self::assertLessThan($name, (int) strpos($html, 'cp-verdict--'), 'le verdict est le premier bloc');
+    }
+
+    public function testTheReminderIsNeverAddedToTheNeutralOrErrorPages(): void
+    {
+        $this->client->request('GET', '/v/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz2');
+        self::assertStringNotContainsString('Rapprochez', $this->html());
+
+        $this->sql("UPDATE event_event SET status = 'CLOSED'");
+        $html = $this->open();
+        self::assertStringContainsString('Événement terminé', $html);
+        self::assertStringNotContainsString('Rapprochez', $html, 'statut neutre : aucune donnée, aucun rappel d\'identité');
+        self::assertStringNotContainsString('MARTIN', $html);
+    }
+
+    public function testValidZonesAreListedBeforeTheOthersAcrossCommunesAndInsideAnAuthorization(): void
+    {
+        // Commune organisatrice : zone 1 suspendue, zone 2 (copiée dans la même autorisation) valide. Commune partenaire : tout valide.
+        $second = F::readyZone($this->em()->find(EventParticipation::class, $this->organizerParticipation->id()) ?? self::fail('Participation absente.'));
+        $this->save($second->createdBy(), $second);
+        $this->sql('INSERT INTO permit_authorization_zone (id, authorization_id, zone_id, zone_label, removed_at) SELECT UNHEX(REPLACE(UUID(), \'-\', \'\')), a.id, :z, :l, NULL FROM permit_authorization a WHERE a.municipality_id = :m', ['z' => $second->id()->toBinary(), 'l' => 'Zone valide ajoutée', 'm' => $this->organizerParticipation->municipality()->id()->toBinary()]);
+        $this->sql("UPDATE event_zone SET status = 'SUSPENDED' WHERE id = :z", ['z' => $this->organizerZone->id()->toBinary()]);
+
+        $html = $this->open();
+
+        self::assertResponseStatusCodeSame(200);
+        $validAdded = (int) strpos($html, 'Zone valide ajoutée');
+        $suspended = (int) strpos($html, $this->organizerZone->label());
+        self::assertGreaterThan(0, $validAdded);
+        self::assertLessThan($suspended, $validAdded, 'dans une autorisation, la zone valide passe avant la zone suspendue');
+        $partnerCommune = (int) strpos($html, $this->partnerParticipation->municipality()->name());
+        $organizerCommune = (int) strpos($html, $this->organizerParticipation->municipality()->name());
+        self::assertGreaterThan(0, $partnerCommune);
+        self::assertGreaterThan(0, $organizerCommune);
+        self::assertStringContainsString('Zone suspendue', $html, 'la zone non valide reste visible, avec son état écrit');
+    }
+
+    public function testTheOrderOfZonesChangesNothingToTheCounterNorTheVerdict(): void
+    {
+        $this->sql("UPDATE event_zone SET status = 'SUSPENDED' WHERE id = :z", ['z' => $this->partnerZone->id()->toBinary()]);
+
+        $html = $this->open();
+
+        self::assertStringContainsString('1 zone active sur 2', $html);
+        self::assertStringContainsString('cp-verdict--uncertain', $html);
+        self::assertLessThan((int) strpos($html, $this->partnerParticipation->municipality()->name()), (int) strpos($html, $this->organizerParticipation->municipality()->name()), 'la commune qui a une zone valide passe avant celle qui n\'en a pas');
+    }
+
+    public function testNationalMessagesForUnknownAndReplacedQrAreFixedAndGiveAnAction(): void
+    {
+        $this->client->request('GET', '/v/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz2');
+        self::assertResponseStatusCodeSame(404);
+        self::assertStringContainsString('Ne concluez pas à une fraude : demandez une autre pièce justificative et signalez le cas à votre responsable.', $this->html());
+
+        $token = $this->token();
+        $this->sql('UPDATE permit_verification_token SET retired_at = UTC_TIMESTAMP(), active_permit_id = NULL');
+        $html = $this->open($token);
+        self::assertResponseStatusCodeSame(410);
+        self::assertStringContainsString('Demandez le nouveau QR code à la personne ou contactez la commune', $html);
+    }
+
+    public function testOnlyTheAuthorisedFieldsAreVisibleOnTheFoundPage(): void
+    {
+        $html = $this->open();
+
+        $text = html_entity_decode(strip_tags((string) preg_replace('#<(script|style)\b.*?</\1>#s', '', $html)), \ENT_QUOTES | \ENT_HTML5);
+        self::assertDoesNotMatchRegularExpression('/[\w.+-]+@[\w-]+\.[\w.-]+/', $text, 'aucune adresse e-mail');
+        self::assertDoesNotMatchRegularExpression('/(?<!\d)0[1-9](?:[ .]?\d{2}){4}(?!\d)/', $text, 'aucun numéro de téléphone');
+        self::assertDoesNotMatchRegularExpression('/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i', $html, 'aucun identifiant interne');
+        self::assertDoesNotMatchRegularExpression('/DEM-\d/', $text, 'aucune référence de demande');
+        foreach (['href="http', 'src="http', '<form', '<input', '<script', 'localStorage'] as $forbidden) {
+            self::assertStringNotContainsString($forbidden, $html, 'aucun lien sortant, formulaire, script ni stockage local : '.$forbidden);
+        }
+        self::assertMatchesRegularExpression('#href=""#', $html, 'seul lien : Actualiser, qui recharge l\'URL courante');
+        self::assertSame(1, substr_count($html, '<a '), 'un seul lien dans la page : Actualiser');
+    }
+
     // ------------------------------------------------------------------ page complète
 
     public function testTheFoundPageShowsEverythingTheControllerNeeds(): void

@@ -134,6 +134,19 @@ final class BeneficiaryPassTest extends PublicRequestTestCase
         self::assertStringContainsString("default-src 'none'", (string) $this->client->getResponse()->headers->get('Content-Security-Policy'));
     }
 
+    public function testTheQrBoxWarnsNotToShareTheQrCode(): void
+    {
+        $secret = $this->issueSecret();
+
+        $this->client->request('GET', '/laissez-passer/'.$secret);
+
+        self::assertResponseIsSuccessful();
+        $html = (string) $this->client->getResponse()->getContent();
+        self::assertStringContainsString('Ne diffusez pas ce QR code', $html);
+        self::assertStringContainsString('toute personne qui le possède peut afficher votre nom et vos plaques', $html);
+        self::assertLessThan((int) strpos($html, 'Agrandir le QR code'), (int) strpos($html, 'Ne diffusez pas ce QR code'), 'l\'avertissement est dans le bloc du QR, avant les boutons');
+    }
+
     public function testThePageDoesNotLoadAnyThirdPartyResourceNorScript(): void
     {
         $secret = $this->issueSecret();
