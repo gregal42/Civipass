@@ -713,3 +713,40 @@ Index : `uniq_control_device_secret_hash(secret_hash)` ; `idx_control_device_act
 
 ## 29. Incréments (inchangés) et ajustements
 09.0 à 09.7 de §20 sont maintenus avec : **09.2** inclut l'approbation par code d'appariement et le renouvellement ; **09.3** inclut la synchronisation par compartiments et ses contrôles d'intégrité ; **09.4** inclut la détection d'horloge de §25 ; **09.5** inclut le changement de profil (§27.4) ; **09.6** teste l'intégrité (jeux tronqués/corrompus/rejoués) et l'horloge ; l'outillage JS suit [dependances-js-controle-hors-connexion.md](dependances-js-controle-hors-connexion.md). Début de 09.1 conditionné à la validation de ce cadrage, du schéma définitif, de DT-057 et à l'ouverture du dossier AIPD.
+
+
+---
+---
+
+# PARTIE IV — Réalisation locale (état au 17 novembre 2026)
+
+**Périmètre livré** : incréments 09.1 à 09.6, **sur localhost uniquement** (aucun VPS, aucun déploiement, aucun push). `OFFLINE_CONTROL_ENABLED=0` par défaut ; `PUBLIC_VERIFICATION_ENABLED`, `RIGHTS_ERASURE_EXECUTION_ENABLED` et `RETENTION_PURGE_ENABLED` inchangés. **09.7 (recette sur Android et iPhone réels, HTTPS) reste obligatoire avant le pilote** et exige une autorisation d'infrastructure distincte.
+
+## 30. Écarts et précisions de réalisation par rapport au cadrage
+| Sujet | Cadrage | Réalisation | Raison |
+|---|---|---|---|
+| Servir les modules JavaScript | AssetMapper | **route dédiée `/controle/js/{nom}.js`** (liste blanche, ETag) | AssetMapper ne réécrit pas les imports relatifs en développement ; un importmap en ligne aurait imposé d'assouplir la CSP (`script-src 'self'` conservé tel quel) |
+| `control_device.municipality_id` / `event_id` | supprimés (§28) | **supprimés** : commune et événement lus via l'activation | isolation sans duplication |
+| Colonne `manual_approval` | supprimée (§28) | supprimée ; approbation **toujours** obligatoire | DM-131 |
+| Durée de vie d'un appareil | « à fixer » | `CONTROL_DEVICE_LIFETIME_HOURS` = **72 h** après approbation, bornée par la fin de l'événement, **renouvelable** | paramètre provisoire du pilote |
+| Échéance d'approbation | 60 min | `CONTROL_PENDING_MINUTES` = 60 | — |
+| Alerte de « resynchronisation demandée » | citée en 09.5 | **non livrée** (aucune table supplémentaire) ; remplacée par la désactivation, le raccourcissement de la durée de confiance et l'alerte radio du runbook | périmètre approuvé : deux tables |
+| Purge d'un événement (DM-120) | « à adapter » | `EventDeletionService` supprime appareils, codes et audit associés | clés étrangères `RESTRICT` |
+| Dépendances | jsQR + node:test | **jsQR 1.4.0 vendorisé** (`assets/vendor/jsqr/`, empreinte vérifiée par un test) ; **aucun `package.json`**, aucun paquet npm ; l'e2e pilote Chrome par le protocole DevTools (WebSocket natif de Node ≥ 22, **sur l'hôte**) | DT-057 |
+
+## 31. Fonctionnement livré
+- **Administration** (administrateur de la commune, authentification complète) : codes d'activation, appareils en attente/actifs, approbation par code d'appariement, désactivation avec motif, renouvellement.
+- **API d'appareil** : `POST /controle/api/activation`, `GET /controle/api/device`, `POST /controle/api/sync`, `GET /controle/api/ping` — sans session ni cookie, secret en en-tête, 404 uniforme à interrupteur 0, 429/503 explicites.
+- **Jeu de données** : lignes JSON canoniques par empreinte de jeton, 256 compartiments, condensat racine ; modes `full` / `delta` / `unchanged` ; horizon sur grille d'une heure.
+- **PWA** : activation, attente d'approbation (code d'appariement), synchronisation atomique (IndexedDB, transaction unique), scan dans l'application (`BarcodeDetector` ou jsQR), contrôle **en ligne préféré**, verdict hors ligne qualifié (STANDARD/STRICT), horloge, purge à l'ouverture.
+
+## 32. Mesures de performance du constructeur de jeu (base de test, machine de développement)
+Voir `tests/Support/control-perf.php` (`php tests/Support/control-perf.php 100 1000 10000`). Mesures du 17 novembre 2026 (PHP 8.4, MySQL 8.4, un laissez-passer = un nom, une plaque, une zone ; **budgets indicatifs, non des garanties**) :
+
+| Laissez-passer | Construction + sérialisation | Mémoire (pic additionnel) | Jeu JSON | Compressé (gzip) | Octets par laissez-passer |
+|---|---|---|---|---|---|
+| 100 | 0,05 s | < 1 Mo | 29 ko | 7 ko | ~290 |
+| 1 000 | 0,51 s | 2 Mo | 261 ko | 60 ko | ~260 |
+| **10 000** | **4,8 s** | **23 Mo** | **2,6 Mo** | **600 ko** | ~260 |
+
+Constats : le coût est **linéaire** (~0,5 ms par laissez-passer) ; l'estimation du §15.1 (4,5 Mo à 10 000) était pessimiste (2,6 Mo mesurés). La réponse « inchangé » **évite le transfert mais pas le calcul** (4,9 s à 10 000) : aucun cache serveur n'est implémenté ; à 10 000 laissez-passer, 10 appareils synchronisant toutes les 15 min représentent environ 50 s de calcul par quart d'heure. Un cache court par commune et événement est la première optimisation si le volume réel s'en approche (seuil différentiel proposé : > 2 000 laissez-passer ; le transfert différentiel par compartiments est livré, mais le calcul reste complet).

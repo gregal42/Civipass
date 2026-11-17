@@ -217,4 +217,27 @@ final class RetentionRunTest extends RetentionScenarioTestCase
         static::getContainer()->get(\App\Retention\Application\RegisterAnchors::class)->emit();
         self::assertTrue(static::getContainer()->get(RegisterReconciliation::class)->check()->consistent(), 'la suppression est aussi inscrite au registre hors base');
     }
+
+    /** Contrôle hors connexion (LOT 09.5, DM-132) : appareils et codes d'activation sont supprimés avec l'événement ; les clés étrangères ne bloquent jamais la suppression. */
+    public function testControlDevicesAndActivationCodesAreDeletedWithTheEvent(): void
+    {
+        $this->designate($this->manager, $this->organizerId, $this->admin);
+        $activation = \Symfony\Component\Uid\Uuid::v7();
+        $device = \Symfony\Component\Uid\Uuid::v7();
+        $this->sql('INSERT INTO control_activation (id, municipality_id, event_id, code_hash, expires_at, max_devices, uses_count, trust_warn_seconds, trust_hard_seconds, assurance_mode, created_by, created_at) SELECT UNHEX(:id), UNHEX(REPLACE(:m, \'-\', \'\')), e.id, :hash, UTC_TIMESTAMP(), 3, 1, 21600, 43200, \'STANDARD\', (SELECT id FROM identity_user LIMIT 1), UTC_TIMESTAMP() FROM event_event e', ['id' => str_replace('-', '', $activation->toRfc4122()), 'm' => $this->organizerId, 'hash' => hash('sha256', 'code-test')]);
+        $this->sql('INSERT INTO control_device (id, activation_id, label, platform, secret_hash, status, registered_at, expires_at, sync_count) VALUES (UNHEX(:id), UNHEX(:a), \'Barrage\', \'ANDROID\', :hash, \'PENDING\', UTC_TIMESTAMP(), UTC_TIMESTAMP(), 0)', ['id' => str_replace('-', '', $device->toRfc4122()), 'a' => str_replace('-', '', $activation->toRfc4122()), 'hash' => hash('sha256', 'secret-test')]);
+        $this->sql('INSERT INTO audit_log (id, occurred_at, action, subject_type, subject_id, municipality_id, origin, new_value) VALUES (UNHEX(REPLACE(UUID(), \'-\', \'\')), UTC_TIMESTAMP(), \'CONTROL_DEVICE_REGISTERED\', \'CONTROL_DEVICE\', UNHEX(:id), UNHEX(REPLACE(:m, \'-\', \'\')), \'PUBLIC\', \'{}\')', ['id' => str_replace('-', '', $device->toRfc4122()), 'm' => $this->organizerId]);
+        self::assertSame(1, $this->rows('control_device'));
+        $this->dueForPurge();
+        $this->runPurge(true);
+        $service = static::getContainer()->get(EventDeletionService::class);
+
+        $service->delete($this->managed($this->admin), $this->organizerId, $this->eventId(), $this->event->publicReference()->value);
+        $this->em()->clear();
+
+        self::assertSame(0, $this->rows('event_event'));
+        self::assertSame(0, $this->rows('control_device'));
+        self::assertSame(0, $this->rows('control_activation'));
+        self::assertSame(0, $this->rows('audit_log', 'subject_type = \'CONTROL_DEVICE\''), 'l\'audit des appareils est supprimé avec l\'événement');
+    }
 }

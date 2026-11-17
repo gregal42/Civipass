@@ -1,5 +1,7 @@
 # Dossier technique pour l'AIPD — contrôle hors connexion (LOT 09)
 
+> **Document préparatoire — analyse technique, non validé juridiquement.**
+
 **Date** : 17 novembre 2026 · **Statut** : **dossier technique de travail**. **Il ne remplace ni l'analyse d'impact elle-même, ni l'avis du DPO, ni la validation juridique** ; il fournit aux responsables de traitement (communes) et à leur DPO les faits techniques, les mesures réelles et leurs limites. Aucune base légale n'y est qualifiée.
 **Références** : [lot-09-controle-hors-connexion-cadrage.md](lot-09-controle-hors-connexion-cadrage.md), DM-129 à DM-132, DT-056, DM-115 §7, DM-117, DM-120. **Rien n'est développé ni déployé.**
 

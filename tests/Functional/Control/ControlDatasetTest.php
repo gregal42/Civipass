@@ -29,50 +29,6 @@ use Symfony\Component\Uid\Uuid;
  */
 final class ControlDatasetTest extends ControlTestCase
 {
-    private const EMAIL = 'camille.secret@exemple.fr';
-    private const PHONE = '0611223344';
-    private const ADDRESS = '12 rue des Lilas';
-    private User $instructorP;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->sql("UPDATE event_zone SET label = 'Zone organisatrice' WHERE id = :id", ['id' => $this->organizerZone->id()->toBinary()]);
-        $this->sql("UPDATE event_zone SET label = 'Zone partenaire' WHERE id = :id", ['id' => $this->partnerZone->id()->toBinary()]);
-        $this->instructorP = UserBuilder::aUser()->build();
-        $this->save($this->instructorP, MembershipBuilder::aMembership($this->instructorP, $this->em()->find(Municipality::class, $this->partner->id()) ?? self::fail())->withRoles(MunicipalityRole::Instructor)->build());
-    }
-
-    /**
-     * Dépose une demande et la fait approuver par les communes données (organisatrice : zone organisatrice ; partenaire : zone partenaire).
-     *
-     * @param list<string> $communes 'org' et/ou 'partner'
-     */
-    private function permit(array $communes, string $last = 'MARTIN', string $first = 'Camille', string $plate = 'GH-482-KT'): string
-    {
-        $zones = [];
-        foreach ($communes as $c) {
-            $zones[] = ('org' === $c ? $this->organizerZone : $this->partnerZone)->id()->toRfc4122();
-        }
-        $requestId = static::getContainer()->get(RequestSubmissionService::class)->submitPublic(
-            new SubmitRequestCommand($this->event->id()->toRfc4122(), $last, $first, self::ADDRESS, self::EMAIL, self::PHONE, 'private_person', 'home', 'Motif confidentiel du dossier', TravelMode::Vehicle, [$plate], $zones, true),
-            sprintf('ds-%016d', random_int(1, 9_999_999)),
-        )->requestId;
-        foreach ($communes as $c) {
-            $agent = 'org' === $c ? $this->instructorO : $this->instructorP;
-            $municipality = 'org' === $c ? $this->org : $this->partner;
-            static::getContainer()->get(MunicipalInstructionService::class)->approve($this->user($agent), $municipality->id()->toRfc4122(), $requestId, ApprovalDuration::untilClosure());
-        }
-        $this->em()->clear();
-
-        return $requestId;
-    }
-
-    private function token(string $requestId): string
-    {
-        return (string) $this->scalar('SELECT t.token FROM permit_verification_token t JOIN permit_permit p ON p.id = t.permit_id WHERE p.request_id = ? AND t.retired_at IS NULL', [Uuid::fromString($requestId)->toBinary()]);
-    }
-
     /**
      * @param array<string, mixed> $response
      *
@@ -101,7 +57,7 @@ final class ControlDatasetTest extends ControlTestCase
 
     public function testTheDatasetOfTheCommuneContainsOnlyTheMinimalDataOfItsPermits(): void
     {
-        $token = $this->token($this->permit(['org']));
+        $token = $this->tokenOf($this->makePermit(['org']));
         [$device] = $this->activeDevice();
 
         $response = $this->sync($device);
@@ -130,9 +86,9 @@ final class ControlDatasetTest extends ControlTestCase
 
     public function testEachCommuneReceivesOnlyItsOwnPermitsAndItsOwnZones(): void
     {
-        $orgOnly = $this->token($this->permit(['org'], 'DURAND', 'Alice', 'AA-111-AA'));
-        $partnerOnly = $this->token($this->permit(['partner'], 'LEROY', 'Bruno', 'BB-222-BB'));
-        $both = $this->token($this->permit(['org', 'partner'], 'PETIT', 'Chloé', 'CC-333-CC'));
+        $orgOnly = $this->tokenOf($this->makePermit(['org'], 'DURAND', 'Alice', 'AA-111-AA'));
+        $partnerOnly = $this->tokenOf($this->makePermit(['partner'], 'LEROY', 'Bruno', 'BB-222-BB'));
+        $both = $this->tokenOf($this->makePermit(['org', 'partner'], 'PETIT', 'Chloé', 'CC-333-CC'));
         [$orgDevice] = $this->activeDevice($this->org, $this->adminO);
         [$partnerDevice] = $this->activeDevice($this->partner, $this->adminP);
 
@@ -150,7 +106,7 @@ final class ControlDatasetTest extends ControlTestCase
 
     public function testAnotherCommunesDeviceSecretNeverYieldsTheDataOfThisOne(): void
     {
-        $this->permit(['org']);
+        $this->makePermit(['org']);
         [, $partnerSecret] = $this->activeDevice($this->partner, $this->adminP);
         $partnerDevice = static::getContainer()->get(\App\Control\Domain\ControlDeviceRepository::class)->findBySecretHash(hash('sha256', $partnerSecret)) ?? self::fail();
 
@@ -159,7 +115,7 @@ final class ControlDatasetTest extends ControlTestCase
 
     public function testNoDatasetIsEverBuiltForAPendingDeactivatedOrExpiredDevice(): void
     {
-        $this->permit(['org']);
+        $this->makePermit(['org']);
         $issued = $this->issue(maxDevices: 3);
         $pending = $this->register($issued->code->display(), 'En attente');
         try {
@@ -193,8 +149,8 @@ final class ControlDatasetTest extends ControlTestCase
 
     public function testARevokedAuthorizationBecomesATombstoneWithoutAnyName(): void
     {
-        $requestId = $this->permit(['org']);
-        $token = $this->token($requestId);
+        $requestId = $this->makePermit(['org']);
+        $token = $this->tokenOf($requestId);
         [$device] = $this->activeDevice();
         static::getContainer()->get(AuthorizationRevocationService::class)->revoke($this->user($this->instructorO), $this->org->id()->toRfc4122(), $requestId, 'PUBLIC_SAFETY', null, true);
 
@@ -208,11 +164,11 @@ final class ControlDatasetTest extends ControlTestCase
 
     public function testAReplacedQrKeepsTheOldHashAsReplacedAndTheNewOneValid(): void
     {
-        $requestId = $this->permit(['org']);
-        $old = $this->token($requestId);
+        $requestId = $this->makePermit(['org']);
+        $old = $this->tokenOf($requestId);
         [$device] = $this->activeDevice();
         static::getContainer()->get(PermitTokenReplacementService::class)->replace($this->user($this->adminO), $this->org->id()->toRfc4122(), $requestId, new TokenReplacementRequest(Uuid::v7()->toRfc4122(), 'OTHER', 'Photographie du QR diffusée', true));
-        $new = $this->token($requestId);
+        $new = $this->tokenOf($requestId);
 
         $records = $this->records($this->sync($device));
 
@@ -223,8 +179,8 @@ final class ControlDatasetTest extends ControlTestCase
 
     public function testATombstoneDisappearsOnceThePermitCanNoLongerBePresented(): void
     {
-        $requestId = $this->permit(['org']);
-        $token = $this->token($requestId);
+        $requestId = $this->makePermit(['org']);
+        $token = $this->tokenOf($requestId);
         [$device] = $this->activeDevice();
         static::getContainer()->get(AuthorizationRevocationService::class)->revoke($this->user($this->instructorO), $this->org->id()->toRfc4122(), $requestId, 'PUBLIC_SAFETY', null, true);
         self::assertArrayHasKey(hash('sha256', $token), $this->records($this->sync($device)));
@@ -236,7 +192,7 @@ final class ControlDatasetTest extends ControlTestCase
 
     public function testAClosedEventYieldsAnEmptyDatasetMarkedClosed(): void
     {
-        $this->permit(['org']);
+        $this->makePermit(['org']);
         [$device] = $this->activeDevice();
         $this->sql("UPDATE event_event SET status = 'CLOSED'");
 
@@ -248,7 +204,7 @@ final class ControlDatasetTest extends ControlTestCase
 
     public function testASuspendedZoneIsMaterializedAsSuspendedWithoutWindows(): void
     {
-        $token = $this->token($this->permit(['org']));
+        $token = $this->tokenOf($this->makePermit(['org']));
         [$device] = $this->activeDevice();
         $this->sql("UPDATE event_zone SET status = 'SUSPENDED' WHERE id = :id", ['id' => $this->organizerZone->id()->toBinary()]);
 
@@ -260,7 +216,7 @@ final class ControlDatasetTest extends ControlTestCase
 
     public function testTheHorizonIsGridAlignedCoversTheTrustWindowAndClipsTheWindows(): void
     {
-        $this->permit(['org']);
+        $this->makePermit(['org']);
         [$device] = $this->activeDevice(hard: 7_200, warn: 3_600);
 
         $response = $this->sync($device);
@@ -293,7 +249,7 @@ final class ControlDatasetTest extends ControlTestCase
 
     public function testUnchangedDeltaAndFullModesAreVerifiable(): void
     {
-        $first = $this->permit(['org'], 'DURAND', 'Alice', 'AA-111-AA');
+        $first = $this->makePermit(['org'], 'DURAND', 'Alice', 'AA-111-AA');
         [$device] = $this->activeDevice();
         $full = $this->sync($device);
         self::assertSame('full', $full['mode']);
@@ -303,7 +259,7 @@ final class ControlDatasetTest extends ControlTestCase
         self::assertSame($full['root'], $unchanged['root']);
         self::assertArrayNotHasKey('lines', $unchanged);
 
-        $this->permit(['org'], 'LEROY', 'Bruno', 'BB-222-BB');
+        $this->makePermit(['org'], 'LEROY', 'Bruno', 'BB-222-BB');
         static::getContainer()->get(AuthorizationRevocationService::class)->revoke($this->user($this->instructorO), $this->org->id()->toRfc4122(), $first, 'PUBLIC_SAFETY', null, true);
         $delta = $this->sync($device, $full['bk']);
         self::assertSame('delta', $delta['mode']);
@@ -329,7 +285,7 @@ final class ControlDatasetTest extends ControlTestCase
 
     public function testMalformedClientDigestsFallBackToAFullSnapshot(): void
     {
-        $this->permit(['org']);
+        $this->makePermit(['org']);
         [$device] = $this->activeDevice();
 
         foreach ([null, [], ['x'], array_fill(0, 256, 'ZZZZZZZZ'), array_fill(0, 255, '00000000')] as $bad) {
@@ -342,7 +298,7 @@ final class ControlDatasetTest extends ControlTestCase
 
     public function testASuccessfulSyncIsRecordedOnTheDevice(): void
     {
-        $this->permit(['org']);
+        $this->makePermit(['org']);
         [$device] = $this->activeDevice();
         $response = $this->sync($device);
         $this->em()->clear();

@@ -18,3 +18,4 @@ Procédures **exploitables** par l'exploitation (VPS, nginx natif, systemd). Ell
 | Recette du contrôle public sur un VPS HTTPS dédié (LOT 07.3.5, **non exécutée**) | [recette-verification-publique.md](recette-verification-publique.md) |
 
 Les interrupteurs `PUBLIC_VERIFICATION_ENABLED`, `RIGHTS_ERASURE_EXECUTION_ENABLED` et `RETENTION_PURGE_ENABLED` valent **0** tant que les validations de [lot-05-6-7-cadrage.md](../lot-05-6-7-cadrage.md) §9 ne sont pas données. Les durées (sauvegardes 35 jours, seuils) sont des **hypothèses à valider**.
+- [controle-hors-connexion.md](controle-hors-connexion.md) — préparer, utiliser, révoquer en urgence, perte/vol d'un téléphone de contrôle (LOT 09).

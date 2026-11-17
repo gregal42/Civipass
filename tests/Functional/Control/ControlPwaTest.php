@@ -97,17 +97,52 @@ final class ControlPwaTest extends WebTestCase
         self::assertSame('/controle/', $response->headers->get('Service-Worker-Allowed'));
         self::assertStringContainsString('"/controle/"', $js);
         self::assertStringContainsString('jsQR', $js, 'le décodeur embarqué est conservé pour le mode hors ligne');
-        foreach (['verdict', 'sync', 'dataset', 'idb-store', 'camera'] as $module) {
-            self::assertMatchesRegularExpression('#"/assets/controle/'.$module.'-[A-Za-z0-9_-]+\.js"#', $js, 'module hors ligne pré-conservé : '.$module);
-        }
         self::assertStringContainsString("url.pathname.startsWith('/controle/api/')) return;", $js, "l'API n'est jamais interceptée");
         foreach (self::precache($js) as $entry) {
             self::assertFalse(str_starts_with($entry, '/controle/api/'), "l'API n'est jamais pré-conservée");
         }
         foreach (['verdict', 'sync', 'dataset', 'idb-store', 'camera'] as $module) {
-            self::assertMatchesRegularExpression('#\/assets\/controle\/'.$module.'-[A-Za-z0-9_-]+\.js#', $js, 'module hors ligne pré-conservé : '.$module);
+            self::assertMatchesRegularExpression('#\/controle\/js\/'.$module.'\.js#', $js, 'module hors ligne pré-conservé : '.$module);
         }
         self::assertDoesNotMatchRegularExpression('#https?://#', (string) json_encode(self::precache($js), \JSON_UNESCAPED_SLASHES));
+    }
+
+    public function testTheModulesAreServedByAWhitelistedRouteWithRevalidation(): void
+    {
+        $this->controlEnv('OFFLINE_CONTROL_ENABLED', '1');
+        $client = static::createClient();
+        $client->request('GET', '/controle/js/app.js');
+        $response = $client->getResponse();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringStartsWith('text/javascript', (string) $response->headers->get('Content-Type'));
+        self::assertStringContainsString("import { activate", (string) $response->getContent());
+        self::assertNotNull($response->headers->get('ETag'));
+        self::assertSame(ControlHeadersListener::CSP, $response->headers->get('Content-Security-Policy'));
+        self::assertStringContainsString('src="/controle/js/app.js"', $this->shell($client));
+
+        $client->request('GET', '/controle/js/app.js', server: ['HTTP_IF_NONE_MATCH' => $response->headers->get('ETag')]);
+        self::assertSame(304, $client->getResponse()->getStatusCode());
+
+        foreach (['/controle/js/inconnu.js', '/controle/js/..%2Fsecret.js', '/controle/js/APP.js', '/controle/js/app.js.map', '/controle/js/a--b.js'] as $bad) {
+            $client->request('GET', $bad);
+            self::assertSame(404, $client->getResponse()->getStatusCode(), $bad);
+        }
+    }
+
+    public function testTheModulesAreA404WhileTheSwitchIsOff(): void
+    {
+        $this->controlEnv('OFFLINE_CONTROL_ENABLED', '0');
+        $client = static::createClient();
+        $client->request('GET', '/controle/js/app.js');
+        self::assertSame(404, $client->getResponse()->getStatusCode());
+    }
+
+    private function shell(\Symfony\Bundle\FrameworkBundle\KernelBrowser $client): string
+    {
+        $client->request('GET', '/controle/');
+
+        return (string) $client->getResponse()->getContent();
     }
 
     public function testThePingGivesTheServerTimeWithoutAnyData(): void

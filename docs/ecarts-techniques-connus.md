@@ -45,3 +45,19 @@ Le jeton figure dans l'URL `/v/{jeton}` ; le navigateur d'un contrôleur la **co
 ## Écarts du LOT 07.2 (conservés)
 
 Recette visuelle de Sonata et de l'écran Équipe ; envoi d'invitations avec un SMTP réel ; validation ergonomique avec des agents municipaux ; motif de révocation commerciale non persisté ; attente artificielle dans `RestoreReplayTest` (voir ci-dessus).
+
+
+## Contrôle hors connexion (LOT 09, développement local au 17 novembre 2026)
+
+| Limite | Détail | Traitement |
+|---|---|---|
+| **Recette sur smartphones réels non faite** | Service Worker, caméra, installation (iPhone : application ajoutée à l'écran d'accueil), purge de stockage iOS (~7 j hors installation), comportement de `performance.now()` en veille, sauvegardes de l'appareil : **seulement simulés** dans Chrome de développement | incrément **09.7**, avant le pilote ; HTTPS et autorisation d'infrastructure requis |
+| **Risque R-OFF-01** | une révocation, suspension, remplacement de QR ou clôture anticipée postérieurs à la dernière synchronisation sont **invisibles hors ligne** jusqu'à la synchronisation suivante (≤ 12 h au pilote) | borné par la durée de confiance, mode `STRICT`, consigne d'escalade ; **acceptation écrite à obtenir** (annexe de l'AIPD) |
+| **Données personnelles sur l'appareil** | nom, prénom, plaques, zones, fenêtres de la commune activatrice ; extractibles depuis un téléphone déverrouillé ; suppression à l'**ouverture** de l'application seulement ; **aucun chiffrement applicatif annoncé** | minimisation, durée, désactivation à la reconnexion ; AIPD et validation juridique **avant toute donnée réelle** |
+| **Horloge** | une avance volontaire application fermée n'est pas détectable ; reculs et décalage à la synchronisation le sont | « indéterminé » ; horizon du jeu ≤ 12 h |
+| **Même origine que le reste de Civipass** | le stockage local est par origine : une faille de script ailleurs exposerait le jeu | cible : sous-domaine dédié (`CONTROL_PWA_BASE_URL`), à installer avec l'infrastructure |
+| **jsQR non maintenu** | version 1.4.0 (avril 2021), stable ; performance à mesurer sur matériel modeste | repli conditionnel zxing-wasm (décision séparée) ; revue annuelle |
+| **Pas d'alerte « resynchronisation demandée »** | non livrée (périmètre à deux tables) | désactivation, durée raccourcie, alerte radio |
+| **Calcul du jeu non mis en cache** | 4,8 s pour 10 000 laissez-passer (0,5 ms/laissez-passer) ; l'« inchangé » économise le transfert, pas le calcul | cache court par commune/événement si le volume réel approche 10 000 ; mesures dans le cadrage §32 |
+| **Aucun journal de scan** | pas de statistiques de contrôle (DM-127) | volontaire |
+| **Tests e2e sur l'hôte** | Node 20 du conteneur n'a pas de client WebSocket natif ; `bin/qa e2e` exige Node ≥ 22, Chrome et Docker sur l'hôte | acceptable en local |

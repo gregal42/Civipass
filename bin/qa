@@ -10,6 +10,7 @@
 #   bin/qa run MOTIF    tests dont le nom correspond au motif (--filter)
 #   bin/qa full         `make quality` complet, sortie compacte (à lancer UNE fois, en fin d'incrément)
 #   bin/qa js           tests JavaScript du contrôle hors connexion (node:test, Node du conteneur, aucune dépendance ; LOT 09, DT-057)
+#   bin/qa e2e          parcours e2e local du contrôle hors connexion (Chrome headless, serveur local éphémère, base de TEST, données fictives ; LOT 09.6)
 #   bin/qa log [N]      dernières lignes du dernier journal (à n'utiliser qu'en cas de besoin)
 set -u
 cd "$(dirname "$0")/.."
@@ -137,6 +138,7 @@ case "${1:-help}" in
   run) [ -n "${2:-}" ] || { echo "Usage : bin/qa run <motif>"; exit 2; }; run_phpunit --filter "$2" ;;
   full) cmd_full ;;
   js) exec_php sh -c 'node --test tests/Js/*.test.mjs' 2>&1 | grep -E '^# (tests|pass|fail)|^not ok|failureType|error:' | head -40 ;;
+  e2e) bin/e2e-control ;;
   log) tail -n "${2:-40}" "$OUT/phpunit.log" 2>/dev/null | grep -v '^\[' ;;
   *) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//' ;;
 esac

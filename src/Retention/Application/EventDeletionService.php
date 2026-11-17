@@ -90,16 +90,26 @@ final class EventDeletionService
             $designations = [] === $participations ? [] : $this->idsIn('SELECT id FROM archive_manager_designation WHERE participation_id IN (:ids)', $participations);
             $grants = $this->ids('SELECT id FROM archive_statistics_coordination WHERE event_id = :e', ['e' => $id->toBinary()]);
             $links = [] === $participations ? [] : $this->idsIn('SELECT id FROM onboarding_invitation_link WHERE participation_id IN (:ids)', $participations);
+            // Contrôle hors connexion (LOT 09.5, DM-132) : appareils et codes d'activation sont des données de l'événement (aucune donnée sur la personne du contrôleur) ;
+            // ils sont supprimés avec lui, appareils d'abord (ils référencent les activations).
+            $devices = $this->ids('SELECT d.id FROM control_device d JOIN control_activation a ON a.id = d.activation_id WHERE a.event_id = :e', ['e' => $id->toBinary()]);
+            $activations = $this->ids('SELECT id FROM control_activation WHERE event_id = :e', ['e' => $id->toBinary()]);
             $in = ArrayParameterType::BINARY;
 
             $audit = static fn (string $type, array $ids): array => [] === $ids ? ['', []] : ['DELETE FROM audit_log WHERE subject_type = \''.$type.'\' AND subject_id IN (:ids)', $ids];
-            foreach ([['audit_log_archive_designation', 'ARCHIVE_DESIGNATION', $designations], ['audit_log_statistics_coordination', 'STATISTICS_COORDINATION', $grants], ['audit_log_invitation_link', 'INVITATION_LINK', $links], ['audit_log_zone_validity', 'EVENT_ZONE_VALIDITY', $validities], ['audit_log_zone', 'EVENT_ZONE', $zones], ['audit_log_participation', 'EVENT_PARTICIPATION', $participations]] as [$name, $type, $ids]) {
+            foreach ([['audit_log_archive_designation', 'ARCHIVE_DESIGNATION', $designations], ['audit_log_statistics_coordination', 'STATISTICS_COORDINATION', $grants], ['audit_log_invitation_link', 'INVITATION_LINK', $links], ['audit_log_control_device', 'CONTROL_DEVICE', $devices], ['audit_log_control_activation', 'CONTROL_ACTIVATION', $activations], ['audit_log_zone_validity', 'EVENT_ZONE_VALIDITY', $validities], ['audit_log_zone', 'EVENT_ZONE', $zones], ['audit_log_participation', 'EVENT_PARTICIPATION', $participations]] as [$name, $type, $ids]) {
                 [$sql, $list] = $audit($type, $ids);
                 $counts[$name] = '' === $sql ? 0 : (int) $this->connection->executeStatement($sql, ['ids' => $list], ['ids' => $in]);
             }
             $this->observer->afterStep('audit_log_children');
             if ([] !== $designations) {
                 $step('archive_manager_designation', 'DELETE FROM archive_manager_designation WHERE id IN (:ids)', ['ids' => $designations], ['ids' => $in]);
+            }
+            if ([] !== $devices) {
+                $step('control_device', 'DELETE FROM control_device WHERE id IN (:ids)', ['ids' => $devices], ['ids' => $in]);
+            }
+            if ([] !== $activations) {
+                $step('control_activation', 'DELETE FROM control_activation WHERE id IN (:ids)', ['ids' => $activations], ['ids' => $in]);
             }
             $step('archive_statistics_coordination', 'DELETE FROM archive_statistics_coordination WHERE event_id = :e', ['e' => $id->toBinary()]);
             if ([] !== $links) {

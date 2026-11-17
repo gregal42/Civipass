@@ -50,7 +50,7 @@ Petits lots, schéma revu avant migrations, tests automatisés et `make quality`
 - Aucune mise en production sans politique de conservation et mécanisme de purge (DM-117).
 - Tests des échéances et des transitions intercommunales.
 
-## LOT 09 — Contrôle hors connexion (PWA) — **obligatoire en V1, avant le pilote** (décision du 17 novembre 2026) — cadrage V3 consolidé, **non commencé**
+## LOT 09 — Contrôle hors connexion (PWA) — **obligatoire en V1, avant le pilote** (décision du 17 novembre 2026) — cadrage V3 validé ; **incréments 09.1 à 09.6 développés en local le 17 novembre 2026** (aucun push, aucun déploiement) ; **09.7 (recette sur smartphones réels) à planifier**
 - Remplace le report de la PWA (DM-115 §5). Cadrage : [lot-09-controle-hors-connexion-cadrage.md](lot-09-controle-hors-connexion-cadrage.md) (Parties I à III) ; décisions [DM-129](decisions/metier/DM-129-controle-hors-connexion-obligatoire-en-v1.md) à [DM-132](decisions/metier/DM-132-donnees-locales-du-controle-hors-connexion.md), [DT-056](decisions/technique/DT-056-architecture-de-la-pwa-de-controle-hors-connexion.md), proposition DT-057 ; dossier [aipd-controle-hors-connexion-technique.md](aipd-controle-hors-connexion-technique.md).
 - Incréments : 09.0 décisions/AIPD ; 09.1 socle PWA en ligne ; 09.2 appareils (**migration**) ; 09.3 jeu de données serveur ; 09.4 magasin local et verdicts ; 09.5 cycle de vie ; 09.6 durcissement ; **09.7 recette sur appareils réels**, en fin de développement local, avec autorisation d'infrastructure séparée.
 - Développement exclusivement local (localhost) ; `OFFLINE_CONTROL_ENABLED` créé à 0 ; données réelles interdites avant AIPD validée et acceptation du risque R-OFF-01.

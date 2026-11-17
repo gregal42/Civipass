@@ -43,7 +43,7 @@
 Validité : fenêtre globale de la décision (DM-109 : H24, H48, H72, CUSTOM, UNTIL_CLOSURE), copiée dans l'autorisation ; droits par zone **calculés** (fenêtre ∩ événement ∩ périodes de zone, état de la commune, de la participation et de la zone). Prolongations, modifications de zones/plaques et révocations ne changent pas le QR. Historique conservé. *(Version précédente : états `DURATION_24H`… et état stocké sur `Permit` : remplacés.)*
 
 ## Contrôle
-Aucune entité pour le scan public **en ligne** (DM-115). `ControllerActivation` et `ControllerDevice` ont été retirés du LOT 05 ; le **LOT 09** (décision du 17 novembre 2026) introduit `control_activation` et `control_device` (schéma proposé dans [lot-09-controle-hors-connexion-cadrage.md](lot-09-controle-hors-connexion-cadrage.md) §28, **non approuvé, aucune migration**).
+Aucune entité pour le scan public **en ligne** (DM-115). `ControllerActivation` et `ControllerDevice` ont été retirés du LOT 05 ; le **LOT 09** (décision du 17 novembre 2026) introduit `control_activation` et `control_device` (schéma de [lot-09-controle-hors-connexion-cadrage.md](lot-09-controle-hors-connexion-cadrage.md) §28, **approuvé le 17 novembre 2026 ; migration `Version20261117202913` exécutée sur les bases locales uniquement**).
 
 ## Transverse (3)
 - `AuditLog` : actions sensibles, acteur/contexte, timestamp, données minimales.

@@ -229,6 +229,25 @@ final class ControlHttpTest extends ControlTestCase
         self::assertSame($full['root'], $again['root']);
     }
 
+    public function testASynchronizationWithRealPermitsNeverExposesATokenAContactOrALogEntry(): void
+    {
+        $token = $this->tokenOf($this->makePermit(['org']));
+        [$secret] = $this->approvedDevice();
+
+        $this->api('POST', '/controle/api/sync', secret: $secret);
+        $raw = (string) $this->client->getResponse()->getContent();
+
+        self::assertSame(200, $this->httpStatus());
+        self::assertStringContainsString(hash('sha256', $token), $raw, 'l’empreinte du jeton est dans le jeu');
+        foreach ([$token, self::EMAIL, self::PHONE, self::ADDRESS, 'Motif confidentiel'] as $forbidden) {
+            self::assertStringNotContainsString($forbidden, $raw, $forbidden);
+        }
+        $logs = (string) file_get_contents($this->logFile);
+        foreach ([$token, $secret, 'MARTIN', self::EMAIL] as $forbidden) {
+            self::assertStringNotContainsString($forbidden, $logs, 'aucune fuite dans les journaux : '.$forbidden);
+        }
+    }
+
     public function testASynchronizationNeverAnswersAnUnknownMalformedPendingOrDeactivatedDevice(): void
     {
         $this->api('POST', '/controle/api/sync', secret: str_repeat('a', 43));

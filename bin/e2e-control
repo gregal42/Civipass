@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Parcours e2e LOCAL du contrôle hors connexion (LOT 09.6) : serveur PHP local à usage unique sur la base de TEST, données fictives, vrai Chrome (headless) piloté par le
+# protocole DevTools (aucune dépendance ajoutée). Aucun déploiement, aucune infrastructure distante : un conteneur local éphémère (image du projet, sans téléchargement), arrêté à la fin.
+# Prérequis : Docker, Google Chrome, Node ≥ 22 sur l'hôte. `bin/qa e2e` appelle ce script.
+set -u
+cd "$(dirname "$0")/.."
+PHP="${DOCKER_PHP_CONTAINER_NAME:-saas_civipass_php-fpm}"
+IMAGE="$(docker inspect "$PHP" --format '{{.Config.Image}}')"
+NETWORK="$(docker inspect "$PHP" --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}' | tr ' ' '\n' | grep -v reverse_proxy | head -1)"
+PORT=8099
+BASE="http://localhost:$PORT"
+NAME=saas_civipass_e2e
+cleanup() { docker rm -f "$NAME" >/dev/null 2>&1; }
+trap cleanup EXIT
+cleanup
+docker run -d --rm --name "$NAME" --network "$NETWORK" -p "127.0.0.1:$PORT:$PORT" -v "$PWD:/var/www/html" -w /var/www/html \
+  -e APP_ENV=test -e APP_DEBUG=1 -e OFFLINE_CONTROL_ENABLED=1 -e "DEFAULT_URI=$BASE" "$IMAGE" php -d variables_order=EGPCS -S "0.0.0.0:$PORT" -t public public/index.php >/dev/null || exit 1
+docker exec "$PHP" php bin/console cache:clear --env=test >/dev/null 2>&1
+for _ in $(seq 1 40); do
+  code="$(curl -s -o /dev/null -w '%{http_code}' "$BASE/controle/")"
+  [ "$code" = "200" ] && break
+  sleep 0.5
+done
+[ "$code" = "200" ] || { echo "Serveur e2e indisponible (HTTP $code)"; docker logs "$NAME" 2>&1 | tail -5; exit 1; }
+SEED="$(docker exec -e "DEFAULT_URI=$BASE" "$PHP" php tests/Support/e2e-control.php seed 2>/dev/null | tail -1)"
+[ -n "$SEED" ] || { echo "Semis impossible"; exit 1; }
+E2E_BASE="$BASE" E2E_SEED="$SEED" E2E_DOCKER_PHP="$PHP" node tests/Js/e2e/control.e2e.mjs

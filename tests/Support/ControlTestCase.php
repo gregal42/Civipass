@@ -15,6 +15,12 @@ use App\Control\Domain\AssuranceMode;
 use App\Identity\Domain\User;
 use App\Municipality\Domain\Municipality;
 use App\Municipality\Domain\MunicipalityRole;
+use App\Request\Application\Command\SubmitRequestCommand;
+use App\Request\Application\MunicipalInstructionService;
+use App\Request\Application\RequestSubmissionService;
+use App\Request\Domain\ApprovalDuration;
+use App\Request\Domain\TravelMode;
+use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Clock\MockClock;
 
 /**
@@ -24,6 +30,10 @@ use Symfony\Component\Clock\MockClock;
  */
 abstract class ControlTestCase extends PublicRequestTestCase
 {
+    protected const EMAIL = 'camille.secret@exemple.fr';
+    protected const PHONE = '0611223344';
+    protected const ADDRESS = '12 rue des Lilas';
+
     protected MockClock $clock;
     protected Municipality $org;
     protected Municipality $partner;
@@ -32,6 +42,7 @@ abstract class ControlTestCase extends PublicRequestTestCase
     protected User $instructorO;
     protected User $adminP;
     protected User $adminX;
+    protected User $instructorP;
     protected ControlActivationService $activations;
     protected DeviceRegistrationService $registration;
     protected DeviceApprovalService $approvals;
@@ -49,13 +60,18 @@ abstract class ControlTestCase extends PublicRequestTestCase
         $this->instructorO = UserBuilder::aUser()->build();
         $this->adminP = UserBuilder::aUser()->build();
         $this->adminX = UserBuilder::aUser()->build();
+        $this->instructorP = UserBuilder::aUser()->build();
         $this->save(
             $this->foreign, $this->adminO, $this->instructorO, $this->adminP, $this->adminX,
             MembershipBuilder::aMembership($this->adminO, $this->org)->withRoles(MunicipalityRole::MunicipalityAdmin)->build(),
             MembershipBuilder::aMembership($this->instructorO, $this->org)->withRoles(MunicipalityRole::Instructor)->build(),
             MembershipBuilder::aMembership($this->adminP, $this->partner)->withRoles(MunicipalityRole::MunicipalityAdmin)->build(),
             MembershipBuilder::aMembership($this->adminX, $this->foreign)->withRoles(MunicipalityRole::MunicipalityAdmin)->build(),
+            $this->instructorP,
+            MembershipBuilder::aMembership($this->instructorP, $this->partner)->withRoles(MunicipalityRole::Instructor)->build(),
         );
+        $this->sql("UPDATE event_zone SET label = 'Zone organisatrice' WHERE id = :id", ['id' => $this->organizerZone->id()->toBinary()]);
+        $this->sql("UPDATE event_zone SET label = 'Zone partenaire' WHERE id = :id", ['id' => $this->partnerZone->id()->toBinary()]);
         $this->useClock(new MockClock($now->format('Y-m-d H:i:s').' UTC'));
     }
 
@@ -108,6 +124,36 @@ abstract class ControlTestCase extends PublicRequestTestCase
         $device = static::getContainer()->get(\App\Control\Domain\ControlDeviceRepository::class)->find($registered->device->id()) ?? self::fail();
 
         return [$device, $registered->secret->reveal()];
+    }
+
+    /**
+     * Dépose une demande et la fait approuver par les communes données (organisatrice : zone organisatrice ; partenaire : zone partenaire).
+     *
+     * @param list<string> $communes 'org' et/ou 'partner'
+     */
+    protected function makePermit(array $communes, string $last = 'MARTIN', string $first = 'Camille', string $plate = 'GH-482-KT'): string
+    {
+        $zones = [];
+        foreach ($communes as $c) {
+            $zones[] = ('org' === $c ? $this->organizerZone : $this->partnerZone)->id()->toRfc4122();
+        }
+        $requestId = static::getContainer()->get(RequestSubmissionService::class)->submitPublic(
+            new SubmitRequestCommand($this->event->id()->toRfc4122(), $last, $first, self::ADDRESS, self::EMAIL, self::PHONE, 'private_person', 'home', 'Motif confidentiel du dossier', TravelMode::Vehicle, [$plate], $zones, true),
+            sprintf('ds-%016d', random_int(1, 9_999_999)),
+        )->requestId;
+        foreach ($communes as $c) {
+            $agent = 'org' === $c ? $this->instructorO : $this->instructorP;
+            $municipality = 'org' === $c ? $this->org : $this->partner;
+            static::getContainer()->get(MunicipalInstructionService::class)->approve($this->user($agent), $municipality->id()->toRfc4122(), $requestId, ApprovalDuration::untilClosure());
+        }
+        $this->em()->clear();
+
+        return $requestId;
+    }
+
+    protected function tokenOf(string $requestId): string
+    {
+        return (string) $this->scalar('SELECT t.token FROM permit_verification_token t JOIN permit_permit p ON p.id = t.permit_id WHERE p.request_id = ? AND t.retired_at IS NULL', [Uuid::fromString($requestId)->toBinary()]);
     }
 
     /** @param array<int|string, mixed> $params */

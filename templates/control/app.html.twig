@@ -27,6 +27,6 @@
     <noscript><p class="cc-notice">Cette application exige JavaScript.</p></noscript>
   </div>
   <script src="{{ asset('vendor/jsqr/jsQR.js') }}"></script>
-  <script type="module" src="{{ asset('controle/app.js') }}"></script>
+  <script type="module" src="{{ path('app_control_script', { name: 'app' }) }}"></script>
 </body>
 </html>
