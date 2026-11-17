@@ -1,6 +1,6 @@
 # Audit de couverture fonctionnelle SFD / CDC — périmètre du premier pilote
 
-**Date** : 17 novembre 2026 · **Branche** : `develop` (à `e475d16`) · **Nature** : audit documentaire et analytique. Aucun développement, aucune migration, aucun déploiement, aucun VPS, aucun changement sur `main`. Interrupteurs inchangés : `PUBLIC_VERIFICATION_ENABLED=0`, `RIGHTS_ERASURE_EXECUTION_ENABLED=0`, `RETENTION_PURGE_ENABLED=0`.
+**Date** : 17 novembre 2026 (corrigé le même jour : verrou 15 min et état orange, voir `arbitrages-pilote-fiches.md`) · **Branche** : `develop` (à `e475d16`) · **Nature** : audit documentaire et analytique. Aucun développement, aucune migration, aucun déploiement, aucun VPS, aucun changement sur `main`. Interrupteurs inchangés : `PUBLIC_VERIFICATION_ENABLED=0`, `RIGHTS_ERASURE_EXECUTION_ENABLED=0`, `RETENTION_PURGE_ENABLED=0`.
 
 **Sources confrontées** : CDC V1.0 (1er nov. 2026), SFD V1.0 détaillé (corps + annexes A à D), 169 fiches de décision (114 `DM-`, 55 `DT-`, dans `decisions/`), `revisions/CONTRADICTIONS.md`, `development-roadmap.md`, `lot-06-audit.md` (13 nov.), code (`src/`, `templates/`, `config/`) et 271 fichiers de tests.
 
@@ -29,7 +29,7 @@
 
 **Ce qui est volontairement reporté** : PWA hors ligne (DM-115 §5), SMS (aucun code), impersonation (DM-061), journal d'activité consultable, administration des référentiels, logo/SIRET de commune, compteurs de scans (DM-127).
 
-**Contradictions SFD/CDC et avec les décisions** (§6) : 14 relevées. Les plus structurantes : le SFD classe PWA, SMS et « mode dégradé papier 48 h » en V1 alors que le produit les exclut ; le SFD prévoit un **verrou d'instruction de 15 min** qu'aucune décision n'abandonne explicitement ; le SFD/CDC prévoient l'**inscription autonome des communes** alors que l'ouverture est manuelle par CWS sans décision écrite d'abandon ; la **révocation globale par l'organisatrice** (SCR-033) est contredite de fait par DM-116.
+**Contradictions SFD/CDC et avec les décisions** (§6) : 14 relevées. Les plus structurantes : le SFD classe PWA, SMS et « mode dégradé papier 48 h » en V1 alors que le produit les exclut ; le SFD prévoit un **verrou d'instruction de 15 min** dont l'abandon est décidé côté technique (DT-041) mais jamais répercuté dans le SFD ; le SFD/CDC prévoient l'**inscription autonome des communes** alors que l'ouverture est manuelle par CWS sans décision écrite d'abandon ; la **révocation globale par l'organisatrice** (SCR-033) est contredite de fait par DM-116.
 
 **Verdict.** Après correction de E1 à E6 (cinq petits lots, §8) et recette utilisateur, le périmètre figé proposé au §7 est atteignable **sans nouveau concept métier majeur**. Quatre sujets exigent un arbitrage avant développement (§7.4) : message de refus (E2), consigne et activation du contrôle (E6), sort du verrou 15 min, sort de la révocation globale organisatrice.
 
@@ -91,7 +91,7 @@ Légende statut : **C** couvert · **P** partiel · **A** absent · **R** report
 |---|---|---|---|---|---|---|
 | SCR-027 liste (onglets, tri, recherche, pagination) | DM-102 | **P** | une liste (`app_municipal_requests`), recherche, onglets | `Request/MunicipalRequestConsultationTest` | recherche par plaque/téléphone/n° de titre **à confirmer** ; badge doublon absent (E1) | moyen / P1 |
 | SCR-028 fiche, correction d'identité | DM-111, DT-045 | **C** | `RequestIdentityController`, verrou de version, audit | `Request/RequestIdentityFlowTest` | **proposition de renvoi après correction** : à confirmer | faible / P2 |
-| **Verrou d'instruction 15 min** exclusif, reprise forcée (SFD §3, SCR-028, §6.1) | DT-024, DT-041 (verrous de base de données, pas d'UI) | **O ?** | sérialisation en base ; **aucun verrou visible**, aucune « reprise » | `MunicipalRequestDecisionTest` | **non abandonné explicitement** (I4) | faible (petite équipe) / P2 + décision |
+| **Verrou d'instruction 15 min** exclusif, reprise forcée (SFD §3, SCR-028, §6.1) | DT-024, DT-041 (verrous de base de données, pas d'UI) | **O** | sérialisation en base ; **aucun verrou visible**, aucune « reprise » ; DT-041 : « aucun verrou fonctionnel de 15 minutes » | `MunicipalRequestDecisionTest` | SFD non aligné sur DT-041 (I4) ; voir `arbitrages-pilote-fiches.md` fiche 2 | faible (petite équipe) / P2 + décision |
 | SCR-029/030 approbation totale/partielle, refus motivé, décision binaire par commune | DM-106, DM-107, DM-109, DM-110 | **C** | `MunicipalInstructionService`, `MunicipalDecisionApplier` ; rôle `INSTRUCTOR` exigé | `Request/MunicipalRequestDecisionTest` | — | — |
 | **Notification du refus au demandeur** (§7.1, SCR-030) | DM-110 (motif), DM-117 (notifs bénéficiaire seulement) | **A** | `NotificationType` ne contient aucun refus ; aucun modèle `refus` | **aucun** | **E2** | **élevé / P1 + arbitrage** |
 | Délivrance directe par agent habilité ; remplace DM-099 §2/§5 | DM-108 | **C** | `DirectIssuanceController`, atomique | `Request/DirectIssuanceFlowTest`, `AgentRequestSubmissionTest` | e-mail non produit par décision ; remise du lien manuelle | faible |
@@ -106,7 +106,7 @@ Légende statut : **C** couvert · **P** partiel · **A** absent · **R** report
 | Réf. | Décision | St. | Implémentation [C] | Tests [T] | Écart | Impact / Prio |
 |---|---|---|---|---|---|---|
 | CDC §9.1, SCR-034/035 contrôle en ligne sans compte, vert/rouge, plaques, zones | DM-113, DM-115, DM-125…128, DT-055 | **C** (**désactivé**) | `/v/{jeton}`, droits recalculés à chaque lecture, zones valides d'abord, messages nationaux fixes | `PublicVerificationPageTest`, `…ScenariosTest`, `…SecurityTest`, `…ClosedEventTest`, `RateLimiterVerificationThrottleTest` | recette appareils réels non faite (VP-01…54, reportée) ; **activation non décidée** | **élevé / P1 (décision) + INST (recette)** |
-| Orange « indéterminé » (CDC §9.1) | DM-115, DM-128 | **O** | pas d'orange : valide/non valide/terminé/inconnu ; erreur serveur = pas de feu vert | `PublicVerificationSecurityTest` | CDC/SFD contredits | — |
+| Orange « indéterminé » (CDC §9.1) | DM-115, DM-128 | **O** | l'orange « indéterminé/hors ligne » a disparu ; un ton orange existe pour « droits suspendus » et « zones partielles » ; erreurs = pages sans verdict, jamais de vert | `PublicVerificationSecurityTest` | CDC/SFD contredits | — |
 | Sécurité du jeton, énumération, limitation de débit, journalisation anormale | DM-113, DT-048, DT-055 | **C** | 160 bits, 404 uniforme, 1 500/10 min/IP et 20 échecs/15 min ; seuils journalisés sans IP/jeton | `PublicVerificationSecurityTest` | valeur 1 500 à confronter à une charge réelle (INST) | moyen / INST |
 | Événement clos : « terminé » puis générique après purge | DM-120 | **C** | message neutre sans PII | `PublicVerificationClosedEventTest` | purge non activée | — |
 | CDC §9.2 / SCR-036…039 **PWA hors ligne**, seuils 12 h/24 h, appareils | DM-115 §5, DM-116 §4, roadmap | **R** | non développée ; `ControllerActivation/Device` abandonnés | — | SFD/CDC la mettent en V1 (I1) | nul si réseau correct / V2 |
@@ -208,7 +208,7 @@ Rien ne bloque plus l'ouverture technique d'une commune (P0-1 à P0-4 du 13 nov.
 | Journal de contrôle, compteurs de scans | DM-115 §6, DM-127 | V2 |
 | Administration des référentiels, modèles d'e-mail éditables, dashboard CWS | orientation 07.1 (figés), CDC §15 | V2 |
 | Compte citoyen, suivi public, cartographie, bibliothèque de zones, paiement, facturation, exports de masse, impression par lots, demandes de pièces complémentaires | SFD §1.3, CDC §15, DM-008/029/030 | V2 / hors périmètre |
-| Verrou d'instruction visible (15 min) | non décidé (I4) | arbitrage |
+| Verrou d'instruction visible (15 min) | DT-041 (abandon technique) ; à aligner dans le SFD | V2 si conflits gênants |
 | Révocation globale par l'organisatrice | non décidé (I5) | arbitrage |
 | Mode dégradé papier 48 h | non décidé (I2) | arbitrage + validation autorités |
 | Logo, SIRET, paramètres communaux éditables | non décidé | P2 / V2 |
@@ -223,9 +223,9 @@ Rien ne bloque plus l'ouverture technique d'une commune (P0-1 à P0-4 du 13 nov.
 | I1 | SFD §1.1/1.2 et CDC §9.2 : **PWA hors ligne incluse en V1** ; écrans 36–39 et `PWA` dans SCR-055 ; recette REC-008 | DM-115 §5, roadmap : reportée | Réviser SFD/CDC (V1.2) : PWA « lot ultérieur non planifié » ; retirer REC-008 du pilote |
 | I2 | SFD §1.1 « mode dégradé papier 48 h », §7.2, REC-007 ; CDC §17 vs PDF actuel (« seul le QR fait foi ») | DM-118 §7 **sans mention du papier 48 h** | Décision explicite (abandon ou lot) ; protocole à valider avec les autorités |
 | I3 | SFD SCR-001…005 et CDC §3.1 : **inscription autonome** + souscription ; produit : ouverture manuelle par CWS | DM-121, 07.1 ; **aucune décision écrite d'abandon** | Fiche DM « ouverture par CWS en V1 » ; marquer SCR-002…005 « reportés » |
-| I4 | SFD §3, §6.1, SCR-028 : **verrou d'instruction 15 min**, reprise forcée | DT-024/041 : verrous en base ; pas d'UI | Décision : abandon en V1 (conflit géré à l'enregistrement) ou lot dédié |
+| I4 | SFD §3, §6.1, SCR-028 : **verrou d'instruction 15 min**, reprise forcée | **DT-041 (validée)** : « aucun verrou fonctionnel de 15 minutes » ; verrous en base, pas d'UI | Aligner le SFD sur DT-041 (fiche 2) |
 | I5 | SFD §2.1, SCR-033, REC-010 : **révocation globale par l'organisatrice** | DM-116 §2/4, DM-084 : autorisations des autres communes subsistent ; DM-118 : « révocation globale » = liens | Décision explicite ; supprimer REC-010 ou en faire un lot |
-| I6 | CDC §9.1 / SFD §7.3 : état **orange** « indéterminé » | DM-128 : 404/erreur/terminé, aucun orange | Réviser SFD/CDC |
+| I6 | CDC §9.1 / SFD §7.3 : état **orange** « indéterminé » | DM-128 : pages sans verdict ; orange conservé pour suspendu/partiel | Réviser SFD/CDC : « verdict » vs « absence de verdict » (fiche 4) |
 | I7 | CDC §9.3 « journal de contrôle minimal » vs SFD SCR-034 « pas de scan log » vs DM-127 | DM-127 tranche | Aligner le CDC |
 | I8 | CDC §3.1 « statuts commune » et SFD SCR-047 (5 statuts) vs code (3) | **S2 ouverte** dans `CONTRADICTIONS.md` | Trancher (aucun statut supprimé sans validation) |
 | I9 | SFD SCR-046 « dossier CWS en lecture seule », SCR-050 impersonation vs DM-005, DM-121 §1 | décisions prévalent | Marquer SCR-046 obsolète ; SCR-050 V2 |
@@ -252,7 +252,7 @@ Ouverture de commune et accès commerciaux ; invitation, équipe, remplacement d
 1. **E2** : le demandeur refusé reçoit-il un message ? Quel contenu (motif du référentiel seul ?), quel canal sans e-mail ?
 2. **E6** : activation du contrôle pour le pilote (périmètre) ; contenu de la consigne (navigation privée conseillée sur appareil partagé, déjà décidée).
 3. **E5** : seuils d'inactivité (agents / CWS), durée absolue, remember-me.
-4. **I2, I4, I5** : sort du papier 48 h, du verrou 15 min et de la révocation globale organisatrice (reporter explicitement, ou planifier).
+4. **I2, I5** : sort du papier 48 h et de la révocation globale organisatrice (fiches d'arbitrage ; le verrou 15 min est déjà abandonné par DT-041).
 5. **I3** : acter par écrit que l'inscription autonome est hors V1.
 
 ### 7.5 Exclu du pilote
