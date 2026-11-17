@@ -17,7 +17,7 @@ Base MySQL partagée ; isolation **applicative obligatoire** par commune et év�
 | Corriger l'identité (participation ACTIVE) | Non | Oui, sa commune | Non | Oui, sa commune | Non |
 | Prolonger, modifier zones ou plaques, révoquer (LOT 05.5, participation ACTIVE) | Non | Selon DM-116 | Non | Oui, sa commune | Non |
 | Remplacer le QR (LOT 05.5) | Non | Oui, autorisation concernée | Non | Non | Non |
-| Activer appareils PWA / synchroniser hors ligne | Hors V1 (LOT 06, à redéfinir) | — | — | — | — |
+| Activer appareils PWA / synchroniser hors ligne | Hors V1 (PWA hors connexion (lot ultérieur non planifié)) | — | — | — | — |
 
 > **Révision LOT 02 (N5)** : les mentions « Supervision » de CWS sur la création d'événement, l'invitation et l'activation d'appareils sont **retirées** (décision DM-005 : aucun droit communal implicite). Matrice d'origine : commit `0a8b5fb`. Les rôles « Admin commune » et « Gestionnaire événement » suivent DM-057 ; l'accès CWS passe par trois mécanismes distincts (administration technique, impersonation auditée DM-061, clôture forcée DM-065). Voir [`revisions/CONTRADICTIONS.md`](revisions/CONTRADICTIONS.md).
 
@@ -104,9 +104,9 @@ Espace **distinct** des écrans opérationnels (`/communes/{m}/archives/…`, pr
 
 Le secret du lien automatique n'est conservé que chiffré (XChaCha20-Poly1305, données associées liant message, type et laissez-passer), dans une table séparée, 48 heures au plus, supprimé dès le traitement définitif. Les clés viennent de l'environnement (`NOTIFICATION_KEYRING`), jamais du dépôt ; contrôle : `app:notifications:check-crypto`. Clé absente ou invalide : fail-closed (aucun lien, aucun clair, message en attente, approbation jamais bloquée, remise manuelle possible, échec définitif après 7 jours). Aucun secret ni valeur de clé dans les journaux, audits, exceptions ou sorties de commandes (testé). Détails : `docs/lot-05-schema.md` §19.
 
-## PWA (LOT 06, hors V1 du contrôle)
+## PWA hors connexion (lot ultérieur non planifié, hors V1 du contrôle)
 Principe retenu pour le hors ligne (non développé) : en ligne, contrôle public sans compte ni habilitation ; hors ligne, PWA après synchronisation préalable des données de l'événement (accès temporaire, sans compte permanent obligatoire), résultat calculé localement avec affichage de la dernière synchronisation ; le même QR sert aux deux modes (`lot-05-schema.md` § 15.2).
-Le contrôle V1 ne requiert ni activation d'appareil, ni compte, ni session. Une éventuelle PWA hors ligne reste à redéfinir au LOT 06 : si elle est retenue, elle devra respecter les principes suivants (inchangés) — secret propre à l'appareil stocké sous forme d'empreinte, révocation individuelle, expiration, avertissement après 12 h et blocage après 24 h sans synchronisation, pas de géolocalisation. `ControllerActivation` et `ControllerDevice` ne sont pas développés au LOT 05.
+Le contrôle V1 ne requiert ni activation d'appareil, ni compte, ni session. Une éventuelle PWA hors ligne reste à redéfinir dans un lot ultérieur non planifié : si elle est retenue, elle devra respecter les principes suivants (inchangés) — secret propre à l'appareil stocké sous forme d'empreinte, révocation individuelle, expiration, avertissement après 12 h et blocage après 24 h sans synchronisation, pas de géolocalisation. `ControllerActivation` et `ControllerDevice` ne sont pas développés au LOT 05.
 
 ## Fichiers et données
 Stockage privé hors racine web, validation MIME/taille/extension, contrôle d'accès à chaque téléchargement, protection antivirus à envisager selon risque. Minimisation, chiffrement en transit, gestion des secrets hors Git, sauvegardes sécurisées. Fixer une durée de conservation et une procédure de purge documentées avant production. Audit des décisions, prolongations, modifications de véhicules/zones, invitations et révocations ; aucune géolocalisation.
@@ -119,5 +119,5 @@ Stockage privé hors racine web, validation MIME/taille/extension, contrôle d'a
 5. Sortie d'une commune invalide seulement ses droits.
 6. Clôture événement invalide tous les droits.
 7. QR ne change pas après prolongation, changement de zones/véhicules.
-8. *(LOT 06, si une PWA est retenue)* PWA révoquée ne synchronise plus ; fraîcheur hors ligne appliquée.
+8. *(PWA hors connexion, si elle est retenue)* PWA révoquée ne synchronise plus ; fraîcheur hors ligne appliquée.
 9. Scan public : n'expose que nom, prénom, plaques, zones, validité, référence `LP-` et événement ; jamais adresse, e-mail, téléphone, justificatifs ; en-têtes de non-indexation, de non-cache et de non-référent ; aucun jeton dans les journaux.

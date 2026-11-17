@@ -42,7 +42,7 @@ Petits lots, schéma revu avant migrations, tests automatisés et `make quality`
 - Découpage : 04.1 moteur de décision ; 04.2 interface d'instruction ; 04.3 délivrance directe ; 04.4 correction d'identité (détail : [lot-04-schema.md](lot-04-schema.md)).
 
 ## LOT 05 — Laissez-passer (révisé : DM-112 à DM-117, [lot-05-schema.md](lot-05-schema.md))
-- **État (9 novembre 2026)** : 05.1, 05.2 et **05.3 terminés** (clôture : `lot-05-schema.md` §23) ; **05.4 et 05.5 non commencés** ; **LOT 06 non commencé**. Backlog : `lot-05-schema.md` §23.
+- **État (9 novembre 2026)** : 05.1, 05.2 et **05.3 terminés** (clôture : `lot-05-schema.md` §23) ; **05.4 et 05.5 non commencés** ; **PWA hors connexion : lot ultérieur non planifié**. Backlog : `lot-05-schema.md` §23.
 - 05.0 architecture et arbitrages ; **05.1** module Permit (laissez-passer unique, QR stable côté domaine, autorisations, copies de zones et de plaques, création atomique par `ApprovedPartListener`, `PermitRightsEvaluator`, rattrapage de développement) ; **05.2 lien bénéficiaire, page, QR, PDF A4 à la demande, remise par l'agent (livré)** ; 05.3 notifications indispensables (outbox transactionnelle, distributeur périodique) ; **05.4 page publique de contrôle** ; 05.5 prolongation, zones, plaques, révocation, remplacement exceptionnel du QR ; 05.6 recette et clôture.
 - Le choix de durée (24/48/72 h, date personnalisée, jusqu'à clôture) et la fenêtre globale sont livrés au LOT 04 (DM-109) ; le LOT 05 ajoute prolongation, modification, révocation et historique.
 - Laissez-passer émis à la première approbation communale, unique par demande, QR stable ; les approbations suivantes ajoutent leurs droits (DT-044, DT-046). La validité est **calculée**, jamais stockée.
@@ -50,10 +50,12 @@ Petits lots, schéma revu avant migrations, tests automatisés et `make quality`
 - Aucune mise en production sans politique de conservation et mécanisme de purge (DM-117).
 - Tests des échéances et des transitions intercommunales.
 
-## LOT 06 — PWA et hors ligne (à redéfinir) — **non commencé**
-- Le contrôle en ligne est livré au LOT 05.4 ; le LOT 06 ne porte plus que l'éventuelle PWA hors ligne, avec ses propres exigences (secret d'appareil, avertissement 12 h, blocage 24 h), **à redéfinir** puisque l'habilitation des contrôleurs n'existe pas en V1. Principe arrêté : contrôle en ligne public ; hors ligne par PWA avec synchronisation préalable (accès temporaire, sans compte permanent obligatoire), dernière synchronisation affichée, même QR (voir `lot-05-schema.md` § 15.2 ; extraction du jeton sans réseau déjà prévue par `VerificationToken::extract()`).
+## PWA et hors ligne — lot ultérieur, numéro et date non fixés (reporté après le LOT 08 ; décision du 17 novembre 2026) — **non commencé**
+- *Numérotation : l'ancien intitulé « LOT 06 » est abandonné pour cette PWA (« LOT 06 » désigne aussi l'audit [lot-06-audit.md](lot-06-audit.md), d'où une ambiguïté). Aucune décision de fond n'est modifiée (DM-115, amendement de forme).*
+- Le contrôle en ligne est livré au LOT 05.4 ; ce lot ultérieur ne porte plus que l'éventuelle PWA hors ligne, avec ses propres exigences (secret d'appareil, avertissement 12 h, blocage 24 h), **à redéfinir** puisque l'habilitation des contrôleurs n'existe pas en V1. Principe arrêté : contrôle en ligne public ; hors ligne par PWA avec synchronisation préalable (accès temporaire, sans compte permanent obligatoire), dernière synchronisation affichée, même QR (voir `lot-05-schema.md` § 15.2 ; extraction du jeton sans réseau déjà prévue par `VerificationToken::extract()`).
 
 ## LOT 07 — Notifications, audit, stockage
+- **07.3 — Contrôle QR web mobile : fiabilisation et recette terrain** (cadrage validé le 17 novembre 2026 : [lot-07-3-cadrage.md](lot-07-3-cadrage.md) ; DM-125 à DM-128, DT-055). Le contrôle en ligne sans compte de 05.4 est conservé ; limitation de débit revue, messages et écran adaptés, runbook de recette sur VPS dédié ; **la recette appareils réels (07.3.5) et toute activation de `PUBLIC_VERIFICATION_ENABLED` restent soumises à autorisation explicite**.
 - Évolutions de communication (SMS, modèles, préférences) ; les notifications indispensables du laissez-passer sont livrées au LOT 05.3 (DM-117, DT-049). Audit, stockage privé, résilience des messages.
 - Politique de conservation, suppression et accès aux pièces.
 

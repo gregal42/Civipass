@@ -14,7 +14,7 @@
 | 05.5 | Révisions : prolongation, raccourcissement, zones, plaques, révocation, remplacement exceptionnel du QR, notifications associées | **en cours** : sous-lots 05.5.1 à 05.5.6 ([DM-119](decisions/metier/DM-119-revisions-des-droits-d-un-laissez-passer.md), Proposée). **05.5.1 (socle et révocation) : validé le 10 novembre 2026** (développement et recette automatisée) ; migration `Version20261110150151` appliquée aux bases `civipass_test` et `civipass` (développement). **05.5.2 : cadrage rédigé, en attente de validation** ([lot-05-5-2-cadrage.md](lot-05-5-2-cadrage.md)) |
 | 05.6 | Recette transversale et clôture | à faire |
 
-**Hors périmètre V1 du contrôle** : `ControllerActivation`, `ControllerDevice`, comptes ou sessions de contrôleur, PWA. La PWA hors ligne (LOT 06) est une évolution distincte, à redéfinir.
+**Hors périmètre V1 du contrôle** : `ControllerActivation`, `ControllerDevice`, comptes ou sessions de contrôleur, PWA. La PWA hors connexion (lot ultérieur non planifié) est une évolution distincte, à redéfinir (ancien « LOT 06 », voir l'amendement de forme de DM-115).
 
 ## 2. Modèle de données (05.1)
 
@@ -135,10 +135,10 @@ Réutiliser : `PermitRightsEvaluator` (état affiché), `VerificationToken` (URL
 ### 15.2 Contrôle hors ligne futur (principe, rien n'est développé)
 - **Contrôle en ligne** : public, sans compte ni habilitation (DM-115).
 - **Contrôle hors ligne** : PWA avec synchronisation préalable des données de l'événement ; le résultat est calculé à partir des données locales et l'**heure de la dernière synchronisation est toujours affichée**.
-- **Synchronisation complète** : accès temporairement autorisé, sans compte permanent obligatoire (mécanisme à définir au LOT 06).
+- **Synchronisation complète** : accès temporairement autorisé, sans compte permanent obligatoire (mécanisme à définir dans le lot PWA, ancien « LOT 06 »).
 - **Même QR** en ligne et hors ligne : le QR ne contient que l'URL publique `…/<jeton>` ; il n'est ni différent, ni signé, ni enrichi pour le hors ligne.
 - **Extraction sans réseau** : `VerificationToken::extract()` (fonction pure, testée) retrouve le jeton de 32 caractères base32 dans le jeton seul ou dans une URL (majuscules d'un lecteur, paramètres, ancre, slash final tolérés ; toute autre valeur : `null`). La PWA pourra donc rechercher le laissez-passer dans sa copie locale sans requête.
-- **Contraintes à respecter par le LOT 06** : le jeu synchronisé contient les jetons et donc le même périmètre de données que la page publique (DM-115), jamais adresse, e-mail, téléphone ni justificatifs ; les états sont recalculés localement avec les mêmes règles (`PermitRightsEvaluator`, précédence et intervalles semi-ouverts) à partir de fenêtres, zones, états de participation/commune/événement synchronisés ; une copie locale périmée ne peut qu'être signalée (avertissement/blocage de fraîcheur à définir), jamais présentée comme à jour ; la révocation d'un jeton ou d'une autorisation n'est connue hors ligne qu'à la synchronisation suivante (limite à afficher).
+- **Contraintes à respecter par la PWA (ancien « LOT 06 »)** : le jeu synchronisé contient les jetons et donc le même périmètre de données que la page publique (DM-115), jamais adresse, e-mail, téléphone ni justificatifs ; les états sont recalculés localement avec les mêmes règles (`PermitRightsEvaluator`, précédence et intervalles semi-ouverts) à partir de fenêtres, zones, états de participation/commune/événement synchronisés ; une copie locale périmée ne peut qu'être signalée (avertissement/blocage de fraîcheur à définir), jamais présentée comme à jour ; la révocation d'un jeton ou d'une autorisation n'est connue hors ligne qu'à la synchronisation suivante (limite à afficher).
 
 ## 16. LOT 05.2 — liens bénéficiaire, page, QR et PDF (livré)
 

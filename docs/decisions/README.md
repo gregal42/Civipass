@@ -126,6 +126,10 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DM-122](metier/DM-122-gestion-autonome-des-equipes-communales.md) | Gestion autonome des équipes communales (A2, A3) | LOT 07.2 — Équipes communales | Validée |
 | [DM-123](metier/DM-123-activation-automatique-des-evenements-a-l-heure-de-debut.md) | Activation automatique des événements à l'heure de début | Cycle de vie des événements | Validée |
 | [DM-124](metier/DM-124-cumul-des-roles-par-defaut-d-un-administrateur-communal.md) | Cumul des rôles par défaut d'un administrateur communal | LOT 07.2 — Équipes communales | Validée |
+| [DM-125](metier/DM-125-rappel-de-rapprochement-et-avertissement-de-non-diffusion-du-qr.md) | Rappel de rapprochement et avertissement de non-diffusion du QR | LOT 07.3 — Contrôle | Validée |
+| [DM-126](metier/DM-126-page-de-verification-unique-zones-valides-d-abord.md) | Page de vérification unique, sans paramètre de zone, zones valides d'abord | LOT 07.3 — Contrôle | Validée |
+| [DM-127](metier/DM-127-pas-de-compteurs-persistants-de-scans-en-v1.md) | Pas de compteurs persistants de scans en V1 | LOT 07.3 — Contrôle | Validée |
+| [DM-128](metier/DM-128-messages-nationaux-fixes-des-erreurs-du-controle-public.md) | Messages nationaux fixes des erreurs du contrôle public | LOT 07.3 — Contrôle | Validée |
 
 ## Décisions techniques
 
@@ -185,6 +189,7 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DT-052](technique/DT-052-actions-nommees-d-ecriture-dans-le-back-office-cws.md) | Actions d'écriture nommées dans le back-office CWS (amende DT-018, A1) | Back-office | Validée |
 | [DT-053](technique/DT-053-invitation-d-administrateur-communal-table-dediee.md) | Invitation d'administrateur communal émise par CWS : table dédiée (A2, M1) | Données, onboarding | Validée |
 | [DT-054](technique/DT-054-invitations-communales-roles-et-controle-d-acteur-courant.md) | Invitations communales avec rôles (M2) et contrôle d'acteur en lecture courante | Données, sécurité | Validée |
+| [DT-055](technique/DT-055-limitation-de-debit-du-controle-public-echecs-et-garde-fou-d-acces.md) | Limitation de débit du contrôle public : échecs de jetons inconnus et garde-fou d'accès | LOT 07.3 — Sécurité, exploitation | Validée |
 
 ## Modèle de fiche
 

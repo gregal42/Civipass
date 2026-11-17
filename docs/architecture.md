@@ -15,7 +15,7 @@ PHP 8.4, Symfony 8.1, Doctrine ORM, MySQL 8.4, Twig, AssetMapper, Stimulus, UX T
 - `Request` : demande citoyenne, contacts, véhicules, pièces, communes et zones demandées.
 - `Instruction` : instruction et décisions par commune.
 - `Permit` : laissez-passer unique par demande, jeton QR, autorisations par commune, zones/plaques copiées, droits effectifs calculés (LOT 05.1, [lot-05-schema.md](lot-05-schema.md)) ; révisions au LOT 05.5. Implémente le port `ApprovedPartListener` de `Request` ; `Request` ne dépend pas de `Permit`.
-- `Control` : réservé (PWA hors ligne, LOT 06 à redéfinir) ; le scan public V1 est servi par le LOT 05.4.
+- `Control` : réservé (PWA hors connexion (lot ultérieur non planifié), à redéfinir) ; le scan public V1 est servi par le LOT 05.4.
 - `Shared` : audit, notifications, stockage privé et abstractions communes.
 - `Admin` : intégration Sonata réservée à CWS.
 
