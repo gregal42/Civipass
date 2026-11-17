@@ -17,6 +17,7 @@
 | [`audit-couverture-fonctionnelle.md`](audit-couverture-fonctionnelle.md) | Audit de couverture SFD / CDC, périmètre figé du premier pilote, lots restants (17 nov. 2026) |
 | [`arbitrages-pilote-fiches.md`](arbitrages-pilote-fiches.md) | Fiches d'arbitrage avant le LOT 08 : papier 48 h, verrou 15 min, révocation globale, état indéterminé, notification de refus |
 | [`lot-09-controle-hors-connexion-cadrage.md`](lot-09-controle-hors-connexion-cadrage.md) | Cadrage du contrôle hors connexion (PWA) obligatoire en V1 : étude d'architecture, modèle de confiance, incréments (proposition) |
+| [`lot-08-cadrage.md`](lot-08-cadrage.md) | LOT 08 : synthèse de cadrage des six écarts fonctionnels de l'audit (décisions validées, arbitrages restants) |
 | [`aipd-controle-hors-connexion-technique.md`](aipd-controle-hors-connexion-technique.md) | Dossier technique pour l'AIPD du contrôle hors connexion (ne remplace pas la validation juridique) |
 | [`dependances-js-controle-hors-connexion.md`](dependances-js-controle-hors-connexion.md) | Audit des dépendances JavaScript du LOT 09 (décodeur QR, tests) |
 | [`lot-07-1-cadrage.md`](lot-07-1-cadrage.md) | Administration CWS dans Sonata (LOT 07.1) : cadrage validé et réalisation ; décisions [DM-121](decisions/metier/DM-121-administration-cws-des-communes-et-garde-fous.md), [DT-052](decisions/technique/DT-052-actions-nommees-d-ecriture-dans-le-back-office-cws.md), [DT-053](decisions/technique/DT-053-invitation-d-administrateur-communal-table-dediee.md) |

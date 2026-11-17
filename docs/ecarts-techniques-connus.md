@@ -61,3 +61,20 @@ Recette visuelle de Sonata et de l'écran Équipe ; envoi d'invitations avec un 
 | **Calcul du jeu non mis en cache** | 4,8 s pour 10 000 laissez-passer (0,5 ms/laissez-passer) ; l'« inchangé » économise le transfert, pas le calcul | cache court par commune/événement si le volume réel approche 10 000 ; mesures dans le cadrage §32 |
 | **Aucun journal de scan** | pas de statistiques de contrôle (DM-127) | volontaire |
 | **Tests e2e sur l'hôte** | Node 20 du conteneur n'a pas de client WebSocket natif ; `bin/qa e2e` exige Node ≥ 22, Chrome et Docker sur l'hôte | acceptable en local |
+
+### Dette technique du contrôle hors connexion — entrées explicites (17 novembre 2026)
+
+| # | Dette | Constat mesuré ou connu | Décision |
+|---|---|---|---|
+| DT-C1 | **Coût du recalcul des jeux de synchronisation** | construction linéaire, ~0,5 ms par laissez-passer : 0,5 s à 1 000, **4,8 s à 10 000** (mémoire +23 Mo) ; la réponse « inchangé » ne diminue pas ce coût | **aucune optimisation sans mesure en conditions réelles** ; seuil d'attention : > 2 000 laissez-passer ou synchronisations simultanées nombreuses |
+| DT-C2 | **Absence de cache serveur du jeu** | chaque synchronisation reconstruit le jeu ; 10 appareils sur 10 000 laissez-passer ≈ 50 s de calcul par quart d'heure | première optimisation envisageable : cache court par commune et événement, invalidé au changement de droits ; à ne lancer qu'après mesure et justification |
+| DT-C3 | **Limites de purge sur iOS** | pas d'exécution en arrière-plan ; suppression **à l'ouverture** de l'application ; stockage purgé par le système après ~7 jours sans usage hors application installée ; sauvegardes de l'appareil non vérifiées | à vérifier en 09.7 sur iPhone réel (suppression, veille, sauvegarde) ; consigne d'installation et de verrouillage |
+| DT-C4 | **Limites de détection des modifications d'horloge** | recul et décalage à la synchronisation détectés ; **avance volontaire application fermée non détectable** ; `performance.now()` en veille non caractérisé | « indéterminé » en cas d'incohérence ; horizon du jeu ≤ 12 h ; aucune promesse de résistance absolue ; mesure en 09.7 |
+| DT-C5 | **Maintenance future de jsQR** | 1.4.0 (avril 2021), non maintenu ; Apache-2.0 ; copie figée avec empreinte vérifiée par un test | revue annuelle et veille de sécurité ; repli conditionnel zxing-wasm **sur décision séparée** ; décodage à mesurer sur matériel modeste (09.7) |
+| DT-C6 | **Appareils perdus restant hors connexion** | la désactivation n'agit qu'à la reconnexion ; les données identifiantes restent jusqu'à la prochaine ouverture ; extraction possible d'un téléphone déverrouillé | minimisation, durée de confiance, runbook de perte/vol, AIPD ; **risque inscrit, non supprimé** |
+
+### Prérequis du LOT 09.7 et de tout usage de données réelles
+Recette Android et iPhone **réels** ; environnement **HTTPS** adapté (autorisation d'infrastructure distincte, sous-domaine dédié visé) ; **AIPD validée** ; **acceptation écrite du risque R-OFF-01** ; validation des **consignes de terrain** et des **messages de contrôle** ; vérification sur appareils réels de la **suppression des données** et du **comportement après veille**.
+
+### Configuration (rappel)
+`OFFLINE_CONTROL_ENABLED=0` et `PUBLIC_VERIFICATION_ENABLED=0` dans `.env` (défauts du dépôt) ; `.env.local` et `.env.*.local` sont **ignorés par Git** (`.gitignore`) : aucun paramètre local de développement (par exemple `PUBLIC_VERIFICATION_ENABLED=1` du poste de développement) ne doit être repris à la mise en service, dont la configuration est établie séparément et autorisée explicitement.
