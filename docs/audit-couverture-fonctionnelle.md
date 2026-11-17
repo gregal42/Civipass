@@ -2,6 +2,9 @@
 
 **Date** : 17 novembre 2026 (corrigé le même jour : verrou 15 min et état orange, voir `arbitrages-pilote-fiches.md`) · **Branche** : `develop` (à `e475d16`) · **Nature** : audit documentaire et analytique. Aucun développement, aucune migration, aucun déploiement, aucun VPS, aucun changement sur `main`. Interrupteurs inchangés : `PUBLIC_VERIFICATION_ENABLED=0`, `RIGHTS_ERASURE_EXECUTION_ENABLED=0`, `RETENTION_PURGE_ENABLED=0`.
 
+> **Mise à jour du 17 novembre 2026 — nouvelle décision métier : contrôle hors connexion obligatoire en V1.** La PWA hors ligne n'est plus reportée : elle devient un prérequis du premier pilote (cadrage : [`lot-09-controle-hors-connexion-cadrage.md`](lot-09-controle-hors-connexion-cadrage.md)). Les passages ci-dessous marqués **[remplacé]** ont été écrits avant cette décision et sont corrigés dans les §2.E, §5, §6 (I1), §7 et §8. Les fiches d'arbitrage fonctionnel sont dans [`arbitrages-pilote-fiches.md`](arbitrages-pilote-fiches.md).
+
+
 **Sources confrontées** : CDC V1.0 (1er nov. 2026), SFD V1.0 détaillé (corps + annexes A à D), 169 fiches de décision (114 `DM-`, 55 `DT-`, dans `decisions/`), `revisions/CONTRADICTIONS.md`, `development-roadmap.md`, `lot-06-audit.md` (13 nov.), code (`src/`, `templates/`, `config/`) et 271 fichiers de tests.
 
 **Niveaux de preuve** (comme `lot-06-audit.md`) : **[C]** lu dans le code ; **[T]** test automatisé existant (fichier cité) ; **[D]** décision validée ; **[M]** à vérifier manuellement ou sur appareil réel. **Un test automatisé n'est jamais une recette utilisateur** : aucune des exigences ci-dessous n'a été recettée par un agent municipal ni sur smartphone réel (voir §9).
@@ -109,7 +112,7 @@ Légende statut : **C** couvert · **P** partiel · **A** absent · **R** report
 | Orange « indéterminé » (CDC §9.1) | DM-115, DM-128 | **O** | l'orange « indéterminé/hors ligne » a disparu ; un ton orange existe pour « droits suspendus » et « zones partielles » ; erreurs = pages sans verdict, jamais de vert | `PublicVerificationSecurityTest` | CDC/SFD contredits | — |
 | Sécurité du jeton, énumération, limitation de débit, journalisation anormale | DM-113, DT-048, DT-055 | **C** | 160 bits, 404 uniforme, 1 500/10 min/IP et 20 échecs/15 min ; seuils journalisés sans IP/jeton | `PublicVerificationSecurityTest` | valeur 1 500 à confronter à une charge réelle (INST) | moyen / INST |
 | Événement clos : « terminé » puis générique après purge | DM-120 | **C** | message neutre sans PII | `PublicVerificationClosedEventTest` | purge non activée | — |
-| CDC §9.2 / SCR-036…039 **PWA hors ligne**, seuils 12 h/24 h, appareils | DM-115 §5, DM-116 §4, roadmap | **R** | non développée ; `ControllerActivation/Device` abandonnés | — | SFD/CDC la mettent en V1 (I1) | nul si réseau correct / V2 |
+| CDC §9.2 / SCR-036…039 **PWA hors ligne**, seuils 12 h/24 h, appareils | DM-115 §5, DM-116 §4 (**à amender**) ; décision du 17 nov. : **obligatoire en V1** | **A** (**P0 pilote**) | non développée ; `ControllerActivation/Device` retirés du périmètre | — | **nouveau lot 09** ; SFD/CDC redeviennent cohérents (I1 levée) | **bloquant pilote** / P0 |
 | **Mode dégradé papier 48 h** (SFD §7.2, REC-007/008) | DM-118 §7 (PDF = instantané ; QR = droits courants) | **O ?** | le PDF imprime « seul le contrôle du QR fait foi » : l'inverse du mode dégradé | `BeneficiaryPdfTest` | **abandon implicite** ; protocole non validé avec les autorités (SFD §10.2) | moyen / décision |
 | Journal de contrôle (CDC §9.3) | DM-115 §6, DM-127 | **R** | aucun scan journalisé | — | CDC « journal minimal » vs DM-127 | nul / V2 |
 | **Entrée « Contrôle », consigne terrain** | — | **A** | aucune page d'aide ; pas de menu | — | **E6** | moyen / P1 |
@@ -202,7 +205,7 @@ Rien ne bloque plus l'ouverture technique d'une commune (P0-1 à P0-4 du 13 nov.
 
 | Fonctionnalité | Origine du report | Cible |
 |---|---|---|
-| PWA installable, scan caméra intégré, hors ligne, appareils, seuils 12/24 h | DM-115 §5, DM-116 §4 ; « lot ultérieur non planifié » | V2 (si besoin terrain avéré) |
+| ~~PWA installable, scan caméra intégré, hors ligne, appareils, seuils 12/24 h~~ **[remplacé]** | était reporté (DM-115 §5) ; **décision du 17 nov. : obligatoire en V1** → lot 09 | **V1, avant pilote** |
 | SMS (tous canaux) | CDC §8.1 « non connecté V1 » ; DM-117 | V2 |
 | Impersonation CWS, MFA | DM-061 (exigences anticipées) | V2 |
 | Journal de contrôle, compteurs de scans | DM-115 §6, DM-127 | V2 |
@@ -220,7 +223,7 @@ Rien ne bloque plus l'ouverture technique d'une commune (P0-1 à P0-4 du 13 nov.
 
 | Id | Contradiction | Statut de la preuve | Proposition |
 |---|---|---|---|
-| I1 | SFD §1.1/1.2 et CDC §9.2 : **PWA hors ligne incluse en V1** ; écrans 36–39 et `PWA` dans SCR-055 ; recette REC-008 | DM-115 §5, roadmap : reportée | Réviser SFD/CDC (V1.2) : PWA « lot ultérieur non planifié » ; retirer REC-008 du pilote |
+| I1 | SFD §1.1/1.2 et CDC §9.2 : **PWA hors ligne incluse en V1** ; écrans 36–39 ; REC-008 | **levée le 17 nov.** : la décision rétablit la PWA en V1 ; DM-115 §5, DM-116 §4, `security.md`, `architecture.md`, `data-model.md`, roadmap à amender | Voir le tableau des décisions à mettre à jour (lot 09 §6) |
 | I2 | SFD §1.1 « mode dégradé papier 48 h », §7.2, REC-007 ; CDC §17 vs PDF actuel (« seul le QR fait foi ») | DM-118 §7 **sans mention du papier 48 h** | Décision explicite (abandon ou lot) ; protocole à valider avec les autorités |
 | I3 | SFD SCR-001…005 et CDC §3.1 : **inscription autonome** + souscription ; produit : ouverture manuelle par CWS | DM-121, 07.1 ; **aucune décision écrite d'abandon** | Fiche DM « ouverture par CWS en V1 » ; marquer SCR-002…005 « reportés » |
 | I4 | SFD §3, §6.1, SCR-028 : **verrou d'instruction 15 min**, reprise forcée | **DT-041 (validée)** : « aucun verrou fonctionnel de 15 minutes » ; verrous en base, pas d'UI | Aligner le SFD sur DT-041 (fiche 2) |
@@ -256,7 +259,7 @@ Ouverture de commune et accès commerciaux ; invitation, équipe, remplacement d
 5. **I3** : acter par écrit que l'inscription autonome est hors V1.
 
 ### 7.5 Exclu du pilote
-PWA/hors ligne, SMS, impersonation/MFA, journal de contrôle, référentiels administrables, logo/SIRET, suivi public.
+SMS, impersonation/MFA, journal de contrôle, référentiels administrables, logo/SIRET, suivi public. **[corrigé le 17 nov. : la PWA hors ligne n'est plus exclue ; elle est un prérequis du pilote]**
 
 ### 7.6 À tester avant le pilote (recette, pas du développement)
 Parcours complet depuis une commune vierge **sans fixtures** (P1-1 du 13 nov. — le test `tests/Functional/Recette` s'appuie sur des fixtures) ; recette ergonomique avec 2–3 agents ; recette Android/iPhone du contrôle (VP-01…54) ; revue accessibilité ; relecture du runbook de récupération d'accès par un tiers ; test de l'expiration de session ; envoi d'e-mails réels.
@@ -287,11 +290,12 @@ SMTP réel, `MAILER_FROM`, `DEFAULT_URI` en https, `APP_SECRET`, clés de chiffr
 | **08.4** | **Doublons potentiels** | E1 : calcul à la lecture, badge non bloquant, limité aux dossiers visibles ; index éventuel | — | **peut-être** (index ; à cadrer) | S-M |
 | **08.5** | **Notification de refus** | E2 : message au demandeur (canaux disponibles) | arbitrage | à cadrer (type de notification) | S |
 | **08.6** | **Clôture forcée CWS** | E4 : action Sonata auditée avec justification (DM-065), suspension éventuelle | — | non | S |
-| **09** | **Recette pilote locale** | parcours depuis commune vierge sans fixtures ; recette ergonomique ; accessibilité ; relecture runbooks | 08.x | non | M |
-| **10** | **Revue sécurité et RGPD** (ex-LOT 08 de l'audit) | revue indépendante, bornes de pièces, antimalware, base légale | 09 | non | M |
+| **09 (nouveau)** | **Contrôle hors connexion (PWA)** — 6 incréments, voir `lot-09-controle-hors-connexion-cadrage.md` ; **prérequis du pilote** ; AIPD, A12 (recette sur appareils réels en HTTPS) | arbitrages A1–A15 | **oui** (2 tables) | L |
+| **10** | **Recette pilote locale** | parcours depuis commune vierge sans fixtures ; recette ergonomique ; accessibilité ; relecture runbooks | 08.x | non | M |
+| **11** | **Revue sécurité et RGPD** (ex-LOT 08 de l'audit) | revue indépendante, bornes de pièces, antimalware, base légale | 09 | non | M |
 | **INST** | **Mise en service** (hors développement local) | §7.7 | 09–10, validations §7.8 | — | — |
 
-Ordre recommandé : **08.2 → 08.1 → 08.3 → 08.6 → 08.4 → 08.5 → 09 → 10**. 08.2 et 08.3 sont courts et débloquent des décisions ; 08.1 est le plus visible pour les agents ; 08.4/08.5 ont des conséquences de données et exigent un cadrage soigné.
+Ordre recommandé : **08.2 → 08.1 → 08.3 → 08.6 → 08.4 → 08.5**, le **lot 09** pouvant démarrer en parallèle dès validation de son cadrage (il ne dépend que de 08.2 pour l'entrée de menu), puis **10 → 11**. 08.2 et 08.3 sont courts et débloquent des décisions ; 08.1 est le plus visible pour les agents ; 08.4/08.5 ont des conséquences de données et exigent un cadrage soigné.
 
 ---
 

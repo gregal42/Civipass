@@ -16,6 +16,13 @@ Ces fiches font suite à [`audit-couverture-fonctionnelle.md`](audit-couverture-
 | E6 | Entrée « Contrôle » ; **le contrôle public n'est activé ni en local ni en production** | `PUBLIC_VERIFICATION_ENABLED` reste à 0 |
 | I3 | Inscription autonome des communes **reportée en V2** ; ouverture manuelle par CWS confirmée pour le pilote | marquer SCR-002…005 « V2 » |
 
+## Effet de la décision du 17 novembre sur ces fiches
+
+Le **contrôle hors connexion étant obligatoire en V1** ([cadrage lot 09](lot-09-controle-hors-connexion-cadrage.md)) :
+- **Fiche 4 (état indéterminé)** : l'état « indéterminé » hors ligne **revient** ; la recommandation « conserver » reste valable pour le contrôle **en ligne**, et le vocabulaire hors ligne est défini au cadrage (§3.3).
+- **Fiche 1 (papier 48 h)** : le report reste recommandé ; le besoin « sans réseau » est désormais couvert par la PWA.
+- Fiches 2, 3 et 5 : inchangées.
+
 ## Corrections de l'audit du 17 novembre
 
 La préparation de ces fiches a révélé **deux inexactitudes** dans mon audit, corrigées dans `audit-couverture-fonctionnelle.md` :
