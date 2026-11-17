@@ -1,6 +1,6 @@
 # LOT 08 — Écarts fonctionnels de l'audit : synthèse de cadrage
 
-**Date** : 17 novembre 2026 · **Statut** : **cadrage soumis à validation ; aucun développement.** Aucune migration, aucune infrastructure distante ; développement local ; interrupteurs inchangés (`PUBLIC_VERIFICATION_ENABLED`, `RIGHTS_ERASURE_EXECUTION_ENABLED`, `RETENTION_PURGE_ENABLED`, `OFFLINE_CONTROL_ENABLED` à 0).
+**Date** : 17 novembre 2026 · **Statut** : V1 (synthèse du 17 novembre) puis **V2 (arbitrages validés, schémas proposés)** ci-dessous, qui **prévaut** sur la V1 ; **aucun développement ; aucune migration créée ni exécutée.** Aucune migration, aucune infrastructure distante ; développement local ; interrupteurs inchangés (`PUBLIC_VERIFICATION_ENABLED`, `RIGHTS_ERASURE_EXECUTION_ENABLED`, `RETENTION_PURGE_ENABLED`, `OFFLINE_CONTROL_ENABLED` à 0).
 **Sources** : [audit-couverture-fonctionnelle.md](audit-couverture-fonctionnelle.md), [arbitrages-pilote-fiches.md](arbitrages-pilote-fiches.md), décisions de principe du 17 novembre 2026, LOT 09 (DM-129 à DM-132).
 
 **Légende** : ✅ validé par le commanditaire · ◐ validé dans son principe, à préciser · ❓ recommandation de l'agent **non encore validée**.
@@ -72,3 +72,54 @@ Ordre proposé : **08.2 → 08.1 → 08.3 → 08.6 → 08.4 → 08.5** (inchang�
 3. **08.4** : accord pour **mesurer avant** toute demande d'index.
 4. **08.1/08.2/08.3** : indicateurs, visibilité et texte de la consigne, délai d'avertissement (recommandations ci-dessus).
 5. Confirmer que les cinq fiches d'arbitrage fonctionnelles (papier 48 h reporté, verrou 15 min abandonné par DT-041, pas de révocation globale par l'organisatrice, état indéterminé, notification de refus) valent **décisions** : elles n'ont fait l'objet que d'une validation de principe.
+
+
+---
+---
+
+# PARTIE II — V2 : arbitrages validés et schémas (17 novembre 2026)
+
+**Décisions formalisées** : [DM-138](decisions/metier/DM-138-decisions-d-interface-du-lot-08.md) (08.1 à 08.4), [DM-136](decisions/metier/DM-136-notification-des-refus-obligatoire.md) (08.5), [DM-139](decisions/metier/DM-139-cloture-exceptionnelle-cws-permission-persistee.md) (08.6), [DM-133](decisions/metier/DM-133-papier-48-h-reporte-hors-v1.md) à [DM-135](decisions/metier/DM-135-etat-indetermine-du-controle.md), [DM-137](decisions/metier/DM-137-verrou-visible-d-instruction-decision-ouverte.md) (**ouverte**).
+
+## 9. Ce qui est validé, lot par lot
+| Lot | Validé | Précisions retenues par défaut (modifiables) |
+|---|---|---|
+| **08.1 Accueil** | événements en cours et à venir ; demandes en attente ; demandes récemment traitées ; accès rapides ; **aucun calcul de validité coûteux** | « récemment traitées » = 7 derniers jours, 10 lignes ; l'instructeur voit ses demandes, l'administrateur et le gestionnaire les événements ; **compteur « refus à communiquer »** (08.5) ajouté dès que 08.5 existe ; pas de laissez-passer « valides » |
+| **08.2 Contrôle** | entrée « Contrôle » : en ligne, hors connexion, STANDARD/STRICT, limites de révocation, perte/vol ; **texte à valider avant publication** | page en lecture pour tous les rôles communaux ; QR d'installation de la PWA et lien « Appareils » pour l'administrateur ; **aucune activation** de contrôle ; si l'interrupteur est à 0, la page le dit |
+| **08.3 Sessions** | agents 30 min / 12 h ; CWS 15 min / 8 h ; avertissement 2 min ; « Se souvenir de moi » désactivé ; brouillons publics exclus | valeurs en variables d'environnement bornées ; message et retour à la page après reconnexion |
+| **08.4 Doublons** | informatif, aucun refus ; **mesure sur 10 000 demandes avant tout index** ; aucune exposition d'une autre demande dans les messages publics | badge et critères concordants (« même téléphone »…) visibles seulement des agents, limités aux dossiers visibles de leur commune |
+| **08.5 Refus** | option A : notification asynchrone fiable ; e-mail si adresse ; sans e-mail : visible des agents + procédure alternative ; **pas de SMS** | schéma : [lot-08-5-schema.md](lot-08-5-schema.md) |
+| **08.6 Clôture CWS** | option A : permission persistée ; autorisation explicite ; ressaisie du mot de passe ; motif obligatoire ; confirmation ; audit ; conséquences cohérentes | schéma : [lot-08-6-schema.md](lot-08-6-schema.md) |
+
+## 10. Les deux schémas proposés (résumé ; détail dans les documents dédiés)
+**`request_refusal_notice`** (08.5) — une ligne par décision de refus : `decision_id` (unique, FK), `municipality_id`, `status` (`PENDING`, `SENT`, `NO_RECIPIENT`, `ABANDONED`, `MANUAL`), `attempts`, `available_at`, `leased_until`, `first_attempt_at`, `processed_at`, `last_error_code`, `created_at`, `manual_channel`, `manual_by`, `manual_at` ; index de distribution et de liste « à communiquer » ; **aucune donnée personnelle** ; table dédiée, `notification_outbox` inchangée.
+**`identity_cws_permission`** (08.6) — historique des habilitations : `user_id`, `permission`, `granted_by` (≠ bénéficiaire), `granted_at`, `reason`, `revoked_at`, `revoked_by`, `active_key` (unicité d'une attribution active par compte et permission) ; attribution par **commandes console**, sans écran en V1.
+Chaque schéma est **une table, en ajout seul, sans reprise de données, avec retour arrière** (suppression de la table). **Aucune migration n'est créée ni exécutée** avant votre approbation.
+
+## 11. Verrou visible de 15 minutes
+Étude : [analyse-verrou-instruction.md](analyse-verrou-instruction.md). Recommandation : **A** (état actuel, SFD aligné sur DT-041) pour le pilote, **A + B'** (indicateur de présence informatif en cache, **sans migration ni blocage**) si la recette montre des collisions ; pas de verrou fort. Décision **ouverte**.
+
+## 12. Arbitrages encore indispensables
+| # | Arbitrage | Bloque | Recommandation |
+|---|---|---|---|
+| 1 | **Approbation du schéma 08.5** (et ses règles : motifs « doublon » et « autre » non communiqués ; clôture ne neutralise pas l'information de refus ; aucun envoi rétroactif ; liste « à communiquer » pour instructeurs et administrateurs) | création et exécution de la migration 08.5 | approuver |
+| 2 | **Approbation du schéma 08.6** (et ses règles : attribution par console, jamais à soi-même ; motif d'attribution obligatoire ; référence de l'événement saisie en confirmation ; notification aux administrateurs communaux sans le motif) | création et exécution de la migration 08.6 | approuver |
+| 3 | **Verrou 15 min** : A ou A + B' | rien (n'empêche pas le pilote) | A + B' en option ultérieure |
+| 4 | **Texte de la consigne « Contrôle »** | **publication** de 08.2, pas son développement | validation métier avant diffusion |
+| 5 | **Libellé juridique du message de refus** | **activation** de 08.5 en réel, pas son développement | validation avant tout envoi réel |
+| 6 | Valeurs par défaut de 08.1 (7 jours, 10 lignes, visibilité par rôle) | confort uniquement | accepter les défauts |
+
+## 13. Enchaînement proposé pour terminer rapidement le développement local
+Principe : **commencer par ce qui n'exige aucune migration**, pendant que les deux schémas sont approuvés ; regrouper les migrations en fin de chaîne pour ne pas bloquer.
+| Étape | Lot | Contenu | Prérequis | Taille |
+|---|---|---|---|---|
+| 1 | **08.3** | sessions (inactivité, durée absolue, avertissement, retrait de « se souvenir de moi », exclusion du public) | aucun | XS-S |
+| 2 | **08.2** | entrée « Contrôle » et consigne (texte provisoire marqué « à valider ») | aucun (texte à valider **avant publication**) | XS |
+| 3 | **08.1** | accueil et tableau de bord (hors compteur « refus à communiquer ») | aucun | S |
+| 4 | **08.4** | doublons : calcul à la lecture, badge ; **mesure 10 000** ; index **seulement si la mesure l'exige** (alors demande d'approbation séparée) | aucun | S-M |
+| 5 | **08.6** | clôture CWS : migration `identity_cws_permission`, commandes, page CWS, tests | **approbation du schéma 08.6** | S-M |
+| 6 | **08.5** | refus : migration `request_refusal_notice`, distributeur, gabarit, liste et fiche agents, compteur d'accueil | **approbation du schéma 08.5** | M |
+| 7 | **10** | recette pilote locale (commune vierge, sans fixtures), ergonomie, accessibilité | 08.x | M |
+| 8 | **11** | revue sécurité et RGPD ; AIPD (LOT 09) | 10 | M |
+| — | **09.7** | recette smartphones réels (HTTPS, autorisation d'infrastructure) | après le développement local | M |
+Les étapes 1 à 4 ne dépendent d'aucune approbation et peuvent démarrer **dès votre validation de la V2** ; les étapes 5 et 6 s'enchaînent dès que les schémas sont approuvés. Le développement du LOT 08 reste **local**, sans déploiement ni push sans autorisation ; les quatre interrupteurs restent à 0.

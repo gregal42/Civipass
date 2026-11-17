@@ -134,6 +134,13 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DM-130](metier/DM-130-modele-de-confiance-hors-connexion.md) | Modèle de confiance du contrôle hors connexion | LOT 09 — Contrôle | Validée |
 | [DM-131](metier/DM-131-appareils-de-controle-activation-et-approbation.md) | Appareils de contrôle : activation, approbation manuelle, désactivation, renouvellement | LOT 09 — Contrôle | Validée |
 | [DM-132](metier/DM-132-donnees-locales-du-controle-hors-connexion.md) | Données locales du contrôle hors connexion | LOT 09 — Contrôle | Validée |
+| [DM-133](metier/DM-133-papier-48-h-reporte-hors-v1.md) | Mode papier dégradé de 48 heures : reporté hors V1 | Contrôle | Validée |
+| [DM-134](metier/DM-134-pas-de-revocation-globale-par-l-organisatrice.md) | Pas de révocation globale par la commune organisatrice | Révocation | Validée |
+| [DM-135](metier/DM-135-etat-indetermine-du-controle.md) | État « indéterminé » du contrôle (règles du contrôle hors connexion) | Contrôle | Validée |
+| [DM-136](metier/DM-136-notification-des-refus-obligatoire.md) | Information du demandeur en cas de refus : obligatoire, asynchrone et fiable | LOT 08.5 | Validée |
+| [DM-137](metier/DM-137-verrou-visible-d-instruction-decision-ouverte.md) | Verrou visible d'instruction de 15 minutes : décision ouverte | Instruction | Proposée |
+| [DM-138](metier/DM-138-decisions-d-interface-du-lot-08.md) | Décisions d'interface du LOT 08 (accueil, Contrôle, sessions, doublons) | LOT 08 | Validée |
+| [DM-139](metier/DM-139-cloture-exceptionnelle-cws-permission-persistee.md) | Clôture exceptionnelle CWS : permission persistée | LOT 08.6 | Validée |
 
 ## Décisions techniques
 
