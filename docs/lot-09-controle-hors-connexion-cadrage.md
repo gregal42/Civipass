@@ -603,3 +603,113 @@ Les critères 1 à 18 de §10 sont maintenus avec les précisions suivantes : (2
 - **Interrupteurs** : `PUBLIC_VERIFICATION_ENABLED=0`, `RIGHTS_ERASURE_EXECUTION_ENABLED=0`, `RETENTION_PURGE_ENABLED=0` inchangés ; `OFFLINE_CONTROL_ENABLED` sera créé à **0** en 09.1 (aucune route active tant qu'il est à 0).
 - **Migrations** : **aucune** avant approbation du schéma §18 ; une seule migration prévue (09.2), additive.
 - **Local** : aucun VPS, aucun déploiement, aucun push sans autorisation.
+
+
+---
+---
+
+# PARTIE III — V3 consolidée (17 novembre 2026, après validation des arbitrages V2)
+
+**Priorité** : la Partie III prévaut sur les Parties I et II là où elles diffèrent. Décisions de fond : [DM-129](decisions/metier/DM-129-controle-hors-connexion-obligatoire-en-v1.md) à [DM-132](decisions/metier/DM-132-donnees-locales-du-controle-hors-connexion.md), [DT-056](decisions/technique/DT-056-architecture-de-la-pwa-de-controle-hors-connexion.md) ; proposition [DT-057](decisions/technique/DT-057-dependances-javascript-du-controle-hors-connexion.md) ; dossier [aipd-controle-hors-connexion-technique.md](aipd-controle-hors-connexion-technique.md) ; audit [dependances-js-controle-hors-connexion.md](dependances-js-controle-hors-connexion.md).
+**Contraintes maintenues** : aucun développement des incréments 09.1 à 09.6, aucune migration, aucun déploiement, aucune infrastructure distante, `PUBLIC_VERIFICATION_ENABLED`, `RIGHTS_ERASURE_EXECUTION_ENABLED` et `RETENTION_PURGE_ENABLED` à 0 ; `OFFLINE_CONTROL_ENABLED` sera créé au développement, à 0.
+
+## 23. Décisions confirmées (récapitulatif)
+Synchronisation temporaire sans QR signés ; PWA limitée au contrôle terrain ; **mode `STANDARD` par défaut du pilote**, `STRICT` disponible ; seuil d'avertissement 12 h, plafond technique 24 h ; **pilote : seuil dur 12 h**, toute augmentation par décision explicite ; verdict hors ligne orange ; aucun journal individuel de scan ; stockage minimal ; un profil communal par appareil ; pas d'indicateur par zone ; sous-domaine dédié (cible) ; **approbation manuelle obligatoire** ; conservation bornée des empreintes révoquées ; synchronisation différentielle autorisée avec contrôles d'intégrité et repli sur instantané complet ; `OFFLINE_CONTROL_ENABLED=0` par défaut.
+
+### Point à confirmer (incohérence de paramètres relevée)
+Le seuil d'avertissement (12 h) ne peut pas être inférieur ou égal au seuil dur (12 h) du pilote : la bande « données anciennes » (§13.2) disparaîtrait. **Proposition : pilote `warn` = 6 h, `hard` = 12 h** ; le couple 12 h / 24 h s'applique après décision explicite. Règles de paramétrage (nouvelles) :
+- plafond **technique absolu** 24 h (constante) ; plafond **de configuration** `CONTROL_TRUST_HARD_MAX_SECONDS` (variable d'environnement), **43 200 s (12 h) pour le pilote** ; un administrateur ne peut pas dépasser ce plafond ; **le relever est un changement de configuration tracé, soumis à décision explicite** ;
+- `warn` ≤ `hard` ≤ plafond de configuration ≤ 86 400 s.
+
+## 24. Point 1 — Risque résiduel de révocation du mode STANDARD (fiche R-OFF-01)
+
+**Énoncé** : *en mode STANDARD, un laissez-passer révoqué, suspendu, remplacé, ou dont l'événement est clos par anticipation après la dernière synchronisation d'un appareil continue de s'afficher « valide selon la dernière synchronisation » (orange) sur cet appareil, au plus pendant la durée de confiance (12 h au pilote), et jusqu'à sa prochaine synchronisation réussie, quelle qu'en soit la cause.*
+
+| Élément | Précision |
+|---|---|
+| **Délai maximal d'invisibilité** | `min(hard, délai jusqu'à la prochaine synchronisation)` **mesuré depuis la synchronisation**, non depuis la révocation : une révocation survenant **juste après** une synchronisation est invisible jusqu'à `hard` (12 h au pilote) ; un appareil jamais reconnecté devient « indéterminé » à `hard` |
+| **Faits concernés** | révocation d'autorisation (DM-116), suspension de zone/participation/événement, clôture anticipée, remplacement du QR (DM-113 §4) ; **inverse** : prolongation ou ajout de droits non visibles → possible « non valide » à tort |
+| **Affichage obligatoire** | verdict qualifié orange + bandeau permanent (§13.2) ; jamais « vérifié / confirmé / à jour » |
+| **Réduction** | G1 temps réel préféré ; G2 durée courte et resynchronisation ; G3 mode `STRICT` ; G4 consigne d'escalade ; procédure de révocation urgente (§14.3) |
+| **Non réductible** | un appareil hors réseau ne peut recevoir aucune information ; seule la durée de confiance borne le risque |
+| **Gravité** | élevée si un laissez-passer révoqué pour **fraude ou danger** est accepté à un point sensible ; moindre pour un contrôle ordinaire |
+| **Vraisemblance** | faible à moyenne (dépend du volume de révocations et de la couverture réseau) ; à estimer avec la commune pilote |
+
+**Conditions d'utilisation de données personnelles réelles** (cumulatives) : (1) AIPD **validée** par le responsable de traitement avec son DPO ; (2) conditions de sécurité satisfaites (§15, A17 sous-domaine, interrupteur, approbation manuelle active, consigne de verrouillage) ; (3) **acceptation écrite du risque R-OFF-01** par les **responsables concernés** (commune pilote ; autorités de contrôle utilisatrices) ; (4) textes de bandeau et consigne validés par le métier ; (5) recette sur appareils réels réalisée (09.7). **Tant que l'une manque : données fictives uniquement.** Modèle de constat d'acceptation : annexe de [aipd-controle-hors-connexion-technique.md](aipd-controle-hors-connexion-technique.md).
+
+## 25. Point 2 — Horloge : garanties réelles et limites du navigateur
+
+**Ce que le navigateur ne fournit pas** : aucune source de temps fiable hors connexion (`Date.now()` reflète l'horloge de l'appareil, modifiable par l'utilisateur) ; aucune API de temps sécurisé ; `performance.now()` est monotone **dans la vie d'une page** mais ne persiste pas après redémarrage, et son comportement pendant la mise en veille **varie selon les plateformes [M : à mesurer en 09.7]**.
+
+| Signal | Détecte | Ne détecte pas |
+|---|---|---|
+| Décalage à la synchronisation (`|D − S|` > 2 min) | horloge déjà fausse au moment de recevoir le jeu | une modification postérieure |
+| Dernière heure locale vue `L` et heure de synchronisation `D` (stockées) | **recul** de l'horloge entre deux usages | une **avance** ; un recul antérieur à tout usage |
+| Dérive pendant une session (`Δ performance.now()` vs `Δ Date.now()`, tolérance 5 s) | changement d'horloge **pendant** que l'application est ouverte | un changement application fermée ; veille (peu fiable) |
+| Fenêtres limitées à `[S, S + hard]` | utilisation au-delà de l'horizon | une horloge avancée dans l'horizon (une période « à venir » peut sembler active) |
+| Jeu `generated_at` dans le futur ou plus ancien que le jeu courant | rejeu d'un vieux jeu, jeu corrompu | — |
+
+**Règle** : toute incohérence détectée, tout défaut de confiance (aucun jeu valide, `L`/`D` absents ou illisibles, jeu non vérifié, décalage initial, jeu hors horizon) donne **« Indéterminé »**, **jamais un refus ni un vert**. **Aucune promesse de résistance absolue** : l'interface et la documentation n'affirment que « horloge incohérente détectée » ou « données trop anciennes », jamais « horloge sécurisée ». Risque résiduel : manipulation volontaire de l'horloge **vers l'avant, application fermée**, à l'intérieur de l'horizon (≤ 12 h au pilote) ; consigne « heure automatique obligatoire » et rappel à l'activation.
+
+## 26. Point 3 — Appareils : approbation obligatoire, désactivation, renouvellement
+
+**Cycle de vie** : `PENDING` → (approbation) `ACTIVE` → (désactivation ou expiration) fin ; `PENDING` → `DEACTIVATED` (refus ou délai dépassé).
+
+1. **Enregistrement** : le code d'activation est saisi dans la PWA ; le serveur crée l'appareil `PENDING`, remet le **secret d'appareil** (qui ne donne accès **qu'à l'interrogation de son état**) et un **code d'appariement à 6 chiffres** affiché sur le téléphone. **Aucun jeu de données n'est servi.**
+2. **Approbation** : l'administrateur voit la liste des appareils en attente (libellé, plateforme, heure) et **saisit/confirme le code d'appariement lu sur le téléphone** avant d'approuver (empêche d'approuver l'appareil d'un tiers portant le même libellé). L'approbation fixe `expires_at` et efface le code d'appariement.
+3. **Première synchronisation** : seulement après `ACTIVE`. Avant : réponse « en attente d'approbation », sans donnée personnelle. Un appareil `PENDING` non approuvé après **60 min** (paramètre) est refusé.
+4. **Désactivation explicite** : action « Désactiver » (motifs codés `LOST`, `COMPROMISED`, `END_OF_USE`, `REJECTED`, `OTHER`) ; effet à la prochaine requête de l'appareil, qui reçoit « désactivé » et purge.
+5. **Renouvellement** : à l'approche de `expires_at`, l'appareil signale la fin ; l'administrateur **renouvelle** (nouvelle échéance ≤ plafond, journalisée) ; **le secret n'est pas modifié en V1** (rotation en V1.1). Sans renouvellement, l'appareil expire et purge à l'ouverture.
+6. **Changement de profil** : voir §27.4.
+7. **Plafonds** : ≤ 10 appareils par activation, ≤ 3 codes actifs et ≤ 20 appareils en attente par commune/événement ; le compteur d'une activation **n'est pas décrémenté** par un refus.
+
+## 27. Point 4 — Données locales
+
+### 27.1 Conservation bornée des empreintes révoquées
+- **Côté serveur (jeu)** : une empreinte révoquée ou remplacée figure dans le jeu **tant que le laissez-passer pourrait encore être présenté**, c'est-à-dire jusqu'à la **fin de la dernière période de validité** de ce laissez-passer (ou la fin de l'événement si elle est antérieure) ; au-delà, elle sort du jeu (calcul, sans stockage supplémentaire).
+- **Côté appareil** : après `hard`, toutes les données identifiantes sont supprimées ; **seules les empreintes révoquées/remplacées sont conservées**, jusqu'au **premier** de : prochaine synchronisation réussie, **`expires_at` de l'appareil**, fin de l'événement, effacement manuel. Elles ne contiennent ni nom, ni plaque, ni zone ; elles peuvent être des données pseudonymisées → **sous réserve de l'AIPD** (repli : suppression totale).
+
+### 27.2 Suppression après expiration et clôture
+| Événement | Suppression | Moment |
+|---|---|---|
+| Expiration de l'appareil (`expires_at`) | totale (y compris empreintes révoquées) | à la prochaine **ouverture** |
+| Clôture de l'événement | totale | à la synchronisation qui la révèle ; ou, **hors ligne**, à la fin planifiée connue localement |
+| Désactivation | totale | à la prochaine connexion |
+| `hard` dépassé | données identifiantes | à l'ouverture |
+
+### 27.3 Appareil qui ne se reconnecte jamais
+**Limite reconnue** : aucune suppression n'est garantie sans exécution de code sur l'appareil. Les données identifiantes y restent **jusqu'à la prochaine ouverture** de l'application, ou jusqu'à purge du stockage par l'utilisateur ou le système (iOS : environ 7 jours sans usage hors application installée). La désactivation administrative **ne peut rien** sur un appareil hors réseau. **Atténuations** : minimisation ; jeu limité à la commune et aux laissez-passer valides ou à venir ; horizon de 12 h au pilote (les fenêtres au-delà ne sont pas dans le jeu) ; consigne de verrouillage ; procédure perte/vol (§15.3) ; **le risque est inscrit à l'AIPD**, pas masqué.
+
+### 27.4 Changement de commune sur un appareil
+Un appareil porte **un seul profil**. Activer un code d'une autre commune : confirmation explicite « Le profil de la commune X sera supprimé de cet appareil » ; **purge locale atomique** avant l'enregistrement du nouveau profil (l'appareil est vide, `PENDING`) ; l'ancien secret est présenté au serveur pour **désactiver l'ancien enregistrement** (`END_OF_USE`) s'il est joignable ; sinon l'ancien enregistrement expire à `expires_at`. Aucune donnée de deux communes ne coexiste sur l'appareil.
+
+### 27.5 Protection contre les jeux de données incomplets
+- **Enveloppe** : `schema_version`, `generated_at` (serveur), `horizon_until`, nombre d'enregistrements, **condensat racine SHA-256** calculé sur l'ensemble canonique, paramètres de confiance en vigueur.
+- **Application atomique** : le jeu est écrit dans un espace de travail, **vérifié** (nombre, condensat, version, `generated_at` > jeu courant et ≤ horloge + tolérance, `horizon_until` cohérent) puis **substitué en une seule transaction** ; tout échec **conserve le jeu précédent** (son âge continue de croître) et enregistre un état « synchronisation incomplète ».
+- **Aucun jeu valide** (premier jeu absent ou invalidé, base locale corrompue, version de schéma non supportée) : tout est **« Indéterminé »**.
+- **Synchronisation différentielle par compartiments** (autorisée) : le serveur regroupe les enregistrements en 256 compartiments (préfixe du condensat de l'empreinte) ; l'appareil envoie le condensat de chacun (≈ 8 ko) ; le serveur renvoie **uniquement** les compartiments différents, plus le condensat racine attendu ; l'appareil reconstruit, **vérifie** le condensat racine ; **en cas d'écart, il demande l'instantané complet**. Sans table supplémentaire, sans état serveur par appareil ; l'horizon de fenêtres est aligné sur une grille (par exemple 6 h) pour limiter les changements artificiels.
+- **Quota/limite** : taille maximale de jeu ; au-delà, refus explicite côté serveur (alerte), pas de jeu tronqué.
+
+## 28. Point 5 — Schéma SQL : vérification et ajustements nécessaires
+
+Vérification du schéma §18 face aux quatre exigences :
+
+| Exigence | Verdict | Ajustement |
+|---|---|---|
+| **Approbation obligatoire** | **insuffisant** : `manual_approval` (option) et `status` sans traçabilité de la décision ni code d'appariement | supprimer `manual_approval` de `control_activation` ; ajouter à `control_device` `registered_at` (renomme `activated_at`), `approved_at`, `approved_by`, `pairing_code` ; statuts `PENDING / ACTIVE / DEACTIVATED` |
+| **Révocations** (codes et appareils) | suffisant | `deactivation_reason` complété par `REJECTED` ; `revoked_*` de l'activation inchangé |
+| **Durées configurables** | suffisant, **plafond hors schéma** | les durées restent sur l'activation ; le plafond de configuration est une variable d'environnement (§23) ; **aucune colonne** |
+| **Isolation communale** | **risque d'incohérence** : `municipality_id` et `event_id` dupliqués sur `control_device` | **supprimer ces deux colonnes** de `control_device` ; la commune et l'événement se déduisent de `activation_id` (la ligne d'activation est immuable sur ces champs) ; évite une incohérence non vérifiable par le mappage Doctrine |
+
+### 28.1 `control_activation` (définitif proposé)
+`id BINARY(16)` PK · `municipality_id BINARY(16)` FK `municipality` · `event_id BINARY(16)` FK `event_event` · `code_hash CHAR(64) utf8mb4_bin` UNIQUE · `expires_at DATETIME` · `max_devices SMALLINT UNSIGNED` · `uses_count SMALLINT UNSIGNED` (défaut 0) · `trust_warn_seconds INT UNSIGNED` · `trust_hard_seconds INT UNSIGNED` · `assurance_mode VARCHAR(10)` (`STANDARD`/`STRICT`) · `created_by BINARY(16)` FK `identity_user` · `created_at DATETIME` · `revoked_at DATETIME NULL` · `revoked_by BINARY(16) NULL` FK `identity_user`.
+Index : `uniq_control_activation_code_hash(code_hash)` ; `idx_control_activation_scope(municipality_id, event_id, created_at)`. *Différence avec §18.1 : colonne `manual_approval` supprimée.*
+
+### 28.2 `control_device` (définitif proposé)
+`id BINARY(16)` PK · `activation_id BINARY(16)` FK `control_activation` · `label VARCHAR(60)` · `platform VARCHAR(10)` · `secret_hash CHAR(64) utf8mb4_bin` UNIQUE · `status VARCHAR(12)` · `pairing_code CHAR(6) NULL` (effacé à l'approbation ou au refus) · `registered_at DATETIME` · `approved_at DATETIME NULL` · `approved_by BINARY(16) NULL` FK `identity_user` · `expires_at DATETIME` (jusqu'à approbation : échéance d'approbation ; ensuite : fin de vie) · `last_sync_at DATETIME NULL` · `last_snapshot_hash CHAR(64) NULL` · `sync_count INT UNSIGNED` (défaut 0) · `deactivated_at DATETIME NULL` · `deactivated_by BINARY(16) NULL` FK `identity_user` · `deactivation_reason VARCHAR(12) NULL`.
+Index : `uniq_control_device_secret_hash(secret_hash)` ; `idx_control_device_activation(activation_id, registered_at)`. *Différences avec §18.2 : `municipality_id` et `event_id` supprimés ; `activated_at` → `registered_at` ; `approved_at`, `approved_by`, `pairing_code` ajoutés.*
+**Invariants (domaine, testés)** : tout accès « jeu de données » exige `status = ACTIVE` et `expires_at > maintenant` ; `approved_by` appartient à `MUNICIPALITY_ADMIN` de la commune de l'activation ; `pairing_code` nul hors `PENDING` ; commune et événement toujours lus via l'activation.
+**Sans changement** : aucune colonne ajoutée à `permit_permit`, aucune table de jeu de données, aucune donnée personnelle de contrôleur. **Aucune migration créée ni exécutée** ; l'approbation du schéma définitif reste requise.
+
+## 29. Incréments (inchangés) et ajustements
+09.0 à 09.7 de §20 sont maintenus avec : **09.2** inclut l'approbation par code d'appariement et le renouvellement ; **09.3** inclut la synchronisation par compartiments et ses contrôles d'intégrité ; **09.4** inclut la détection d'horloge de §25 ; **09.5** inclut le changement de profil (§27.4) ; **09.6** teste l'intégrité (jeux tronqués/corrompus/rejoués) et l'horloge ; l'outillage JS suit [dependances-js-controle-hors-connexion.md](dependances-js-controle-hors-connexion.md). Début de 09.1 conditionné à la validation de ce cadrage, du schéma définitif, de DT-057 et à l'ouverture du dossier AIPD.

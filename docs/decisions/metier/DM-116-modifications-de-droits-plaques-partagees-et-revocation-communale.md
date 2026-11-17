@@ -28,3 +28,6 @@ DM-112 (droits courants distincts des décisions), DM-111 (correction globale d'
 ## Écarts documentaires signalés
 
 Aucun écart.
+
+## Amendement du 17 novembre 2026
+Le point 4 (« L'habilitation d'appareils contrôleurs est abandonnée ») est **remplacé pour la PWA hors connexion** par [DM-131](DM-131-appareils-de-controle-activation-et-approbation.md) : activation temporaire d'appareils, approbation manuelle, sans compte. L'isolation communale des agents connectés est inchangée.

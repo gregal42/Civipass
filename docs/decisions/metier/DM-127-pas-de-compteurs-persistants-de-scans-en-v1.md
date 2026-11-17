@@ -25,3 +25,6 @@ Aucune table ni migration. Un compteur agrégé ultérieur exigerait un cadrage,
 ## Écarts documentaires signalés
 
 Aucun écart.
+
+## Précision du 17 novembre 2026
+La décision s'applique **aussi à l'appareil de contrôle hors connexion** : aucun journal ni compteur de scans local ou remonté ([DM-132](DM-132-donnees-locales-du-controle-hors-connexion.md)).

@@ -130,6 +130,10 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DM-126](metier/DM-126-page-de-verification-unique-zones-valides-d-abord.md) | Page de vérification unique, sans paramètre de zone, zones valides d'abord | LOT 07.3 — Contrôle | Validée |
 | [DM-127](metier/DM-127-pas-de-compteurs-persistants-de-scans-en-v1.md) | Pas de compteurs persistants de scans en V1 | LOT 07.3 — Contrôle | Validée |
 | [DM-128](metier/DM-128-messages-nationaux-fixes-des-erreurs-du-controle-public.md) | Messages nationaux fixes des erreurs du contrôle public | LOT 07.3 — Contrôle | Validée |
+| [DM-129](metier/DM-129-controle-hors-connexion-obligatoire-en-v1.md) | Contrôle hors connexion obligatoire en V1 (PWA limitée au contrôle terrain) | LOT 09 — Contrôle | Validée |
+| [DM-130](metier/DM-130-modele-de-confiance-hors-connexion.md) | Modèle de confiance du contrôle hors connexion | LOT 09 — Contrôle | Validée |
+| [DM-131](metier/DM-131-appareils-de-controle-activation-et-approbation.md) | Appareils de contrôle : activation, approbation manuelle, désactivation, renouvellement | LOT 09 — Contrôle | Validée |
+| [DM-132](metier/DM-132-donnees-locales-du-controle-hors-connexion.md) | Données locales du contrôle hors connexion | LOT 09 — Contrôle | Validée |
 
 ## Décisions techniques
 
@@ -190,6 +194,8 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DT-053](technique/DT-053-invitation-d-administrateur-communal-table-dediee.md) | Invitation d'administrateur communal émise par CWS : table dédiée (A2, M1) | Données, onboarding | Validée |
 | [DT-054](technique/DT-054-invitations-communales-roles-et-controle-d-acteur-courant.md) | Invitations communales avec rôles (M2) et contrôle d'acteur en lecture courante | Données, sécurité | Validée |
 | [DT-055](technique/DT-055-limitation-de-debit-du-controle-public-echecs-et-garde-fou-d-acces.md) | Limitation de débit du contrôle public : échecs de jetons inconnus et garde-fou d'accès | LOT 07.3 — Sécurité, exploitation | Validée |
+| [DT-056](technique/DT-056-architecture-de-la-pwa-de-controle-hors-connexion.md) | Architecture de la PWA de contrôle hors connexion | LOT 09 — Architecture | Validée |
+| [DT-057](technique/DT-057-dependances-javascript-du-controle-hors-connexion.md) | Dépendances JavaScript du contrôle hors connexion | LOT 09 — Dépendances | Proposée |
 
 ## Modèle de fiche
 

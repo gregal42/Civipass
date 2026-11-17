@@ -49,3 +49,7 @@
 ## Amendement de forme du 17 novembre 2026 : numérotation de la PWA
 
 Le point 5 mentionne « la PWA hors ligne (LOT 06) ». **Amendement de forme, aucune décision de fond n'est modifiée** : la PWA hors connexion devient un **lot ultérieur non planifié** (reportée après le LOT 08). « LOT 06 » désignait aussi l'audit [lot-06-audit.md](../../lot-06-audit.md), d'où l'ambiguïté. Le contrôle web mobile existant est fiabilisé au LOT 07.3 ([lot-07-3-cadrage.md](../../lot-07-3-cadrage.md) ; [DM-125](DM-125-rappel-de-rapprochement-et-avertissement-de-non-diffusion-du-qr.md) à [DM-128](DM-128-messages-nationaux-fixes-des-erreurs-du-controle-public.md), [DT-055](../technique/DT-055-limitation-de-debit-du-controle-public-echecs-et-garde-fou-d-acces.md)) sans modifier le périmètre des données de DM-115 §2.
+
+## Amendement du 17 novembre 2026 : contrôle hors connexion obligatoire en V1
+
+Le point 5 (« `ControllerActivation` et `ControllerDevice` ne sont pas développés… la PWA hors ligne est une évolution distincte, à redéfinir ») est **amendé par [DM-129](DM-129-controle-hors-connexion-obligatoire-en-v1.md)** : le contrôle **en ligne** reste public, sans compte ni activation (points 1 à 4, 6 et 7 inchangés) ; un contrôle **hors connexion** par PWA, avec activation d'appareils, est **ajouté** ([DM-130](DM-130-modele-de-confiance-hors-connexion.md) à [DM-132](DM-132-donnees-locales-du-controle-hors-connexion.md)). Le point 6 (aucun journal systématique des scans) est **maintenu** (DM-127, DM-132).
