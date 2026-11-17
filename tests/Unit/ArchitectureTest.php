@@ -44,8 +44,8 @@ final class ArchitectureTest extends TestCase
         // Activation/désactivation de comptes et de memberships : audit + protections des derniers administrateurs.
         yield 'deactivate()' => ['deactivate', ['Identity/Application/UserManager.php', 'Municipality/Application/MembershipManager.php']];
         // Event::activate() (cycle de vie des événements, 5.3) porte le même nom : seul EventLifecycleService l'appelle. Le contrôleur du
-        // cycle de vie (UI-02, incrément 6) appelle EventLifecycleService::activate(), l'API du service, jamais Event::activate().
-        yield 'activate()' => ['activate', ['Identity/Application/UserManager.php', 'Municipality/Application/MembershipManager.php', 'Event/Application/Service/EventLifecycleService.php', 'Event/UI/Http/EventLifecycleController.php']];
+        // cycle de vie (UI-02, incrément 6) appelle EventLifecycleService::activate(), l'API du service, jamais Event::activate(). ScheduledEventActivation (DM-123, activation à l'heure de début) l'appelle aussi : mêmes garanties que le service (verrou, conditions relues, audit).
+        yield 'activate()' => ['activate', ['Identity/Application/UserManager.php', 'Municipality/Application/MembershipManager.php', 'Event/Application/Service/EventLifecycleService.php', 'Event/UI/Http/EventLifecycleController.php', 'Event/Application/Service/ScheduledEventActivation.php']];
     }
 
     public function testNoPublicSetterOnAuditLog(): void
