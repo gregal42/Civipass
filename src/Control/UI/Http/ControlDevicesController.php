@@ -95,8 +95,14 @@ final class ControlDevicesController extends AbstractController
             try {
                 $mode = AssuranceMode::tryFrom($form['mode']) ?? throw new DomainRuleViolation('Choisissez un mode d’assurance.');
                 $issued = $this->activations->issue(
-                    $municipality, Uuid::fromString($eventId), $user, $mode,
-                    $this->whole($form['devices'], 'Nombre d’appareils'), $this->minutes($form['warn']), $this->minutes($form['hard']), $this->whole($form['minutes'], 'Durée de validité du code'),
+                    $municipality,
+                    Uuid::fromString($eventId),
+                    $user,
+                    $mode,
+                    $this->whole($form['devices'], 'Nombre d’appareils'),
+                    $this->minutes($form['warn']),
+                    $this->minutes($form['hard']),
+                    $this->whole($form['minutes'], 'Durée de validité du code'),
                 );
             } catch (DomainRuleViolation $e) {
                 return $this->codeForm($user, $municipalityId, $eventId, $form, $e->getMessage(), Response::HTTP_UNPROCESSABLE_ENTITY);

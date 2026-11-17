@@ -33,24 +33,45 @@ final class ControlKit
     public static function activations(ContainerInterface $c, ClockInterface $clock, ?ControlSettings $settings = null): ControlActivationService
     {
         return new ControlActivationService(
-            $c->get(TransactionRunner::class), $c->get(MunicipalityRepository::class), $c->get(ControlActivationRepository::class), $c->get(MembershipRepository::class),
-            $c->get(MembershipAccessPolicy::class), $c->get(ControlScope::class), $settings ?? self::settings(), $c->get(ControlThrottle::class), $c->get(AuditTrail::class), $clock,
+            $c->get(TransactionRunner::class),
+            $c->get(MunicipalityRepository::class),
+            $c->get(ControlActivationRepository::class),
+            $c->get(MembershipRepository::class),
+            $c->get(MembershipAccessPolicy::class),
+            $c->get(ControlScope::class),
+            $settings ?? self::settings(),
+            $c->get(ControlThrottle::class),
+            $c->get(AuditTrail::class),
+            $clock,
         );
     }
 
     public static function registration(ContainerInterface $c, ClockInterface $clock, ?ControlSettings $settings = null): DeviceRegistrationService
     {
         return new DeviceRegistrationService(
-            $c->get(TransactionRunner::class), $c->get(ControlActivationRepository::class), $c->get(ControlDeviceRepository::class), $c->get(ControlThrottle::class),
-            $settings ?? self::settings(), $c->get(AuditTrail::class), $clock,
+            $c->get(TransactionRunner::class),
+            $c->get(ControlActivationRepository::class),
+            $c->get(ControlDeviceRepository::class),
+            $c->get(ControlThrottle::class),
+            $settings ?? self::settings(),
+            $c->get(AuditTrail::class),
+            $clock,
         );
     }
 
     public static function approvals(ContainerInterface $c, ClockInterface $clock, ?ControlSettings $settings = null): DeviceApprovalService
     {
         return new DeviceApprovalService(
-            $c->get(TransactionRunner::class), $c->get(MunicipalityRepository::class), $c->get(ControlDeviceRepository::class), $c->get(MembershipRepository::class),
-            $c->get(MembershipAccessPolicy::class), $c->get(ControlScope::class), $settings ?? self::settings(), $c->get(ControlThrottle::class), $c->get(AuditTrail::class), $clock,
+            $c->get(TransactionRunner::class),
+            $c->get(MunicipalityRepository::class),
+            $c->get(ControlDeviceRepository::class),
+            $c->get(MembershipRepository::class),
+            $c->get(MembershipAccessPolicy::class),
+            $c->get(ControlScope::class),
+            $settings ?? self::settings(),
+            $c->get(ControlThrottle::class),
+            $c->get(AuditTrail::class),
+            $clock,
         );
     }
 

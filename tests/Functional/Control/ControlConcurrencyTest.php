@@ -9,7 +9,6 @@ use App\Control\Domain\ControlDeviceRepository;
 use App\Tests\Support\ControlEnv;
 use App\Tests\Support\ControlTestCase;
 use App\Tests\Support\ParallelPhp;
-use Symfony\Component\Clock\Clock;
 
 /**
  * Concurrence RÉELLE sur MySQL (processus distincts) : un code à usage unique ne donne qu'UN appareil ; deux approbations simultanées du même appareil, une seule

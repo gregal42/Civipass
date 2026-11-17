@@ -23,7 +23,7 @@ final class DatasetCodecVectorsTest extends TestCase
             ['t' => 'P', 'r' => 'LP-2026-0001', 'f' => 'Chloé', 'l' => 'DE LA FONTAINE', 'p' => ['AB-123-CD', 'EF-456-GH'], 'z' => [['l' => 'Centre-ville / « Vieux Port »', 's' => 'V', 'w' => [[1_790_000_000, 1_790_043_200], [1_790_100_000, 1_790_143_200]]], ['l' => 'Quartier nord', 's' => 'S', 'w' => []]]],
             ['t' => 'R'],
             ['t' => 'X'],
-            ['t' => 'P', 'r' => 'LP-2026-0002', 'f' => "Jean-François", 'l' => 'O\'BRIEN', 'p' => [], 'z' => [['l' => 'Zone 1', 's' => 'E', 'w' => []]]],
+            ['t' => 'P', 'r' => 'LP-2026-0002', 'f' => 'Jean-François', 'l' => 'O\'BRIEN', 'p' => [], 'z' => [['l' => 'Zone 1', 's' => 'E', 'w' => []]]],
             ['t' => 'P', 'r' => 'LP-2026-0003', 'f' => 'Élodie', 'l' => 'MARTIN', 'p' => ['IJ-789-KL'], 'z' => [['l' => 'Zone "guillemets" \\ barre', 's' => 'F', 'w' => []]]],
         ];
         $byKey = [];

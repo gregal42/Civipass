@@ -36,8 +36,12 @@ final class PermitModuleBoundaryTest extends EventSchemaTestCase
         $paths = array_map(static fn ($route): string => $route->getPath(), array_values($routes));
 
         foreach ($paths as $path) {
-            self::assertDoesNotMatchRegularExpression('#^/(passes?|controle|verification)(/|$)#', $path, 'aucune autre route de contrôle');
+            self::assertDoesNotMatchRegularExpression('#^/(passes?|verification)(/|$)#', $path, 'aucune autre route de contrôle');
         }
+        // LOT 09 (DM-129, 17 novembre 2026) : le contrôle hors connexion (PWA) ajoute UN ensemble fermé de routes `/controle/…`, sans session.
+        $offline = array_values(array_filter($paths, static fn (string $p): bool => '/controle' === $p || str_starts_with($p, '/controle/')));
+        sort($offline);
+        self::assertSame(['/controle/', '/controle/api/activation', '/controle/api/device', '/controle/api/ping', '/controle/api/sync', '/controle/js/{name}.js', '/controle/manifest.webmanifest', '/controle/sw.js'], $offline);
         $verification = array_values(array_filter($paths, static fn (string $p): bool => '/v' === $p || str_starts_with($p, '/v/')));
         sort($verification);
         self::assertSame(['/v/{token}', '/v/{token}/'], $verification);
@@ -76,11 +80,15 @@ final class PermitModuleBoundaryTest extends EventSchemaTestCase
         self::assertSame(['PublicVerificationController.php'], $users);
     }
 
-    public function testTheControlPageAndTheOfflineMechanismsAreNotDevelopedYet(): void
+    /**
+     * Amendé le 17 novembre 2026 (DM-129) : le module `src/Control` existe désormais (PWA hors connexion). Le Service Worker et le manifeste ne sont PAS des
+     * fichiers publics statiques : ils sont servis par des routes gardées par l'interrupteur `OFFLINE_CONTROL_ENABLED` (404 uniforme à 0).
+     */
+    public function testTheOfflineServiceWorkerAndManifestAreNeverStaticPublicFiles(): void
     {
         $root = \dirname(__DIR__, 3);
-        foreach (['src/Control', 'public/service-worker.js', 'public/manifest.webmanifest'] as $path) {
-            self::assertFileDoesNotExist($root.'/'.$path, 'LOT 05.4 / LOT 06 : '.$path);
+        foreach (['public/service-worker.js', 'public/sw.js', 'public/manifest.webmanifest', 'public/manifest.json'] as $path) {
+            self::assertFileDoesNotExist($root.'/'.$path, 'servi par route, jamais en fichier statique : '.$path);
         }
         $lock = (string) file_get_contents($root.'/composer.lock');
         self::assertStringContainsString('endroid/qr-code', $lock, 'LOT 05.2 : bibliothèque QR autorisée');

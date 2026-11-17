@@ -9,7 +9,6 @@ declare(strict_types=1);
  */
 
 use App\Control\Application\ControlActivationService;
-use App\Control\Application\Dataset\DatasetBuilder;
 use App\Control\Application\DeviceApprovalService;
 use App\Control\Application\DeviceRegistrationService;
 use App\Control\Application\DeviceSyncService;

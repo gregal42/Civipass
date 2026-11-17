@@ -104,7 +104,7 @@ final readonly class DatasetBuilder
                     'z' => $this->zones($authorization->zones, $lower, $horizon),
                 ]);
             }
-            if (++$count % 200 === 0) {
+            if (0 === ++$count % 200) {
                 $this->entityManager->clear(); // mémoire bornée sur de gros événements (les entités lues ne servent plus)
             }
         }

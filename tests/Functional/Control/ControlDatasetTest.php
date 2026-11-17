@@ -7,20 +7,10 @@ namespace App\Tests\Functional\Control;
 use App\Control\Application\Dataset\DatasetCodec;
 use App\Control\Application\DeviceNotOperational;
 use App\Control\Domain\DeactivationReason;
-use App\Identity\Domain\User;
-use App\Municipality\Domain\Municipality;
-use App\Municipality\Domain\MunicipalityRole;
 use App\Permit\Application\AuthorizationRevocationService;
 use App\Permit\Application\PermitTokenReplacementService;
 use App\Permit\Application\Result\TokenReplacementRequest;
-use App\Request\Application\Command\SubmitRequestCommand;
-use App\Request\Application\MunicipalInstructionService;
-use App\Request\Application\RequestSubmissionService;
-use App\Request\Domain\ApprovalDuration;
-use App\Request\Domain\TravelMode;
 use App\Tests\Support\ControlTestCase;
-use App\Tests\Support\MembershipBuilder;
-use App\Tests\Support\UserBuilder;
 use Symfony\Component\Uid\Uuid;
 
 /**

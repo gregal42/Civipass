@@ -27,6 +27,7 @@ final class ClosedEventRouteClassifier
         '/reset-password' => 'réinitialisation de mot de passe',
         '=/communes' => 'sélecteur de commune (aucune donnée de dossier)',
         '/v/' => 'contrôle public : « Événement terminé » seul, test dédié (lecteur du contrôle public)',
+        '/controle' => 'PWA de contrôle hors connexion (LOT 09) : coquille identique pour tous et API d\'appareil (secret) ; événement clos = jeu vide marqué clos, test dédié (ControlDatasetTest)',
         '/laissez-passer/' => 'lien bénéficiaire : fermé par BeneficiaryPassReader, test dédié',
         '/demandes/' => 'dépôt public : page fermée sans donnée, dépôt refusé, test dédié',
         '/invitation' => 'invitation intercommunale : liens révoqués à la clôture, test dédié',

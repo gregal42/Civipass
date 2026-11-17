@@ -116,7 +116,7 @@ final class ControlPwaTest extends WebTestCase
 
         self::assertSame(200, $response->getStatusCode());
         self::assertStringStartsWith('text/javascript', (string) $response->headers->get('Content-Type'));
-        self::assertStringContainsString("import { activate", (string) $response->getContent());
+        self::assertStringContainsString('import { activate', (string) $response->getContent());
         self::assertNotNull($response->headers->get('ETag'));
         self::assertSame(ControlHeadersListener::CSP, $response->headers->get('Content-Security-Policy'));
         self::assertStringContainsString('src="/controle/js/app.js"', $this->shell($client));

@@ -331,7 +331,7 @@ final class ControlHttpTest extends ControlTestCase
         self::assertResponseStatusCodeSame(404);
 
         $this->login($this->adminO); // événement inconnu
-        $this->client->request('GET', '/communes/'.$this->org->id()->toRfc4122().'/evenements/'.\Symfony\Component\Uid\Uuid::v7()->toRfc4122().'/controle');
+        $this->client->request('GET', '/communes/'.$this->org->id()->toRfc4122().'/evenements/'.Uuid::v7()->toRfc4122().'/controle');
         self::assertResponseStatusCodeSame(404);
     }
 

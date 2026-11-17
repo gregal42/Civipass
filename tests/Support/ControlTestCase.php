@@ -62,7 +62,11 @@ abstract class ControlTestCase extends PublicRequestTestCase
         $this->adminX = UserBuilder::aUser()->build();
         $this->instructorP = UserBuilder::aUser()->build();
         $this->save(
-            $this->foreign, $this->adminO, $this->instructorO, $this->adminP, $this->adminX,
+            $this->foreign,
+            $this->adminO,
+            $this->instructorO,
+            $this->adminP,
+            $this->adminX,
             MembershipBuilder::aMembership($this->adminO, $this->org)->withRoles(MunicipalityRole::MunicipalityAdmin)->build(),
             MembershipBuilder::aMembership($this->instructorO, $this->org)->withRoles(MunicipalityRole::Instructor)->build(),
             MembershipBuilder::aMembership($this->adminP, $this->partner)->withRoles(MunicipalityRole::MunicipalityAdmin)->build(),

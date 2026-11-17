@@ -42,6 +42,11 @@ final class AccountReferenceCatalog
         'municipality_admin_invitation.consumed_by',
         'municipality_admin_invitation.created_by',
         'municipality_admin_invitation.revoked_by',
+        // LOT 09 : auteur et révocateur d'un code d'activation, approbateur et désactivateur d'un appareil de contrôle (traçabilité conservée, comme les invitations).
+        'control_activation.created_by',
+        'control_activation.revoked_by',
+        'control_device.approved_by',
+        'control_device.deactivated_by',
         'archive_rectification_mention.created_by_user_id',
         'permit_revision.actor_user_id',
         'request_permit_request.entered_by_user_id',

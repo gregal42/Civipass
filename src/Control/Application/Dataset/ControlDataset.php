@@ -8,8 +8,8 @@ namespace App\Control\Application\Dataset;
 final readonly class ControlDataset
 {
     /**
-     * @param array<string, mixed>  $envelope    métadonnées (voir DatasetBuilder)
-     * @param array<string, string> $linesByKey  lignes indexées par clé de jeton
+     * @param array<string, mixed>  $envelope   métadonnées (voir DatasetBuilder)
+     * @param array<string, string> $linesByKey lignes indexées par clé de jeton
      */
     public function __construct(public array $envelope, public array $linesByKey)
     {
