@@ -84,6 +84,8 @@ security:
         - { path: '^/communes/[^/]+/evenements/(nouveau|[^/]+/(modifier|inviter(/communes)?|invitations/[0-9a-f-]+/renvoyer|participation/[a-z]+|cycle/[a-z]+)|[^/]+/zones/(nouvelle|[^/]+/(modifier|confirmer|suspendre|reactiver|supprimer|validite(/.*)?)))$', roles: IS_AUTHENTICATED_FULLY }
         # Équipe (LOT 07.2) : toute page d'écriture (formulaires, confirmations, actions) exige l'authentification COMPLÈTE ; seule la liste reste lisible en session mémorisée.
         - { path: '^/communes/[^/]+/equipe/.+', roles: IS_AUTHENTICATED_FULLY }
+        # Contrôle hors connexion (LOT 09) : création de codes, approbation, désactivation et renouvellement des appareils exigent l'authentification COMPLÈTE.
+        - { path: '^/communes/[^/]+/evenements/[^/]+/controle/.+', roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/communes(?:/|$), roles: IS_AUTHENTICATED_REMEMBERED }
 
 when@test:

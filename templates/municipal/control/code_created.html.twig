@@ -1,0 +1,14 @@
+{% extends 'layouts/app.html.twig' %}
+
+{# Code d'activation créé (LOT 09.2) : affiché UNE SEULE FOIS, jamais dans une URL ni conservé. Variables : code, qr_svg, expires_at, max_devices, mode, warn_hours, hard_hours, back_url. #}
+{% block content %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Code d’activation', sub: 'Montrez-le aux contrôleurs maintenant : il ne sera plus jamais affiché.' } only %}
+  {% include 'components/alert.html.twig' with { variant: 'warning', icon: 'shield', title: 'Ne photographiez pas et ne transférez pas ce code', text: 'Valable jusqu’à ' ~ expires_at|date('H:i', 'Europe/Paris') ~ ', pour ' ~ max_devices ~ ' téléphone(s). Même avec ce code, aucun téléphone ne reçoit de données avant que vous l’ayez approuvé.' } only %}
+  <section class="cp-box" aria-labelledby="code-h">
+    <h2 class="cp-h2" id="code-h">Code</h2>
+    <p style="font-size: 2rem; letter-spacing: .15em; font-weight: 700; font-family: var(--font-mono, monospace)" data-testid="activation-code">{{ code }}</p>
+    <div style="max-width: 16rem" role="img" aria-label="QR code d’activation">{{ qr_svg|raw }}</div>
+    <p class="cp-muted">Le contrôleur ouvre l’application de contrôle, puis scanne ce QR code ou saisit le code. Mode {{ mode.value == 'STRICT' ? 'strict' : 'standard' }} · avertissement à {{ warn_hours|round(1) }} h · confiance maximale {{ hard_hours|round(1) }} h.</p>
+  </section>
+  <p><a class="cp-btn" href="{{ back_url }}">J’ai terminé</a></p>
+{% endblock %}

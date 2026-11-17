@@ -66,6 +66,11 @@ doctrine:
                 is_bundle: false
                 dir: '%kernel.project_dir%/src/Rights/Domain'
                 prefix: 'App\Rights\Domain'
+            Control:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Control/Domain'
+                prefix: 'App\Control\Domain'
             Shared:
                 type: attribute
                 is_bundle: false

@@ -32,6 +32,8 @@ parameters:
     env(CONTROL_CODE_MINUTES): '30'
     env(CONTROL_PENDING_MINUTES): '60'
     env(CONTROL_DEVICE_LIFETIME_HOURS): '72'
+    # Adresse de base de la PWA de contrôle (cible : sous-domaine dédié, DT-056). Vide : DEFAULT_URI + /controle/ (développement local).
+    env(CONTROL_PWA_BASE_URL): ''
     # Plafonds PROVISOIRES de la limitation de débit du contrôle public (LOT 05.4.3, révisés au LOT 07.3.2, DT-055), par IP (IPv6 : /64) : garde-fou contre
     # l'inondation, applicable à tout jeton (1 500 consultations sur 10 minutes, à confronter à un test de charge sur l'environnement de recette) ;
     # jetons bien formés mais inconnus sur 15 minutes (ne touche jamais un jeton valide).
@@ -115,6 +117,13 @@ services:
             - '../src/Ops/Application/ReleaseRefused.php'
             - '../src/Retention/Application/ReplayRefused.php'
             - '../src/Retention/Application/RegisterReconciliationReport.php'
+            # LOT 09 : résultats (non services).
+            - '../src/Control/Application/Result/'
+            - '../src/Control/Application/RegistrationRefused.php'
+            - '../src/Control/Application/RegistrationThrottled.php'
+            - '../src/Control/Application/ControlStorageUnavailable.php'
+            - '../src/Control/Application/DeviceNotOperational.php'
+            - '../src/Control/Application/Dataset/ControlDataset.php'
 
     # Objet de domaine sans dépendance obligatoire (le référentiel communal des fuseaux est fourni plus tard).
     App\Event\Domain\Time\TerritoryTimezoneResolver: ~

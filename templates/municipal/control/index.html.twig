@@ -1,0 +1,101 @@
+{% extends 'layouts/app.html.twig' %}
+
+{#
+  Contrôle hors connexion d'un événement (LOT 09.2, DM-131) : appareils en attente d'approbation, appareils, codes d'activation.
+  Variables : event_name, event_id, writable, pending, devices, codes, now, hard_max_hours.
+  Aucune donnée personnelle de contrôleur : libellé d'appareil et plateforme grossière seulement.
+#}
+{% block content %}
+  {% for message in app.flashes('success') %}{% include 'components/alert.html.twig' with { variant: 'success', title: message, focus: true } only %}{% endfor %}
+  {% for message in app.flashes('error') %}{% include 'components/alert.html.twig' with { variant: 'error', title: 'Rien n’a été modifié', text: message, focus: true } only %}{% endfor %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Contrôle hors connexion', sub: event_name } only %}
+  {% include 'components/alert.html.twig' with { variant: 'info', icon: 'shield', title: 'Ce que les appareils reçoivent', text: 'Après votre approbation, un appareil reçoit une copie temporaire des laissez-passer valides de votre commune pour cet événement (nom, plaques, zones et périodes), et jamais les coordonnées ni les pièces. Un laissez-passer révoqué après la dernière synchronisation reste visible comme valide sur l’appareil jusqu’à sa prochaine synchronisation (au plus ' ~ hard_max_hours ~ ' h ici). Le verrouillage du téléphone est indispensable.' } only %}
+
+  {% if writable %}
+    <p>{% include 'components/button.html.twig' with { label: 'Créer un code d’activation', icon: 'plus', href: path('app_control_code_new', { municipalityId: active_municipality_id, eventId: event_id }) } only %}</p>
+  {% else %}
+    {% include 'components/alert.html.twig' with { variant: 'info', title: 'Commune suspendue : lecture seule', text: 'Vous pouvez consulter les appareils mais pas les gérer tant que la commune est suspendue.' } only %}
+  {% endif %}
+
+  <h2 class="cp-h2" id="control-pending">Appareils en attente d’approbation ({{ pending|length }})</h2>
+  {% if pending is empty %}
+    <p class="cp-muted">Aucun appareil en attente. Un contrôleur active son téléphone avec un code d’activation ; il apparaît alors ici.</p>
+  {% else %}
+    <div class="cp-table-wrap">
+      <table class="cp-table" aria-labelledby="control-pending">
+        <thead><tr><th scope="col">Appareil</th><th scope="col">Enregistré à</th><th scope="col">Approbation avant</th><th scope="col">Actions</th></tr></thead>
+        <tbody>
+        {% for d in pending %}
+          <tr>
+            <td data-label="Appareil"><strong>{{ d.label }}</strong><br><span class="cp-muted">{{ d.platform.value == 'ANDROID' ? 'Android' : (d.platform.value == 'IOS' ? 'iPhone' : 'Autre') }}</span></td>
+            <td data-label="Enregistré à">{{ d.registeredAt|date('d/m/Y H:i', 'Europe/Paris') }}</td>
+            <td data-label="Approbation avant">{{ d.expiresAt|date('H:i', 'Europe/Paris') }}</td>
+            <td data-label="Actions" class="cp-table__actions">
+              {% if writable %}
+                <a class="cp-table__link" href="{{ path('app_control_device_approve', { municipalityId: active_municipality_id, eventId: event_id, deviceId: d.id.toRfc4122 }) }}">Approuver…</a>
+                · <a class="cp-table__link" href="{{ path('app_control_device_deactivate', { municipalityId: active_municipality_id, eventId: event_id, deviceId: d.id.toRfc4122 }) }}">Refuser</a>
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+
+  <h2 class="cp-h2" id="control-devices">Appareils ({{ devices|length }})</h2>
+  {% if devices is empty %}
+    <p class="cp-muted">Aucun appareil enregistré pour cet événement.</p>
+  {% else %}
+    <div class="cp-table-wrap">
+      <table class="cp-table" aria-labelledby="control-devices">
+        <thead><tr><th scope="col">Appareil</th><th scope="col">État</th><th scope="col">Dernière synchronisation</th><th scope="col">Autorisé jusqu’au</th><th scope="col">Actions</th></tr></thead>
+        <tbody>
+        {% for d in devices %}
+          {% set expired = d.status.value == 'ACTIVE' and d.expiresAt <= now %}
+          <tr>
+            <td data-label="Appareil"><strong>{{ d.label }}</strong><br><span class="cp-muted">{{ d.platform.value == 'ANDROID' ? 'Android' : (d.platform.value == 'IOS' ? 'iPhone' : 'Autre') }}</span></td>
+            <td data-label="État">
+              {% if d.status.value == 'DEACTIVATED' %}{% include 'components/status_pill.html.twig' with { status: 'closed', label: 'Désactivé' } only %}<br><span class="cp-muted">{{ d.deactivationReason ? d.deactivationReason.label : '' }}</span>
+              {% elseif d.status.value == 'PENDING' %}{% include 'components/status_pill.html.twig' with { status: 'refused', label: 'Délai d’approbation dépassé' } only %}
+              {% elseif expired %}{% include 'components/status_pill.html.twig' with { status: 'suspended', label: 'Expiré' } only %}
+              {% else %}{% include 'components/status_pill.html.twig' with { status: 'active', label: 'Actif' } only %}{% endif %}
+            </td>
+            <td data-label="Dernière synchronisation">{{ d.lastSyncAt ? d.lastSyncAt|date('d/m/Y H:i', 'Europe/Paris') : 'Jamais' }}</td>
+            <td data-label="Autorisé jusqu’au">{{ d.status.value == 'ACTIVE' ? d.expiresAt|date('d/m/Y H:i', 'Europe/Paris') : '—' }}</td>
+            <td data-label="Actions" class="cp-table__actions">
+              {% if writable and d.status.value == 'ACTIVE' %}
+                <a class="cp-table__link" href="{{ path('app_control_device_renew', { municipalityId: active_municipality_id, eventId: event_id, deviceId: d.id.toRfc4122 }) }}">Renouveler</a>
+                · <a class="cp-table__link" href="{{ path('app_control_device_deactivate', { municipalityId: active_municipality_id, eventId: event_id, deviceId: d.id.toRfc4122 }) }}">Désactiver…</a>
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+
+  <h2 class="cp-h2" id="control-codes">Codes d’activation récents</h2>
+  {% if codes is empty %}
+    <p class="cp-muted">Aucun code créé. Le code n’est affiché qu’une seule fois, à sa création.</p>
+  {% else %}
+    <div class="cp-table-wrap">
+      <table class="cp-table" aria-labelledby="control-codes">
+        <thead><tr><th scope="col">Créé le</th><th scope="col">Mode</th><th scope="col">Appareils</th><th scope="col">État</th><th scope="col">Actions</th></tr></thead>
+        <tbody>
+        {% for c in codes %}
+          {% set usable = c.isUsable(now) %}
+          <tr>
+            <td data-label="Créé le">{{ c.createdAt|date('d/m/Y H:i', 'Europe/Paris') }}</td>
+            <td data-label="Mode">{{ c.assuranceMode.value == 'STRICT' ? 'Strict' : 'Standard' }} · {{ (c.trustHardSeconds / 3600)|round(1) }} h</td>
+            <td data-label="Appareils">{{ c.usesCount }} / {{ c.maxDevices }}</td>
+            <td data-label="État">{% if c.revokedAt %}Annulé{% elseif c.expiresAt <= now %}Expiré{% elseif c.usesCount >= c.maxDevices %}Épuisé{% else %}Utilisable jusqu’à {{ c.expiresAt|date('H:i', 'Europe/Paris') }}{% endif %}</td>
+            <td data-label="Actions" class="cp-table__actions">{% if writable and usable %}<a class="cp-table__link" href="{{ path('app_control_code_revoke', { municipalityId: active_municipality_id, eventId: event_id, activationId: c.id.toRfc4122 }) }}">Annuler</a>{% else %}—{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+{% endblock %}

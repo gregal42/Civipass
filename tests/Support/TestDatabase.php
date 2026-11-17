@@ -33,6 +33,9 @@ final class TestDatabase
      */
     private const PERMIT_TABLES = ['permit_authorization_period', 'permit_revision_vehicle', 'permit_revision', 'permit_access_token', 'permit_authorization_zone', 'permit_authorization', 'permit_vehicle', 'permit_verification_token', 'permit_permit', 'permit_reference_counter'];
 
+    /** Tables du LOT 09 (module Control), purgées dès qu'elles existent (appareils d'abord : ils référencent les activations). */
+    private const CONTROL_TABLES = ['control_device', 'control_activation'];
+
     /** Tables du LOT 05.3 (module Notification), purgées dès qu'elles existent. */
     private const NOTIFICATION_TABLES = ['notification_secret', 'notification_outbox'];
 
@@ -52,7 +55,7 @@ final class TestDatabase
             Assert::fail(sprintf('Base "%s" refusée : les tests destructifs exigent une base de test (_test).', $database));
         }
 
-        $existing = array_filter([...self::ARCHIVE_TABLES, ...self::NOTIFICATION_TABLES, ...self::PERMIT_TABLES, ...self::REQUEST_TABLES, ...self::EVENT_TABLES], static fn (string $table): bool => $connection->createSchemaManager()->tablesExist([$table]));
+        $existing = array_filter([...self::CONTROL_TABLES, ...self::ARCHIVE_TABLES, ...self::NOTIFICATION_TABLES, ...self::PERMIT_TABLES, ...self::REQUEST_TABLES, ...self::EVENT_TABLES], static fn (string $table): bool => $connection->createSchemaManager()->tablesExist([$table]));
         $connection->executeStatement('SET FOREIGN_KEY_CHECKS = 0');
         foreach ([...$existing, ...self::TABLES] as $table) {
             $connection->executeStatement('DELETE FROM '.$table);

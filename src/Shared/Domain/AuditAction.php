@@ -140,4 +140,14 @@ enum AuditAction: string
     case AdminInvitationEmailSent = 'ADMIN_INVITATION_EMAIL_SENT';
     case AdminInvitationEmailFailed = 'ADMIN_INVITATION_EMAIL_FAILED';
     case UserResetRequestedByCws = 'USER_RESET_REQUESTED_BY_CWS';
+
+    // Contrôle hors connexion (LOT 09, DM-131) : identifiants, codes de motif, seuils et dates SEULEMENT ; jamais un code d'activation, un secret d'appareil, un code
+    // d'appariement, un jeton de laissez-passer ni une donnée du jeu de données.
+    case ControlActivationCreated = 'CONTROL_ACTIVATION_CREATED';
+    case ControlActivationRevoked = 'CONTROL_ACTIVATION_REVOKED';
+    case ControlDeviceRegistered = 'CONTROL_DEVICE_REGISTERED';
+    case ControlDeviceApproved = 'CONTROL_DEVICE_APPROVED';
+    case ControlDeviceDeactivated = 'CONTROL_DEVICE_DEACTIVATED';
+    case ControlDeviceRenewed = 'CONTROL_DEVICE_RENEWED';
+    case ControlSyncRefused = 'CONTROL_SYNC_REFUSED';
 }

@@ -1,0 +1,24 @@
+{% extends 'layouts/app.html.twig' %}
+
+{# Création d'un code d'activation (LOT 09.2). Variables : form, error, csrf, action_url, cancel_url, hard_max_minutes. #}
+{% block content %}
+  {% include 'components/breadcrumb.html.twig' with { items: [{ label: 'Contrôle hors connexion', href: cancel_url }, { label: 'Créer un code d’activation' }], back: { label: 'Contrôle hors connexion', href: cancel_url } } only %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Créer un code d’activation', sub: 'Le code permet d’enregistrer des téléphones de contrôle. Chaque téléphone devra ensuite être approuvé par vous.' } only %}
+  {% if error %}{% include 'components/alert.html.twig' with { variant: 'error', title: 'Rien n’a été enregistré', text: error, focus: true } only %}{% endif %}
+  <form class="cp-stack" style="gap: var(--space-5)" method="post" action="{{ action_url }}" novalidate data-controller="cp--submit-state">
+    <input type="hidden" name="_token" value="{{ csrf_token(csrf) }}">
+    <fieldset class="cp-fieldset">
+      <legend class="cp-field__label">Mode d’assurance</legend>
+      <label class="cp-check"><input type="radio" name="mode" value="STANDARD"{{ form.mode == 'STANDARD' ? ' checked' }}> <span><strong>Standard</strong> — hors connexion, un laissez-passer valide s’affiche « valide selon la dernière synchronisation » (orange), jamais comme une vérification en temps réel.</span></label>
+      <label class="cp-check"><input type="radio" name="mode" value="STRICT"{{ form.mode == 'STRICT' ? ' checked' }}> <span><strong>Strict</strong> — hors connexion, aucun verdict positif : « indéterminé, confirmation en ligne requise » ; l’identité et les zones restent affichées à titre d’information.</span></label>
+    </fieldset>
+    {% include 'components/field.html.twig' with { id: 'control-devices', name: 'devices', type: 'text', label: 'Nombre de téléphones (1 à 10) *', value: form.devices, required: true, autocomplete: 'off' } only %}
+    {% include 'components/field.html.twig' with { id: 'control-hard', name: 'hard', type: 'text', label: 'Durée de confiance maximale, en minutes *', value: form.hard, required: true, autocomplete: 'off', help: 'Passé ce délai sans synchronisation, l’appareil répond « indéterminé ». Vous pouvez la raccourcir (120 minutes au moins) ; le maximum fixé pour ce déploiement est de ' ~ hard_max_minutes ~ ' minutes. Toute augmentation exige une décision explicite.' } only %}
+    {% include 'components/field.html.twig' with { id: 'control-warn', name: 'warn', type: 'text', label: 'Avertissement à partir de, en minutes *', value: form.warn, required: true, autocomplete: 'off', help: 'À partir de ce délai, le verdict est présenté comme reposant sur des données anciennes.' } only %}
+    {% include 'components/field.html.twig' with { id: 'control-minutes', name: 'minutes', type: 'text', label: 'Validité du code, en minutes *', value: form.minutes, required: true, autocomplete: 'off', help: 'Entre 10 et 60 minutes.' } only %}
+    <div class="cp-form-actions">
+      {% include 'components/button.html.twig' with { label: 'Créer le code', icon: 'plus', type: 'submit', loading_label: 'Création…' } only %}
+      {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', href: cancel_url } only %}
+    </div>
+  </form>
+{% endblock %}

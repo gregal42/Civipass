@@ -1,0 +1,20 @@
+{% extends 'layouts/app.html.twig' %}
+
+{# Désactivation (ou refus) d'un appareil avec motif codé (LOT 09.2). Variables : device, reasons, error, csrf, action_url, cancel_url. #}
+{% block content %}
+  {% include 'components/breadcrumb.html.twig' with { items: [{ label: 'Contrôle hors connexion', href: cancel_url }, { label: device.status.value == 'PENDING' ? 'Refuser un appareil' : 'Désactiver un appareil' }], back: { label: 'Contrôle hors connexion', href: cancel_url } } only %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: (device.status.value == 'PENDING' ? 'Refuser « ' : 'Désactiver « ') ~ device.label ~ ' »' } only %}
+  {% if error %}{% include 'components/alert.html.twig' with { variant: 'error', title: 'Rien n’a été modifié', text: error, focus: true } only %}{% endif %}
+  {% if device.status.value == 'ACTIVE' %}{% include 'components/alert.html.twig' with { variant: 'warning', icon: 'alert', text: 'La désactivation prend effet à la prochaine connexion de l’appareil. Tant qu’il reste hors réseau, il garde ses données jusqu’à l’expiration de sa durée de confiance.' } only %}{% endif %}
+  <form class="cp-stack" style="gap: var(--space-5)" method="post" action="{{ action_url }}" novalidate data-controller="cp--submit-state">
+    <input type="hidden" name="_token" value="{{ csrf_token(csrf) }}">
+    <fieldset class="cp-fieldset">
+      <legend class="cp-field__label">Motif *</legend>
+      {% for r in reasons %}<label class="cp-check"><input type="radio" name="reason" value="{{ r.value }}"{{ loop.first ? ' checked' }}> <span>{{ r.label }}</span></label>{% endfor %}
+    </fieldset>
+    <div class="cp-form-actions">
+      {% include 'components/button.html.twig' with { label: device.status.value == 'PENDING' ? 'Refuser l’appareil' : 'Désactiver l’appareil', variant: 'danger', type: 'submit', loading_label: 'Enregistrement…' } only %}
+      {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', href: cancel_url } only %}
+    </div>
+  </form>
+{% endblock %}

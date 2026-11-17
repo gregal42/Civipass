@@ -1,0 +1,11 @@
+{% extends 'layouts/app.html.twig' %}
+
+{# Confirmation d'une action sensible sur le contrôle hors connexion (LOT 09.2) : effets annoncés avant le bouton. #}
+{% block content %}
+  {% include 'components/breadcrumb.html.twig' with { items: [{ label: 'Contrôle hors connexion', href: cancel_url }, { label: title }], back: { label: 'Contrôle hors connexion', href: cancel_url } } only %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: title } only %}
+  {% embed 'components/confirm_panel.html.twig' with { id: 'control-confirm', title: 'Ce qui se passera', action: action_url, consequences: consequences, keeps: keeps, confirm_label: confirm_label, token: csrf_token(csrf) } %}
+    {% block fields %}<input type="hidden" name="_token" value="{{ token }}">{% endblock %}
+  {% endembed %}
+  <p><a class="cp-btn cp-btn--secondary" href="{{ cancel_url }}">Retour</a></p>
+{% endblock %}

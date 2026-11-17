@@ -1,0 +1,17 @@
+{% extends 'layouts/app.html.twig' %}
+
+{# Approbation d'un appareil (LOT 09.2, DM-131) : le code d'appariement affiché sur le téléphone doit être saisi. Variables : device, error, csrf, action_url, cancel_url. #}
+{% block content %}
+  {% include 'components/breadcrumb.html.twig' with { items: [{ label: 'Contrôle hors connexion', href: cancel_url }, { label: 'Approuver un appareil' }], back: { label: 'Contrôle hors connexion', href: cancel_url } } only %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Approuver « ' ~ device.label ~ ' »', sub: 'Demandez au contrôleur le code à six chiffres affiché sur son téléphone, devant vous.' } only %}
+  {% if error %}{% include 'components/alert.html.twig' with { variant: 'error', title: 'Appareil non approuvé', text: error, focus: true } only %}{% endif %}
+  {% include 'components/alert.html.twig' with { variant: 'quiet', icon: 'shield', text: 'Une fois approuvé, l’appareil reçoit une copie temporaire des laissez-passer valides de votre commune pour cet événement. N’approuvez que le téléphone d’une personne présente et identifiée.' } only %}
+  <form class="cp-stack" style="gap: var(--space-5)" method="post" action="{{ action_url }}" novalidate data-controller="cp--submit-state">
+    <input type="hidden" name="_token" value="{{ csrf_token(csrf) }}">
+    {% include 'components/field.html.twig' with { id: 'control-pairing', name: 'pairing', type: 'text', label: 'Code d’appariement (6 chiffres) *', value: '', required: true, autocomplete: 'off', mono: true, attrs: 'inputmode="numeric" maxlength="6"' } only %}
+    <div class="cp-form-actions">
+      {% include 'components/button.html.twig' with { label: 'Approuver l’appareil', icon: 'check', type: 'submit', loading_label: 'Approbation…' } only %}
+      {% include 'components/button.html.twig' with { label: 'Annuler', variant: 'secondary', href: cancel_url } only %}
+    </div>
+  </form>
+{% endblock %}

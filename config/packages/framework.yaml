@@ -48,6 +48,47 @@ framework:
             limit: '%env(int:VERIFICATION_FAILURE_LIMIT)%'
             interval: '15 minutes'
             storage_service: App\Permit\Infrastructure\RateLimiter\StrictCacheStorage
+        # Contrôle hors connexion (LOT 09, DM-131, DT-056) : stockage STRICT (une écriture impossible fait échouer bruyamment, comme le contrôle public).
+        # `control_activation_commune` : 10 codes d'activation / heure par commune ; `control_registration_access` : 60 enregistrements d'appareil / 10 min par IP ;
+        # `control_registration_failure` : 10 codes inconnus/expirés/épuisés / 15 min par IP ; `control_pairing_admin` : 10 confirmations de code d'appariement / 15 min
+        # par administrateur et appareil ; `control_device_status` : 300 interrogations d'état / 10 min par appareil.
+        control_activation_commune:
+            policy: sliding_window
+            limit: 10
+            interval: '1 hour'
+            storage_service: App\Permit\Infrastructure\RateLimiter\StrictCacheStorage
+        control_registration_access:
+            policy: sliding_window
+            limit: 60
+            interval: '10 minutes'
+            storage_service: App\Permit\Infrastructure\RateLimiter\StrictCacheStorage
+        control_registration_failure:
+            policy: sliding_window
+            limit: 10
+            interval: '15 minutes'
+            storage_service: App\Permit\Infrastructure\RateLimiter\StrictCacheStorage
+        control_pairing_admin:
+            policy: sliding_window
+            limit: 10
+            interval: '15 minutes'
+            storage_service: App\Permit\Infrastructure\RateLimiter\StrictCacheStorage
+        control_device_status:
+            policy: sliding_window
+            limit: 300
+            interval: '10 minutes'
+            storage_service: App\Permit\Infrastructure\RateLimiter\StrictCacheStorage
+        # Synchronisation d'un appareil de contrôle (LOT 09.3) : 60 synchronisations / 10 min par appareil (l'application synchronise toutes les 15 min et à la demande) ;
+        # `control_sync_refused_audit` : une trace d'audit par heure et par appareil désactivé ou expiré qui insiste (pas de journal inondé).
+        control_sync_device:
+            policy: sliding_window
+            limit: 60
+            interval: '10 minutes'
+            storage_service: App\Permit\Infrastructure\RateLimiter\StrictCacheStorage
+        control_sync_refused_audit:
+            policy: sliding_window
+            limit: 1
+            interval: '1 hour'
+            storage_service: App\Permit\Infrastructure\RateLimiter\StrictCacheStorage
         # Mot de passe oublié : 3 demandes / heure par adresse, 10 / heure par IP (réponse identique, envoi
         # abandonné en silence au-delà) ; 10 validations ou soumissions de jeton / 15 min par IP.
         password_reset_email:

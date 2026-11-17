@@ -25,4 +25,6 @@ enum AuditSubjectType: string
     case LegalHold = 'LEGAL_HOLD';
     case Retention = 'RETENTION';
     case RightsRequest = 'RIGHTS_REQUEST';
+    case ControlActivation = 'CONTROL_ACTIVATION';
+    case ControlDevice = 'CONTROL_DEVICE';
 }

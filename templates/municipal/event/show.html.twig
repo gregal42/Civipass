@@ -83,6 +83,14 @@
         </section>
       {% endif %}
 
+      {% if offline_control_enabled and (rel == 'organizer' or rel == 'participant') %}
+        <section class="cp-section" aria-labelledby="control-h">
+          {% include 'components/section_head.html.twig' with { id: 'control-h', title: 'Contrôle hors connexion' } only %}
+          <p class="cp-muted">Les administrateurs de la commune préparent ici les téléphones de contrôle (codes d’activation, approbation des appareils).</p>
+          <div class="cp-cluster">{% include 'components/button.html.twig' with { label: 'Gérer les appareils de contrôle', href: path('app_control_devices', { municipalityId: active_municipality_id, eventId: detail.eventId }), variant: 'secondary', icon: 'shield' } only %}</div>
+        </section>
+      {% endif %}
+
       {% set A = 'App\\Event\\Application\\Read\\EventAction::' %}
       {% set activate = detail.visibleAction(constant(A ~ 'Activate')) %}
       {% set suspend = detail.visibleAction(constant(A ~ 'Suspend')) %}

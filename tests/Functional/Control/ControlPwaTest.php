@@ -97,8 +97,16 @@ final class ControlPwaTest extends WebTestCase
         self::assertSame('/controle/', $response->headers->get('Service-Worker-Allowed'));
         self::assertStringContainsString('"/controle/"', $js);
         self::assertStringContainsString('jsQR', $js, 'le décodeur embarqué est conservé pour le mode hors ligne');
+        foreach (['verdict', 'sync', 'dataset', 'idb-store', 'camera'] as $module) {
+            self::assertMatchesRegularExpression('#"/assets/controle/'.$module.'-[A-Za-z0-9_-]+\.js"#', $js, 'module hors ligne pré-conservé : '.$module);
+        }
         self::assertStringContainsString("url.pathname.startsWith('/controle/api/')) return;", $js, "l'API n'est jamais interceptée");
-        self::assertStringNotContainsString('/controle/api', (string) json_encode(self::precache($js), \JSON_UNESCAPED_SLASHES), "l'API n'est jamais pré-conservée");
+        foreach (self::precache($js) as $entry) {
+            self::assertFalse(str_starts_with($entry, '/controle/api/'), "l'API n'est jamais pré-conservée");
+        }
+        foreach (['verdict', 'sync', 'dataset', 'idb-store', 'camera'] as $module) {
+            self::assertMatchesRegularExpression('#\/assets\/controle\/'.$module.'-[A-Za-z0-9_-]+\.js#', $js, 'module hors ligne pré-conservé : '.$module);
+        }
         self::assertDoesNotMatchRegularExpression('#https?://#', (string) json_encode(self::precache($js), \JSON_UNESCAPED_SLASHES));
     }
 

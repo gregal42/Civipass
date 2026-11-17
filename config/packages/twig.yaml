@@ -1,5 +1,8 @@
 twig:
     file_name_pattern: '*.twig'
+    globals:
+        # Contrôle hors connexion (LOT 09) : affiche les liens d'administration ; l'accès réel est relu côté serveur (404 si l'interrupteur est à 0).
+        offline_control_enabled: '%env(bool:OFFLINE_CONTROL_ENABLED)%'
 
 when@test:
     twig:
