@@ -23,6 +23,15 @@ parameters:
     # Contrôle public `/v/{jeton}` (LOT 05.4.2) : DÉSACTIVÉ par défaut (la route répond 404 sans toucher à la base). Ne l'activer qu'avec l'accord
     # du responsable, une fois les conditions d'exposition réunies (journaux nginx et Traefik vérifiés, limitation de débit du 05.4.3).
     env(PUBLIC_VERIFICATION_ENABLED): '0'
+    # Contrôle hors connexion (LOT 09, DM-129 à DM-132) : DÉSACTIVÉ par défaut (404 uniforme sur /controle/*). Jamais activé sans accord du responsable du projet.
+    env(OFFLINE_CONTROL_ENABLED): '0'
+    # Plafond de CONFIGURATION du seuil dur de confiance (secondes) : 43 200 (12 h) pour le pilote ; le relever exige une décision explicite (DM-130 §4).
+    # Le plafond TECHNIQUE absolu (24 h) est une constante du code.
+    env(CONTROL_TRUST_HARD_MAX_SECONDS): '43200'
+    env(CONTROL_TRUST_WARN_SECONDS): '21600'
+    env(CONTROL_CODE_MINUTES): '30'
+    env(CONTROL_PENDING_MINUTES): '60'
+    env(CONTROL_DEVICE_LIFETIME_HOURS): '72'
     # Plafonds PROVISOIRES de la limitation de débit du contrôle public (LOT 05.4.3, révisés au LOT 07.3.2, DT-055), par IP (IPv6 : /64) : garde-fou contre
     # l'inondation, applicable à tout jeton (1 500 consultations sur 10 minutes, à confronter à un test de charge sur l'environnement de recette) ;
     # jetons bien formés mais inconnus sur 15 minutes (ne touche jamais un jeton valide).

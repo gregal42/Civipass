@@ -1,0 +1,44 @@
+{# Service Worker de la PWA de contrôle (LOT 09, DT-056). Périmètre /controle/. Ne conserve QUE la coquille (identique pour tous) : jamais l'API, jamais une donnée personnelle. #}
+'use strict';
+const VERSION = 'civipass-control-{{ version }}';
+const PRECACHE = {{ precache|json_encode(constant('JSON_UNESCAPED_SLASHES'))|raw }};
+const SHELL = '/controle/';
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(caches.open(VERSION).then((cache) => cache.addAll(PRECACHE)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((key) => key.startsWith('civipass-control-') && key !== VERSION).map((key) => caches.delete(key))))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  const request = event.request;
+  if (request.method !== 'GET') return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+  // L'API n'est jamais interceptée ni conservée.
+  if (url.pathname.startsWith('/controle/api/')) return;
+
+  if (request.mode === 'navigate' && (url.pathname === '/controle' || url.pathname === '/controle/')) {
+    // Coquille : le réseau d'abord (version à jour), la copie conservée en repli (hors ligne ou réseau trop lent).
+    event.respondWith(
+      new Promise((resolve) => {
+        const timer = setTimeout(() => caches.match(SHELL).then((hit) => hit && resolve(hit)), 3000);
+        fetch(request).then((response) => { clearTimeout(timer); resolve(response); }).catch(() => {
+          clearTimeout(timer);
+          caches.match(SHELL).then((hit) => resolve(hit || Response.error()));
+        });
+      })
+    );
+    return;
+  }
+
+  if (PRECACHE.includes(url.pathname)) {
+    event.respondWith(caches.match(request).then((hit) => hit || fetch(request)));
+  }
+});

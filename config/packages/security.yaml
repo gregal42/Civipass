@@ -18,6 +18,10 @@ security:
         public_verification:
             pattern: ^/v(?:/|$)
             security: false
+        # Contrôle hors connexion (LOT 09, DM-129) : PWA et API d'appareil SANS session ni cookie (l'appareil s'authentifie par secret dans l'en-tête Authorization).
+        control_pwa:
+            pattern: ^/controle(?:/|$)
+            security: false
         main:
             lazy: true
             provider: app_user_provider

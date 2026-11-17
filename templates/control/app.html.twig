@@ -1,0 +1,32 @@
+{#
+  Coquille de la PWA de contrôle (LOT 09, DM-129, DT-056) : identique pour tous, SANS donnée personnelle, conservée par le Service Worker pour le mode hors
+  ligne. Aucun script en ligne (CSP `script-src 'self'`) : la configuration passe par des attributs `data-*`. Aucune ressource tierce.
+  Variables : verification_base (origine de la vérification publique, configuration serveur), icon_192.
+#}
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#1d3f73">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Contrôle">
+  <title>Contrôle · Civipass</title>
+  <link rel="manifest" href="{{ path('app_control_manifest') }}">
+  <link rel="apple-touch-icon" href="{{ icon_192 }}">
+  <link rel="stylesheet" href="{{ asset('styles/civipass/tokens.css') }}">
+  <link rel="stylesheet" href="{{ asset('styles/civipass/civipass.css') }}">
+  <link rel="stylesheet" href="{{ asset('styles/civipass-app.css') }}">
+  <link rel="stylesheet" href="{{ asset('styles/controle.css') }}">
+</head>
+<body class="cp-root cc-body">
+  <div id="cc-app" class="cc-app" data-verification-base="{{ verification_base }}" data-api-base="{{ path('app_control_ping')|replace({'/ping': ''}) }}" data-sw="{{ path('app_control_service_worker') }}">
+    <noscript><p class="cc-notice">Cette application exige JavaScript.</p></noscript>
+  </div>
+  <script src="{{ asset('vendor/jsqr/jsQR.js') }}"></script>
+  <script type="module" src="{{ asset('controle/app.js') }}"></script>
+</body>
+</html>
