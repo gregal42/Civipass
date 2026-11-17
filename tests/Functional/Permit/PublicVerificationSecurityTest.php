@@ -23,7 +23,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\BrowserKit\Cookie;
 
 /**
- * Sécurité renforcée du contrôle public (LOT 05.4.3) : pare-feu sans session, deux limiteurs indépendants, IP partagée, IPv6 et IPv4-mappée, en-têtes
+ * Sécurité renforcée du contrôle public (LOT 05.4.3) : pare-feu sans session, deux limiteurs indépendants (DT-055 : les échecs ne bloquent jamais un jeton valide), IP partagée, IPv6 et IPv4-mappée, en-têtes
  * de provenance forgés, réponses 429 et 503, panne du stockage visible, aucun jeton dans les journaux. Les plafonds sont réduits par variables
  * d'environnement (VERIFICATION_ACCESS_LIMIT / VERIFICATION_FAILURE_LIMIT) pour que les tests restent rapides ; l'interrupteur est activé ICI seulement.
  */
@@ -54,7 +54,7 @@ final class PublicVerificationSecurityTest extends PublicRequestTestCase
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $this->sql('UPDATE event_event SET starts_at = :s, ends_at = :e', ['s' => $now->modify('-1 day')->format('Y-m-d H:i:s'), 'e' => $now->modify('+10 days')->format('Y-m-d H:i:s')]);
         $requestId = static::getContainer()->get(RequestSubmissionService::class)->submitPublic(
-            new SubmitRequestCommand($this->event->id()->toRfc4122(), 'Martin', 'Camille', '12 rue des Lilas', 'camille@exemple.fr', '0611223344', 'private_person', 'home', null, TravelMode::Vehicle, ['GH-482-KT'], [$this->organizerZone->id()->toRfc4122()], true),
+            new SubmitRequestCommand($this->event->id()->toRfc4122(), 'MARTIN', 'Camille', '12 rue des Lilas', 'camille@exemple.fr', '0611223344', 'private_person', 'home', null, TravelMode::Vehicle, ['GH-482-KT'], [$this->organizerZone->id()->toRfc4122()], true),
             sprintf('sec-test-%016d', random_int(1, 999999)),
         )->requestId;
         static::getContainer()->get(MunicipalInstructionService::class)->approve($this->em()->find(User::class, $this->instructor->id()) ?? self::fail(), $organizer->id()->toRfc4122(), $requestId, ApprovalDuration::untilClosure());
@@ -212,13 +212,15 @@ final class PublicVerificationSecurityTest extends PublicRequestTestCase
         self::assertStringContainsString('Vérification temporairement indisponible', $html);
         self::assertStringContainsString('Ce n’est pas un refus d’autorisation', $html);
         self::assertStringContainsString('Actualiser', $html);
-        foreach ([$token, 'Martin', 'Camille', 'LP-2026', 'GH-482-KT'] as $forbidden) {
+        self::assertStringContainsString('La vérification est temporairement indisponible', $html, 'message national fixe (A6)');
+        self::assertMatchesRegularExpression('/Réessayez dans \d+ minute\(s\) ou appliquez la procédure de terrain de votre commune\./', $html);
+        foreach ([$token, 'MARTIN', 'Camille', 'LP-2026', 'GH-482-KT'] as $forbidden) {
             self::assertStringNotContainsString($forbidden, $html, '429 sans aucune donnée');
         }
         $this->assertProtected('429');
     }
 
-    public function testUnknownWellFormedTokensTripTheFailureCapAndThenBlockEvenAValidToken(): void
+    public function testUnknownWellFormedTokensTripTheFailureCapButNeverBlockAValidTokenOnTheSameAddress(): void
     {
         $this->env('VERIFICATION_FAILURE_LIMIT', '3');
         $token = $this->token();
@@ -226,9 +228,102 @@ final class PublicVerificationSecurityTest extends PublicRequestTestCase
             self::assertSame(404, $this->get('/v/'.str_repeat('z', 31).($i + 2)), 'jeton inconnu '.($i + 1));
         }
 
-        self::assertSame(429, $this->get('/v/'.str_repeat('z', 31).'5'));
-        self::assertSame(429, $this->get('/v/'.$token), 'plafond d\'échecs atteint : aucune recherche, même d\'un jeton valide, depuis cette adresse');
-        self::assertSame(200, $this->get('/v/'.$token, '198.51.100.99'), 'une autre adresse n\'est pas touchée');
+        self::assertSame(429, $this->get('/v/'.str_repeat('z', 31).'5'), 'allocation d\'échecs épuisée : le jeton inconnu est refusé en 429');
+        self::assertSame(200, $this->get('/v/'.$token), 'DT-055 : un jeton valide reste vérifiable depuis la même adresse, même après le plafond d\'échecs');
+        self::assertStringContainsString('MARTIN', $this->html());
+        self::assertSame(429, $this->get('/v/'.self::UNKNOWN), 'les inconnus restent freinés');
+        self::assertSame(200, $this->get('/v/'.$token), 'et le jeton valide reste servi');
+        self::assertSame(404, $this->get('/v/'.str_repeat('z', 31).'6', '198.51.100.99'), 'une autre adresse a sa propre allocation');
+    }
+
+    public function testRetiredAndClosedEventTokensAreStillServedAfterTheFailureCap(): void
+    {
+        $this->env('VERIFICATION_FAILURE_LIMIT', '1');
+        $token = $this->token();
+        self::assertSame(404, $this->get('/v/'.self::UNKNOWN));
+        self::assertSame(429, $this->get('/v/'.str_repeat('y', 32)));
+
+        self::assertSame(200, $this->get('/v/'.$token));
+        $this->sql("UPDATE event_event SET status = 'CLOSED'");
+        self::assertSame(200, $this->get('/v/'.$token), 'événement clos : statut neutre, pas un 429');
+        self::assertStringContainsString('Événement terminé', $this->html());
+        $this->retired();
+        self::assertSame(410, $this->get('/v/'.$token), 'jeton retiré : 410, pas un 429');
+    }
+
+    public function testTheFailureCapAnswerCarriesNoDataAndIsProtected(): void
+    {
+        $this->env('VERIFICATION_FAILURE_LIMIT', '1');
+        $token = $this->token();
+        $this->get('/v/'.self::UNKNOWN);
+
+        self::assertSame(429, $this->get('/v/'.str_repeat('y', 32)));
+
+        $html = $this->html();
+        self::assertGreaterThanOrEqual(1, (int) $this->client->getResponse()->headers->get('Retry-After'));
+        self::assertLessThanOrEqual(900, (int) $this->client->getResponse()->headers->get('Retry-After'));
+        foreach ([$token, 'MARTIN', 'Camille', 'LP-2026', 'GH-482-KT', str_repeat('y', 32)] as $forbidden) {
+            self::assertStringNotContainsString($forbidden, $html);
+        }
+        $this->assertProtected('429 échecs');
+    }
+
+    public function testTheAccessCapStillAppliesToAValidTokenAndRecoversForOtherAddresses(): void
+    {
+        $this->env('VERIFICATION_ACCESS_LIMIT', '4');
+        $this->env('VERIFICATION_FAILURE_LIMIT', '1');
+        $token = $this->token();
+        for ($i = 0; $i < 4; ++$i) {
+            self::assertSame(200, $this->get('/v/'.$token, '203.0.113.60'));
+        }
+
+        self::assertSame(429, $this->get('/v/'.$token, '203.0.113.60'), 'le garde-fou global s\'applique aussi aux jetons valides');
+        self::assertSame(200, $this->get('/v/'.$token, '203.0.113.61'));
+    }
+
+    public function testForgedForwardedHeadersCannotEvadeTheFailureAllowance(): void
+    {
+        $this->env('VERIFICATION_FAILURE_LIMIT', '2');
+        $this->get('/v/'.self::UNKNOWN, '203.0.113.90', ['HTTP_X_FORWARDED_FOR' => '10.0.0.1']);
+        $this->get('/v/'.str_repeat('y', 32), '203.0.113.90', ['HTTP_X_FORWARDED_FOR' => '10.0.0.2', 'HTTP_X_REAL_IP' => '10.0.0.3']);
+
+        self::assertSame(429, $this->get('/v/'.str_repeat('x', 32), '203.0.113.90', ['HTTP_X_FORWARDED_FOR' => '10.0.0.4', 'HTTP_FORWARDED' => 'for=10.0.0.5', 'HTTP_CF_CONNECTING_IP' => '10.0.0.6']));
+    }
+
+    public function testNoDifferenceBetweenMalformedAndUnknownTokensBeforeTheCapAndNoOracleOnTheirAnswerBody(): void
+    {
+        $this->get('/v/'.self::UNKNOWN);
+        $unknown = $this->html();
+        $this->get('/v/pas-un-jeton');
+
+        self::assertSame($unknown, $this->html(), 'inconnu dans l\'allocation et mal formé : même corps');
+    }
+
+    public function testTheThresholdsAreLoggedWithoutAnyAddressOrTokenAndTheNormalFlowIsSilent(): void
+    {
+        $this->env('VERIFICATION_FAILURE_LIMIT', '2');
+        $token = $this->token();
+        $ip = '203.0.113.'.random_int(100, 250);
+        $logFile = (string) tempnam(sys_get_temp_dir(), 'civipass-thr');
+        ini_set('error_log', $logFile);
+        $this->freshKernel(false);
+
+        $this->get('/v/'.$token, $ip);
+        $quiet = (string) file_get_contents($logFile);
+        $this->get('/v/'.self::UNKNOWN, $ip);
+        $this->get('/v/'.str_repeat('y', 32), $ip);
+        $this->get('/v/'.str_repeat('x', 32), $ip);
+        ini_set('error_log', $this->previousErrorLog);
+        $logs = (string) file_get_contents($logFile);
+        unlink($logFile);
+
+        self::assertStringNotContainsString('plafond', $quiet);
+        self::assertStringContainsString('plafond de jetons inconnus atteint', $logs);
+        self::assertStringContainsString('les jetons valides ne sont pas touchés', $logs);
+        self::assertSame(1, substr_count($logs, 'plafond de jetons inconnus atteint'), 'une seule ligne par plafond atteint, pas une par requête refusée');
+        foreach ([$token, $ip, self::UNKNOWN] as $forbidden) {
+            self::assertStringNotContainsString($forbidden, $logs);
+        }
     }
 
     public function testMalformedTokensNeitherCountAsFailuresNorReachTheDatabase(): void
@@ -336,7 +431,7 @@ final class PublicVerificationSecurityTest extends PublicRequestTestCase
         for ($i = 0; $i < 3; ++$i) {
             $this->get('/v/'.str_repeat('z', 31).($i + 2), '203.0.113.60');
         }
-        self::assertSame(429, $this->get('/v/'.$token, '203.0.113.60'));
+        self::assertSame(429, $this->get('/v/'.str_repeat('z', 31).'7', '203.0.113.60'));
 
         self::assertSame(404, $this->get('/laissez-passer/'.str_repeat('Q', 43), '203.0.113.60'), 'le lien bénéficiaire n\'est pas bloqué par les échecs du contrôle');
 
@@ -365,7 +460,7 @@ final class PublicVerificationSecurityTest extends PublicRequestTestCase
         $services = (string) file_get_contents(\dirname(__DIR__, 3).'/config/services.yaml');
         $framework = (string) file_get_contents(\dirname(__DIR__, 3).'/config/packages/framework.yaml');
 
-        self::assertStringContainsString("env(VERIFICATION_ACCESS_LIMIT): '300'", $services);
+        self::assertStringContainsString("env(VERIFICATION_ACCESS_LIMIT): '1500'", $services);
         self::assertStringContainsString("env(VERIFICATION_FAILURE_LIMIT): '20'", $services);
         self::assertMatchesRegularExpression("/verification_access:\n\s+policy: sliding_window\n\s+limit: '%env\\(int:VERIFICATION_ACCESS_LIMIT\\)%'\n\s+interval: '10 minutes'/", $framework);
         self::assertMatchesRegularExpression("/verification_failure:\n\s+policy: sliding_window\n\s+limit: '%env\\(int:VERIFICATION_FAILURE_LIMIT\\)%'\n\s+interval: '15 minutes'/", $framework);
@@ -387,7 +482,7 @@ final class PublicVerificationSecurityTest extends PublicRequestTestCase
                 throw new ThrottleStorageUnavailable('Compteurs de limitation indisponibles.', 0, new \RuntimeException('disque plein : /var/share/x'));
             }
 
-            public function recordFailure(string $clientKey): void
+            public function recordFailure(string $clientKey): ?int
             {
                 throw new ThrottleStorageUnavailable('Compteurs de limitation indisponibles.');
             }
@@ -404,9 +499,10 @@ final class PublicVerificationSecurityTest extends PublicRequestTestCase
 
         self::assertSame(503, $status, 'la vérification est suspendue, jamais ouverte sans limitation');
         self::assertSame('60', $retryAfter);
+        self::assertStringContainsString('La vérification est temporairement indisponible. Ce n’est pas un refus d’autorisation. Réessayez dans quelques minutes ou appliquez la procédure de terrain de votre commune.', $html, 'message national fixe (A6)');
         self::assertStringContainsString('Vérification temporairement indisponible', $html);
         self::assertStringContainsString('Ce n’est pas un refus d’autorisation', $html);
-        foreach ([$token, 'Martin', 'LP-2026', 'disque plein'] as $forbidden) {
+        foreach ([$token, 'MARTIN', 'LP-2026', 'disque plein'] as $forbidden) {
             self::assertStringNotContainsString($forbidden, $html);
         }
         self::assertStringContainsString('Contrôle public : compteurs de limitation indisponibles (cause : RuntimeException), vérification suspendue (503).', $logs, 'panne observable dans le journal, avec la classe de la cause pour le diagnostic');

@@ -23,9 +23,10 @@ parameters:
     # Contrôle public `/v/{jeton}` (LOT 05.4.2) : DÉSACTIVÉ par défaut (la route répond 404 sans toucher à la base). Ne l'activer qu'avec l'accord
     # du responsable, une fois les conditions d'exposition réunies (journaux nginx et Traefik vérifiés, limitation de débit du 05.4.3).
     env(PUBLIC_VERIFICATION_ENABLED): '0'
-    # Plafonds PROVISOIRES de la limitation de débit du contrôle public (LOT 05.4.3), par IP (IPv6 : /64) : consultations sur 10 minutes ; jetons bien
-    # formés mais inconnus sur 15 minutes.
-    env(VERIFICATION_ACCESS_LIMIT): '300'
+    # Plafonds PROVISOIRES de la limitation de débit du contrôle public (LOT 05.4.3, révisés au LOT 07.3.2, DT-055), par IP (IPv6 : /64) : garde-fou contre
+    # l'inondation, applicable à tout jeton (1 500 consultations sur 10 minutes, à confronter à un test de charge sur l'environnement de recette) ;
+    # jetons bien formés mais inconnus sur 15 minutes (ne touche jamais un jeton valide).
+    env(VERIFICATION_ACCESS_LIMIT): '1500'
     env(VERIFICATION_FAILURE_LIMIT): '20'
     env(EVENT_MAX_ZONES_PER_BULK_OPERATION): '100'
     # Invitations d'administrateur communal émises par CWS (LOT 07.1) : validité en jours (paramètre technique, 1 à 30).

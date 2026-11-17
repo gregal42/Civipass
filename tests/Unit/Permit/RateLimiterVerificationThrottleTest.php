@@ -16,7 +16,7 @@ use Symfony\Component\RateLimiter\Storage\InMemoryStorage;
 use Symfony\Component\RateLimiter\Storage\StorageInterface;
 
 /**
- * Deux plafonds indépendants (consultations, jetons inconnus), temps d'attente calculé, reprise après la fenêtre, panne du stockage visible.
+ * Deux plafonds indépendants (consultations, jetons inconnus : DT-055, les échecs ne bloquent jamais l'accès d'un jeton valide), temps d'attente calculé, reprise après la fenêtre, journal des seuils sans donnée, panne du stockage visible.
  */
 final class RateLimiterVerificationThrottleTest extends TestCase
 {
@@ -57,31 +57,88 @@ final class RateLimiterVerificationThrottleTest extends TestCase
         self::assertNull($throttle->check('v4:203.0.113.8'), 'un autre client n\'est pas touché');
     }
 
-    public function testUnknownTokensBlockTheClientOnlyOnceTheirOwnLimitIsReached(): void
+    public function testUnknownTokensAreRefusedOnceTheirOwnAllowanceIsUsedUpButNeverTheAccessCheck(): void
     {
         $throttle = $this->throttle(access: 100, failures: 2);
 
-        $throttle->recordFailure('c');
-        $before = $throttle->check('c');
-        $throttle->recordFailure('c');
-        $wait = $throttle->check('c');
+        $first = $throttle->recordFailure('c');
+        $second = $throttle->recordFailure('c');
+        $third = $throttle->recordFailure('c');
 
-        self::assertNull($before);
-        self::assertNotNull($wait, 'plafond d\'échecs atteint : plus aucune recherche');
-        self::assertGreaterThanOrEqual(1, $wait);
-        self::assertLessThanOrEqual(900, $wait);
-        self::assertNull($throttle->check('autre'), 'les échecs d\'un client ne touchent pas les autres');
+        self::assertNull($first, 'dans l\'allocation : 404');
+        self::assertNull($second);
+        self::assertNotNull($third, 'allocation épuisée : le jeton inconnu suivant est refusé (429)');
+        self::assertGreaterThanOrEqual(1, $third);
+        self::assertLessThanOrEqual(900, $third);
+        self::assertNull($throttle->check('c'), 'DT-055 : les échecs ne bloquent JAMAIS l\'accès d\'un jeton valide de la même adresse');
+        self::assertNull($throttle->recordFailure('autre'), 'les échecs d\'un client ne touchent pas les autres');
     }
 
-    public function testTheFailureCapDoesNotConsumeTheAccessAllowanceTwiceNorTheOtherWayRound(): void
+    public function testTheTwoAllowancesAreIndependentInBothDirections(): void
     {
         $throttle = $this->throttle(access: 2, failures: 5);
 
-        $throttle->recordFailure('c');
-        $throttle->recordFailure('c');
+        self::assertNull($throttle->recordFailure('c'));
+        self::assertNull($throttle->recordFailure('c'));
         self::assertNull($throttle->check('c'), 'deux échecs sur cinq : la consultation est admise');
         self::assertNull($throttle->check('c'));
         self::assertNotNull($throttle->check('c'), 'le plafond de consultations s\'applique de son côté');
+        self::assertNull($throttle->recordFailure('c'), 'et n\'a pas consommé l\'allocation d\'échecs');
+    }
+
+    public function testManyFailuresNeverRefuseAValidTokenOnlyTheAccessCapDoes(): void
+    {
+        $throttle = $this->throttle(access: 60, failures: 3);
+
+        for ($i = 0; $i < 50; ++$i) {
+            $throttle->recordFailure('nat');
+        }
+
+        for ($i = 0; $i < 60; ++$i) {
+            self::assertNull($throttle->check('nat'), 'consultation valide '.($i + 1).' après 50 jetons inconnus');
+        }
+        self::assertNotNull($throttle->check('nat'), 'seul le plafond d\'accès, garde-fou global, peut refuser un jeton valide');
+    }
+
+    public function testThresholdsAreLoggedOnceWithoutAnyClientDataToken(): void
+    {
+        /** @var \ArrayObject<int, array{string, string, array<mixed>}> $records */
+        $records = new \ArrayObject();
+        $logger = new class ($records) extends \Psr\Log\AbstractLogger {
+            /** @param \ArrayObject<int, array{string, string, array<mixed>}> $records */
+            public function __construct(private readonly \ArrayObject $records)
+            {
+            }
+
+            public function log(mixed $level, string|\Stringable $message, array $context = []): void
+            {
+                $this->records->append([(string) $level, (string) $message, $context]);
+            }
+        };
+        $throttle = new RateLimiterVerificationThrottle(
+            $this->factory('verification_access', 2, '10 minutes', new InMemoryStorage()),
+            $this->factory('verification_failure', 2, '15 minutes', new InMemoryStorage()),
+            $logger,
+        );
+
+        $throttle->check('v4:203.0.113.7');
+        self::assertCount(0, $records, 'rien tant qu\'aucun plafond n\'est atteint');
+        $throttle->check('v4:203.0.113.7');
+        $throttle->check('v4:203.0.113.7');
+        $throttle->recordFailure('v4:203.0.113.7');
+        $throttle->recordFailure('v4:203.0.113.7');
+        $throttle->recordFailure('v4:203.0.113.7');
+        $throttle->recordFailure('v4:203.0.113.7');
+
+        self::assertCount(2, $records, 'une ligne par plafond atteint, pas une par requête refusée');
+        foreach ($records->getArrayCopy() as [$level, $message, $context]) {
+            self::assertSame('error', $level);
+            self::assertSame([], $context, 'aucun contexte : ni adresse, ni clé, ni jeton');
+            self::assertStringNotContainsString('203.0.113.7', $message);
+        }
+        self::assertStringContainsString('consultations', $records[0][1]);
+        self::assertStringContainsString('jetons inconnus', $records[1][1]);
+        self::assertStringContainsString('jetons valides ne sont pas touchés', $records[1][1]);
     }
 
     public function testAccessIsGivenBackAfterTheWindow(): void

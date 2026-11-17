@@ -19,9 +19,10 @@ use Symfony\Component\Routing\Attribute\Route;
  * `public_verification`, `security: false`).
  *
  * Interrupteur d'exploitation `PUBLIC_VERIFICATION_ENABLED` (désactivé par défaut) : coupé, la route répond la même 404 qu'un jeton inconnu, SANS
- * appeler le lecteur, SANS toucher aux compteurs ni à la base. Ordre : interrupteur, plafond de consultations par IP (429), plafond d'échecs (429, avant
- * toute recherche), lecteur. Jeton mal formé ou inconnu : une seule réponse 404 (même corps, mêmes en-têtes) ; seul l'inconnu bien formé compte comme
- * échec. Jeton retiré : 410 sans aucune donnée, jamais un échec. Panne du stockage des compteurs : 503 explicite et journalisée, jamais une limitation
+ * appeler le lecteur, SANS toucher aux compteurs ni à la base. Ordre (DT-055) : interrupteur, plafond de consultations par IP (429, applicable à tout
+ * jeton), lecteur, puis, pour un jeton bien formé mais INCONNU seulement, plafond d'échecs (404 tant que l'allocation tient, 429 ensuite). Le plafond
+ * d'échecs n'est donc jamais consulté avant la recherche : une série de jetons inconnus ne bloque pas un jeton valide partageant la même adresse.
+ * Jeton mal formé : 404 (même corps, mêmes en-têtes que l'inconnu) sans recherche ni échec compté. Jeton retiré : 410 sans aucune donnée, jamais un échec. Panne du stockage des compteurs : 503 explicite et journalisée, jamais une limitation
  * silencieusement abandonnée. Aucune redirection ; aucune exception du lecteur rattrapée (le jeton n'est cité nulle part : `#[\SensitiveParameter]`).
  * Les en-têtes de protection de toutes les réponses viennent de PublicVerificationHeadersListener.
  */
@@ -55,24 +56,25 @@ final class PublicVerificationController extends AbstractController
             return $this->throttled($wait);
         }
         $lookup = $this->verifications->find($token, $this->clock->now());
-        $response = match ($lookup->outcome) {
+        if (PublicVerificationOutcome::Unknown === $lookup->outcome) {
+            try {
+                $wait = $this->throttle->recordFailure($client);
+            } catch (ThrottleStorageUnavailable $e) {
+                return $this->unavailable($e);
+            }
+
+            return null === $wait ? $this->unknown() : $this->throttled($wait);
+        }
+
+        return match ($lookup->outcome) {
             PublicVerificationOutcome::Found => $this->render('permit/verification.html.twig', [
                 'page_title' => 'Vérification',
                 'verification' => $lookup->verification,
             ]),
             PublicVerificationOutcome::EventClosed => $this->render('permit/verification_closed.html.twig', ['page_title' => 'Vérification']),
             PublicVerificationOutcome::Replaced => $this->render('permit/verification_replaced.html.twig', ['page_title' => 'Vérification'], new Response('', Response::HTTP_GONE)),
-            PublicVerificationOutcome::Unknown, PublicVerificationOutcome::Malformed => $this->unknown(),
+            default => $this->unknown(), // Malformed : 404 uniforme, sans recherche ni échec compté (Unknown est traité plus haut)
         };
-        if (PublicVerificationOutcome::Unknown === $lookup->outcome) {
-            try {
-                $this->throttle->recordFailure($client);
-            } catch (ThrottleStorageUnavailable $e) {
-                $this->logUnavailable($e);
-            }
-        }
-
-        return $response;
     }
 
     /** Réponse UNIQUE : rien ne distingue un jeton mal formé, inconnu ou une route coupée. */
