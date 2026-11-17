@@ -16,6 +16,7 @@
 | [`lot-06-audit.md`](lot-06-audit.md) | Audit global et préparation de la V1 pilote (LOT 06) |
 | [`lot-07-1-cadrage.md`](lot-07-1-cadrage.md) | Administration CWS dans Sonata (LOT 07.1) : cadrage validé et réalisation ; décisions [DM-121](decisions/metier/DM-121-administration-cws-des-communes-et-garde-fous.md), [DT-052](decisions/technique/DT-052-actions-nommees-d-ecriture-dans-le-back-office-cws.md), [DT-053](decisions/technique/DT-053-invitation-d-administrateur-communal-table-dediee.md) |
 | [`lot-07-2-cadrage.md`](lot-07-2-cadrage.md) | Gestion autonome des équipes communales (LOT 07.2) : cadrage proposé, en attente de validation |
+| [`lot-07-3-cadrage.md`](lot-07-3-cadrage.md) | Contrôle QR web mobile, fiabilisation et recette terrain (LOT 07.3) : cadrage V2 validé le 17 novembre 2026 ; décisions DM-125 à DM-128, DT-055 ; recette : [runbooks/recette-verification-publique.md](runbooks/recette-verification-publique.md) |
 | [`lot-05-6-7-cadrage.md`](lot-05-6-7-cadrage.md) | Cadrage et réalisation du lot 05.6.7 (exploitation, restauration, rejeu, registre chaîné et ancrage) |
 | [`exploitation-notifications.md`](exploitation-notifications.md) | Exploitation des notifications du bénéficiaire : clés, rotation, SMTP, distributeur, cron (exemple), supervision, purges, diagnostic, reprise, points ouverts avant production |
 | [`../ops/nginx/README.md`](../ops/nginx/README.md) | nginx de production (V1 mono-instance) : journaux sans secret, rotation et filtrage, TLS/HSTS, installation et contrôles |
