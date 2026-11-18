@@ -9,6 +9,7 @@
   {% if dossiers is empty %}
     {% include 'components/empty_state.html.twig' with { icon: 'file', title: 'Aucun dossier', text: 'Votre commune n’a reçu aucune demande pour cet événement.' } only %}
   {% else %}
+    <div class="cp-table-wrap">
     <table class="cp-table" data-test="archive-dossiers">
       <caption class="cp-sr-only">Dossiers archivés de votre commune</caption>
       <thead><tr><th scope="col">Référence</th><th scope="col">Catégorie</th><th scope="col">Statut</th><th scope="col">Décision</th><th scope="col">Archive</th><th scope="col">Action</th></tr></thead>
@@ -50,6 +51,7 @@
         {% endfor %}
       </tbody>
     </table>
+    </div>
   {% endif %}
 
   {% if management %}

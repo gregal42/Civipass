@@ -5,6 +5,7 @@
   {% if entries is empty %}
     {% include 'components/empty_state.html.twig' with { icon: 'file', title: 'Aucune consultation', text: 'Aucun dossier archivé n’a encore été consulté.' } only %}
   {% else %}
+    <div class="cp-table-wrap">
     <table class="cp-table" data-test="archive-journal">
       <caption class="cp-sr-only">Journal des consultations</caption>
       <thead><tr><th scope="col">Date (UTC)</th><th scope="col">Consultant</th><th scope="col">Dossier</th><th scope="col">Action</th><th scope="col">Motif</th></tr></thead>
@@ -20,5 +21,6 @@
         {% endfor %}
       </tbody>
     </table>
+    </div>
   {% endif %}
 {% endblock %}

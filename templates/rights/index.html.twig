@@ -8,6 +8,7 @@
   {% if requests is empty %}
     <p class="cp-muted">Aucune demande enregistrée.</p>
   {% else %}
+    <div class="cp-table-wrap">
     <table class="cp-table">
       <thead><tr><th>Référence</th><th>Nature</th><th>État</th><th>Reçue le</th><th>Échéance</th><th>Dossiers</th><th></th></tr></thead>
       <tbody>
@@ -24,5 +25,6 @@
         {% endfor %}
       </tbody>
     </table>
+    </div>
   {% endif %}
 {% endblock %}
