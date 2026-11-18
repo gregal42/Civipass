@@ -13,6 +13,7 @@ Procédures **exploitables** par l'exploitation (VPS, nginx natif, systemd). Ell
 | Clôture exceptionnelle d'un événement par CWS (LOT 08.6) | [cloture-exceptionnelle-cws.md](cloture-exceptionnelle-cws.md) |
 | Information des demandeurs refusés (LOT 08.5) | [information-des-refus.md](information-des-refus.md) |
 | Incident de purge | [incident-purge.md](incident-purge.md) |
+| Données temporaires du dépôt public : brouillons, justificatifs, sessions (LOT 10) | [donnees-temporaires-depot-public.md](donnees-temporaires-depot-public.md) |
 | Incident de notification | [incident-notification.md](incident-notification.md) |
 | Incident de sécurité (registre rompu, accès suspect) | [incident-securite.md](incident-securite.md) |
 | Liste de vérification avant remise en service | [remise-en-service.md](remise-en-service.md) |

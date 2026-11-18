@@ -203,6 +203,7 @@ Ce répertoire centralise les décisions. **Les décisions priment sur les spéc
 | [DT-055](technique/DT-055-limitation-de-debit-du-controle-public-echecs-et-garde-fou-d-acces.md) | Limitation de débit du contrôle public : échecs de jetons inconnus et garde-fou d'accès | LOT 07.3 — Sécurité, exploitation | Validée |
 | [DT-056](technique/DT-056-architecture-de-la-pwa-de-controle-hors-connexion.md) | Architecture de la PWA de contrôle hors connexion | LOT 09 — Architecture | Validée |
 | [DT-057](technique/DT-057-dependances-javascript-du-controle-hors-connexion.md) | Dépendances JavaScript du contrôle hors connexion | LOT 09 — Dépendances | Validée |
+| [DT-058](technique/DT-058-cookie-de-session-anonyme-et-brouillon-du-depot-public.md) | Cookie de session anonyme et brouillon du dépôt public (30 min, effacement, purge) | LOT 10 — Stabilisation UX | Proposée |
 
 ## Modèle de fiche
 
