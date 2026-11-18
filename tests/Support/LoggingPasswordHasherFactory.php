@@ -24,7 +24,7 @@ final class LoggingPasswordHasherFactory implements PasswordHasherFactoryInterfa
         $hasher = $this->inner->getPasswordHasher($user);
         $log = $this->log;
 
-        return new class($hasher, $log) implements PasswordHasherInterface {
+        return new class ($hasher, $log) implements PasswordHasherInterface {
             public function __construct(private readonly PasswordHasherInterface $inner, private readonly HasherFactoryLog $log)
             {
             }

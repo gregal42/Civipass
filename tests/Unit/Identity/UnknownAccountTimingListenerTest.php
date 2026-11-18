@@ -18,8 +18,6 @@ use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
 use Symfony\Component\Security\Http\Authenticator\Passport\Credentials\PasswordCredentials;
 use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
 use Symfony\Component\Security\Http\Event\LoginFailureEvent;
-use Symfony\Component\Security\Http\Authenticator\Passport\Badge\BadgeInterface;
-use Symfony\Component\RateLimiter\RateLimit;
 use Symfony\Component\Security\Core\Exception\TooManyLoginAttemptsAuthenticationException;
 
 /**
@@ -38,7 +36,7 @@ final class UnknownAccountTimingListenerTest extends TestCase
 
     private function listener(bool $failing = false): UnknownAccountTimingListener
     {
-        $hasher = new class($this->hashed, $failing) implements PasswordHasherInterface {
+        $hasher = new class ($this->hashed, $failing) implements PasswordHasherInterface {
             /** @param \ArrayObject<int, string> $log */
             public function __construct(private readonly \ArrayObject $log, private readonly bool $failing)
             {
@@ -64,7 +62,7 @@ final class UnknownAccountTimingListenerTest extends TestCase
                 return false;
             }
         };
-        $factory = new class($hasher) implements PasswordHasherFactoryInterface {
+        $factory = new class ($hasher) implements PasswordHasherFactoryInterface {
             public function __construct(private readonly PasswordHasherInterface $hasher)
             {
             }

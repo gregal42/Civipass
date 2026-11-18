@@ -11,7 +11,7 @@ use Symfony\Component\Security\Http\Event\LoginFailureEvent;
 /**
  * O-6 (LOT 10) — énumération de comptes par le temps de réponse de la connexion, dans le navigateur simulé : un identifiant inconnu fait exécuter un hachage
  * factice par la VRAIE fabrique de hacheurs ; un compte existant, une connexion valide et une tentative limitée n'en exécutent aucun de plus ; les messages,
- * les statuts et le limiteur sont inchangés. (Les mesures de temps avec le coût de production sont documentées dans docs/lot-10-registre-securite.md.)
+ * les statuts et le limiteur sont inchangés. (Les mesures de temps avec le coût de production sont documentées dans docs/registre-securite.md.).
  */
 final class LoginTimingTest extends WebTestCase
 {

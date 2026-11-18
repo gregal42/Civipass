@@ -29,7 +29,7 @@ final class ControlRouteAllowlist
 
     /**
      * @var list<string> ressources compilées strictement nécessaires à la PWA (lecture seule) : même expression que le gabarit Nginx
-     *                    (caractères sûrs seulement, jamais `..` ni `%`), pour qu'un chemin détourné ne passe pas non plus par l'application
+     *                   (caractères sûrs seulement, jamais `..` ni `%`), pour qu'un chemin détourné ne passe pas non plus par l'application
      */
     public const STATIC_PATTERNS = [
         '#^/assets/(?:styles|vendor/jsqr|fonts)/(?!.*\.\.)[A-Za-z0-9_./-]+$#',

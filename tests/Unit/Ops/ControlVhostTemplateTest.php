@@ -12,7 +12,7 @@ use Symfony\Component\Process\Process;
 /**
  * Vhost Nginx dédié au contrôle (LOT 10, V2) : la liste blanche du gabarit Nginx est la MÊME que celle de l'application (ControlRouteAllowlist), la CSP et les
  * en-têtes de sécurité du gabarit sont ceux de l'application, la génération refuse les configurations incohérentes et le contrôle de déploiement vérifie G1, G2 et
- * le domaine de la PWA. (Le comportement réel de nginx est vérifié par ops/nginx/tests/verify-control-vhost.sh, qui exige Docker.)
+ * le domaine de la PWA. (Le comportement réel de nginx est vérifié par ops/nginx/tests/verify-control-vhost.sh, qui exige Docker.).
  */
 final class ControlVhostTemplateTest extends TestCase
 {
