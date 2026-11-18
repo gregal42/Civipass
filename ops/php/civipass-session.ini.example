@@ -1,0 +1,16 @@
+; PHP — sessions de Civipass (LOT 10, M6). EXEMPLE À ADAPTER puis à installer À LA MAIN (Debian/Ubuntu : /etc/php/8.4/fpm/conf.d/90-civipass-session.ini) ;
+; jamais appliqué automatiquement. Ne modifie AUCUNE durée applicative : inactivité (30 min agents, 15 min CWS, bornée à 2 h) et durée absolue (12 h / 8 h)
+; restent portées par l'application (SessionLifetime, SessionLifetimeListener).
+;
+; Rôle de ce réglage : le ramasse-miettes de PHP supprime un fichier de session dont la DERNIÈRE ACTIVITÉ (date de modification, rafraîchie à chaque requête)
+; est plus ancienne que gc_maxlifetime. Il doit donc être AU MOINS le plus long délai d'inactivité que l'application peut autoriser
+; (SessionLifetime::MAX_IDLE = 7 200 s), sinon une session encore valide est supprimée trop tôt (constaté : session inactive 26 min supprimée avec 1 440 s).
+; La durée absolue (12 h) n'a pas à être couverte : l'activité rafraîchit le fichier. Valeur : MAX_IDLE + 1 h de marge.
+; Les brouillons anonymes du dépôt public sont purgés à part, à 30 minutes (app:request-drafts:purge) : ce réglage ne les concerne pas.
+session.gc_maxlifetime = 10800
+
+; Nettoyage : sur Debian/Ubuntu, la minuterie systemd « phpsessionclean » supprime les fichiers plus anciens que gc_maxlifetime ; le ramasse-miettes
+; interne est alors désactivé par le paquet (gc_probability = 0). Vérifier : systemctl list-timers phpsessionclean.timer. Hors Debian, activer
+; le ramasse-miettes interne (dé-commenter) :
+;session.gc_probability = 1
+;session.gc_divisor = 100

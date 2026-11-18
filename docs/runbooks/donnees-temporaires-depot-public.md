@@ -30,13 +30,14 @@ php bin/console app:ops:status                                                  
 ```
 La commande n'affiche que des compteurs (brouillons, pièces temporaires, sessions authentifiées ignorées, sessions lues), jamais de donnée personnelle.
 
-## 4. Nettoyage général des sessions PHP (M6) — constat et proposition
+## 4. Nettoyage général des sessions PHP (M6)
 
-Constat sur la recette locale (image PHP officielle) : `session.gc_maxlifetime=1440` (24 min) mais `gc_probability/gc_divisor = 1/1000` ; 123 fichiers dont les plus anciens avaient plus de 2 h 40 min : le nettoyage de PHP ne garantit rien. **À mesurer sur le serveur cible (09.7)** : valeur de `gc_maxlifetime`, présence de la minuterie `phpsessionclean` (paquets Debian/Ubuntu), dossier réel des sessions du pool.
+Diagnostic complet et configuration recommandée : [lot-10-m6-sessions-php.md](../lot-10-m6-sessions-php.md). En résumé :
 
-Point d'attention pour l'exploitation : `gc_maxlifetime` (24 min par défaut) est **inférieur** à l'inactivité autorisée d'un agent (30 min) et à la durée absolue (12 h) : quand le nettoyage de PHP s'exécute, une session d'agent inactive depuis plus de 24 min peut être supprimée avant l'expiration prévue par l'application (déconnexion anticipée, sans fuite de données).
-
-**Proposition non appliquée, à valider** : fixer dans le pool PHP-FPM `php_admin_value[session.gc_maxlifetime] = 43200` (12 h, durée absolue d'un agent) et laisser la purge applicative gérer les brouillons anonymes (30 min). Effet : plus de déconnexion anticipée ; les sessions anonymes sans brouillon (jetons CSRF) peuvent rester jusqu'à 12 h. Modification du comportement des sessions : à soumettre avant toute mise en œuvre.
+- Gestionnaire natif (fichiers) ; `gc_maxlifetime` actuel de l'image = **24 min**, **inférieur** à l'inactivité autorisée d'un agent (30 min, réglable jusqu'à 2 h) : constaté, une session inactive 26 min est supprimée par la collecte PHP et l'agent est renvoyé à la connexion.
+- Réglage recommandé (exemple **non appliqué** : `ops/php/civipass-session.ini.example`) : `session.gc_maxlifetime = 10800` (inactivité maximale réglable de 2 h + 1 h de marge). La proposition précédente à 12 h est **abandonnée** : la collecte se mesure sur l'inactivité du fichier, pas sur la durée absolue.
+- À vérifier sur le serveur cible : minuterie `phpsessionclean` (Debian/Ubuntu) et valeur qu'elle lit, dossier réel des sessions.
+- Les brouillons anonymes ne dépendent pas de ce réglage : `app:request-drafts:purge` les supprime à 30 minutes.
 
 ## 5. Incident
 
