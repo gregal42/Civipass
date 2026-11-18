@@ -14,3 +14,8 @@ session.gc_maxlifetime = 10800
 ; le ramasse-miettes interne (dé-commenter) :
 ;session.gc_probability = 1
 ;session.gc_divisor = 100
+
+; Dossier des sessions : par défaut (/var/lib/php/sessions sur Debian/Ubuntu) il est PARTAGÉ avec les autres pools du serveur et nettoyé par la minuterie du paquet. Un dossier
+; dédié (dé-commenter dans le pool, propriétaire civipass, mode 0700) isole Civipass mais n'est PAS nettoyé par cette minuterie : activer alors le ramasse-miettes interne
+; ci-dessus ou fournir un nettoyeur, et faire pointer --path de l'unité civipass-request-drafts-purge sur ce dossier (docs/lot-10-m6-sessions-php.md, § 7).
+;session.save_path = /var/lib/civipass/sessions

@@ -60,6 +60,34 @@ Je n'ai pas accès au serveur cible : ce qui suit est une **liste de contrôle**
 - **Hors paquets Debian** (image Docker, installation manuelle) : activer le ramasse-miettes interne (`gc_probability=1`, `gc_divisor=100`) ou planifier un nettoyage équivalent.
 - **Contrôle final** : après installation, redémarrer PHP-FPM, puis vérifier `php-fpm8.4 -i | grep gc_maxlifetime` et rejouer le test d'inactivité du § 3 (session inactive 26 min : conservée).
 
-## 7. Décision attendue
+## 7. Risques : nettoyages concurrents et stockage partagé entre pools PHP
 
-Valider `session.gc_maxlifetime = 10800` comme réglage cible (à appliquer à la mise en service, après vérification du § 6), en remplacement de la proposition à 12 h du runbook.
+**Valeur retenue (18 novembre 2026)** : `session.gc_maxlifetime = 10800`, **sous réserve de vérification sur le serveur Linux cible** ; le réglage reste dans l'**exemple** (`ops/php/civipass-session.ini.example`) tant que cette vérification n'a pas eu lieu. Les limites applicatives de session ne changent pas.
+
+### 7.1 Plusieurs « nettoyeurs » sur le même dossier
+
+Plusieurs mécanismes peuvent supprimer des fichiers de session : (a) le ramasse-miettes interne de PHP (probabiliste, à l'ouverture d'une session) ; (b) la minuterie `phpsessionclean` des paquets Debian/Ubuntu ; (c) la purge applicative `app:request-drafts:purge` (brouillons anonymes de plus de 30 min) ; (d) tout nettoyage maison (`find -mmin`, `tmpreaper`, `systemd-tmpfiles` si le dossier est sous `/tmp`).
+
+| Risque | Conséquence | Parade |
+|---|---|---|
+| **Le seuil le plus court gagne** : si un nettoyeur applique 24 min (valeur de la ligne de commande ou d'un autre SAPI) alors que le pool vise 3 h, c'est 24 min qui s'applique | Sessions d'agents supprimées trop tôt (déconnexion anticipée), exactement le défaut constaté | Lister tous les nettoyeurs actifs ; chacun doit appliquer **au moins 10 800 s** ; vérifier la valeur réellement lue par la minuterie (§ 6) |
+| **Suppression d'un fichier de session en cours d'utilisation** (suppression pendant qu'une requête le tient ouvert) | Sous Linux, la suppression réussit ; la requête écrit dans un fichier déjà supprimé : sa modification est perdue, l'utilisateur est renvoyé à la connexion à la requête suivante | Les seuils (3 h pour PHP, 30 min pour la purge de brouillons) sont des **inactivités** : seule une session sans requête depuis plus que le seuil est visée ; la fenêtre de course (une requête qui arrive juste au moment du seuil) est de l'ordre de la seconde et, pour un brouillon public, c'est le comportement voulu (effacement à 30 min) |
+| **Purge de brouillons et collecte PHP simultanées** | Aucune erreur : la suppression d'un fichier déjà supprimé est ignorée (`unlink` silencieux), le compteur peut compter un fichier que PHP a supprimé entre-temps | Aucune action ; les compteurs sont indicatifs |
+| **Nettoyage de `/tmp`** (si `session.save_path` est vide et que le dossier retombe dans `/tmp`) | Des sessions disparaissent selon la politique du système, hors de tout contrôle applicatif | Définir un dossier dédié (§ 7.2) |
+
+### 7.2 Dossier de sessions partagé entre plusieurs pools ou applications
+
+Le dossier par défaut (`/var/lib/php/sessions` sur Debian/Ubuntu) est **commun** à tous les pools PHP-FPM du serveur.
+
+| Risque | Conséquence | Parade recommandée |
+|---|---|---|
+| Un **autre pool** ou une autre application du même serveur applique un seuil plus court (ou déclenche le ramasse-miettes avec son propre `gc_maxlifetime`) | Ses collectes suppriment aussi les sessions de Civipass si le même compte système possède les fichiers, ce qui ramène la durée utile à son seuil | Dossier **dédié** au pool Civipass : `php_admin_value[session.save_path] = /var/lib/civipass/sessions` (propriétaire `civipass`, mode `0700`) |
+| Fichiers de pools différents sous des comptes différents | Les collectes d'un pool ne peuvent pas supprimer les fichiers d'un autre compte (droits `0600`), mais **s'accumulent** si aucun nettoyeur ne tourne pour eux | Prévoir un nettoyeur par dossier |
+| **Dossier dédié = la minuterie `phpsessionclean` ne le nettoie pas** (elle ne traite que le dossier par défaut) | Les sessions s'accumulent sans limite | Activer le ramasse-miettes interne dans le pool (`php_admin_value[session.gc_probability] = 1`, `session.gc_divisor = 100`) **ou** une minuterie maison ; garder la purge de brouillons, dont `--path` doit désigner ce même dossier |
+| Lecture inter-pools | Un pool compromis ne doit pas lire les sessions d'un autre | Dossier `0700` propre à chaque compte ; jamais un dossier commun lisible |
+
+**Décision à prendre à la vérification sur le serveur cible** : dossier par défaut (plus simple, nettoyé par la minuterie du paquet, partagé) ou dossier dédié (isolé, mais nettoyage à fournir). Recommandation : **dossier dédié** si le serveur héberge un autre pool, **dossier par défaut** sinon ; dans les deux cas, `--path` de l'unité `civipass-request-drafts-purge` doit correspondre au dossier réellement utilisé.
+
+## 8. Décision
+
+`session.gc_maxlifetime = 10800` est **accepté comme valeur cible sous réserve de la vérification du § 6 sur le serveur Linux** ; il reste dans la configuration d'exemple (jamais appliqué automatiquement), en remplacement de la proposition à 12 h du runbook. Reste à trancher à la vérification : dossier de sessions par défaut ou dédié (§ 7.2).
