@@ -27,6 +27,7 @@
   <div class="cp-reqform__main">
     {%- if errors|length > 1 %}{% include 'components/error_summary.html.twig' with { errors: errors } only %}{% endif %}
     {%- for message in notice|default([]) %}{% include 'components/alert.html.twig' with { variant: 'error', title: 'Votre demande n’a pas pu être envoyée', text: message ~ ' Votre saisie est conservée : vous pouvez corriger puis réessayer.', focus: loop.first } only %}{% endfor %}
+    {%- for message in cleared|default([]) %}{% include 'components/alert.html.twig' with { variant: 'info', title: message, focus: loop.first } only %}{% endfor %}
     {%- for message in hints|default([]) %}{% include 'components/alert.html.twig' with { variant: 'warning', title: 'À vérifier avant de continuer', text: message, focus: loop.first } only %}{% endfor %}
     {%- if err.form|default('') %}{% include 'components/alert.html.twig' with { variant: 'error', title: err.form, focus: true } only %}{% endif %}
     <form class="cp-reqform__form" action="{{ action }}" method="post" novalidate{% if step == 'justificatifs' %} enctype="multipart/form-data"{% endif %}
@@ -114,6 +115,13 @@
         {%- if prev_href %}{% include 'components/button.html.twig' with { label: 'Précédent', variant: 'ghost', icon: 'left', href: prev_href } only %}{% endif %}
       </div>
     </form>
+    {#- « Effacer ma saisie » (dépôt public, LOT 10 O-2) : formulaire HORS du formulaire principal, séparé de « Continuer ». -#}
+    {%- if not agent and clear_action|default('') %}
+    <form class="cp-reqform__clear" action="{{ clear_action }}" method="post" novalidate data-controller="cp--submit-state">
+      <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+      {% include 'components/button.html.twig' with { label: 'Effacer ma saisie', variant: 'ghost', icon: 'trash', type: 'submit', loading_label: 'Effacement…' } only %}
+    </form>
+    {%- endif %}
     {#- Formulaire de retrait des justificatifs reçus, HORS du formulaire principal : les boutons « Retirer » lui sont rattachés par
         l'attribut form, donc la touche Entrée (bouton par défaut du formulaire principal) ne peut jamais déclencher un retrait. -#}
     {%- if step == 'justificatifs' and files|length %}

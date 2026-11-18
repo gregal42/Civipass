@@ -26,6 +26,7 @@ final class PublicRequestController extends AbstractRequestFormController
     public function __construct(
         RequestFormServices $services,
         private readonly EventRepository $events,
+        private readonly PublicDraftKeeper $drafts,
     ) {
         parent::__construct($services);
     }
@@ -41,6 +42,24 @@ final class PublicRequestController extends AbstractRequestFormController
     public function confirmation(Request $request, string $eventReference): Response
     {
         return $this->confirmationPage($this->context($request, $eventReference));
+    }
+
+    /**
+     * « Effacer ma saisie » (LOT 10, O-2) : supprime le brouillon et ses justificatifs temporaires côté serveur, puis revient à la première
+     * étape. POST protégé par le jeton CSRF du formulaire ; n'agit que sur le brouillon PUBLIC de cet événement.
+     */
+    #[Route('/demandes/{eventReference}/effacer', name: 'app_public_request_clear', requirements: ['eventReference' => 'EVT-\d{4}-\d{6,}'], methods: ['POST'])]
+    public function clear(Request $request, string $eventReference): Response
+    {
+        $c = $this->context($request, $eventReference);
+        $token = $request->request->get('_token');
+        if (!$this->isCsrfTokenValid($c->csrfId, \is_string($token) ? $token : '')) {
+            $this->addFlash('request_notice', 'Votre saisie n’a pas pu être effacée (formulaire expiré) : rechargez la page puis réessayez.');
+        } else {
+            $this->drafts->clear($request->getSession(), $c->draft);
+        }
+
+        return $this->redirectToRoute('app_public_request_step', ['eventReference' => $eventReference, 'step' => PublicRequestStep::Identity->value], Response::HTTP_SEE_OTHER);
     }
 
     #[Route('/demandes/{eventReference}/{step}', name: 'app_public_request_step', requirements: ['eventReference' => 'EVT-\d{4}-\d{6,}', 'step' => self::STEPS_REQUIREMENT], methods: ['GET', 'POST'])]
@@ -63,10 +82,11 @@ final class PublicRequestController extends AbstractRequestFormController
 
         return new RequestFormContext(
             $event,
-            new PublicRequestDraft($request->getSession(), $eventReference),
+            $this->drafts->open($request->getSession(), $eventReference),
             'public_request_'.$eventReference,
             fn (PublicRequestStep $s): string => $this->generateUrl('app_public_request_step', ['eventReference' => $eventReference, 'step' => $s->value]),
             fn (): string => $this->generateUrl('app_public_request_confirmation', ['eventReference' => $eventReference]),
+            clearUrl: fn (): string => $this->generateUrl('app_public_request_clear', ['eventReference' => $eventReference]),
         );
     }
 }

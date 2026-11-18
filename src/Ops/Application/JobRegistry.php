@@ -21,6 +21,7 @@ final class JobRegistry
         'purge-simulation' => 691200,
         'notifications-dispatch' => 600, // chaque minute : 10 min
         'event-activation' => 600,       // chaque minute : 10 min (DM-123)
+        'request-drafts-purge' => 3600,  // toutes les 10 min : 1 h (purge technique des brouillons publics abandonnés, sessions anonymes seulement)
         'request-uploads-purge' => 7200, // horaire : 2 h (purge technique des justificatifs temporaires abandonnés, jamais les pièces des dossiers)
     ];
 }

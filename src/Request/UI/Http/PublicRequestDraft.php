@@ -14,6 +14,12 @@ use Symfony\Component\HttpFoundation\Session\SessionInterface;
  */
 final class PublicRequestDraft
 {
+    /** Durée d'inactivité au-delà de laquelle le brouillon PUBLIC est effacé (LOT 10, O-2 : navigateur partagé, minimisation). */
+    public const TTL_SECONDS = 1800;
+
+    /** Clé (hors champs de saisie) qui porte l'instant de dernière activité sur le formulaire. */
+    private const TOUCHED = '__touched';
+
     private const FIELDS = ['last', 'first', 'address', 'email', 'phone', 'category', 'motif', 'detail', 'mode', 'privacy', 'duration_mode', 'duration_date', 'duration_time', 'duration_occurrence'];
 
     public function __construct(
@@ -116,6 +122,54 @@ final class PublicRequestDraft
         }
 
         return null;
+    }
+
+    /**
+     * Marque une activité sur le formulaire (chaque requête du parcours prolonge la durée de vie du brouillon).
+     */
+    public function touch(int $now): void
+    {
+        $data = $this->read();
+        $data[self::TOUCHED] = $now;
+        $this->write($data);
+    }
+
+    /**
+     * Efface le brouillon s'il est resté inactif plus de TTL_SECONDS : saisies, confirmation et références de pièces sont retirées de la
+     * session (pas seulement masquées). Un brouillon sans horodatage (ouvert avant cette règle) est conservé et horodaté.
+     *
+     * @return list<string>|null clés des pièces temporaires à supprimer du stockage, ou null si rien n'a expiré
+     */
+    public function expireIfStale(int $now): ?array
+    {
+        $data = $this->read();
+        if ([] === $data) {
+            return null;
+        }
+        $touched = $data[self::TOUCHED] ?? null;
+        if (!\is_int($touched)) {
+            $this->touch($now);
+
+            return null;
+        }
+        if ($now - $touched <= self::TTL_SECONDS) {
+            return null;
+        }
+
+        return $this->clear();
+    }
+
+    /**
+     * Effacement volontaire ou par expiration : la clé de session du brouillon est SUPPRIMÉE (aucune donnée résiduelle).
+     *
+     * @return list<string> clés des pièces temporaires qui lui étaient rattachées
+     */
+    public function clear(): array
+    {
+        $keys = array_map(static fn (array $f): string => $f['key'], $this->files());
+        $this->session->remove($this->sessionKey());
+
+        return $keys;
     }
 
     /** Nouvelle demande après une confirmation : repart d'un brouillon vide. */

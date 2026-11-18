@@ -16,6 +16,7 @@ final readonly class RequestFormContext
     /**
      * @param \Closure(PublicRequestStep): string $stepUrl
      * @param \Closure(): string                  $confirmationUrl
+     * @param (\Closure(): string)|null           $clearUrl         adresse de « Effacer ma saisie » (dépôt public seulement)
      * @param array<string, mixed>                $view
      */
     public function __construct(
@@ -28,6 +29,7 @@ final readonly class RequestFormContext
         public ?\App\Identity\Domain\User $user = null,
         public ?string $municipalityId = null,
         public array $view = [],
+        public ?\Closure $clearUrl = null,
     ) {
     }
 }

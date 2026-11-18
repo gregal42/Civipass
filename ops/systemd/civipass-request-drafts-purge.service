@@ -1,0 +1,17 @@
+[Unit]
+Description=Civipass — purge des brouillons publics abandonnés (> 30 min, sessions anonymes seulement)
+OnFailure=civipass-failure@%n.service
+
+[Service]
+Type=oneshot
+User=civipass
+WorkingDirectory=/opt/civipass
+EnvironmentFile=/etc/civipass/civipass.env
+# Dossier des sessions du pool PHP-FPM « civipass » (même compte) ; à adapter si le pool définit session.save_path.
+ExecStart=/opt/civipass/ops/bin/run-job request-drafts-purge --timeout 300 -- /usr/bin/php /opt/civipass/bin/console app:request-drafts:purge --path=/var/lib/php/sessions
+SuccessExitStatus=75
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/civipass/var /var/lib/php/sessions

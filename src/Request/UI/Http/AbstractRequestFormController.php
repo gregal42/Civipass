@@ -415,6 +415,8 @@ abstract class AbstractRequestFormController extends AbstractController
             'privacy_url' => $this->s->privacyPolicyUrl,
             'notice' => PublicRequestStep::Recap === $current ? $this->consumeFlash() : [],
             'hints' => $this->consumeFlash('request_notice'),
+            'cleared' => $this->consumeFlash(PublicDraftKeeper::FLASH),
+            'clear_action' => null === $c->clearUrl ? '' : ($c->clearUrl)(),
             'recap' => PublicRequestStep::Recap === $current ? $this->recap($c, $values, $communes) : [],
             'issuance' => $c->agent && PublicRequestStep::Recap === $current ? $this->issuance($c, $values) : null,
             'event_tz' => $c->event->timezone()->identifier(),
