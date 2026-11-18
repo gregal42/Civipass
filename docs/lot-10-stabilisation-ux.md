@@ -68,7 +68,7 @@ Recommandation : **B**, car elle règle aussi le navigateur partagé ; **A** si 
 | 4 | O-4 : titre de niveau 1 sur tous les états de `/v` | **Fait** | `8be6b7a` |
 | 6 | O-1 : tableaux communaux dans un conteneur défilant | **Fait** | `e6146dd` |
 | 7 | O-6 : revue de sécurité des réponses aux liens invalides ; matrice des statuts retenue et figée par test ; constat d'énumération par le temps de connexion à valider | **Revue faite**, correction du constat proposée (non implémentée) | `d9e5a5a` |
-| 8 | O-5 : navigation mobile (4 entrées + « Menu ») | **Fait** | voir historique Git |
+| 8 | O-5 : navigation mobile (quatre rubriques + « Menu ») | **Fait ; vérifié visuellement à 390 px** (profil administrateur : barre basse 69 px au lieu de 229, aucun débordement, feuille « Menu » complète ; captures locales `var/lot10/preuves/O5-*.png`) ; autres profils couverts par `MobileNavigationTest` | `c620ce6` et correctif du bandeau de contexte |
 | M6 | Sessions PHP : diagnostic et configuration recommandée (`gc_maxlifetime` 10 800 s), non appliquée | **Fait** | `f5fdda0` |
 | G1-G3 | Garde-fous du vhost de contrôle | **Faits** (inactifs par défaut) | `1970d0c`, `6085939`, `6ff7042` |
 
