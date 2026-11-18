@@ -1,10 +1,10 @@
 # Registre de sécurité
 
-Constats de sécurité de Civipass, avec leur gravité, leur correction et leurs preuves. Une entrée n'est « Corrigée » que si le correctif est testé et mesuré. Liens : [security.md](security.md), [authentication.md](authentication.md).
+**Registre de référence des anomalies de sécurité de Civipass** (décision du 18 novembre 2026), avec gravité, correction et preuves. Statuts : *Ouverte* · *Corrigée en développement — validation en environnement cible en attente* (correctif testé et mesuré en local) · *Validée en environnement cible* (nouvelle vérification réussie sur le serveur HTTPS cible) · *Acceptée* (risque résiduel accepté par écrit). Liens : [security.md](security.md), [authentication.md](authentication.md).
 
 | ID | Date | Constat | Gravité | Statut |
 |---|---|---|---|---|
-| [SEC-001](#sec-001) | 18 novembre 2026 | Énumération de comptes par le temps de réponse de la connexion | Moyenne | **Corrigée** (commit local, à pousser) |
+| [SEC-001](#sec-001) | 18 novembre 2026 | Énumération de comptes par le temps de réponse de la connexion | Moyenne | **Corrigée en développement — validation en environnement cible en attente** (commit `b36fa06`, poussé) |
 
 ## SEC-001
 
@@ -34,3 +34,10 @@ Messages relevés pendant les trois séries : un seul (« Identifiants invalides
 - Non-régression : `AuthenticationTest` (limiteur, désactivé, CSRF, normalisation) et la suite complète.
 
 **Résiduel.** (1) Les temps ne sont pas strictement égaux (quelques millisecondes de bruit réseau et de base de données) : non exploitable dans les conditions mesurées. (2) Un compte dont le hachage stocké a un coût plus ancien peut répondre un peu plus vite ou plus lentement qu'un hachage au coût courant (rehachage à la connexion réussie) : non mesuré, non exploitable. (3) La réinitialisation de mot de passe envoie l'e-mail après la réponse ; écart de la base de quelques millisecondes (médiane 11 ms contre 9 ms) : documenté dans [authentication.md](authentication.md). À reprendre en recette sur le serveur cible (09.7) avec la latence réseau réelle.
+
+**Vérification prévue sur le serveur HTTPS cible (non exécutée).** Les mesures ci-dessus sont locales (serveur mono-processus, réseau local, base locale). À rejouer sur le serveur de recette HTTPS (protocole 09.7) avant de passer SEC-001 à « Validée en environnement cible » :
+1. Même protocole : 8 + 8 échecs entrelacés (comptes existants alternés, identifiants inconnus tous différents), depuis un poste distant, avec le coût de hachage de production et la latence réseau réelle ; conserver les distributions (min / médiane / max).
+2. Critère : aucun écart systématique exploitable (distributions qui se recouvrent) ; si la latence réseau est élevée, répéter avec N plus grand et comparer les médianes.
+3. Vérifier que les messages, les statuts et les redirections restent identiques et que le limiteur de connexion (5 essais / 15 min par identifiant et IP ; 50 par IP) répond de la même façon pour les deux cas ; vérifier que les adresses IP vues par l'application sont celles des clients (aucun proxy de confiance) pour que le limiteur ne soit pas contourné.
+4. Rejouer le test de non-régression des connexions valides et invalides et noter la version déployée (référence Git).
+5. Consigner les résultats dans cette entrée ; décision de passage de statut par le responsable du projet.
