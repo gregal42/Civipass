@@ -67,8 +67,10 @@ Recommandation : **B**, car elle règle aussi le navigateur partagé ; **A** si 
 | 5 | O-7 : lien « Consulter les archives » (rôles habilités) | **Fait** | `1d025e3` |
 | 4 | O-4 : titre de niveau 1 sur tous les états de `/v` | **Fait** | `8be6b7a` |
 | 6 | O-1 : tableaux communaux dans un conteneur défilant | **Fait** | `e6146dd` |
-| 7 | O-6 : statuts et pages cohérents pour les liens invalides | À faire (revue sécurité des réponses) | |
-| 8 | O-5 : navigation mobile (4 entrées + « Menu ») | À faire | |
+| 7 | O-6 : revue de sécurité des réponses aux liens invalides ; matrice des statuts retenue et figée par test ; constat d'énumération par le temps de connexion à valider | **Revue faite**, correction du constat proposée (non implémentée) | `d9e5a5a` |
+| 8 | O-5 : navigation mobile (4 entrées + « Menu ») | **Fait** | voir historique Git |
+| M6 | Sessions PHP : diagnostic et configuration recommandée (`gc_maxlifetime` 10 800 s), non appliquée | **Fait** | `f5fdda0` |
+| G1-G3 | Garde-fous du vhost de contrôle | **Faits** (inactifs par défaut) | `1970d0c`, `6085939`, `6ff7042` |
 
 Ordre : 1 → 2/3 (après validation) → 4 → 5 → 6 → 7 → 8. Total estimé : environ 4 à 5 jours avec validations.
 

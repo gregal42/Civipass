@@ -105,22 +105,22 @@ Déjà émis par l'application sur `/controle/` : `Content-Security-Policy` (`de
 4. **E2E navigateur** (`bin/qa e2e`) étendu à deux origines locales distinctes : activation sur l'une, absence de données lisibles sur l'autre.
 5. **Contrôle de déploiement** (`check-deployment.sh`) étendu au second domaine.
 
-## 7. Garde-fous applicatifs G1, G2, G3 — définitions exactes (à valider avant tout code)
+## 7. Garde-fous applicatifs G1, G2, G3 — implémentés le 18 novembre 2026 (locaux, inactifs par défaut)
 
-Aucun n'est implémenté. Tous sont **inactifs par défaut** (paramètre vide) et donc sans effet en développement et dans les tests actuels. Ils s'ajoutent à la liste blanche de Nginx (défense en profondeur) et ne la remplacent pas.
+Implémentation : `ControlRouteAllowlist` et `ControlOriginListener` (`src/Control/UI/Http/`), `trusted_hosts` dans `config/packages/framework.yaml` ; commits `1970d0c` (G2), `6085939` (G1), `6ff7042` (G3). Tests : `TrustedHostsTest`, `ControlOriginGuardsTest` (liste blanche, 404 génériques, inventaire des routes, G3, inactivité par défaut) et parcours navigateur réel du contrôle rejoué avec G1 actif (11/11). Tous sont **inactifs par défaut** (paramètre vide) et donc sans effet en développement et dans les tests actuels. Ils s'ajoutent à la liste blanche de Nginx (défense en profondeur) et ne la remplacent pas.
 
 **Paramètres (nouveaux, environnement)**
 
 | Paramètre | Rôle | Exemple | Défaut |
 |---|---|---|---|
 | `CONTROL_HOST` | Nom d'hôte de l'origine de contrôle (sans schéma ni port) | `controle.civipass.example` | vide : G1 et G3 inactifs |
-| `TRUSTED_HOSTS` | Expression régulière des seuls hôtes acceptés | `^(civipass\.example\|controle\.civipass\.example)$` | vide : G2 inactif |
+| `TRUSTED_HOSTS` | Expression régulière des seuls hôtes acceptés | `^(civipass\.example\|controle\.civipass\.example)$` | `^.*$` : G2 inactif |
 
 `DEFAULT_URI` reste l'origine de **gestion** : les liens envoyés par e-mail, les QR de laissez-passer et la base de vérification de la PWA (`verification_base` = `DEFAULT_URI`) pointent vers elle. La PWA ouvre la vérification en ligne `/v/{jeton}` **sur l'origine de gestion** (navigation vers une autre origine) : le vhost de contrôle n'a donc **pas** à servir `/v/…`. Le QR d'activation et le lien de l'application de contrôle utilisent `CONTROL_PWA_BASE_URL` (déjà prévu).
 
 **G1 — Liste blanche sur l'hôte de contrôle**
 - *Quoi* : un écouteur d'événement `kernel.request` (priorité haute, avant le routage et la sécurité) compare l'en-tête `Host` (minuscules, sans port) à `CONTROL_HOST`.
-- *Si l'hôte est celui du contrôle* : la requête n'est servie que si (méthode, chemin) figure dans la liste blanche du § 2 (routes `app_control_*` avec leurs méthodes autorisées, et ressources statiques sous `/assets/`). Sinon, réponse **404 générique** (même corps que le 404 neutre existant, `Cache-Control: no-store`, aucun détail), **sans** exécuter le routage ni aucun contrôleur ; 405 conservé pour une route autorisée avec une méthode interdite.
+- *Si l'hôte est celui du contrôle* : la requête n'est servie que si (méthode, chemin) figure dans la liste blanche du § 2 (routes `app_control_*` avec leurs méthodes autorisées, et ressources statiques sous `/assets/`). Sinon, réponse **404 générique** (même corps que le 404 neutre existant, `Cache-Control: no-store`, aucun détail), **sans** exécuter le routage ni aucun contrôleur ; une route autorisée appelée avec une méthode interdite reçoit **aussi** le 404 générique (aucune information sur l'existence de la route). Les réponses de l'hôte de contrôle hors `/controle/*` portent la même politique de protection (CSP, `nosniff`, `no-store`) et ne posent aucun cookie.
 - *Si `CONTROL_HOST` est vide ou que l'hôte est différent* : aucun effet.
 - *Test d'inventaire* : un test PHPUnit parcourt toutes les routes de l'application : toute route `/controle…` doit figurer dans la liste blanche, et aucune autre route ne doit être joignable avec `Host: CONTROL_HOST`.
 - *Risque et coût* : une liste incomplète bloquerait une ressource de la PWA (détecté par le test et par l'E2E à deux origines) ; effort S.
@@ -160,4 +160,4 @@ Aucun n'est implémenté. Tous sont **inactifs par défaut** (paramètre vide) e
 | V4 | E2E à deux origines locales, tests cookies et sessions | S |
 | V5 | Mise à jour du runbook de contrôle et du protocole 09.7 | XS |
 
-Aucun de ces incréments n'est lancé : la présente note est la conception demandée.
+Incréments V1 (liste blanche et test d'inventaire), V3 (G1, G2, G3 avec tests) et la preuve E2E locale sont **faits** ; restent V2 (gabarit Nginx et extension de `verify-nginx.sh`, à faire en local sans déploiement), V4 (E2E à deux origines distinctes) et V5 (runbook), après validation.
