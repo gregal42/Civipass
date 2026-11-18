@@ -193,7 +193,7 @@ final class EventShowPageTest extends MunicipalPagesTestCase
         self::assertStringContainsString('Accepter l’invitation', $html);
         self::assertStringContainsString('L’invitation reste en attente jusqu’à la clôture de l’événement. La commune invitée peut choisir de ne pas y donner suite.', $html, 'LOT 10 O-3');
         self::assertStringNotContainsString('n’expire pas', $html);
-        self::assertStringNotContainsString('V1', $html);
+        self::assertDoesNotMatchRegularExpression('/\bV1\b/', $html);
         self::assertStringContainsString('/participation/accepter"', $html, 'formulaire réel');
         self::assertStringContainsString('Participer ne donne pas le droit de créer', $html);
         self::assertStringNotContainsString('Description réservée', $html, 'informations minimales (DM-084)');
