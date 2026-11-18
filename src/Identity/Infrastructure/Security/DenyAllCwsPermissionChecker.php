@@ -7,14 +7,11 @@ namespace App\Identity\Infrastructure\Security;
 use App\Identity\Application\CwsPermissionChecker;
 use App\Identity\Domain\CwsPermission;
 use App\Identity\Domain\User;
-use Symfony\Component\DependencyInjection\Attribute\AsAlias;
 
 /**
- * Refus par défaut (DM-074) : personne ne détient ces permissions tant que le lot Administration CWS n'a pas
- * défini leur attribution. `superAdmin` n'y change rien. À remplacer par une implémentation persistante,
- * pas à contourner.
+ * Refus total (DM-074) : comportement « aucune attribution ». Depuis le LOT 08.6, l'implémentation active est PersistentCwsPermissionChecker (permissions
+ * persistées) ; cette classe n'est plus un service du conteneur et sert de référence du refus par défaut.
  */
-#[AsAlias(CwsPermissionChecker::class)]
 final readonly class DenyAllCwsPermissionChecker implements CwsPermissionChecker
 {
     public function isGranted(User $user, CwsPermission $permission): bool

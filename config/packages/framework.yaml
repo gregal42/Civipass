@@ -89,6 +89,12 @@ framework:
             limit: 1
             interval: '1 hour'
             storage_service: App\Permit\Infrastructure\RateLimiter\StrictCacheStorage
+        # Clôture exceptionnelle d'un événement par un opérateur CWS (LOT 08.6, DM-139) : 5 tentatives / 15 min par opérateur (stockage STRICT).
+        cws_forced_closure:
+            policy: sliding_window
+            limit: 5
+            interval: '15 minutes'
+            storage_service: App\Permit\Infrastructure\RateLimiter\StrictCacheStorage
         # Mot de passe oublié : 3 demandes / heure par adresse, 10 / heure par IP (réponse identique, envoi
         # abandonné en silence au-delà) ; 10 validations ou soumissions de jeton / 15 min par IP.
         password_reset_email:

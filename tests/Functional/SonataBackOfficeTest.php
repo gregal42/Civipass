@@ -106,12 +106,14 @@ final class SonataBackOfficeTest extends WebTestCase
 
     private function login(KernelBrowser $client, string $email, bool $remember = false): void
     {
-        $client->request('GET', '/login');
-        $fields = ['email' => $email, 'password' => self::PASSWORD];
         if ($remember) {
-            $fields['_remember_me'] = '1';
+            // Paramètre `_remember_me` forgé (la case n'existe plus, LOT 08.3) : aucun cookie persistant.
+            $this->submitLoginWithForgedRememberMe($client, $email, self::PASSWORD);
+
+            return;
         }
-        $client->submitForm('Se connecter', $fields);
+        $client->request('GET', '/login');
+        $client->submitForm('Se connecter', ['email' => $email, 'password' => self::PASSWORD]);
     }
 
     // ───────────────────────── Accès ─────────────────────────
@@ -153,22 +155,19 @@ final class SonataBackOfficeTest extends WebTestCase
         }
     }
 
-    public function testASessionThatIsOnlyRememberMeCannotReachTheBackOffice(): void
+    public function testNoPersistentCookieSoAnEndedSessionCannotReachTheBackOffice(): void
     {
         $client = $this->world();
         $this->login($client, 'root@example.test', remember: true);
         $client->request('GET', '/admin/dashboard');
         self::assertResponseIsSuccessful('précondition : connexion complète');
 
-        // Fin de session (navigateur fermé) : seul le cookie persistant subsiste.
-        $remember = $client->getCookieJar()->get('REMEMBERME');
-        self::assertNotNull($remember);
+        // Fin de session (navigateur fermé) : plus aucun cookie persistant (LOT 08.3, DM-138).
         $client->getCookieJar()->clear();
-        $client->getCookieJar()->set(new Cookie('REMEMBERME', $remember->getValue(), null, '/', 'localhost'));
 
         foreach ($this->readUrls() as $url) {
             $client->request('GET', $url);
-            self::assertResponseRedirects('/login', 302, 'remember-me seul : '.$url);
+            self::assertResponseRedirects('/login', 302, 'session terminée : '.$url);
         }
 
         // L'authentification complète rétablit l'accès.

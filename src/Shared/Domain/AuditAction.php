@@ -150,4 +150,10 @@ enum AuditAction: string
     case ControlDeviceDeactivated = 'CONTROL_DEVICE_DEACTIVATED';
     case ControlDeviceRenewed = 'CONTROL_DEVICE_RENEWED';
     case ControlSyncRefused = 'CONTROL_SYNC_REFUSED';
+
+    // Habilitations CWS et clôture exceptionnelle (LOT 08.6, DM-139) : identifiants, permission, motif d'attribution ou de clôture (texte interne CWS, sans donnée
+    // personnelle) et compteurs SEULEMENT ; jamais un mot de passe, un jeton ni une donnée de laissez-passer ou de demande.
+    case CwsPermissionGranted = 'CWS_PERMISSION_GRANTED';
+    case CwsPermissionRevoked = 'CWS_PERMISSION_REVOKED';
+    case EventForcedClosure = 'EVENT_FORCED_CLOSURE';
 }

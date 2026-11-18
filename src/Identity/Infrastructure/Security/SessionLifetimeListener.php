@@ -7,6 +7,7 @@ namespace App\Identity\Infrastructure\Security;
 use App\Identity\Application\SessionLifetime;
 use App\Identity\Domain\User;
 use Psr\Clock\ClockInterface;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -40,6 +41,7 @@ final readonly class SessionLifetimeListener
         private TokenStorageInterface $tokens,
         private ClockInterface $clock,
         private UrlGeneratorInterface $urls,
+        private Security $security,
     ) {
     }
 
@@ -59,7 +61,8 @@ final readonly class SessionLifetimeListener
     public function onRequest(RequestEvent $event): void
     {
         $request = $event->getRequest();
-        if (!$event->isMainRequest() || !$request->hasPreviousSession()) {
+        // Uniquement le pare-feu `main` : les pare-feu sans sécurité (contrôle public /v, PWA /controle) ne lisent ni ne touchent jamais une session.
+        if (!$event->isMainRequest() || !$request->hasPreviousSession() || 'main' !== $this->security->getFirewallConfig($request)?->getName()) {
             return;
         }
         $user = $this->tokens->getToken()?->getUser();

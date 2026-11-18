@@ -28,6 +28,18 @@
 
   <div class="cp-dossier__grid" style="margin-top: 20px">
     <div class="cp-dossier__main">
+      {% if detail.duplicates is not empty %}
+        {% embed 'components/alert.html.twig' with { variant: 'warning', id: 'duplicates', title: 'Doublon possible', duplicates: detail.duplicates, mid: active_municipality_id } only %}
+          {% block content %}
+            <p>Cette demande ressemble à d’autres demandes de cet événement visibles pour votre commune. C’est une indication : <strong>aucune décision n’est prise automatiquement</strong>, à vous d’apprécier (une famille peut partager un téléphone ou une adresse).</p>
+            <ul>
+              {% for d in duplicates %}
+                <li><a href="{{ path('app_municipal_request', { municipalityId: mid, requestId: d.requestId }) }}">{{ d.reference }}</a> · {{ { PENDING: 'à traiter', APPROVED: 'approuvée', REFUSED: 'refusée' }[d.status.value] }} · {{ d.labels|join(', ') }}</li>
+              {% endfor %}
+            </ul>
+          {% endblock %}
+        {% endembed %}
+      {% endif %}
       {% set decision = detail.decision %}
       {% if decision %}
         {% set decision_items = [

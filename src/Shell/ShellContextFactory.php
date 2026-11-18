@@ -53,8 +53,10 @@ final readonly class ShellContextFactory
         $municipality = $membership->municipality();
         $role = $this->roleLabel($membership);
         $eventsUrl = $this->urls->generate('app_municipal_events', ['municipalityId' => $municipality->id()->toRfc4122()]);
+        $homeUrl = $this->urls->generate('app_municipal_home', ['municipalityId' => $municipality->id()->toRfc4122()]);
 
-        $nav = [['label' => 'Événements', 'icon' => 'flag', 'href' => $eventsUrl, 'current' => 'events' === $section]];
+        $nav = [['label' => 'Accueil', 'icon' => 'home', 'href' => $homeUrl, 'current' => 'home' === $section]];
+        $nav[] = ['label' => 'Événements', 'icon' => 'flag', 'href' => $eventsUrl, 'current' => 'events' === $section];
         if ($membership->hasRole(MunicipalityRole::Instructor)) {
             $nav[] = ['label' => 'Demandes', 'icon' => 'file', 'href' => $this->urls->generate('app_municipal_requests', ['municipalityId' => $municipality->id()->toRfc4122()]), 'current' => 'requests' === $section];
         }
@@ -84,7 +86,7 @@ final readonly class ShellContextFactory
             $options[] = [
                 'label' => $candidate->municipality()->name(),
                 'description' => $this->roleLabel($candidate),
-                'href' => $this->urls->generate('app_municipal_events', ['municipalityId' => $candidate->municipality()->id()->toRfc4122()]),
+                'href' => $this->urls->generate('app_municipal_home', ['municipalityId' => $candidate->municipality()->id()->toRfc4122()]),
                 'current' => $candidate->municipality()->id()->equals($municipality->id()),
             ];
         }
@@ -105,7 +107,7 @@ final readonly class ShellContextFactory
             'ctx_parts' => [['text' => $municipality->name(), 'strong' => true]],
             'role' => $role,
             'user' => ['name' => trim($user->firstName().' '.$user->lastName()), 'initials' => self::initials($user), 'role' => $role],
-            'home' => $eventsUrl,
+            'home' => $homeUrl,
             'logout_href' => $this->urls->generate('app_logout'),
             'cstatus' => MunicipalityStatus::Suspended === $municipality->status() ? ['state' => 'suspended', 'commune' => $municipality->name()] : null,
             'agent_role' => AgentRequestAccess::mayEnter($membership),

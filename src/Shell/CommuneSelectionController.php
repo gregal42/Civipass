@@ -41,7 +41,7 @@ final class CommuneSelectionController extends AbstractController
             }
         }
         if (null !== $target && !$request->query->has('changer')) {
-            return $this->redirectToRoute('app_municipal_events', ['municipalityId' => $target]);
+            return $this->redirectToRoute('app_municipal_home', ['municipalityId' => $target]);
         }
 
         return $this->render('municipal/select.html.twig', [

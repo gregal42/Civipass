@@ -67,6 +67,16 @@ abstract class WebTestCase extends BaseWebTestCase
     }
 
     /**
+     * Connexion avec un paramètre `_remember_me` FORGÉ (la case n'existe plus depuis le LOT 08.3, DM-138) : aucun cookie persistant ne doit être émis.
+     */
+    protected function submitLoginWithForgedRememberMe(KernelBrowser $client, string $email, string $password): void
+    {
+        $crawler = $client->request('GET', '/login');
+        $client->request('POST', '/login', ['email' => $email, 'password' => $password, '_remember_me' => '1', '_csrf_token' => $crawler->filter('input[name="_csrf_token"]')->attr('value')]);
+        self::assertNull($client->getCookieJar()->get('REMEMBERME'), 'Aucun cookie « se souvenir de moi » n\'est émis, même forgé.');
+    }
+
+    /**
      * Demande un lien de réinitialisation par le formulaire et retourne le lien de l'email (null si aucun email).
      *
      * @param array<string, string> $server

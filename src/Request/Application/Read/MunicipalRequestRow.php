@@ -21,6 +21,8 @@ final readonly class MunicipalRequestRow
         public string $categoryLabel,
         public array $zones,
         public MunicipalRequestStatus $status,
+        /** Nombre d'autres demandes possiblement liées visibles pour la commune (LOT 08.4, informatif). */
+        public int $possibleDuplicates = 0,
     ) {
     }
 }

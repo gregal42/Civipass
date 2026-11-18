@@ -59,7 +59,7 @@
         {% set action %}{% include 'components/button.html.twig' with { label: 'Consulter', variant: 'secondary', href: detail_urls[r.requestId] } only %}{% endset %}
         {% set rows = rows|merge([{ cells: {
             ref: { text: r.reference, mono: true },
-            name: { text: r.lastName|upper ~ ' ' ~ r.firstName, href: detail_urls[r.requestId] },
+            name: { text: r.lastName|upper ~ ' ' ~ r.firstName ~ (r.possibleDuplicates > 0 ? ' · doublon possible (' ~ r.possibleDuplicates ~ ')' : ''), href: detail_urls[r.requestId] },
             when: { text: r.submittedAt|cp_datetime(event.timezone), muted: true },
             cat: { text: r.categoryLabel },
             zones: { text: r.zones|length ~ (r.zones|length > 1 ? ' zones' : ' zone') ~ ' : ' ~ r.zones|join(', ') },

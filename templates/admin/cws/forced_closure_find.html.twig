@@ -1,0 +1,14 @@
+{% extends 'admin/cws/base.html.twig' %}
+{% block cws_title %}Clôture exceptionnelle d’un événement{% endblock %}
+{% block cws_content %}
+  <div class="box box-warning"><div class="box-body">
+    <p><strong>Opération exceptionnelle.</strong> À n’utiliser que si l’organisatrice ne peut pas clôturer elle-même l’événement (injoignable, administrateur parti). Elle est définitive, auditée et notifiée aux administrateurs communaux.</p>
+    {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+    <form method="post" action="{{ path('admin_cws_forced_closure_find') }}">
+      <input type="hidden" name="_token" value="{{ csrf_token('cws_forced_closure_find') }}">
+      <div class="form-group"><label for="reference">Référence de l’événement</label>
+        <input class="form-control" id="reference" name="reference" type="text" required autocomplete="off" maxlength="20"></div>
+      <button type="submit" class="btn btn-warning">Afficher l’événement</button>
+    </form>
+  </div></div>
+{% endblock %}

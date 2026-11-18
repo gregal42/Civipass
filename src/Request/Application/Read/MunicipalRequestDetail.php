@@ -46,6 +46,8 @@ final readonly class MunicipalRequestDetail
         public ?\DateTimeImmutable $eventEndsAt,
         public array $zoneViews,
         public ?DecisionView $decision,
+        /** @var list<DuplicateMatch> autres demandes possiblement liées, VISIBLES pour la commune (LOT 08.4, informatif) */
+        public array $duplicates = [],
     ) {
     }
 }

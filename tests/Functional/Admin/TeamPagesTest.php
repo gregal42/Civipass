@@ -241,14 +241,10 @@ final class TeamPagesTest extends WebTestCase
                 self::assertResponseStatusCodeSame($status, "$email $path");
             }
         }
-        // Session « mémorisée » seule : lecture possible ailleurs, mais les pages d'écriture exigent le mot de passe.
+        // Fin de session : aucun cookie persistant n'existe plus (LOT 08.3), les pages d'écriture exigent une nouvelle connexion.
         $this->client->getCookieJar()->clear();
-        $this->client->request('GET', '/login');
-        $this->client->submitForm('Se connecter', ['email' => 'admin-a@mairie.example', 'password' => self::PASSWORD, '_remember_me' => '1']);
-        $remember = $this->client->getCookieJar()->get('REMEMBERME');
-        self::assertNotNull($remember);
+        $this->submitLoginWithForgedRememberMe($this->client, 'admin-a@mairie.example', self::PASSWORD);
         $this->client->getCookieJar()->clear();
-        $this->client->getCookieJar()->set($remember);
         $this->client->request('GET', $this->team($this->a, '/inviter'));
         self::assertResponseRedirects('/login');
         $this->client->request('POST', $this->team($this->a, '/inviter'), ['email' => 'x@y.example', 'roles' => ['INSTRUCTOR']]);

@@ -47,6 +47,10 @@ final class AccountReferenceCatalog
         'control_activation.revoked_by',
         'control_device.approved_by',
         'control_device.deactivated_by',
+        // LOT 08.6 : bénéficiaire, attributeur et révocateur d'une habilitation CWS (historique conservé : un compte avec attribution ne peut pas être supprimé).
+        'identity_cws_permission.user_id',
+        'identity_cws_permission.granted_by',
+        'identity_cws_permission.revoked_by',
         'archive_rectification_mention.created_by_user_id',
         'permit_revision.actor_user_id',
         'request_permit_request.entered_by_user_id',

@@ -26,6 +26,8 @@ final class ClosedEventRouteClassifier
         '/forgot-password' => 'réinitialisation de mot de passe : lien lié à l\'utilisateur, aucun lien d\'événement',
         '/reset-password' => 'réinitialisation de mot de passe',
         '=/communes' => 'sélecteur de commune (aucune donnée de dossier)',
+        '=/communes/{municipalityId}' => 'accueil de la commune (LOT 08.1) : événements clos exclus, aucune demande ni décision d\'un événement clos, test dédié (MunicipalHomeTest)',
+        '/session/' => 'sonde et prolongation de la session authentifiée (LOT 08.3) : aucune donnée métier',
         '/v/' => 'contrôle public : « Événement terminé » seul, test dédié (lecteur du contrôle public)',
         '/controle' => 'PWA de contrôle hors connexion (LOT 09) : coquille identique pour tous et API d\'appareil (secret) ; événement clos = jeu vide marqué clos, test dédié (ControlDatasetTest)',
         '/laissez-passer/' => 'lien bénéficiaire : fermé par BeneficiaryPassReader, test dédié',
@@ -50,6 +52,9 @@ final class ClosedEventRouteClassifier
             }
             if ('equipe' === $family) {
                 return RouteClosure::Reserved; // équipe de la commune (LOT 07.2) : aucun lien avec un événement, jamais derrière la barrière de clôture
+            }
+            if ('controle' === $family) {
+                return RouteClosure::Reserved; // consigne de terrain (LOT 08.2) : texte fixe, aucune donnée de dossier, jamais derrière la barrière de clôture
             }
             if ('droits' === $family) {
                 return RouteClosure::Reserved; // droits des personnes (LOT 05.6.6) : jamais derrière la barrière de clôture

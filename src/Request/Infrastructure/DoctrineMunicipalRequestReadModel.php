@@ -9,16 +9,21 @@ use App\Event\Domain\ParticipationStatus;
 use App\Event\Domain\ZoneStatus;
 use App\Request\Application\MunicipalRequestReadModel;
 use App\Request\Application\Read\DownloadableAttachment;
+use App\Request\Application\Read\DuplicateMatch;
 use App\Request\Application\Read\DecisionView;
 use App\Request\Application\Read\MunicipalRequestDetail;
 use App\Request\Application\Read\MunicipalRequestPage;
 use App\Request\Application\Read\MunicipalRequestQuery;
 use App\Request\Application\Read\MunicipalRequestRow;
+use App\Request\Application\Read\RecentDecision;
 use App\Request\Application\Read\RequestAttachmentView;
 use App\Request\Application\Read\RequestEventOption;
 use App\Request\Application\Read\RequestZoneView;
 use App\Request\Domain\BeneficiaryCategory;
+use App\Event\Domain\EventStatus;
+use App\Request\Domain\MunicipalRequestStatus;
 use App\Request\Domain\PermitRequestAttachment;
+use App\Request\Domain\PermitRequestDecision;
 use App\Request\Domain\PermitRequestMunicipality;
 use App\Request\Domain\PermitRequestVehicle;
 use App\Request\Domain\PermitRequestZone;
@@ -45,7 +50,7 @@ final readonly class DoctrineMunicipalRequestReadModel implements MunicipalReque
 
     public function eventsOf(Uuid $municipalityId): array
     {
-        /** @var list<array{id: Uuid, name: string, status: \App\Event\Domain\EventStatus, timezone: string, participation: ParticipationStatus}> $rows */
+        /** @var list<array{id: Uuid, name: string, status: EventStatus, timezone: string, participation: ParticipationStatus}> $rows */
         $rows = $this->entityManager->createQueryBuilder()
             ->select('e.id AS id', 'e.name AS name', 'e.status AS status', 'e.timezone AS timezone', 'p.status AS participation')
             ->from(EventParticipation::class, 'p')
@@ -105,6 +110,7 @@ final readonly class DoctrineMunicipalRequestReadModel implements MunicipalReque
             }
         }
 
+        $duplicates = $this->duplicatesOf($municipalityId, array_map(static fn (PermitRequestMunicipality $p): Uuid => $p->request()->id(), $portions));
         $items = array_map(static fn (PermitRequestMunicipality $p): MunicipalRequestRow => new MunicipalRequestRow(
             $p->request()->id()->toRfc4122(),
             $p->request()->reference()->value,
@@ -114,6 +120,7 @@ final readonly class DoctrineMunicipalRequestReadModel implements MunicipalReque
             $p->request()->categoryLabel(),
             $zones[$p->id()->toRfc4122()] ?? [],
             $p->status(),
+            \count($duplicates[$p->request()->id()->toRfc4122()] ?? []),
         ), $portions);
 
         return new MunicipalRequestPage($items, $total, $page);
@@ -168,7 +175,120 @@ final readonly class DoctrineMunicipalRequestReadModel implements MunicipalReque
                 $decision->refusalReasonLabel(),
                 $decision->refusalComment(),
             ),
+            $this->duplicatesOf($municipalityId, [$request->id()])[$request->id()->toRfc4122()] ?? [],
         );
+    }
+
+    public function duplicatesOf(Uuid $municipalityId, array $requestIds): array
+    {
+        if ([] === $requestIds) {
+            return [];
+        }
+        // Une seule requête pour la page : jointure de chaque demande avec les autres demandes du même événement VISIBLES pour la commune (part non « invitée »).
+        // Égalités sur les valeurs normalisées au dépôt (plaque, téléphone E.164) ; nom et e-mail comparés sans casse ni accents (collation de la base).
+        $sql = <<<'SQL'
+            SELECT a.id AS request_id, b.id AS other_id, b.public_reference AS other_reference, b.submitted_at AS other_submitted_at, pm.status AS other_status,
+                   (a.email IS NOT NULL AND a.email = b.email) AS same_email,
+                   (a.phone IS NOT NULL AND a.phone = b.phone) AS same_phone,
+                   (a.last_name = b.last_name AND a.first_name = b.first_name) AS same_name,
+                   EXISTS (SELECT 1 FROM request_permit_request_vehicle va JOIN request_permit_request_vehicle vb ON vb.registration = va.registration
+                           WHERE va.request_id = a.id AND vb.request_id = b.id) AS same_plate
+            FROM request_permit_request a
+            JOIN request_permit_request b ON b.event_id = a.event_id AND b.id <> a.id
+            JOIN request_permit_request_municipality pm ON pm.request_id = b.id AND pm.municipality_id = :municipality
+            JOIN event_participation ep ON ep.id = pm.participation_id AND ep.status <> 'INVITED'
+            WHERE a.id IN (:ids)
+              AND ((a.email IS NOT NULL AND a.email = b.email)
+                OR (a.phone IS NOT NULL AND a.phone = b.phone)
+                OR (a.last_name = b.last_name AND a.first_name = b.first_name)
+                OR EXISTS (SELECT 1 FROM request_permit_request_vehicle va2 JOIN request_permit_request_vehicle vb2 ON vb2.registration = va2.registration
+                           WHERE va2.request_id = a.id AND vb2.request_id = b.id))
+            ORDER BY a.id, b.submitted_at DESC, b.id DESC
+            LIMIT 1000
+            SQL;
+        $rows = $this->entityManager->getConnection()->fetchAllAssociative(
+            $sql,
+            ['municipality' => $municipalityId->toBinary(), 'ids' => array_map(static fn (Uuid $id): string => $id->toBinary(), $requestIds)],
+            ['municipality' => \Doctrine\DBAL\ParameterType::BINARY, 'ids' => ArrayParameterType::BINARY],
+        );
+        $matches = [];
+        foreach ($rows as $row) {
+            $key = Uuid::fromBinary((string) $row['request_id'])->toRfc4122();
+            if (\count($matches[$key] ?? []) >= self::MAX_DUPLICATES_PER_REQUEST) {
+                continue;
+            }
+            $criteria = array_keys(array_filter(['name' => (bool) $row['same_name'], 'email' => (bool) $row['same_email'], 'phone' => (bool) $row['same_phone'], 'plate' => (bool) $row['same_plate']]));
+            $matches[$key][] = new DuplicateMatch(
+                Uuid::fromBinary((string) $row['other_id'])->toRfc4122(),
+                (string) $row['other_reference'],
+                new \DateTimeImmutable((string) $row['other_submitted_at'], new \DateTimeZone('UTC')),
+                MunicipalRequestStatus::from((string) $row['other_status']),
+                $criteria,
+            );
+        }
+
+        return $matches;
+    }
+
+    public function pendingCountsByEvent(Uuid $municipalityId): array
+    {
+        /** @var list<array{event: Uuid|string, n: int|string}> $rows */
+        $rows = $this->entityManager->createQueryBuilder()
+            ->select('IDENTITY(r.event) AS event', 'COUNT(prm.id) AS n')
+            ->from(PermitRequestMunicipality::class, 'prm')
+            ->join('prm.request', 'r')
+            ->join('r.event', 'e')
+            ->join('prm.participation', 'p')
+            ->where('IDENTITY(prm.municipality) = :municipality')
+            ->andWhere('prm.status = :pending')
+            ->andWhere('p.status <> :invited')
+            ->andWhere('e.status <> :closed')
+            ->groupBy('r.event')
+            ->setParameter('municipality', $municipalityId, 'uuid')
+            ->setParameter('pending', MunicipalRequestStatus::Pending)
+            ->setParameter('invited', ParticipationStatus::Invited)
+            ->setParameter('closed', EventStatus::Closed)
+            ->getQuery()
+            ->getResult();
+        $counts = [];
+        foreach ($rows as $row) {
+            $id = $row['event'] instanceof Uuid ? $row['event']->toRfc4122() : (Uuid::isValid((string) $row['event']) ? Uuid::fromString((string) $row['event'])->toRfc4122() : Uuid::fromBinary((string) $row['event'])->toRfc4122());
+            $counts[$id] = (int) $row['n'];
+        }
+
+        return $counts;
+    }
+
+    public function recentDecisions(Uuid $municipalityId, \DateTimeImmutable $since, int $limit): array
+    {
+        /** @var list<PermitRequestDecision> $decisions */
+        $decisions = $this->entityManager->createQueryBuilder()
+            ->select('d', 'prm', 'r', 'e')
+            ->from(PermitRequestDecision::class, 'd')
+            ->join('d.requestMunicipality', 'prm')
+            ->join('prm.request', 'r')
+            ->join('r.event', 'e')
+            ->where('IDENTITY(d.municipality) = :municipality')
+            ->andWhere('d.decidedAt >= :since')
+            ->andWhere('e.status <> :closed')
+            ->orderBy('d.decidedAt', 'DESC')
+            ->addOrderBy('d.id', 'DESC')
+            ->setMaxResults(max(1, $limit))
+            ->setParameter('municipality', $municipalityId, 'uuid')
+            ->setParameter('since', $since)
+            ->setParameter('closed', EventStatus::Closed)
+            ->getQuery()
+            ->getResult();
+
+        return array_map(static fn (PermitRequestDecision $d): RecentDecision => new RecentDecision(
+            $d->requestMunicipality()->request()->id()->toRfc4122(),
+            $d->requestMunicipality()->request()->reference()->value,
+            $d->requestMunicipality()->request()->lastName(),
+            $d->requestMunicipality()->request()->firstName(),
+            $d->outcome(),
+            $d->decidedAt(),
+            $d->requestMunicipality()->request()->event()->name(),
+        ), $decisions);
     }
 
     public function attachment(Uuid $municipalityId, Uuid $requestId, Uuid $attachmentId): ?DownloadableAttachment

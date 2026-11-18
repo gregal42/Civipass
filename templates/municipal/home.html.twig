@@ -1,0 +1,86 @@
+{% extends 'layouts/app.html.twig' %}
+
+{#
+  Accueil de la commune active (LOT 08.1, DM-138) : événements en cours et à venir, demandes en attente, demandes récemment traitées, accès rapides.
+  Variables : current_events, upcoming_events (EventListItem), summary (HomeRequestSummary ou null : non instructeur), quick_links, requests_url, pending_url, events_url.
+  Aucun calcul de validité ; les données de demandes sont celles de LA commune seulement.
+#}
+{% set status_labels = { draft: 'Brouillon', active: 'Actif', suspended: 'Suspendu', closed: 'Clôturé' } %}
+{% block content %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Accueil', sub: 'Ce qui demande votre attention aujourd’hui' } only %}
+
+  {% if cstatus is not null and cstatus.state == 'suspended' %}
+    {% include 'components/alert.html.twig' with { variant: 'warning', title: 'Commune suspendue : lecture seule', text: 'Vous pouvez consulter vos données mais aucune décision ni modification n’est possible tant que la commune est suspendue.' } only %}
+  {% endif %}
+
+  {% if summary is not null %}
+    {% include 'components/kpi_tiles.html.twig' with { tiles: [
+      { label: 'Demandes en attente', value: summary.pendingTotal, foot: summary.pendingTotal == 0 ? 'Rien à traiter' : 'À instruire', urgent: summary.pendingTotal > 0 },
+      { label: 'Traitées (' ~ summary.recentDays ~ ' jours)', value: summary.recent|length, foot: 'Les ' ~ summary.recent|length ~ ' plus récentes ci-dessous' },
+    ] } only %}
+  {% endif %}
+
+  <h2 class="cp-h2" id="home-current">Événements en cours</h2>
+  {% if current_events is empty %}
+    {% include 'components/empty_state.html.twig' with { icon: 'flag', title: 'Aucun événement en cours', text: 'Aucun événement actif ou suspendu pour votre commune pour le moment.' } only %}
+  {% else %}
+    <ul class="app-list" aria-labelledby="home-current">
+      {% for e in current_events %}
+        <li>
+          <a href="{{ path('app_municipal_event', { municipalityId: active_municipality_id, eventId: e.eventId }) }}"><strong>{{ e.name }}</strong></a>
+          <span class="cp-muted">· {{ status_labels[e.status.value|lower] }} · depuis le {{ e.startsAt|date('d/m/Y', e.timezone) }}{% if e.endsAt %} · jusqu’au {{ e.endsAt|date('d/m/Y', e.timezone) }}{% endif %}</span>
+          {% if summary is not null and summary.pendingByEvent[e.eventId] is defined %}
+            · <a href="{{ path('app_municipal_requests', { municipalityId: active_municipality_id, evenement: e.eventId, statut: 'en-attente' }) }}">{{ summary.pendingByEvent[e.eventId] }} demande{{ summary.pendingByEvent[e.eventId] > 1 ? 's' : '' }} en attente</a>
+          {% endif %}
+          {% if e.myParticipationStatus is not null and e.myParticipationStatus.value == 'INVITED' %}<span class="cp-muted"> · invitation à accepter</span>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <h2 class="cp-h2" id="home-upcoming">Événements à venir</h2>
+  {% if upcoming_events is empty %}
+    <p class="cp-muted">Aucun événement à venir.</p>
+  {% else %}
+    <ul class="app-list" aria-labelledby="home-upcoming">
+      {% for e in upcoming_events %}
+        <li>
+          <a href="{{ path('app_municipal_event', { municipalityId: active_municipality_id, eventId: e.eventId }) }}"><strong>{{ e.name }}</strong></a>
+          <span class="cp-muted">· {{ status_labels[e.status.value|lower] }} · à partir du {{ e.startsAt|date('d/m/Y', e.timezone) }}</span>
+          {% if summary is not null and summary.pendingByEvent[e.eventId] is defined %}
+            · <a href="{{ path('app_municipal_requests', { municipalityId: active_municipality_id, evenement: e.eventId, statut: 'en-attente' }) }}">{{ summary.pendingByEvent[e.eventId] }} en attente</a>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if summary is not null %}
+    <h2 class="cp-h2" id="home-recent">Demandes récemment traitées</h2>
+    {% if summary.recent is empty %}
+      <p class="cp-muted">Aucune décision de votre commune ces {{ summary.recentDays }} derniers jours.</p>
+    {% else %}
+      <div class="cp-table-wrap">
+        <table class="cp-table" aria-labelledby="home-recent">
+          <thead><tr><th scope="col">Demande</th><th scope="col">Demandeur</th><th scope="col">Événement</th><th scope="col">Décision</th><th scope="col">Date</th></tr></thead>
+          <tbody>
+          {% for d in summary.recent %}
+            <tr>
+              <td data-label="Demande"><a class="cp-table__link" href="{{ path('app_municipal_request', { municipalityId: active_municipality_id, requestId: d.requestId }) }}">{{ d.reference }}</a></td>
+              <td data-label="Demandeur">{{ d.firstName }} {{ d.lastName }}</td>
+              <td data-label="Événement">{{ d.eventName }}</td>
+              <td data-label="Décision">{{ d.outcome.value == 'APPROVED' ? 'Approuvée' : 'Refusée' }}</td>
+              <td data-label="Date">{{ d.decidedAt|date('d/m/Y H:i', 'Europe/Paris') }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  {% endif %}
+
+  <h2 class="cp-h2" id="home-quick">Accès rapides</h2>
+  <ul class="app-list" aria-labelledby="home-quick">
+    {% for q in quick_links %}<li><a href="{{ q.href }}">{{ q.label }}</a></li>{% endfor %}
+  </ul>
+{% endblock %}

@@ -4,7 +4,7 @@
 
 Ces fiches font suite à [`audit-couverture-fonctionnelle.md`](audit-couverture-fonctionnelle.md) (accepté comme base de travail le 17 novembre 2026).
 
-> **Mise à jour du 17 novembre 2026 — décisions formalisées** : fiche 1 → [DM-133](decisions/metier/DM-133-papier-48-h-reporte-hors-v1.md) (papier 48 h reporté hors V1) ; fiche 3 → [DM-134](decisions/metier/DM-134-pas-de-revocation-globale-par-l-organisatrice.md) (pas de révocation globale) ; fiche 4 → [DM-135](decisions/metier/DM-135-etat-indetermine-du-controle.md) (indéterminé retenu) ; fiche 5 → [DM-136](decisions/metier/DM-136-notification-des-refus-obligatoire.md) (notification obligatoire, option A) ; fiche 2 → [DM-137](decisions/metier/DM-137-verrou-visible-d-instruction-decision-ouverte.md) (**décision ouverte**, [analyse](analyse-verrou-instruction.md)).
+> **Mise à jour du 17 novembre 2026 — décisions formalisées** : fiche 1 → [DM-133](decisions/metier/DM-133-papier-48-h-reporte-hors-v1.md) (papier 48 h reporté hors V1) ; fiche 3 → [DM-134](decisions/metier/DM-134-pas-de-revocation-globale-par-l-organisatrice.md) (pas de révocation globale) ; fiche 4 → [DM-135](decisions/metier/DM-135-etat-indetermine-du-controle.md) (indéterminé retenu) ; fiche 5 → [DM-136](decisions/metier/DM-136-notification-des-refus-obligatoire.md) (notification obligatoire, option A) ; fiche 2 → [DM-137](decisions/metier/DM-137-pas-de-verrou-visible-d-instruction-option-a.md) (**décision ouverte**, [analyse](analyse-verrou-instruction.md)).
 
 ## 0. Décisions de principe reçues (à transcrire en fiches DM après arbitrage)
 

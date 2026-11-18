@@ -159,14 +159,10 @@ final class CwsAdministrationTest extends WebTestCase
         self::assertSame('ACTIVE', $before);
     }
 
-    public function testASessionRestoredOnlyByRememberMeCannotWrite(): void
+    public function testNoPersistentCookieAndNoSessionCannotWrite(): void
     {
-        $this->client->request('GET', '/login');
-        $this->client->submitForm('Se connecter', ['email' => 'root@example.test', 'password' => self::PASSWORD, '_remember_me' => '1']);
-        $cookie = $this->client->getCookieJar()->get('REMEMBERME');
-        self::assertNotNull($cookie);
-        $this->client->getCookieJar()->clear();
-        $this->client->getCookieJar()->set($cookie);
+        $this->submitLoginWithForgedRememberMe($this->client, 'root@example.test', self::PASSWORD);
+        $this->client->getCookieJar()->clear(); // fin de session : plus rien ne rouvre l'accès (LOT 08.3)
         $this->client->request('GET', '/admin/cws/communes/ouvrir');
         self::assertResponseRedirects('/login');
         $this->client->request('POST', '/admin/cws/communes/ouvrir', ['insee' => '33503']);

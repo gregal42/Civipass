@@ -32,8 +32,7 @@ final readonly class SessionLifetime
         #[Autowire('%env(int:SESSION_CWS_IDLE_SECONDS)%')] int $cwsIdle = 900,
         #[Autowire('%env(int:SESSION_CWS_ABSOLUTE_SECONDS)%')] int $cwsAbsolute = 28800,
         #[Autowire('%env(int:SESSION_WARNING_SECONDS)%')] int $warning = 120,
-    )
-    {
+    ) {
         $this->agentIdle = self::bound($agentIdle, self::MIN_IDLE, self::MAX_IDLE);
         $this->cwsIdle = self::bound($cwsIdle, self::MIN_IDLE, self::MAX_IDLE);
         $this->agentAbsolute = self::bound($agentAbsolute, $this->agentIdle, self::MAX_ABSOLUTE);

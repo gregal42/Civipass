@@ -123,6 +123,9 @@ services:
             - '../src/Ops/Application/ReleaseRefused.php'
             - '../src/Retention/Application/ReplayRefused.php'
             - '../src/Retention/Application/RegisterReconciliationReport.php'
+            # LOT 08 : DTO de lecture/résultat (non services).
+            - '../src/Admin/Application/ForcedClosurePreview.php'
+            - '../src/Request/Application/Read/DuplicateMatch.php'
             # LOT 09 : résultats (non services).
             - '../src/Control/Application/Result/'
             - '../src/Control/Application/RegistrationRefused.php'

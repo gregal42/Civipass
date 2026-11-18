@@ -1,0 +1,35 @@
+{% extends 'admin/cws/base.html.twig' %}
+{# Clôture exceptionnelle (LOT 08.6, DM-065) : compteurs et participations seulement, jamais de donnée de dossier (DM-005). #}
+{% block cws_title %}Clôture exceptionnelle : {{ preview.name }}{% endblock %}
+{% block cws_content %}
+  {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+  <div class="box box-default"><div class="box-body">
+    <h3>Événement</h3>
+    <p><strong>{{ preview.reference }}</strong> · {{ preview.name }} · organisé par {{ preview.organizerName }} · statut {{ preview.status }}</p>
+    <h3>Participations encore ouvertes ({{ preview.participations|length }})</h3>
+    <ul>{% for p in preview.participations %}<li>{{ p.municipality }}{% if p.organizer %} (organisatrice){% endif %} · {{ p.status }}</li>{% endfor %}</ul>
+    <h3>Volumes concernés</h3>
+    <p>{{ preview.requests }} demande{{ preview.requests > 1 ? 's' : '' }} dont {{ preview.pending }} dossier{{ preview.pending > 1 ? 's' : '' }} encore en attente · {{ preview.authorizations }} autorisation{{ preview.authorizations > 1 ? 's' : '' }} émise{{ preview.authorizations > 1 ? 's' : '' }}. Aucune donnée personnelle n’est affichée.</p>
+  </div></div>
+  <div class="box box-warning"><div class="box-body">
+    <h3>Conséquences (définitives)</h3>
+    <ul>
+      <li>L’événement et <strong>toutes</strong> ses participations sont clôturés ; la clôture est irréversible.</li>
+      <li>Les laissez-passer ne donnent plus aucun droit ; le contrôle en ligne affiche « Événement terminé ».</li>
+      <li>Les appareils de contrôle hors connexion reçoivent un jeu vide à leur prochaine synchronisation ; <strong>d’ici là</strong>, ils restent utilisables dans la limite de leur durée de confiance (au plus 12 h au pilote).</li>
+      <li>Les invitations non acceptées sont révoquées, les liens bénéficiaires fermés, les notifications en attente supprimées.</li>
+      <li>Les administrateurs communaux concernés sont informés par e-mail, <strong>sans le motif</strong>.</li>
+    </ul>
+    <form method="post" action="{{ path('admin_cws_forced_closure', {eventId: preview.eventId}) }}" autocomplete="off">
+      <input type="hidden" name="_token" value="{{ csrf_token(token_id) }}">
+      <div class="form-group"><label for="reason">Motif de la clôture (interne CWS, {{ reason_min }} à {{ reason_max }} caractères, sans donnée personnelle)</label>
+        <textarea class="form-control" id="reason" name="reason" rows="3" required minlength="{{ reason_min }}" maxlength="{{ reason_max }}"></textarea></div>
+      <div class="form-group"><label for="reference">Pour confirmer, saisissez la référence exacte de l’événement : <code>{{ preview.reference }}</code></label>
+        <input class="form-control" id="reference" name="reference" type="text" required autocomplete="off" maxlength="20"></div>
+      <div class="form-group"><label for="password">Votre mot de passe</label>
+        <input class="form-control" id="password" name="password" type="password" required autocomplete="current-password"></div>
+      <button type="submit" class="btn btn-danger">Clôturer définitivement l’événement</button>
+      <a class="btn btn-default" href="{{ path('admin_cws_forced_closure_find') }}">Annuler</a>
+    </form>
+  </div></div>
+{% endblock %}

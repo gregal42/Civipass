@@ -25,6 +25,7 @@ use App\Event\Domain\ParticipationStatus;
 use App\Event\Domain\Time\EventTimezone;
 use App\Identity\Domain\User;
 use App\Shared\Domain\AuditAction;
+use App\Shared\Domain\AuditActor;
 use App\Shared\Domain\AuditSubjectType;
 use App\Shared\Domain\DomainRuleViolation;
 use App\Shared\Domain\OperationConflict;
@@ -146,11 +147,45 @@ final readonly class EventLifecycleService
     {
         $known = $this->resolver->event($actor, $eventId, EventPermission::CloseEvent);
 
-        return $this->transactions->run(function () use ($actor, $known): EventClosureResult {
+        return $this->performClosure(
+            $known->id(),
+            AuditActor::user($actor->id()),
+            fn (Event $event) => $this->policy->forEvent($actor, EventPermission::CloseEvent, $event)->orThrow(),
+            null,
+        );
+    }
+
+    /**
+     * Clôture EXCEPTIONNELLE par un opérateur CWS (LOT 08.6, DM-065, DM-139) : exactement le même moteur que `close` (verrous, participations, statistiques,
+     * invitations, notifications neutralisées, audit, atomicité), mais l'autorisation n'est PAS un droit communal : c'est `$guard`, exécuté DANS la transaction,
+     * après les verrous de l'événement et des participations (habilitation CWS relue sous verrou, référence saisie, etc.). L'acteur d'audit est l'opérateur
+     * (origine SUPPORT) ; `$reason` (texte interne CWS, sans donnée personnelle) est tracé dans une ligne d'audit dédiée. Aucun droit communal n'est créé.
+     *
+     * @param \Closure(Event): void $guard lève OperationNotAllowed/DomainRuleViolation pour interrompre la clôture (rien n'est modifié)
+     *
+     * @throws OperationNotAllowed événement inaccessible, déjà clôturé ou garde refusée
+     * @throws OperationConflict   verrou non obtenu à temps
+     */
+    public function closeAsSupport(User $operator, string $eventId, string $reason, \Closure $guard): EventClosureResult
+    {
+        if (!Uuid::isValid($eventId)) {
+            throw new OperationNotAllowed('Ressource inaccessible.');
+        }
+
+        return $this->performClosure(Uuid::fromString($eventId), AuditActor::support($operator->id()), $guard, $reason);
+    }
+
+    /**
+     * @param \Closure(Event): void $authorize contrôle d'accès rappelé sous verrou
+     * @param string|null           $supportReason non nul = clôture exceptionnelle CWS (cause et audit dédiés)
+     */
+    private function performClosure(Uuid $eventId, AuditActor $actor, \Closure $authorize, ?string $supportReason): EventClosureResult
+    {
+        return $this->transactions->run(function () use ($eventId, $actor, $authorize, $supportReason): EventClosureResult {
             // Événement (X) puis toutes les participations (X, identifiant croissant) : jamais l'inverse.
-            $event = $this->locker->exclusiveEvent($known->id());
+            $event = $this->locker->exclusiveEvent($eventId);
             $participations = $this->locker->allParticipations($event);
-            $this->policy->forEvent($actor, EventPermission::CloseEvent, $event)->orThrow();
+            $authorize($event);
             $now = $this->clock->now(); // après l'acquisition des verrous (DT-038)
 
             $batch = Uuid::v7();
@@ -178,8 +213,10 @@ final readonly class EventLifecycleService
 
             // Compteurs de clôture (LOT 05.6.2) : UNE fois, dans la même transaction que le changement d'état et APRÈS les verrous (plus aucun écrivain actif) ;
             // un échec du calcul annule la clôture (jamais d'événement clos sans compteurs, jamais de compteurs sur un événement non clos).
-            $event->recordClosureStatistics($this->counters->count($event->id()));
+            $statistics = $this->counters->count($event->id());
+            $event->recordClosureStatistics($statistics);
 
+            $cause = null !== $supportReason ? 'CWS_FORCED' : (EventStatus::Draft === $previousStatus ? 'FROM_DRAFT' : 'NORMAL');
             $this->audit->record(
                 AuditAction::EventClosed,
                 AuditSubjectType::Event,
@@ -188,7 +225,7 @@ final readonly class EventLifecycleService
                 $actor,
                 $now,
                 $previousState,
-                [...EventAuditRecorder::eventState($event), 'cause' => EventStatus::Draft === $previousStatus ? 'FROM_DRAFT' : 'NORMAL', 'closedParticipations' => \count($closed), 'cancelledNotifications' => $notifications['cancelled'], 'removedSecrets' => $notifications['secrets'], 'revokedLinks' => $notifications['links'], 'revokedInvitations' => $revokedInvitations, 'closureStatistics' => true],
+                [...EventAuditRecorder::eventState($event), 'cause' => $cause, 'closedParticipations' => \count($closed), 'cancelledNotifications' => $notifications['cancelled'], 'removedSecrets' => $notifications['secrets'], 'revokedLinks' => $notifications['links'], 'revokedInvitations' => $revokedInvitations, 'closureStatistics' => true],
                 $batch,
             );
             foreach ($participationAudits as [$participation, $before]) {
@@ -201,6 +238,26 @@ final readonly class EventLifecycleService
                     $now,
                     $before,
                     [...EventAuditRecorder::participationState($participation), 'cause' => 'EVENT_CLOSED'],
+                    $batch,
+                );
+            }
+            if (null !== $supportReason) {
+                // Ligne dédiée : motif (texte interne CWS), participations clôturées avec leur statut PRÉCÉDENT, jamais une donnée personnelle ni un secret.
+                $this->audit->record(
+                    AuditAction::EventForcedClosure,
+                    AuditSubjectType::Event,
+                    $event->id(),
+                    $event->organizerMunicipality()->id(),
+                    $actor,
+                    $now,
+                    ['status' => $previousStatus->value],
+                    [
+                        'reason' => $supportReason,
+                        'operator' => $actor->operatorId?->toRfc4122(),
+                        'participations' => array_map(static fn (ClosedParticipation $c): array => ['municipality' => $c->municipalityId, 'previousStatus' => $c->previousStatus->value], $closed),
+                        'cancelledNotifications' => $notifications['cancelled'],
+                        'revokedInvitations' => $revokedInvitations,
+                    ],
                     $batch,
                 );
             }

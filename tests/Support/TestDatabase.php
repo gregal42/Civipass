@@ -33,8 +33,8 @@ final class TestDatabase
      */
     private const PERMIT_TABLES = ['permit_authorization_period', 'permit_revision_vehicle', 'permit_revision', 'permit_access_token', 'permit_authorization_zone', 'permit_authorization', 'permit_vehicle', 'permit_verification_token', 'permit_permit', 'permit_reference_counter'];
 
-    /** Tables du LOT 09 (module Control), purgées dès qu'elles existent (appareils d'abord : ils référencent les activations). */
-    private const CONTROL_TABLES = ['control_device', 'control_activation'];
+    /** Tables du LOT 09 (module Control) et habilitations CWS du LOT 08.6, purgées dès qu'elles existent (appareils d'abord : ils référencent les activations). */
+    private const CONTROL_TABLES = ['control_device', 'control_activation', 'identity_cws_permission'];
 
     /** Tables du LOT 05.3 (module Notification), purgées dès qu'elles existent. */
     private const NOTIFICATION_TABLES = ['notification_secret', 'notification_outbox'];

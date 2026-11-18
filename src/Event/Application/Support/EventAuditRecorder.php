@@ -37,13 +37,13 @@ final readonly class EventAuditRecorder
         AuditSubjectType $subject,
         Uuid $subjectId,
         Uuid $municipalityId,
-        User $actor,
+        User|AuditActor $actor,
         \DateTimeImmutable $now,
         ?array $previous,
         array $new,
         ?Uuid $batchId = null,
     ): void {
-        $this->audit->record(new AuditEvent($now, $action, $subject, $subjectId, $municipalityId, AuditActor::user($actor->id()), $previous, $new, $batchId));
+        $this->audit->record(new AuditEvent($now, $action, $subject, $subjectId, $municipalityId, $actor instanceof AuditActor ? $actor : AuditActor::user($actor->id()), $previous, $new, $batchId));
     }
 
     /**

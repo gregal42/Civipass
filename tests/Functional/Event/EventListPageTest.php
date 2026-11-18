@@ -235,7 +235,7 @@ final class EventListPageTest extends MunicipalPagesTestCase
         $this->client->request('GET', '/');
         self::assertResponseRedirects('/communes', 302);
         $this->client->request('GET', '/communes');
-        self::assertResponseRedirects($this->listUrl($this->w->org), 302);
+        self::assertResponseRedirects('/communes/'.$this->w->org->id()->toRfc4122(), 302, 'LOT 08.1 : l\'accueil de la commune est le point d\'atterrissage.');
     }
 
     public function testASuperAdministratorKeepsTheHomePage(): void
@@ -262,7 +262,7 @@ final class EventListPageTest extends MunicipalPagesTestCase
 
         $this->get($this->listUrl($this->w->guestB));
         $this->client->request('GET', '/communes');
-        self::assertResponseRedirects($this->listUrl($this->w->guestB), 302, 'dernière commune consultée');
+        self::assertResponseRedirects('/communes/'.$this->w->guestB->id()->toRfc4122(), 302, 'dernière commune consultée (accueil, LOT 08.1)');
         $this->client->request('GET', '/communes?changer=1');
         self::assertResponseIsSuccessful();
     }

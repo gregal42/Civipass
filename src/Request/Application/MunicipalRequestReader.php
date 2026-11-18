@@ -12,6 +12,7 @@ use App\Municipality\Application\MunicipalityContext;
 use App\Municipality\Domain\MunicipalityRole;
 use App\Request\Application\Read\DecisionPage;
 use App\Request\Application\Read\DownloadableAttachment;
+use App\Request\Application\Read\HomeRequestSummary;
 use App\Request\Application\Read\MunicipalRequestDetail;
 use App\Request\Application\Read\MunicipalRequestListing;
 use App\Request\Application\Read\MunicipalRequestQuery;
@@ -72,6 +73,24 @@ final readonly class MunicipalRequestReader
         }
 
         return new MunicipalRequestListing($events, $selected, $categories, null === $selected ? null : $this->read->search($municipality, $selected, $query), $closedEventCount);
+    }
+
+    /**
+     * Synthèse de l'accueil (LOT 08.1) : demandes en attente par événement non clos et décisions des `$days` derniers jours (au plus `$limit`). Réservée aux
+     * INSTRUCTEURS de la commune (comme la liste) ; bornée à la portion communale.
+     *
+     * @throws OperationNotAllowed
+     * @throws InstructorRoleRequired
+     */
+    public function homeSummary(User $user, string $municipalityId, \DateTimeImmutable $now, int $days = 7, int $limit = 10): HomeRequestSummary
+    {
+        $municipality = $this->municipality($user, $municipalityId);
+
+        return new HomeRequestSummary(
+            $this->read->pendingCountsByEvent($municipality),
+            $this->read->recentDecisions($municipality, $now->modify(sprintf('-%d days', $days)), $limit),
+            $days,
+        );
     }
 
     /**

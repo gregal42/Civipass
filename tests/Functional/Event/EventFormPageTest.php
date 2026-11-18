@@ -415,19 +415,15 @@ final class EventFormPageTest extends MunicipalPagesTestCase
         $this->client->request('GET', $this->editUrl($this->w->org, $this->fire));
         self::assertResponseRedirects('http://localhost/login', 302);
 
-        // Connexion « se souvenir de moi » puis fin de session : la consultation reste possible, pas l'écriture.
+        // Fin de session : plus aucun cookie persistant (LOT 08.3) ; ni consultation ni écriture sans nouvelle connexion.
         $account = $this->createAccount('remembered@example.test');
         $this->em()->persist(MembershipBuilder::aMembership($account, $this->em()->find(Municipality::class, $this->w->org->id()) ?? self::fail())->withRoles(MunicipalityRole::MunicipalityAdmin)->build());
         $this->em()->flush();
-        $this->client->request('GET', '/login');
-        $this->client->submitForm('Se connecter', ['email' => 'remembered@example.test', 'password' => self::PASSWORD, '_remember_me' => '1']);
-        $remember = $this->client->getCookieJar()->get('REMEMBERME');
-        self::assertNotNull($remember, 'précondition : cookie persistant');
+        $this->submitLoginWithForgedRememberMe($this->client, 'remembered@example.test', self::PASSWORD);
         $this->client->getCookieJar()->clear();
-        $this->client->getCookieJar()->set($remember);
 
         $this->get($this->listUrl($this->w->org));
-        self::assertSame(200, $this->httpStatus(), 'consultation autorisée');
+        self::assertSame(302, $this->httpStatus(), 'consultation : reconnexion exigée');
         $this->client->request('GET', $url);
         self::assertResponseRedirects('http://localhost/login', 302, 'écriture : réauthentification');
         $this->client->request('POST', $url, $this->validCreate() + ['_token' => 'x']);

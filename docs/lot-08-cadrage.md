@@ -79,7 +79,7 @@ Ordre proposé : **08.2 → 08.1 → 08.3 → 08.6 → 08.4 → 08.5** (inchang�
 
 # PARTIE II — V2 : arbitrages validés et schémas (17 novembre 2026)
 
-**Décisions formalisées** : [DM-138](decisions/metier/DM-138-decisions-d-interface-du-lot-08.md) (08.1 à 08.4), [DM-136](decisions/metier/DM-136-notification-des-refus-obligatoire.md) (08.5), [DM-139](decisions/metier/DM-139-cloture-exceptionnelle-cws-permission-persistee.md) (08.6), [DM-133](decisions/metier/DM-133-papier-48-h-reporte-hors-v1.md) à [DM-135](decisions/metier/DM-135-etat-indetermine-du-controle.md), [DM-137](decisions/metier/DM-137-verrou-visible-d-instruction-decision-ouverte.md) (**ouverte**).
+**Décisions formalisées** : [DM-138](decisions/metier/DM-138-decisions-d-interface-du-lot-08.md) (08.1 à 08.4), [DM-136](decisions/metier/DM-136-notification-des-refus-obligatoire.md) (08.5), [DM-139](decisions/metier/DM-139-cloture-exceptionnelle-cws-permission-persistee.md) (08.6), [DM-133](decisions/metier/DM-133-papier-48-h-reporte-hors-v1.md) à [DM-135](decisions/metier/DM-135-etat-indetermine-du-controle.md), [DM-137](decisions/metier/DM-137-pas-de-verrou-visible-d-instruction-option-a.md) (**ouverte**).
 
 ## 9. Ce qui est validé, lot par lot
 | Lot | Validé | Précisions retenues par défaut (modifiables) |

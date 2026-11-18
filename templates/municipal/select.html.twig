@@ -8,7 +8,7 @@
                 <p class="cp-help">Choisissez la commune pour laquelle vous agissez.</p>
                 <ul class="app-list">
                     {% for c in communes %}
-                        <li>{% include 'components/button.html.twig' with { label: c.name ~ ' · ' ~ c.role, href: path('app_municipal_events', { municipalityId: c.id }), variant: 'secondary', block: true, icon_after: 'right' } only %}</li>
+                        <li>{% include 'components/button.html.twig' with { label: c.name ~ ' · ' ~ c.role, href: path('app_municipal_home', { municipalityId: c.id }), variant: 'secondary', block: true, icon_after: 'right' } only %}</li>
                     {% endfor %}
                 </ul>
             {% else %}

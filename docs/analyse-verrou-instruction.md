@@ -1,6 +1,6 @@
 # Analyse — verrou d'instruction visible de 15 minutes
 
-**Date** : 17 novembre 2026 · **Statut** : analyse pour décision ([DM-137](decisions/metier/DM-137-verrou-visible-d-instruction-decision-ouverte.md), **ouverte**). Aucun développement, aucune migration.
+**Date** : 17 novembre 2026 · **Statut** : analyse pour décision ([DM-137](decisions/metier/DM-137-pas-de-verrou-visible-d-instruction-option-a.md), **validée le 18 novembre 2026 : option A**). Analyse conservée comme justification.
 
 ## 1. Spécification initiale (exacte)
 - **SFD §3** (agent instructeur) : « Verrou 15 min ; pas d'accès aux dossiers étrangers ». **§4.3** : « verrouillage du dossier » avant l'instruction.
