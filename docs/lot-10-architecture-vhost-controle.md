@@ -1,6 +1,6 @@
 # LOT 10 / 09.7 — Architecture du vhost Nginx dédié au contrôle (décision I4)
 
-Statut : **conception, aucun déploiement ni travail d'infrastructure distante**. Décision du commanditaire (18 novembre 2026) : second vhost Nginx HTTPS dédié au contrôle, **sur le même serveur et la même application Symfony**, avec liste explicite des routes, séparation des cookies, des sessions et des autorisations, et en-têtes de sécurité vérifiés. S'appuie sur DT-056 (point 4 : origine dédiée pour isoler le stockage local), DM-129, `ops/nginx/` et le protocole [lot-10-protocole-09-7.md](lot-10-protocole-09-7.md).
+Statut : **conception, aucun déploiement ni travail d'infrastructure distante** (architecture retenue le 18 novembre 2026 : second vhost HTTPS, même application, origine dédiée, liste blanche de routes, aucun cookie de session sur les routes de contrôle). Décision du commanditaire (18 novembre 2026) : second vhost Nginx HTTPS dédié au contrôle, **sur le même serveur et la même application Symfony**, avec liste explicite des routes, séparation des cookies, des sessions et des autorisations, et en-têtes de sécurité vérifiés. S'appuie sur DT-056 (point 4 : origine dédiée pour isoler le stockage local), DM-129, `ops/nginx/` et le protocole [lot-10-protocole-09-7.md](lot-10-protocole-09-7.md).
 
 ## 1. Principe
 
@@ -105,23 +105,48 @@ Déjà émis par l'application sur `/controle/` : `Content-Security-Policy` (`de
 4. **E2E navigateur** (`bin/qa e2e`) étendu à deux origines locales distinctes : activation sur l'une, absence de données lisibles sur l'autre.
 5. **Contrôle de déploiement** (`check-deployment.sh`) étendu au second domaine.
 
-## 7. Garde-fous applicatifs optionnels (défense en profondeur, à valider avant tout code)
+## 7. Garde-fous applicatifs G1, G2, G3 — définitions exactes (à valider avant tout code)
 
-| Option | Effet | Coût |
-|---|---|---|
-| G1 | Écouteur de requêtes : si l'hôte est celui du contrôle et que le chemin n'est pas dans la liste, répondre 404 (corps identique au 404 générique) | S, nouveau paramètre `CONTROL_HOST` |
-| G2 | `framework.trusted_hosts` listant exactement les deux domaines (aujourd'hui non configuré) | XS, nouveau paramètre |
-| G3 | Sur l'hôte de gestion, refuser `/controle/…` en production (le contrôle ne se sert que depuis son origine) | XS, à garder actif seulement en production |
+Aucun n'est implémenté. Tous sont **inactifs par défaut** (paramètre vide) et donc sans effet en développement et dans les tests actuels. Ils s'ajoutent à la liste blanche de Nginx (défense en profondeur) et ne la remplacent pas.
 
-Recommandation : **G2 + G1** (cohérents avec la liste blanche Nginx, utiles si le vhost est mal réglé). G3 optionnel.
+**Paramètres (nouveaux, environnement)**
+
+| Paramètre | Rôle | Exemple | Défaut |
+|---|---|---|---|
+| `CONTROL_HOST` | Nom d'hôte de l'origine de contrôle (sans schéma ni port) | `controle.civipass.example` | vide : G1 et G3 inactifs |
+| `TRUSTED_HOSTS` | Expression régulière des seuls hôtes acceptés | `^(civipass\.example\|controle\.civipass\.example)$` | vide : G2 inactif |
+
+`DEFAULT_URI` reste l'origine de **gestion** : les liens envoyés par e-mail, les QR de laissez-passer et la base de vérification de la PWA (`verification_base` = `DEFAULT_URI`) pointent vers elle. La PWA ouvre la vérification en ligne `/v/{jeton}` **sur l'origine de gestion** (navigation vers une autre origine) : le vhost de contrôle n'a donc **pas** à servir `/v/…`. Le QR d'activation et le lien de l'application de contrôle utilisent `CONTROL_PWA_BASE_URL` (déjà prévu).
+
+**G1 — Liste blanche sur l'hôte de contrôle**
+- *Quoi* : un écouteur d'événement `kernel.request` (priorité haute, avant le routage et la sécurité) compare l'en-tête `Host` (minuscules, sans port) à `CONTROL_HOST`.
+- *Si l'hôte est celui du contrôle* : la requête n'est servie que si (méthode, chemin) figure dans la liste blanche du § 2 (routes `app_control_*` avec leurs méthodes autorisées, et ressources statiques sous `/assets/`). Sinon, réponse **404 générique** (même corps que le 404 neutre existant, `Cache-Control: no-store`, aucun détail), **sans** exécuter le routage ni aucun contrôleur ; 405 conservé pour une route autorisée avec une méthode interdite.
+- *Si `CONTROL_HOST` est vide ou que l'hôte est différent* : aucun effet.
+- *Test d'inventaire* : un test PHPUnit parcourt toutes les routes de l'application : toute route `/controle…` doit figurer dans la liste blanche, et aucune autre route ne doit être joignable avec `Host: CONTROL_HOST`.
+- *Risque et coût* : une liste incomplète bloquerait une ressource de la PWA (détecté par le test et par l'E2E à deux origines) ; effort S.
+
+**G2 — Hôtes de confiance (`framework.trusted_hosts`)**
+- *Quoi* : `framework.trusted_hosts: ['%env(TRUSTED_HOSTS)%']` (renseigné seulement quand le paramètre n'est pas vide).
+- *Effet* : toute requête dont `Host` ne correspond pas à l'expression est refusée par Symfony (400, « Untrusted Host ») avant le routage ; aucune URL absolue n'est jamais construite à partir d'un `Host` forgé (déjà vrai pour les liens métier, qui utilisent `DEFAULT_URI`, testé).
+- *Précautions* : inclure exactement les deux domaines (gestion et contrôle) ; ne pas bloquer les contrôles de santé locaux (même hôte que le vhost) ; les tests (`localhost`) ne sont pas affectés tant que le paramètre est vide. Nginx rejette déjà les hôtes inconnus (444, serveur par défaut) : G2 couvre un vhost mal réglé.
+- *Coût* : XS.
+
+**G3 — Aucun contrôle sur l'origine de gestion en production**
+- *Quoi* : dans le même écouteur que G1, quand `CONTROL_HOST` n'est pas vide et que l'hôte de la requête est **différent** de `CONTROL_HOST`, les chemins `/controle/…` répondent **404 générique**.
+- *Effet* : la PWA, son Service Worker et son stockage local ne peuvent jamais s'installer sur l'origine de gestion (cookies de session présents, mélange de stockage) ; en développement (paramètre vide) la route reste servie sous `localhost`.
+- *Coût* : XS (même écouteur) ; à garder désactivé tant que `CONTROL_HOST` n'est pas fixé.
+
+**Tests prévus pour G1 à G3** : hôte de contrôle avec route autorisée (200), hôte de contrôle avec route de gestion (404 générique, aucune requête de base de données), hôte de gestion avec `/controle/` (404 quand G3 est actif), hôte forgé (400 avec G2), paramètres vides (comportement actuel inchangé), absence de `Set-Cookie` sur toute réponse de l'hôte de contrôle.
+
+**Recommandation** : G2 + G1 ensemble (cohérents avec la liste blanche Nginx) ; G3 avec eux, car il évite l'installation de la PWA sur la mauvaise origine.
 
 ## 8. Prérequis et décisions restantes
 
 | # | Décision ou prérequis |
 |---|---|
-| D1 | Noms de domaine (gestion et contrôle) et responsabilité du DNS |
-| D2 | Certificat : un par vhost ou un certificat couvrant les deux noms |
-| D3 | G1/G2/G3 : lesquels ? |
+| D1 | Noms de domaine : convention provisoire retenue `controle.<domaine-civipass>` ; domaine définitif et responsabilité du DNS à fournir |
+| D2 | Certificat : **un certificat distinct par sous-domaine** (préférence retenue) |
+| D3 | G1, G2, G3 (§ 7) : lesquels retenir ? Recommandation : les trois, inactifs par défaut |
 | D4 | Autorisation d'infrastructure du protocole 09.7 (I1) |
 | D5 | Liste définitive des polices et ressources statiques autorisées (à confirmer après `asset-map:compile`) |
 

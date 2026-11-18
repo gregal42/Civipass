@@ -55,21 +55,20 @@ Emplacement : bloc « Vos données » du formulaire public (colonne d'informatio
 
 Recommandation : **B**, car elle règle aussi le navigateur partagé ; **A** si M3 et M4 sont différés. Les nombres (30 minutes) suivent la proposition M3.
 
-## 3. Séquence de stabilisation UX priorisée
+## 3. Séquence de stabilisation UX priorisée (état au 18 novembre 2026)
 
-Effort : XS < ½ j ; S ≈ 1 j ; M 2-3 j. Chaque ligne = un incrément avec commit local distinct.
-
-| # | Incrément | Contenu | Effort | Dépend de |
-|---|---|---|---|---|
-| 0 | **Textes d'invitation (fait)** | O-3 : page, fiche, e-mails avec échéance réelle (jour et heure) ; 2 tests ajoutés, 1 adapté ; commit `a65c8da` | — | validé |
-| 1 | **O-2 / M2 + M5** | Documentation du cookie, décision technique à soumettre, unité systemd de purge des pièces temporaires, runbook | S | rien |
-| 2 | **O-2 / M1** | Phrase d'information (variante A ou B) dans le formulaire public | XS | **validation du texte** |
-| 3 | **O-2 / M3 + M4** | Durée de 30 min du brouillon, bouton « Effacer ma saisie », tests (expiration, navigateur partagé, isolation par événement, non-régression du dépôt) | S-M | **validation de la règle et des textes** |
-| 4 | **O-4** | Titre de niveau 1 sur les états « inconnu », « clôturé », « remplacé » de `/v` (contenu, statuts et neutralité inchangés) | XS | rien |
-| 5 | **O-7** | Lien « Aller aux Archives » dans le message d'événement clos ; confirmation métier que la fermeture de la consultation courante est voulue | XS | confirmation métier |
-| 6 | **O-1** | Tableau « Droits des personnes » : conteneur défilant ou cartes sous 600 px | XS | rien |
-| 7 | **O-6** | Statuts et pages cohérents pour les liens invalides ou déjà utilisés (404 inconnu, 410 expiré ou utilisé), textes neutres, aucune fuite | S | revue sécurité des réponses |
-| 8 | **O-5** | Navigation mobile : 4 entrées principales + « Menu » ; retrait du séparateur orphelin | S | rien |
+| # | Incrément | État | Commit local |
+|---|---|---|---|
+| 0 | O-3 : textes d'invitation validés | **Fait, poussé** | `a65c8da` |
+| 1 | O-2 / M5 : purge des justificatifs temporaires planifiée et supervisée | **Fait** | `11212b5` |
+| 1b | O-2 / M3 + M4 : brouillon 30 min, « Effacer ma saisie », purge serveur | **Fait** | `c38fb62` |
+| 2 | O-2 / M1 : texte « Cookie technique » (variante B validée) | **Fait** | `3bc7b4c` |
+| 1c | O-2 / M2 + M6 : documentation, DT-058 proposée, runbook, constat sessions | **Fait** | `90065fd` |
+| 5 | O-7 : lien « Consulter les archives » (rôles habilités) | **Fait** | `1d025e3` |
+| 4 | O-4 : titre de niveau 1 sur tous les états de `/v` | **Fait** | `8be6b7a` |
+| 6 | O-1 : tableaux communaux dans un conteneur défilant | **Fait** | `e6146dd` |
+| 7 | O-6 : statuts et pages cohérents pour les liens invalides | À faire (revue sécurité des réponses) | |
+| 8 | O-5 : navigation mobile (4 entrées + « Menu ») | À faire | |
 
 Ordre : 1 → 2/3 (après validation) → 4 → 5 → 6 → 7 → 8. Total estimé : environ 4 à 5 jours avec validations.
 
