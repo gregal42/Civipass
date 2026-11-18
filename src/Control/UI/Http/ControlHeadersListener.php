@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Control\UI\Http;
 
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
@@ -25,9 +26,13 @@ final class ControlHeadersListener
         if (!$event->isMainRequest() || !self::concerns($event->getRequest()->getPathInfo())) {
             return;
         }
-        $response = $event->getResponse();
+        self::protect($event->getResponse(), str_starts_with($event->getRequest()->getPathInfo(), '/controle/api/'));
+    }
+
+    /** Applique la politique de protection à une réponse (aussi utilisée pour les réponses de l'hôte de contrôle hors de `/controle/*`). */
+    public static function protect(Response $response, bool $api): void
+    {
         $headers = $response->headers;
-        $api = str_starts_with($event->getRequest()->getPathInfo(), '/controle/api/');
         $headers->set('Cache-Control', $api || $response->isClientError() || $response->isServerError() ? 'no-store, private' : 'no-cache, private');
         $headers->set('Referrer-Policy', 'no-referrer');
         $headers->set('X-Robots-Tag', 'noindex, nofollow, noarchive');

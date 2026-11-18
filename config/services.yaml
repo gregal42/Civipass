@@ -44,6 +44,8 @@ parameters:
     env(CONTROL_PWA_BASE_URL): ''
     # Hôtes de confiance (G2, LOT 10) : voir config/packages/framework.yaml. `^.*$` = inactif.
     env(TRUSTED_HOSTS): '^.*$'
+    # Hôte de l'origine dédiée au contrôle (G1/G3, LOT 10, DT-056) : nom seul, sans schéma ni port. Vide = garde-fous inactifs.
+    env(CONTROL_HOST): ''
     # Plafonds PROVISOIRES de la limitation de débit du contrôle public (LOT 05.4.3, révisés au LOT 07.3.2, DT-055), par IP (IPv6 : /64) : garde-fou contre
     # l'inondation, applicable à tout jeton (1 500 consultations sur 10 minutes, à confronter à un test de charge sur l'environnement de recette) ;
     # jetons bien formés mais inconnus sur 15 minutes (ne touche jamais un jeton valide).
