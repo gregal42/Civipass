@@ -81,6 +81,7 @@ final readonly class ShellContextFactory
             $nav[] = ['label' => 'Conservation des données', 'icon' => 'file', 'href' => $this->urls->generate('app_retention_index', ['municipalityId' => $municipality->id()->toRfc4122()]), 'current' => 'retention' === $section];
             $nav[] = ['label' => 'Droits des personnes', 'icon' => 'user', 'href' => $this->urls->generate('app_rights_index', ['municipalityId' => $municipality->id()->toRfc4122()]), 'current' => 'rights' === $section];
         }
+        [$primary, $secondary] = self::splitNavigation($nav);
         $options = [];
         foreach ($this->readableMemberships($user) as $candidate) {
             $options[] = [
@@ -94,8 +95,8 @@ final readonly class ShellContextFactory
         return [
             'page_title' => $pageTitle,
             'nav_items' => $nav,
-            'bottom_items' => [...$nav, ['label' => 'Menu', 'icon' => 'menu', 'href' => '#', 'modal' => 'cp-mobile-menu']],
-            'menu_items' => [],
+            'bottom_items' => [...$primary, ['label' => 'Menu', 'icon' => 'menu', 'href' => '#', 'modal' => 'cp-mobile-menu']],
+            'menu_items' => $secondary,
             'commune' => [
                 'id' => 'commune',
                 'kicker' => 'Commune active',
@@ -114,6 +115,47 @@ final readonly class ShellContextFactory
             'active_municipality_id' => $municipality->id()->toRfc4122(),
             'active_municipality_name' => $municipality->name(),
         ];
+    }
+
+    /** Entrées de la barre basse mobile, par ordre de priorité (O-5, LOT 10) : quatre au plus, les autres vont dans la feuille « Menu ». */
+    private const MOBILE_PRIMARY = ['Accueil', 'Demandes', 'Événements', 'Nouvelle demande'];
+    private const MOBILE_PRIMARY_COUNT = 4;
+
+    /**
+     * Sépare la navigation déjà filtrée par les rôles : quatre entrées principales (priorité à l'accueil, aux demandes, aux événements et à la
+     * nouvelle demande, complétées dans l'ordre du menu pour les rôles qui n'en ont pas quatre) et le reste pour la feuille « Menu ». Aucune entrée
+     * n'est ajoutée : un rôle ne voit jamais une rubrique que sa navigation ne lui propose pas déjà.
+     *
+     * @param list<array<string, mixed>> $nav
+     *
+     * @return array{list<array<string, mixed>>, list<array<string, mixed>>}
+     */
+    public static function splitNavigation(array $nav): array
+    {
+        $chosen = [];
+        foreach (self::MOBILE_PRIMARY as $label) {
+            foreach ($nav as $index => $item) {
+                if ($item['label'] === $label && \count($chosen) < self::MOBILE_PRIMARY_COUNT) {
+                    $chosen[$index] = true;
+                }
+            }
+        }
+        foreach (array_keys($nav) as $index) {
+            if (\count($chosen) < self::MOBILE_PRIMARY_COUNT) {
+                $chosen[$index] = true;
+            }
+        }
+        $primary = [];
+        $secondary = [];
+        foreach ($nav as $index => $item) {
+            if (isset($chosen[$index])) {
+                $primary[] = $item;
+            } else {
+                $secondary[] = $item;
+            }
+        }
+
+        return [$primary, $secondary];
     }
 
     /**

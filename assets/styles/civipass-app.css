@@ -139,3 +139,12 @@ button.cp-nav__link { width: 100%; border: 0; background: none; font: inherit; t
 .vp-refresh { display: grid; gap: var(--space-3); padding: var(--space-4); }
 .vp-refresh__when { margin: 0; font-size: var(--cp-fs-body-l, 1.05rem); font-weight: 700; font-variant-numeric: tabular-nums; }
 .vp-refresh__button { width: 100%; justify-content: center; min-height: 52px; }
+
+/* O-5 (LOT 10) — navigation mobile : jusqu'à quatre entrées principales + « Menu » (la grille importée en prévoit quatre : colonnes automatiques, fichier importé inchangé). */
+.cp-bottomnav { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+.cp-bottomnav__link span:not(.cp-bottomnav__badge):not(.cp-sr-only) { max-width: 100%; text-align: center; line-height: 1.15; overflow-wrap: anywhere; }
+/* Bandeau de contexte : le séparateur « · » suit le rôle à la ligne au lieu de rester seul en fin de ligne. */
+@supports selector(:has(a)) {
+  .cp-ctxstrip > span[aria-hidden="true"]:has(+ .cp-ctxstrip__role) { display: none; }
+  .cp-ctxstrip__role::before { content: "· "; margin-right: 0.15em; }
+}
