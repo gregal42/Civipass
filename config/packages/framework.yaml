@@ -7,6 +7,10 @@ framework:
     # et le port sont crus par ces en-têtes, jamais `x-forwarded-host` ni `-prefix`. Cette liste ne déclare AUCUN proxy.
     trusted_headers: ['x-forwarded-for', 'x-forwarded-proto', 'x-forwarded-port']
 
+    # Hôtes de confiance (LOT 10, G2) : expression régulière des seuls noms d'hôte acceptés (gestion et contrôle). Un en-tête Host qui n'y correspond pas
+    # est refusé (400) avant le routage. INACTIF par défaut (`^.*$` : tout hôte) ; en production, par exemple `^(civipass\.example|controle\.civipass\.example)$`.
+    trusted_hosts: ['%env(TRUSTED_HOSTS)%']
+
     # Note that the session will be started ONLY if you read or write from it.
     session:
         cookie_secure: auto
