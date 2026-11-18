@@ -49,7 +49,7 @@ Chaque domaine ci-dessous regroupe des scénarios détaillés dans la matrice (�
 | D11 | Contrôle hors connexion (locale vs 09.7) | Interrupteur 0→1 poste de recette | Locale : appariement, jeu de données, synchronisation, intégrité, horloge. **09.7 réelle : distincte (§8)** |
 | D12 | Notifications et refus | MailCatcher ; interrupteur refus activé en recette | Notifications d'autorisation reçues, refus notifiés/réessayés/marqués manuellement ; aucun envoi réel |
 | D13 | Sessions et habilitations | Comptes de recette | Expiration (inactivité/absolue), avertissement, aucun « se souvenir de moi », permissions CWS persistées |
-| D14 | Clôture normale et exceptionnelle | Événement avec participations | Clôture normale refusée tant que des participations sont ouvertes ; clôture exceptionnelle CWS tracée, notifiée |
+| D14 | Clôture normale et exceptionnelle | Événement avec participations | Clôture par l'organisatrice : l'événement et **toutes** les participations ouvertes sont clôturés dans la même transaction (DM-092) ; chaque commune peut aussi clôturer seule sa propre participation ; clôture exceptionnelle CWS tracée, notifiée |
 | D15 | Historique, audit, conservation | Parcours exécutés | Journal complet et horodaté en UTC ; purge/archivage/droits des personnes conformes ; rien supprimé avant l'échéance |
 
 ## 4. Parcours de référence (bout en bout) — « Inondation »
@@ -69,8 +69,8 @@ Commune **A** organise un événement « inondation » ; commune **B** est invit
 | P8 | Contrôleur | Vérifie en ligne (QR valide), puis QR inconnu | Réponses conformes ; aucune donnée personnelle superflue |
 | P9 | `A-instr1` | Modifie : zone, plaque, période (prolongation, raccourcissement) ; remplace le jeton QR | Effet immédiat, ancien QR invalide, notifications émises |
 | P10 | `B-instr` | Révoque l'autorisation de B | Droits de A inchangés ; contrôle : B révoqué, A valide |
-| P11 | `A-admin` | Tente de clôturer alors que B est encore participante | Refus explicite (participations ouvertes) |
-| P12 | `B-admin` puis `A-admin` | Clôture de B, puis de A | Événement clos ; modifications bloquées, vérification conforme à la règle « événement clos » ; statistiques de clôture |
+| P11 | `B-admin` | Suspend, reprend puis clôture **seule** sa participation (événement 2) | Droits de B suspendus puis rétablis puis clôturés ; droits et zones de A inchangés ; B en lecture seule ensuite |
+| P12 | `A-admin` | Clôture l'événement alors que B est encore participante | Événement clos et **participations de A et de B clôturées automatiquement** dans la même transaction (DM-092, un audit par objet, `batch_id` commun) ; modifications bloquées, vérification « événement terminé » |
 | P13 | `cws-support` | Cas séparé : clôture exceptionnelle d'un second événement avec participation bloquée | Clôture forcée, audit `support`, mail aux administrateurs communaux sans motif |
 | P14 | Contrôle | Relecture du journal, de la conservation, des exports de droits | Chaîne d'audit complète, aucun accès inter-communes |
 
@@ -120,7 +120,7 @@ Colonnes : **ID** · fonctionnalité · scénario · résultat attendu · **P**r
 | R-COL-02 | Refus d'invitation | B refuse | A informée, B sans accès | P2 | M | idem |
 | R-COL-03 | Autonomie de B | B crée ses zones, décide, révoque, clôture seule | A n'intervient sur rien de B | P1 | M | `EventModuleJourneysTest`, `TransversalRecetteTest` |
 | R-COL-04 | Isolation | Identifiants forgés (requête, zone, laissez-passer de B utilisés par A et C) | 403/404, jamais de contenu | P1 | A+M | `VoterTest`, `MunicipalRequestConsultationTest`, `PermitRightsScreenTest` |
-| R-COL-05 | Suspension de B | A/CWS suspend la participation de B | B en lecture seule, bandeau, historique conservé | P2 | M | `EventParticipationLockTest`, `EventCoordinationPageTest` |
+| R-COL-05 | Suspension de sa propre participation | B suspend puis reprend sa participation (DM-056 A6.2, DM-057 : chaque commune gère la sienne ; A n'a aucun levier sur B) | Droits de B « suspendus » puis rétablis ; droits de A inchangés ; écriture de zones autorisée mais aucune zone opérationnelle (DM-066) ; révocation de droits refusée ; historique conservé | P2 | M | `EventParticipationLockTest`, `EventCoordinationPageTest` |
 | R-COL-06 | Recherche de communes | Recherche du référentiel pour invitation | Résultats pertinents, sans fuite | P3 | A | `NationalInvitationSearchTest`, `InvitationCandidateReaderTest` |
 
 ### D5 — Zones
@@ -236,7 +236,7 @@ Colonnes : **ID** · fonctionnalité · scénario · résultat attendu · **P**r
 | ID | Fonctionnalité | Scénario | Attendu | P | Mode | Réf. |
 |---|---|---|---|---|---|---|
 | R-CLO-01 | Clôture normale | Toutes participations clôturées | Événement clos, statistiques de clôture | P1 | M | `EventLifecycleServiceTest`, `ClosureStatisticsTest` |
-| R-CLO-02 | Participations ouvertes | Clôture avec B encore participante | Refus explicite | P1 | A+M | `EventLifecycleCoverageTest`, `EventLifecycleConcurrencyTest` |
+| R-CLO-02 | Participations ouvertes | Clôture par l'organisatrice avec B encore participante | Événement et participations de A et de B clôturés dans la même transaction, un audit par objet, `batch_id` commun (DM-092) ; aucun refus pour cause de participation ouverte | P1 | A+M | `EventLifecycleCoverageTest`, `EventLifecycleConcurrencyTest` |
 | R-CLO-03 | Événement clos | Tentatives de modification (zones, décisions, plaques) | Toutes bloquées | P1 | A+M | `ClosedEventBarrierTest`, `ClosedEventGuardsTest`, `ClosedEventLinksTest` |
 | R-CLO-04 | Notifications de clôture | Producteurs et concurrence | Une seule série de messages | P2 | S | `EventClosureNotificationsTest`, `EventClosureProducersRaceTest` |
 | R-CLO-05 | Clôture exceptionnelle | Habilitation `forced_closure`, aperçu, motif obligatoire | Clôture forcée tracée (acteur `support`), mail aux admins sans motif, limiteur | P1 | M | `ForcedClosureTest`, runbook `cloture-exceptionnelle-cws` |
@@ -268,7 +268,7 @@ Colonnes : **ID** · fonctionnalité · scénario · résultat attendu · **P**r
 | R-NEG-08 | QR inconnu / expiré / révoqué | Cf. R-VP-02 à 04 | P1 | A+M | cf. R-VP |
 | R-NEG-09 | Échec de notification | Cf. R-NOT-02 / R-NOT-04 | P1 | A+S | cf. R-NOT |
 | R-NEG-10 | Expiration de session en cours de formulaire | Perte maîtrisée, aucune écriture partielle | P1 | A+M | cf. R-SES-01 |
-| R-NEG-11 | Clôture avec participations ouvertes | Cf. R-CLO-02 | P1 | A+M | cf. R-CLO-02 |
+| R-NEG-11 | Clôture avec participations ouvertes | Cf. R-CLO-02 : clôture globale automatique (DM-092), et participation de B inaccessible en écriture après coup | P1 | A+M | cf. R-CLO-02 |
 | R-NEG-12 | Rejeu d'un jeton d'invitation, de réinitialisation, d'appariement | Refus (usage unique) | P1 | A+M | `InvitationLinkPageTest`, `PasswordResetServiceTest`, `ControlActivationServiceTest` |
 | R-NEG-13 | Injection/XSS dans les champs libres des demandes | Échappement, aucune exécution | P2 | M | tests de gabarits |
 | R-NEG-14 | Débordements : pièces jointes volumineuses, plaques invalides | Rejet explicite | P2 | M | `RequestSubmissionServiceTest` |
@@ -355,3 +355,15 @@ Livrables : matrice renseignée (ce document, colonnes Observé/Statut/Preuve), 
 
 **Critères de sortie** (proposés) : tous les scénarios P1 « Réussi » ; zéro anomalie bloquante ou majeure ouverte non acceptée ; isolation inter-communes confirmée par les scénarios négatifs ; interrupteurs de sécurité à 0 dans les configurations par défaut (vérifié en fin de recette) ; `bin/qa full`, `verify-docs.sh` et `doctrine:schema:validate` verts ; 09.7 restant explicitement **non exécutée** tant que l'infrastructure n'est pas autorisée.
 
+
+## 11. Corrections du plan après la campagne (18 novembre 2026)
+
+| Point | Avant | Après | Preuves d'exécution (registre) |
+|---|---|---|---|
+| P11, P12, R-CLO-02, R-NEG-11, D14 | Refus de clôture tant que B participe | Clôture globale automatique (DM-092, qui remplace l'exigence de clôture préalable de DM-056 A6.3) | Clôture de l'événement 1 : 1 `EVENT_CLOSED` + 2 `PARTICIPATION_CLOSED` (Aubenas, Privas) au même `batch_id`, même transaction ; écriture de B ensuite refusée (403) ; vérification « événement terminé » ; clôture forcée de l'événement 2 : seule la participation encore ouverte est clôturée |
+| R-COL-05, P11 | « A/CWS suspend B » | Chaque commune suspend, reprend ou clôture sa propre participation (DM-056 A6.2, DM-057, DM-066) | B suspend, reprend, clôture seule (événements 2 et 3) ; droits de A inchangés ; A n'a aucune action sur la participation de B |
+| R-COL-02 | Refus d'invitation | « Sans objet » : invitation non déclinable en V1 (DM-037 UI-02 D7, DM-056) | Message affiché par l'écran |
+| R-SES-05 | « aucune session créée » pour le dépôt public | Aucune session **authentifiée** ; un cookie de session anonyme porte le brouillon du formulaire (voir inventaire UX O-2) | Cookie constaté sur le dépôt ; `/v` sans cookie |
+| Plan §3 D4 | « B voit uniquement ses zones » | B voit en **lecture seule** les zones des communes participantes, sans les modifier (DM-084) | Zone de B ouverte par A : 200 en consultation, modification 403 |
+
+Les scénarios R-CLO-02 et R-NEG-11 sont donc reclassés « Réussi » dans le registre sur la base de ces preuves ; aucun n'a été déclaré réussi sans exécution.

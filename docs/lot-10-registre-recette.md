@@ -4,8 +4,8 @@ Base `civipass_recette`, serveur local, données fictives, MailCatcher. Plan : [
 
 ## Synthèse
 
-- Scénarios : **113** — Réussi : 105 · Non applicable : 1 · Non exécuté : 5 · Contradiction documentaire : 2.
-- P1 : **78** — Réussi : 74 · Non exécuté : 2 · Contradiction documentaire : 2.
+- Scénarios : **113** — Réussi : 107 · Non applicable : 1 · Non exécuté : 5.
+- P1 : **78** — Réussi : 76 · Non exécuté : 2.
 - Recettes conditionnelles : 6/6 exécutées et réussies. Matrice rejouée : 1 853 tests, 0 échec. `bin/qa full` : vert (deux passages, avant et après la campagne complète). E2E navigateur du contrôle hors connexion : 11/11.
 - Aucune faille d'isolation ni contournement de permission. Aucune anomalie produit ouverte.
 
@@ -50,37 +50,71 @@ Le limiteur est conservé tel quel (5 tentatives / 15 min par identifiant et IP 
 
 Les autres scénarios non exécutés ne sont pas « sans objet » : ils sont reportés (09.7, textes à valider, VPS pour le runbook de vérification publique, mesure de collisions en pilote) et restent à faire.
 
+## Invitation : validité du lien et durée de l'invitation (point UX O-3)
+
+Constat : il n'y a pas d'incohérence de fond. L'invitation d'une commune à un événement **n'expire pas** (DM-086 ; elle ne peut plus être acceptée après la clôture de l'événement) ; seul le **lien sécurisé** de l'e-mail a une durée : 14 jours pour le contact, 3 jours pour un administrateur (`InvitationLink`, paramètres techniques). Un lien expiré se réémet par « Renvoyer l'invitation » ; la page de lien expiré le dit déjà. Le défaut est de **formulation** : l'écran dit « n'expire pas » et l'e-mail « valable jusqu'au… » sans relier les deux.
+
+Textes corrigés **proposés, non appliqués** (à valider) :
+
+| Où | Texte actuel | Proposition |
+|---|---|---|
+| Page « Inviter une commune » | « L'invitation n'expire pas. Un e-mail contenant un lien sécurisé est envoyé… » | « L'invitation reste en attente jusqu'à la clôture de l'événement. Le lien sécurisé envoyé par e-mail est valable 14 jours ; vous pourrez en envoyer un nouveau à tout moment. » |
+| Fiche de l'événement (commune invitée) | « L'invitation n'expire pas. Le refus d'une invitation n'est pas prévu en V1. » | « L'invitation reste en attente jusqu'à la clôture de l'événement. Elle ne peut pas être refusée dans cette version. » |
+| E-mail d'invitation | « …ouvrez ce lien (valable jusqu'au JJ/MM/AAAA) : » | « …ouvrez ce lien (valable jusqu'au JJ/MM/AAAA ; passé cette date, demandez un nouveau lien à la commune organisatrice : l'invitation, elle, reste en attente) : » |
+
+## Limiteur de connexion et sessions HTTP de recette
+
+Le limiteur est conservé tel quel (5 tentatives / 15 min par identifiant et IP ; plafond global 50 connexions / 15 min / IP, qui survit à une connexion réussie). Il m'a bloqué une fois : trop de connexions scriptées depuis la même IP, message « réessayer dans 10 minutes », levé à l'expiration de la fenêtre sans contournement. Ensuite, le pilote HTTP réutilise des cookies de session sur disque (`var/lot10/campaign/jars/`, ignoré par Git) : aucun nouveau blocage. Les connexions par navigateur (session, captures) restent des connexions réelles.
+
+## Scénarios « Sans objet » (hors périmètre V1)
+
+| ID | Justification | Décision |
+|---|---|---|
+| R-COL-02 | Une invitation inter-communes n'est pas déclinable en V1 ; l'écran l'affiche | DM-037 (UI-02 D7), DM-056 |
+
+Les autres scénarios non exécutés ne sont pas « sans objet » : ils sont reportés (09.7, textes à valider, VPS pour le runbook de vérification publique, mesure de collisions en pilote) et restent à faire.
+
 ## Registre des anomalies et observations
 
 | ID | Gravité | Scénario | Attendu / observé | Correctif | Nouveau test |
 |---|---|---|---|---|---|
 | ANO-001 | Mineure (environnement) | P0 | 500 après inscription : cache `dev` antérieur à la route `app_municipal_home` | `cache:clear` sur la recette ; aucun code modifié | Rejoué : OK |
 | ANO-002 | Mineure (environnement de recette) | R-SES-03 | Sans `APP_DEBUG`, le serveur PHP intégré ne sert pas `/assets/` (CSS, JS) : écrans non stylés, avertissement de session absent | Instance de recette en mode debug pour les captures et la session | Rejoué : OK |
-| CD-1 | Documentaire | R-CLO-02, R-NEG-11, P11 | Le plan attend un refus ; DM-092 (validée) prévoit la clôture automatique des participations | Aucun ; plan à corriger | n/a |
-| CD-2 | Documentaire | R-COL-05 | Le plan suppose que A suspend B ; le produit réserve à chaque commune sa propre participation | Aucun ; plan à corriger | n/a |
+| CD-1 | Documentaire (corrigée) | R-CLO-02, R-NEG-11, P11 | Le plan attendait un refus ; DM-092 (validée) prévoit la clôture automatique des participations | Plan corrigé le 18/11 ; scénarios reclassés « Réussi » sur preuve (1 `EVENT_CLOSED` + 2 `PARTICIPATION_CLOSED`, même `batch_id`) | Rejoué : OK |
+| CD-2 | Documentaire (corrigée) | R-COL-05 | Le plan supposait que A suspend B ; DM-056 et DM-057 réservent à chaque commune sa propre participation | Plan corrigé le 18/11 | Rejoué : OK |
 
 Aucune anomalie produit ouverte. Aucun correctif fonctionnel ni push de développement.
 
 ## Observations UX et accessibilité (non bloquantes, à arbitrer)
 
-- O-1 : liste d'événements et tableau « Droits des personnes » débordent horizontalement en largeur mobile (585 et 701 px pour 500).
+- O-1 : seul le tableau « Droits des personnes » déborde en largeur mobile (701 px pour 390 ; la mesure initiale sur la liste d'événements venait d'une capture sans CSS).
 - O-2 : le dépôt public pose un cookie de session anonyme (brouillon du formulaire). Sans session authentifiée, mais le plan R-SES-05 disait « aucune session créée » : à reformuler ou à confirmer.
 - O-3 : l'écran d'invitation affiche « L'invitation n'expire pas » alors que l'e-mail indique un lien valable 14 jours.
-- O-4 : les pages de vérification publique n'ont pas de titre de niveau 1.
+- O-4 : les pages de vérification publique n'ont pas de titre de niveau 1 pour les états « inconnu », « clôturé » et « remplacé » (présent pour « valide »).
 - O-5 : la barre de navigation mobile occupe trois lignes et masque une partie du contenu ; un « · » reste après le nom de la commune dans l'en-tête.
 - O-6 : un lien de réinitialisation invalide répond 200 (page « Lien invalide »), une invitation invalide répond 410 : réponses hétérogènes.
 - O-7 : le message « événement clos » (accès aux dossiers fermé après clôture) est clair, mais les agents perdent toute consultation des demandes d'un événement clos ; à confirmer comme voulu.
 - Points positifs : messages d'erreur explicites (422 avec cause), confirmations en deux temps pour les modifications de droits, aucune écriture partielle, textes cohérents entre écran et e-mails.
 
-## Limites et réserves
+## Limites et réserves (clôture conditionnelle du LOT 10)
 
-- **09.7 : Non exécutée — recette réelle à réaliser.** Cette réserve interdit de déclarer Civipass prêt pour le pilote.
-- R-NOT-07 et R-OFF-06 : textes provisoires, non validés pour un envoi réel.
-- Serveur de recette mono-processus : la concurrence réelle repose sur les tests PHPUnit dédiés.
-- Poste de recette ≠ smartphone ; pas de HTTPS ; MailCatcher n'éprouve pas la délivrabilité.
-- Jeton QR lu en base, image QR non décodée ; second super-administrateur créé par SQL local (aucun chemin applicatif).
-- Plafond de connexion global 50 / 15 min / IP : à garder en tête pour une mairie derrière une seule adresse.
-- 3 avis de dépréciation PHPUnit 14 sur des classes de support de test (dette, non traitée).
+Décision du commanditaire : **clôture du LOT 10 avec réserves, sans déclarer Civipass prêt pour le pilote.**
+
+| Limite | Portée | Suite |
+|---|---|---|
+| **Recette sur smartphones non exécutée** (R-OFF-07, 09.7) | Service Worker, installation de la PWA, caméra, mode avion réel, veille, stockage iOS, horloge réelle : seulement simulés sur le poste | Protocole : [lot-10-protocole-09-7.md](lot-10-protocole-09-7.md) ; exige une autorisation d'infrastructure |
+| **SMTP réel non testé** | MailCatcher uniquement : « envoyé » = remis au serveur de messagerie ; ni délivrabilité, ni SPF/DKIM, ni spam, ni rebonds | À couvrir avec le SMTP de recette (09.7 / mise en service) |
+| **Tests Linux non exécutables sur macOS** | OpsUnitsTest (`systemd-analyze`) et NginxOperationsTest (GNU date) ne tournent pas sur l'hôte macOS ; 78 tests exécutés dans le conteneur Linux du projet, sans preuve sur le serveur de production (systemd, nginx, sauvegardes réels) | À rejouer sur le serveur de recette |
+| **Concurrence réelle non reproduite sur le serveur local** | Le serveur PHP intégré est mono-processus : les décisions « simultanées » (6 paires) sont sérialisées ; la concurrence repose sur les tests PHPUnit dédiés (verrous, contraintes uniques) | Mesure de collisions en pilote (DM-137) ; essai PHP-FPM multi-processus possible sur le serveur de recette |
+| **Décodage physique des QR hors du parcours principal** | Le jeton du QR est lu en base ; l'image n'est pas décodée dans le parcours principal. Le décodage par caméra est couvert seulement par l'E2E du contrôle hors connexion (décodeur embarqué sur le rendu réel d'un QR) | Lecture par caméra réelle : 09.7, étape E |
+| Textes provisoires (R-NOT-07, R-OFF-06) | Refus et consigne de terrain non validés ; propositions dans [lot-10-textes-a-valider.md](lot-10-textes-a-valider.md) | Validation métier / juridique |
+| Runbook de vérification publique (R-VP-08) | Exige un VPS HTTPS reporté ; équivalent fonctionnel local rejoué (R-VP-01 à 05) | Avec 09.7 |
+| Mesure de collisions (R-INS-08) | Non mesurable à un opérateur | Pilote |
+| Second super-administrateur de recette | Créé par SQL sur la base locale de recette uniquement : aucun chemin applicatif | Aucune action requise |
+| Plafond de connexion global | 50 connexions / 15 min / IP : à connaître pour une mairie derrière une seule adresse | Décision d'exploitation |
+| Dépréciations PHPUnit 14 (3) | Attributs de groupe sur des classes de support de test | Dette, non traitée |
+
+Observations UX : voir [lot-10-inventaire-ux.md](lot-10-inventaire-ux.md).
 
 ## Matrice
 
@@ -107,7 +141,7 @@ Aucune anomalie produit ouverte. Aucun correctif fonctionnel ni push de dévelop
 | R-COL-02 | P2 | Non applicable | Refus d’une invitation non prévu en V1 : « invitation non déclinable » (UI-02 D7, DM-037 ; DM-056). L’écran le dit (« Le refus d’une invitation n’est pas prévu en V1 »). Hors périmètre V1. |
 | R-COL-03 | P1 | Réussi | B crée ses zones, décide, révoque, suspend, reprend et clôture sa participation seule ; zones de A en lecture seule (DM-084). |
 | R-COL-04 | P1 | Réussi | 36 contrôles d’identifiants forgés (R-NEG-01/02/03, R-CWS-04) refusés. |
-| R-COL-05 | P2 | Réussi | Comportement réel : chaque commune suspend sa propre participation (A n’a aucun levier sur B). Plan imprécis. Suspension/reprise : droits de B suspendus puis rétablis, droits de A inchangés. Écriture sur participation clôturée → 403. Participation suspendue : création de zone autorisée, aucune zone opérationnelle, révocation de droits refusée (409 explicite) — conforme à DM-066 ; rejoué sur l’événement 3. |
+| R-COL-05 | P2 | Réussi | Chaque commune suspend sa propre participation (DM-056 A6.2, DM-057 ; A n’a aucun levier sur B). Plan corrigé le 18/11. Suspension/reprise : droits de B suspendus puis rétablis, droits de A inchangés. Écriture sur participation clôturée → 403. Participation suspendue : création de zone autorisée, aucune zone opérationnelle, révocation de droits refusée (409 explicite) — conforme à DM-066 ; rejoué sur l’événement 3. |
 | R-COL-06 | P3 | Réussi | NationalInvitationSearchTest rejoué ; recherche « Privas » rejouée en UI. |
 | R-ZON-01 | P1 | Réussi | Zones créées/validées ; type invalide → 422 ; 2e « Commune entière » refusée. |
 | R-ZON-02 | P2 | Réussi | Rue du Port à validité restreinte : droit borné au 22/11 20:00 sur la vérification. |
@@ -173,7 +207,7 @@ Aucune anomalie produit ouverte. Aucun correctif fonctionnel ni push de dévelop
 | R-SES-06 | P1 | Réussi | Opérateur sans habilitation : 404 ; habilité : clôture ; trace CWS_PERMISSION_GRANTED. |
 | R-SES-07 | P2 | Réussi | Plafond global 50 connexions/15 min/IP atteint en campagne : blocage conforme. |
 | R-CLO-01 | P1 | Réussi | Clôture de l’événement 1 : événement clos, participations clôturées (DM-092). |
-| R-CLO-02 | P1 | Contradiction documentaire | Le plan attend un refus si B est participante ; DM-092 (validée) prévoit la clôture automatique de toutes les participations. Comportement conforme à DM-092 ; plan à corriger. |
+| R-CLO-02 | P1 | Réussi | Clôture de l’événement 1 par A alors que B participait : événement + participations d’Aubenas et de Privas clôturés dans la même transaction (1 EVENT_CLOSED + 2 PARTICIPATION_CLOSED, même batch_id), conforme à DM-092 ; B ensuite en lecture seule (403). Plan corrigé le 18/11. |
 | R-CLO-03 | P1 | Réussi | Zones, décisions, droits, QR, dépôt : 403/410/fermé ; vérification « événement terminé ». |
 | R-CLO-04 | P2 | Réussi | EventClosureNotificationsTest/ProducersRaceTest rejoués. |
 | R-CLO-05 | P1 | Réussi | Clôture forcée par cws-support : refs/mot de passe/motif invalides sans effet, clôture, audit SUPPORT, e-mail aux admins sans motif. |
@@ -195,7 +229,7 @@ Aucune anomalie produit ouverte. Aucun correctif fonctionnel ni push de dévelop
 | R-NEG-08 | P1 | Réussi | Cf. R-VP-02 à 04. |
 | R-NEG-09 | P1 | Réussi | Cf. R-NOT-02/04. |
 | R-NEG-10 | P1 | Réussi | Expiration : navigateur et SessionExpiryTest rejoués ; aucune écriture partielle. |
-| R-NEG-11 | P1 | Contradiction documentaire | Cf. R-CLO-02 (DM-092). |
+| R-NEG-11 | P1 | Réussi | Cf. R-CLO-02 : clôture globale automatique prouvée (audit et état) ; écriture de B refusée après coup. Plan corrigé le 18/11. |
 | R-NEG-12 | P1 | Réussi | Invitation rejouée 410, lien de réinitialisation rejoué refusé, code d’activation invalide 403. |
 | R-NEG-13 | P2 | Réussi | Balises <script>/onerror stockées, échappées à l’affichage. |
 | R-NEG-14 | P2 | Réussi | Nom 300 car., plaque ZZZ, fichiers invalides : 422. |
