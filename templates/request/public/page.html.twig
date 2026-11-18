@@ -161,6 +161,12 @@
       <h2 class="cp-reqform__h3">{% include 'components/icon.html.twig' with { name: 'shield', size: 's' } only %} Vos données</h2>
       <p class="cp-muted">Elles servent uniquement à instruire votre demande, par les communes que vous choisirez. L’information complète vous est présentée avant l’envoi.</p>
     </section>
+    <section class="cp-panel cp-reqform__card" id="cookie-info">
+      <h2 class="cp-reqform__h3">{% include 'components/icon.html.twig' with { name: 'shield', size: 's' } only %} Cookie technique</h2>
+      <p class="cp-muted">Pour conserver votre saisie d’une étape à l’autre, ce formulaire utilise un cookie temporaire, sans finalité publicitaire ni de suivi.</p>
+      <p class="cp-muted">Votre brouillon est automatiquement effacé après 30 minutes d’inactivité. Vous pouvez également supprimer votre saisie à tout moment avec le bouton “Effacer ma saisie”.</p>
+      <p class="cp-muted">Si vous utilisez un ordinateur partagé, pensez à effacer votre saisie avant de le quitter.</p>
+    </section>
     {%- endif %}
   </aside>
 </div>

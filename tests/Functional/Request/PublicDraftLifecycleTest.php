@@ -178,6 +178,25 @@ final class PublicDraftLifecycleTest extends PublicRequestTestCase
         self::assertSame('conservé', $after->get('mon_compte'));
     }
 
+    // ═══ M1 : information sur le cookie (texte validé, publié une fois M3 et M4 en place) ═══
+    public function testTheCookieNoticeIsShownOnEveryStepOfThePublicFormWithTheValidatedWording(): void
+    {
+        $this->upToTravel();
+        $this->post('deplacement', ['mode' => 'foot_bike']);
+        $this->post('justificatifs', []);
+
+        foreach (['identite', 'situation', 'zones', 'deplacement', 'justificatifs', 'recapitulatif'] as $step) {
+            $crawler = $this->client->request('GET', $this->base.'/'.$step);
+            $notice = $crawler->filter('#cookie-info');
+            self::assertCount(1, $notice, $step);
+            self::assertSame('Cookie technique', trim($notice->filter('h2')->text()), $step);
+            $text = $notice->text();
+            self::assertStringContainsString('Pour conserver votre saisie d’une étape à l’autre, ce formulaire utilise un cookie temporaire, sans finalité publicitaire ni de suivi.', $text);
+            self::assertStringContainsString('Votre brouillon est automatiquement effacé après 30 minutes d’inactivité. Vous pouvez également supprimer votre saisie à tout moment avec le bouton “Effacer ma saisie”.', $text);
+            self::assertStringContainsString('Si vous utilisez un ordinateur partagé, pensez à effacer votre saisie avant de le quitter.', $text);
+        }
+    }
+
     // ═══ Sessions authentifiées et dépôt public ═════════════════════════════
     public function testAnAuthenticatedAgentSessionAndItsDraftAreUntouchedByThePublicExpiry(): void
     {

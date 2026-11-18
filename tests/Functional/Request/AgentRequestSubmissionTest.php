@@ -208,6 +208,19 @@ final class AgentRequestSubmissionTest extends PublicRequestTestCase
         self::assertSame(0, $this->rows('request_permit_request'));
     }
 
+    /** LOT 10 (O-2) : « Effacer ma saisie » et l'information sur le cookie sont propres au dépôt PUBLIC ; la saisie d'un agent n'est pas concernée. */
+    public function testTheCookieNoticeAndTheClearButtonBelongToThePublicFormOnly(): void
+    {
+        $this->as($this->instructor);
+
+        $crawler = $this->client->request('GET', $this->agentUrl($this->organizerId, '/identite'));
+
+        self::assertResponseIsSuccessful();
+        self::assertCount(0, $crawler->filter('#cookie-info'));
+        self::assertCount(0, $crawler->filter('form.cp-reqform__clear'));
+        self::assertStringNotContainsString('Effacer ma saisie', $crawler->html());
+    }
+
     public function testTheStepsValidateLikeThePublicForm(): void
     {
         $this->as($this->instructor);
