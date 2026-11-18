@@ -23,6 +23,9 @@ Base MySQL partagée ; isolation **applicative obligatoire** par commune et év�
 
 Cette matrice est un point de départ technique ; toute délégation fine devra être explicitée dans les tickets.
 
+## Registre de sécurité
+Constats et corrections : [registre-securite.md](registre-securite.md) (SEC-001 : énumération de comptes par le temps de réponse de la connexion, corrigée par un hachage factice).
+
 ## Autorisation serveur
 Voters pour les décisions contextuelles, services d'accès pour la politique métier, repositories scindés par contexte communal. Interdire les lectures par identifiant seul lorsque la ressource est sensible. Vérifier les chaînes : Application → ApplicationMunicipality → EventParticipation → Municipality ; PermitAuthorization → EventParticipation ; EventZone → EventParticipation. Tests négatifs inter-communes obligatoires.
 

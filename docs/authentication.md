@@ -19,7 +19,7 @@ Après connexion, `default_target_path` renvoie vers `/login`, qui redirige selo
 ## Garde-fous
 
 - **Email normalisé** à la connexion (casse, espaces, Unicode NFC) par `UserProvider`, avant la recherche binaire.
-- **Pas d'énumération de comptes** : « email inconnu » et « mauvais mot de passe » donnent le même message (« Identifiants invalides. »).
+- **Pas d'énumération de comptes** : « email inconnu » et « mauvais mot de passe » donnent le même message (« Identifiants invalides. »). **Et le même temps de réponse** (SEC-001, 18 novembre 2026) : un identifiant inconnu fait exécuter un hachage factice avec l'algorithme et le coût des vrais comptes (`UnknownAccountTimingListener`) ; avant le correctif, l'écart était de ≈ 350 ms. Voir le [registre de sécurité](registre-securite.md).
 - **Comptes désactivés** : `UserChecker::checkPostAuth`, donc refusés **après** la vérification du mot de passe (message explicite seulement pour qui connaît le bon mot de passe). Une session ouverte est invalidée dès la désactivation (`EquatableInterface`, LOT 01.1).
 - **CSRF** : jetons de **session** pour `authenticate` et `logout` (`csrf.yaml` : seul `submit` reste stateless). Fonctionne sans JavaScript.
 - **Limitation** (`LoginRateLimiter`, seuils dans `framework.yaml`) : 5 tentatives / 15 min par couple identifiant + IP ; 50 tentatives / 15 min par IP (seuil large pour les réseaux partagés). Une connexion réussie remet à zéro le compteur identifiant + IP, pas le plafond par IP.

@@ -166,6 +166,12 @@ when@test:
         App\Tests\Support\ConfigurableStepObserver:
             public: true
         App\Retention\Application\PurgeStepObserver: '@App\Tests\Support\ConfigurableStepObserver'
+        # Journal des hachages (LOT 10, O-6) : décorateur de test de la fabrique de hacheurs, même algorithme et même coût.
+        App\Tests\Support\HasherFactoryLog:
+            public: true
+        App\Tests\Support\LoggingPasswordHasherFactory:
+            decorates: security.password_hasher_factory
+            arguments: ['@.inner', '@App\Tests\Support\HasherFactoryLog']
         # Mêmes classes, mêmes alias (#[AsAlias]) et mêmes dépendances qu'en production : seule la visibilité change,
         # pour que le conteneur de test puisse lire les services (sinon supprimés car non référencés).
         _defaults:
