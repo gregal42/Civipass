@@ -61,6 +61,8 @@ final readonly class ShellContextFactory
         if (AgentRequestAccess::mayEnter($membership)) {
             $nav[] = ['label' => 'Nouvelle demande', 'icon' => 'plus', 'href' => $this->urls->generate('app_municipal_request_new', ['municipalityId' => $municipality->id()->toRfc4122()]), 'current' => 'new_request' === $section];
         }
+        // Consigne de terrain (LOT 08.2) : lecture, pour tout membre actif ; l'accès est relu par ControlGuideController.
+        $nav[] = ['label' => 'Contrôle', 'icon' => 'shield', 'href' => $this->urls->generate('app_control_guide', ['municipalityId' => $municipality->id()->toRfc4122()]), 'current' => 'control' === $section];
         if ($membership->hasRole(MunicipalityRole::Instructor) || $membership->hasRole(MunicipalityRole::MunicipalityAdmin)) {
             $nav[] = ['label' => 'Corrections d’identité', 'icon' => 'user', 'href' => $this->urls->generate('app_municipal_identity_corrections', ['municipalityId' => $municipality->id()->toRfc4122()]), 'current' => 'identity' === $section];
         }

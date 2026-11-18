@@ -1,0 +1,55 @@
+{% extends 'layouts/app.html.twig' %}
+
+{#
+  Entrée « Contrôle » (LOT 08.2, DM-138) : consigne de terrain. TEXTE PROVISOIRE : à valider par le métier avant publication (bandeau ci-dessous, à retirer à la validation).
+  Variables : online_enabled, offline_enabled, is_admin, pwa_url, hard_max_hours, warn_hours, events_url. Aucune donnée de laissez-passer.
+#}
+{% block content %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Contrôle sur le terrain', sub: 'Comment lire et interpréter un laissez-passer' } only %}
+  {% include 'components/alert.html.twig' with { variant: 'warning', id: 'guide-draft', title: 'Texte provisoire', text: 'Cette consigne doit être validée par le service métier avant d’être diffusée aux agents de terrain.' } only %}
+
+  <h2 class="cp-h2">Deux façons de contrôler</h2>
+  <div class="cp-stack">
+    <section aria-labelledby="g-online">
+      <h3 class="cp-h3" id="g-online">Contrôle en ligne</h3>
+      <p>Le contrôleur scanne le QR code du laissez-passer avec l’appareil photo de son téléphone ; la page affiche la situation <strong>à l’instant du scan</strong>. C’est la source la plus fiable : un laissez-passer révoqué ou remplacé est immédiatement signalé.</p>
+      <p class="cp-muted">{% if online_enabled %}Le contrôle en ligne est activé sur cette plateforme.{% else %}Le contrôle en ligne n’est pas encore activé sur cette plateforme.{% endif %}</p>
+    </section>
+    <section aria-labelledby="g-offline">
+      <h3 class="cp-h3" id="g-offline">Contrôle hors connexion</h3>
+      <p>Quand le réseau est insuffisant, l’application de contrôle installée sur un téléphone <strong>approuvé</strong> par la commune lit les données de la <strong>dernière synchronisation</strong>. Elle n’affiche jamais un résultat « en direct » :</p>
+      <ul>
+        <li><strong>Orange « valide selon la dernière synchronisation »</strong> : le laissez-passer était valide à la dernière synchronisation ; l’âge des données est indiqué.</li>
+        <li><strong>« Données anciennes »</strong> : la synchronisation date de plus de {{ warn_hours }} h ; resynchronisez dès que possible.</li>
+        <li><strong>« Indéterminé »</strong> : l’application ne peut pas conclure (laissez-passer inconnu de l’appareil, données trop anciennes). Ce n’est <strong>ni un refus ni une validation</strong> : contrôlez en ligne ou appliquez la procédure de votre autorité.</li>
+        <li><strong>Non valide, révoqué, remplacé</strong> : selon la dernière synchronisation.</li>
+      </ul>
+      <p>Au-delà de {{ hard_max_hours }} h sans synchronisation, l’application cesse de donner un verdict et demande de se reconnecter.</p>
+      <p class="cp-muted">{% if offline_enabled %}Le contrôle hors connexion est activé sur cette plateforme.{% else %}Le contrôle hors connexion n’est pas encore activé sur cette plateforme.{% endif %}</p>
+    </section>
+  </div>
+
+  <h2 class="cp-h2">Deux niveaux d’exigence</h2>
+  <ul>
+    <li><strong>Standard</strong> : le verdict hors connexion est utilisable avec ses réserves (orange).</li>
+    <li><strong>Strict</strong> : un verdict hors connexion n’est jamais suffisant ; le contrôle en ligne est exigé quand c’est possible.</li>
+  </ul>
+
+  <h2 class="cp-h2">Limites à connaître</h2>
+  <ul>
+    <li><strong>Révocation</strong> : un laissez-passer révoqué après la dernière synchronisation reste affiché comme valide sur un téléphone hors connexion jusqu’à sa prochaine synchronisation (au plus {{ hard_max_hours }} h ici). C’est la raison d’être du mode Strict.</li>
+    <li><strong>Le QR ne prouve pas l’identité</strong> : rapprochez toujours le nom et les plaques affichés de la personne et du véhicule contrôlés.</li>
+    <li><strong>Service indisponible</strong> : il n’existe pas de mode papier ; appliquez la procédure de votre autorité.</li>
+    <li><strong>Appareil partagé</strong> : privilégiez la navigation privée et ne partagez jamais un QR code.</li>
+  </ul>
+
+  <h2 class="cp-h2">Perte ou vol d’un téléphone</h2>
+  <p>Prévenez immédiatement l’administrateur de la commune : il désactive l’appareil depuis l’écran « Appareils » de l’événement. L’appareil ne se synchronise alors plus et efface ses données dès qu’il retrouve le réseau ; <strong>tant qu’il reste hors réseau</strong>, ses données demeurent lisibles dans la limite de {{ hard_max_hours }} h. Le verrouillage du téléphone est indispensable.</p>
+
+  {% if is_admin %}
+    <h2 class="cp-h2">Administration</h2>
+    <p>Les appareils se gèrent <strong>par événement</strong> : ouvrez l’événement, puis « Contrôle hors connexion ».</p>
+    <p>{% include 'components/button.html.twig' with { label: 'Choisir un événement', href: events_url } only %}</p>
+    {% if pwa_url %}<p class="cp-muted">Adresse de l’application de contrôle : <code>{{ pwa_url }}</code> (le code d’activation est remis à part, jamais ici).</p>{% endif %}
+  {% endif %}
+{% endblock %}
