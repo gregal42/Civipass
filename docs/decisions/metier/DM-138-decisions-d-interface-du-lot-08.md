@@ -3,7 +3,7 @@
 - **Identifiant** : DM-138
 - **Thème** : LOT 08 — Interface et sécurité des accès
 - **Statut** : Validée
-- **Validation** : décisions du commanditaire du 17 novembre 2026 (« LOT 08 : arbitrages et préparation du développement »)
+- **Validation** : décisions du commanditaire des 17 et 18 novembre 2026 (« LOT 08 : arbitrages » puis « validation définitive et lancement du développement » : accueil 7 jours / 10 lignes, sessions, doublons mesurés sur 10 000 demandes avant tout index)
 - **Décisions remplacées** : Aucune.
 
 ## Décision
@@ -17,3 +17,7 @@ Valeurs de session configurables et bornées. Aucune migration dans ces quatre l
 
 ## Documents concernés
 [lot-08-cadrage.md](../../lot-08-cadrage.md), [audit-couverture-fonctionnelle.md](../../audit-couverture-fonctionnelle.md), DM-101, DM-102, DM-125, DM-128.
+
+## Réalisation (18 novembre 2026)
+Voir la Partie III de [lot-08-cadrage.md](../../lot-08-cadrage.md). Doublons : mesure sur 10 000 demandes, **aucun index nécessaire** (page de liste 48 ms, pire cas 306 ms, après réécriture de la requête) ; le texte de la consigne « Contrôle » reste **à valider avant publication**.
+

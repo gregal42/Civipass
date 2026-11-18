@@ -28,7 +28,6 @@ use Symfony\Component\Clock\MockClock;
 use Symfony\Component\Clock\NativeClock;
 use Symfony\Component\Mailer\Exception\TransportException;
 use Symfony\Component\Mailer\MailerInterface;
-use Symfony\Component\Mailer\SentMessage;
 use Symfony\Component\Mime\RawMessage;
 use Symfony\Component\Uid\Uuid;
 
@@ -212,7 +211,7 @@ final class RefusalNoticeTest extends ControlTestCase
 
     private function failingMailer(string $message): object
     {
-        return new class($message) implements MailerInterface {
+        return new class ($message) implements MailerInterface {
             public int $calls = 0;
 
             public function __construct(private readonly string $message)

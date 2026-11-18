@@ -83,8 +83,8 @@ final readonly class ForcedEventClosure
     }
 
     /**
-     * @throws OperationNotAllowed  opérateur non habilité (ou plus), événement inaccessible ou déjà clôturé
-     * @throws DomainRuleViolation  mot de passe, motif ou référence invalides, trop de tentatives
+     * @throws OperationNotAllowed opérateur non habilité (ou plus), événement inaccessible ou déjà clôturé
+     * @throws DomainRuleViolation mot de passe, motif ou référence invalides, trop de tentatives
      */
     public function close(User $operator, string $eventId, #[\SensitiveParameter] string $password, string $reason, string $typedReference): EventClosureResult
     {

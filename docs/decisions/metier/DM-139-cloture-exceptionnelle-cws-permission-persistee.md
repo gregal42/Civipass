@@ -2,7 +2,7 @@
 
 - **Identifiant** : DM-139
 - **Thème** : Administration CWS — LOT 08.6
-- **Statut** : Validée (schéma et migration : à approuver avant exécution)
+- **Statut** : Validée (schéma approuvé le 18 novembre 2026 ; développement local réalisé)
 - **Validation** : décisions du commanditaire du 17 novembre 2026 (option A du LOT 08.6)
 - **Décisions remplacées** : Aucune (précise DM-065 et DM-074 : persistance des habilitations CWS).
 
@@ -14,3 +14,7 @@ Schéma proposé : [lot-08-6-schema.md](../../lot-08-6-schema.md) (une table `id
 
 ## Documents concernés
 [lot-08-6-schema.md](../../lot-08-6-schema.md), DM-005, DM-061, DM-065, DM-074, DM-092, DM-120.
+
+## Règles confirmées le 18 novembre 2026 (validation définitive du LOT 08)
+Aucune permission attribuée par défaut ; attribution et révocation **par console** en V1 ; **interdiction de s'attribuer soi-même** la permission ; motif d'attribution obligatoire ; ressaisie du mot de passe, motif de clôture obligatoire et confirmation par saisie de la **référence exacte** de l'événement ; audit complet ; notification aux administrateurs communaux concernés **sans motif interne CWS** ; utilisation du **moteur de clôture normal** ; risque résiduel hors connexion R-OFF-01 respecté. La clôture forcée reste une opération exceptionnelle.
+

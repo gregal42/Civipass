@@ -1,6 +1,6 @@
 # LOT 08 — Écarts fonctionnels de l'audit : synthèse de cadrage
 
-**Date** : 17 novembre 2026 · **Statut** : V1 (synthèse du 17 novembre) puis **V2 (arbitrages validés, schémas proposés)** ci-dessous, qui **prévaut** sur la V1 ; **aucun développement ; aucune migration créée ni exécutée.** Aucune migration, aucune infrastructure distante ; développement local ; interrupteurs inchangés (`PUBLIC_VERIFICATION_ENABLED`, `RIGHTS_ERASURE_EXECUTION_ENABLED`, `RETENTION_PURGE_ENABLED`, `OFFLINE_CONTROL_ENABLED` à 0).
+**Date** : 17 novembre 2026 (mise à jour du 18 novembre) · **Statut** : V1 (synthèse du 17 novembre), **V2 (arbitrages validés, schémas proposés)** qui prévaut sur la V1, puis **développement local réalisé le 18 novembre 2026 (voir la Partie III en fin de document)** ; deux migrations locales approuvées exécutées. Aucune migration, aucune infrastructure distante ; développement local ; interrupteurs inchangés (`PUBLIC_VERIFICATION_ENABLED`, `RIGHTS_ERASURE_EXECUTION_ENABLED`, `RETENTION_PURGE_ENABLED`, `OFFLINE_CONTROL_ENABLED` à 0).
 **Sources** : [audit-couverture-fonctionnelle.md](audit-couverture-fonctionnelle.md), [arbitrages-pilote-fiches.md](arbitrages-pilote-fiches.md), décisions de principe du 17 novembre 2026, LOT 09 (DM-129 à DM-132).
 
 **Légende** : ✅ validé par le commanditaire · ◐ validé dans son principe, à préciser · ❓ recommandation de l'agent **non encore validée**.
@@ -104,7 +104,7 @@ Chaque schéma est **une table, en ajout seul, sans reprise de données, avec re
 |---|---|---|---|
 | 1 | **Approbation du schéma 08.5** (et ses règles : motifs « doublon » et « autre » non communiqués ; clôture ne neutralise pas l'information de refus ; aucun envoi rétroactif ; liste « à communiquer » pour instructeurs et administrateurs) | création et exécution de la migration 08.5 | approuver |
 | 2 | **Approbation du schéma 08.6** (et ses règles : attribution par console, jamais à soi-même ; motif d'attribution obligatoire ; référence de l'événement saisie en confirmation ; notification aux administrateurs communaux sans le motif) | création et exécution de la migration 08.6 | approuver |
-| 3 | **Verrou 15 min** : A ou A + B' | rien (n'empêche pas le pilote) | A + B' en option ultérieure |
+| 3 | **Verrou 15 min** : A ou A + B' | rien (n'empêche pas le pilote) | A + B' en option ultérieure — **tranché le 18 novembre : option A, [DM-137](decisions/metier/DM-137-pas-de-verrou-visible-d-instruction-option-a.md)** |
 | 4 | **Texte de la consigne « Contrôle »** | **publication** de 08.2, pas son développement | validation métier avant diffusion |
 | 5 | **Libellé juridique du message de refus** | **activation** de 08.5 en réel, pas son développement | validation avant tout envoi réel |
 | 6 | Valeurs par défaut de 08.1 (7 jours, 10 lignes, visibilité par rôle) | confort uniquement | accepter les défauts |
@@ -123,3 +123,51 @@ Principe : **commencer par ce qui n'exige aucune migration**, pendant que les de
 | 8 | **11** | revue sécurité et RGPD ; AIPD (LOT 09) | 10 | M |
 | — | **09.7** | recette smartphones réels (HTTPS, autorisation d'infrastructure) | après le développement local | M |
 Les étapes 1 à 4 ne dépendent d'aucune approbation et peuvent démarrer **dès votre validation de la V2** ; les étapes 5 et 6 s'enchaînent dès que les schémas sont approuvés. Le développement du LOT 08 reste **local**, sans déploiement ni push sans autorisation ; les quatre interrupteurs restent à 0.
+
+
+---
+
+# Partie III — Réalisation du LOT 08 (développement local, 18 novembre 2026)
+
+Mandat : validation définitive du 18 novembre 2026 (cadrage V2, schémas 08.5 et 08.6 approuvés, option A pour le verrou). Développement exclusivement local ; aucun déploiement, aucun push de développement, aucune modification de `main`.
+
+## 14. Fonctionnalités livrées
+| Incrément | Livré | Points d'attention |
+|---|---|---|
+| **08.3 Sessions** | `SessionLifetimeListener` : inactivité **30 min / 15 min (CWS)** et durée absolue **12 h / 8 h**, mesurées côté serveur pour les seuls utilisateurs authentifiés (pare-feu `main`) ; message sur l'écran de connexion et retour à la page demandée (GET, chemin interne) ; avertissement 2 min avant (Stimulus `session-guard`, sonde `/session/etat` qui ne prolonge pas, `POST /session/prolonger` + CSRF) ; **« Se souvenir de moi » supprimé** (case, cookie, firewall) ; valeurs en variables d'environnement bornées | brouillon public jamais touché ; avertissement absent des pages Sonata (l'expiration serveur s'y applique) |
+| **08.2 Contrôle** | page « Contrôle » (`/communes/{id}/controle`, entrée de navigation, tous les rôles communaux) : en ligne, hors connexion (orange, indéterminé), STANDARD/STRICT, limites de révocation (R-OFF-01), perte/vol, administration réservée aux administrateurs ; n'active rien, aucune donnée de laissez-passer | **texte provisoire, bandeau « à valider » à retirer après validation métier** |
+| **08.1 Accueil** | `/communes/{id}` devient le point d'atterrissage : événements en cours et à venir, demandes en attente par événement, demandes récemment traitées (**7 jours, 10 lignes**), refus à communiquer, accès rapides selon le rôle ; blocs de demandes réservés aux instructeurs ; aucun calcul de validité ; bornés à la commune | l'instruction reste visible par les seuls instructeurs |
+| **08.4 Doublons** | détection **informative** (nom + prénom, e-mail, téléphone, plaque) sur les seules demandes **visibles pour la commune** (part non « invitée »), badge dans la liste, panneau sur la fiche (critères et lien), jamais de refus, fusion ni suppression ; **aucune exposition dans les parcours publics** | **aucun index ajouté** (voir §15) |
+| **08.6 Clôture CWS** | table `identity_cws_permission`, commande `app:cws:permission grant|revoke|list` (jamais à soi-même, motif obligatoire), permission persistée relue sous verrou, page `/admin/cws/evenements/cloture` : aperçu en compteurs, motif, **référence saisie**, **mot de passe**, limitation des tentatives, **même moteur** que la clôture normale (`EventLifecycleService`), audit (`EVENT_CLOSED` cause `CWS_FORCED` par l'opérateur + `EVENT_FORCED_CLOSURE` avec motif), e-mail aux administrateurs communaux **sans le motif** | R-OFF-01 : les appareils hors connexion reçoivent un jeu vide marqué clos à leur prochaine synchronisation |
+| **08.5 Refus** | table `request_refusal_notice` (une ligne par refus, créée dans la transaction de la décision), distributeur (bail, `RetryPolicy`, classes d'erreurs SMTP existantes), message minimal (motifs « doublon » et « autre » sans libellé), état visible sur la fiche, liste **« Refus à communiquer »** et marquage manuel (canal, auteur, date), compteur d'accueil, mention à la confirmation du dépôt, purge avec le dossier ; commande `app:notifications:dispatch` étendue | **envoi désactivé par défaut (`REFUSAL_NOTICE_ENABLED=0`)** tant que le libellé juridique n'est pas validé |
+
+## 15. Performances de la détection de doublons (10 000 demandes)
+Mesure : `php tests/Support/duplicates-perf.php 1000 10000` (base de test, demandes fictives déposées par le service de dépôt ; statistiques à jour ; **aucun index**). Jeu réaliste : ~5 % de téléphones, ~2 % de noms et de plaques partagés. Pire cas : toutes les demandes partagent le même téléphone et la même adresse e-mail. Temps du meilleur de 5 essais, machine de développement (budget indicatif).
+
+| Jeu | Demandes | Page de liste (25 lignes, doublons inclus) | Doublons seuls (25 demandes) | Fiche (1 demande) |
+|---|---|---|---|---|
+| Première version (jointure à conditions « OU ») | 1 000 | 99 ms | 95 ms | 2 ms |
+| Première version | 10 000 | **6 090 ms** | **6 047 ms** | 22 ms |
+| **Version retenue** (quatre jointures d'égalité réunies) | 1 000 | 5 ms | 1,4 ms | 1,2 ms |
+| Version retenue | 10 000 | **48 ms** | **11 ms** | 25 ms |
+| Version retenue, pire cas | 1 000 | 31 ms | 26 ms | 6 ms |
+| Version retenue, pire cas | 10 000 | **306 ms** | **263 ms** | 48 ms |
+
+Enseignements : (1) la première requête, correcte, ne passait pas à l'échelle (balayage par demande de la page) ; (2) la réécriture en jointures d'**égalité** (résolues par table de hachage) la rend ~**125 fois** plus rapide à 10 000 sans aucun index ; (3) sans statistiques à jour après une forte croissance, le plan peut rester celui de la petite table (mesures intermédiaires 0,7 à 0,9 s) : **à signaler à l'exploitation** (nettoyage régulier de la base) ; (4) **décision : aucun index**, donc aucune migration supplémentaire ; le pire cas pathologique reste sous 0,35 s par page et la requête est plafonnée (4 000 lignes, 5 correspondances par demande).
+
+## 16. Migrations locales exécutées
+| Migration | Contenu | Sauvegarde | Contrôles |
+|---|---|---|---|
+| `Version20261118072805` | `identity_cws_permission` (ajout seul, aucune permission attribuée) | `var/backup-local/civipass-20261118T072800Z-pre-lot08.sql.gz` (49 tables, fin de sauvegarde vérifiée) | `doctrine:schema:validate` OK, 3 clés étrangères `RESTRICT`, index unique `(active_key, permission)`, bases de développement et de test |
+| `Version20261118073710` | `request_refusal_notice` (ajout seul, aucune ligne rétroactive) | `var/backup-local/civipass-20261118T073705Z-pre-lot08-5.sql.gz` (50 tables) | idem ; clés étrangères `RESTRICT`, index unique `decision_id`, index de distribution et de commune |
+
+## 17. Limites et écarts restants
+- **Textes à valider avant publication** : consigne « Contrôle » (08.2) et libellé juridique du message de refus (08.5, envoi désactivé par défaut).
+- **Avertissement d'expiration absent des pages Sonata** (CWS) : l'expiration serveur s'y applique ; l'avertissement n'est pas testé dans un navigateur réel (hors périmètre des tests actuels).
+- **Doublons** : comparaison sans casse ni accents (collation de la base) ; un téléphone ou une adresse partagés par une famille donne un « potentiel » seulement ; nom et prénom inversés non détectés.
+- **Message de refus** : e-mail non vérifié (le contenu est minimal) ; `SENT` = remis au serveur de messagerie, pas reçu ni lu ; l'envoi effectif exige un SMTP réel et l'unité de distribution installée (installation finale).
+- **Clôture CWS** : l'opérateur y accède par son adresse (pas de lien dans le menu Sonata en V1) ; attribution des permissions uniquement par la console.
+- Verrou d'instruction : option A (DM-137) ; mesure des collisions à faire en recette (LOT 10).
+
+## 18. Prérequis de la recette globale (LOT 10)
+Commune vierge sans fixtures ; validation métier des deux textes ci-dessus ; SMTP de recette (ou boîte de capture) et exécution de `app:notifications:dispatch` ; attribution d'une permission de clôture à un compte de recette (console) ; mesure des collisions d'instruction et compréhension du message de conflit (DM-137) ; recette sur smartphones réels du contrôle hors connexion (09.7) avant tout usage de données réelles ; interrupteurs `OFFLINE_CONTROL_ENABLED`, `PUBLIC_VERIFICATION_ENABLED`, `REFUSAL_NOTICE_ENABLED` laissés à 0 jusqu'à décision.

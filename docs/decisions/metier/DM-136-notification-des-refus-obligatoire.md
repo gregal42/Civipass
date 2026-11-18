@@ -2,7 +2,7 @@
 
 - **Identifiant** : DM-136
 - **Thème** : Notifications — LOT 08.5
-- **Statut** : Validée (schéma et migration : à approuver avant exécution)
+- **Statut** : Validée (schéma approuvé le 18 novembre 2026 ; développement local réalisé)
 - **Validation** : décisions du commanditaire du 17 novembre 2026 (« E2 » et option A du LOT 08.5)
 - **Décisions remplacées** : DM-110 (« Aucune notification au citoyen avant le LOT 07 »), en partie. Précise DM-117 et DT-049.
 
@@ -18,3 +18,7 @@ Schéma proposé : [lot-08-5-schema.md](../../lot-08-5-schema.md) (une table `re
 
 ## Documents concernés
 [lot-08-5-schema.md](../../lot-08-5-schema.md), [arbitrages-pilote-fiches.md](../../arbitrages-pilote-fiches.md) fiche 5, DM-110, DM-117, DT-049.
+
+## Règles confirmées le 18 novembre 2026 (validation définitive du LOT 08)
+Une notification par décision de refus ; réessais selon la politique existante ; **aucun envoi rétroactif** pour les refus historiques ; la clôture de l'événement **ne neutralise pas** les notifications en attente ; pour les motifs « doublon » et « autre », **ni le libellé spécifique ni le commentaire libre** ne sont communiqués ; le demandeur est toujours informé explicitement ; sans adresse e-mail : `NO_RECIPIENT` et visibilité dans « Refus à communiquer » ; instructeurs et administrateurs enregistrent une information manuelle (canal, auteur, date) ; **SENT signifie envoyé, pas reçu ni lu**. **Le libellé juridique définitif du message doit être validé avant tout envoi réel** : l'envoi est désactivé par défaut (`REFUSAL_NOTICE_ENABLED=0`).
+

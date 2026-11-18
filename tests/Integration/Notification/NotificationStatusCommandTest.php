@@ -136,11 +136,12 @@ final class NotificationStatusCommandTest extends MunicipalDecisionTestCase
         $this->approve();
         $mailer = new RecordingMailer($this->em->getConnection());
         $dispatcher = NotificationKit::dispatcher(self::getContainer(), NotificationKit::provider(...NotificationKit::newKey('k1')), $this->clock, $mailer);
-        $tester = new CommandTester(new DispatchCommand($dispatcher));
+        $tester = new CommandTester(new DispatchCommand($dispatcher, self::getContainer()->get(\App\Request\Application\RefusalNoticeDispatcher::class)));
 
         self::assertSame(0, $tester->execute(['--limit' => '10', '--max-seconds' => '20']));
 
         self::assertStringContainsString('sent', $tester->getDisplay());
+        self::assertStringContainsString('désactivée', $tester->getDisplay(), 'l\'information des refus reste désactivée par défaut (LOT 08.5)');
         self::assertCount(1, $mailer->sent);
         foreach (['lea@exemple.fr', 'laissez-passer/', 'LP-2026', 'Léa'] as $leak) {
             self::assertStringNotContainsString($leak, $tester->getDisplay());

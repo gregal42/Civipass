@@ -105,8 +105,8 @@ final readonly class DoctrineRefusalNoticeRepository implements RefusalNoticeRep
     public function countToCommunicate(Uuid $municipalityId): int
     {
         return (int) $this->db()->fetchOne(
-            "SELECT COUNT(*) FROM request_refusal_notice n JOIN request_permit_request_decision d ON d.id = n.decision_id JOIN request_permit_request_municipality rm ON rm.id = d.request_municipality_id"
-            ." JOIN request_permit_request r ON r.id = rm.request_id JOIN event_event e ON e.id = r.event_id"
+            'SELECT COUNT(*) FROM request_refusal_notice n JOIN request_permit_request_decision d ON d.id = n.decision_id JOIN request_permit_request_municipality rm ON rm.id = d.request_municipality_id'
+            .' JOIN request_permit_request r ON r.id = rm.request_id JOIN event_event e ON e.id = r.event_id'
             ." WHERE n.municipality_id = :m AND n.status IN ('NO_RECIPIENT', 'ABANDONED') AND e.status <> 'CLOSED'",
             ['m' => $municipalityId->toBinary()],
         );

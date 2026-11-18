@@ -1,6 +1,6 @@
-# LOT 08.5 — Notification des refus : schéma proposé (non approuvé)
+# LOT 08.5 — Notification des refus : schéma (approuvé le 18 novembre 2026)
 
-**Date** : 17 novembre 2026 · **Statut** : **proposition de schéma à approuver ; aucune migration créée ni exécutée ; aucun développement.** Décisions : [DM-136](decisions/metier/DM-136-notification-des-refus-obligatoire.md) (notification obligatoire, voie A : asynchrone fiable), amendement de [DM-110](decisions/metier/DM-110-motifs-de-refus.md).
+**Date** : 17 novembre 2026 · **Statut** : **schéma approuvé le 18 novembre 2026 ; migration créée et exécutée sur les bases locales (développement et test) ; développement réalisé** — voir la Partie III de [lot-08-cadrage.md](lot-08-cadrage.md). Décisions : [DM-136](decisions/metier/DM-136-notification-des-refus-obligatoire.md) (notification obligatoire, voie A : asynchrone fiable), amendement de [DM-110](decisions/metier/DM-110-motifs-de-refus.md).
 
 ## 1. Besoin
 Quand une commune **refuse** sa part d'une demande, le demandeur doit en être informé : e-mail si une adresse existe, sinon situation **visible des agents** avec procédure alternative (appel, guichet, courrier), **sans SMS en V1**. Envoi **asynchrone, fiable** : réessais, suivi des échecs, jamais de perte silencieuse, jamais de blocage de la décision (même principe que DT-049).

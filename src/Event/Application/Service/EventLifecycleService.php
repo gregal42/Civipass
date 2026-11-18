@@ -176,7 +176,7 @@ final readonly class EventLifecycleService
     }
 
     /**
-     * @param \Closure(Event): void $authorize contrôle d'accès rappelé sous verrou
+     * @param \Closure(Event): void $authorize     contrôle d'accès rappelé sous verrou
      * @param string|null           $supportReason non nul = clôture exceptionnelle CWS (cause et audit dédiés)
      */
     private function performClosure(Uuid $eventId, AuditActor $actor, \Closure $authorize, ?string $supportReason): EventClosureResult

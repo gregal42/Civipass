@@ -78,3 +78,17 @@ Recette Android et iPhone **réels** ; environnement **HTTPS** adapté (autorisa
 
 ### Configuration (rappel)
 `OFFLINE_CONTROL_ENABLED=0` et `PUBLIC_VERIFICATION_ENABLED=0` dans `.env` (défauts du dépôt) ; `.env.local` et `.env.*.local` sont **ignorés par Git** (`.gitignore`) : aucun paramètre local de développement (par exemple `PUBLIC_VERIFICATION_ENABLED=1` du poste de développement) ne doit être repris à la mise en service, dont la configuration est établie séparément et autorisée explicitement.
+
+## LOT 08 (développement local, 18 novembre 2026)
+
+| Limite | Détail | Traitement |
+|---|---|---|
+| **Textes à valider avant publication** | consigne « Contrôle » (bandeau « Texte provisoire » à retirer) ; libellé juridique du message de refus | validation métier ; l'envoi des refus reste désactivé (`REFUSAL_NOTICE_ENABLED=0`) |
+| **Avertissement d'expiration absent des pages Sonata** | l'expiration serveur s'applique partout ; l'avertissement n'existe que dans l'espace municipal ; non testé en navigateur réel | acceptable en V1 ; test de navigateur à ajouter avec la recette |
+| **Plusieurs postes simultanés** | un même compte peut avoir plusieurs sessions (aucune liste de sessions) | décision de principe (DM-138) |
+| **Doublons** | critères sans casse ni accents (collation) ; famille partageant téléphone ou adresse = « potentiel » ; nom/prénom inversés non détectés ; **statistiques de la base à tenir à jour** (sans elles le plan peut se dégrader : 0,7 à 0,9 s à 10 000 au lieu de 48 ms) | aucun index nécessaire (mesures : lot-08-cadrage §15) ; nettoyage régulier de la base à rappeler à l'exploitation |
+| **Information des refus** | e-mail non vérifié ; `SENT` ≠ reçu ; l'envoi effectif exige un SMTP réel et la commande `app:notifications:dispatch` planifiée (installation finale) | liste « Refus à communiquer » pour tout ce qui n'est pas envoyé |
+| **Clôture exceptionnelle CWS** | pas de lien dans le menu Sonata (URL `/admin/cws/evenements/cloture`) ; attribution par console uniquement | V1 : surface minimale (DM-139) |
+| **Risque R-OFF-01 à la clôture exceptionnelle** | un appareil hors connexion reste utilisable jusqu'à sa synchronisation, dans la limite de 12 h | risque inscrit (voir contrôle hors connexion) |
+| **Verrou d'instruction** | option A : pas de verrou visible ; deux agents peuvent travailler sur le même dossier, le second reçoit un conflit | mesure des collisions en recette (DM-137) |
+
