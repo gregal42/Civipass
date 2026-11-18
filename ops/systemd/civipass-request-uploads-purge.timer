@@ -1,0 +1,10 @@
+[Unit]
+Description=Civipass — planification : purge des justificatifs temporaires abandonnés
+
+[Timer]
+OnCalendar=*-*-* *:17:00
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

@@ -63,6 +63,21 @@ final class OpsUnitsTest extends TestCase
         }
     }
 
+    /** Chaque tâche planifiée à la mise en service est supervisée (battement de cœur) et réciproquement : aucune tâche silencieuse. */
+    public function testEveryGoLiveJobIsSupervisedAndEverySupervisedJobHasItsUnit(): void
+    {
+        $jobs = [];
+        foreach (self::units('', 'service') as $service) {
+            if (1 === preg_match('#ops/bin/run-job ([a-z][a-z0-9-]+) #', self::text($service), $m)) {
+                $jobs[] = $m[1];
+            }
+        }
+        $supervised = array_keys(\App\Ops\Application\JobRegistry::GO_LIVE);
+        sort($jobs);
+        sort($supervised);
+        self::assertSame($supervised, $jobs);
+    }
+
     public function testNoDestructiveOrOutwardTaskIsInTheGoLiveUnits(): void
     {
         foreach (self::units('', 'service') as $service) {

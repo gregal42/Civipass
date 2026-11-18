@@ -4,7 +4,7 @@
 
 | Dossier | Contenu | Activation |
 |---|---|---|
-| `ops/systemd/` | tâches **non destructives** de la mise en service : sauvegarde, vérification de sauvegarde, point d'ancrage, cohérence du registre, intégrité, demandes de droits en retard, **simulation** de purge (aucune écriture), distributeur de notifications, supervision | à installer à la mise en service |
+| `ops/systemd/` | tâches **non destructives** de la mise en service (seules exceptions : les **purges techniques** de données temporaires du dépôt public jamais rattachées à un dossier : justificatifs abandonnés et brouillons abandonnés) : sauvegarde, vérification de sauvegarde, point d'ancrage, cohérence du registre, intégrité, demandes de droits en retard, **simulation** de purge (aucune écriture), distributeur de notifications, supervision | à installer à la mise en service |
 | `ops/systemd/optional/` | avis de conservation et alerte de dormance (envoient des courriels), **purge réelle** (destructive) | **NON ACTIVÉS** : validations DPO et recette ; la purge exige en plus `RETENTION_PURGE_ENABLED=1` |
 | *(nulle part)* | exécution d'un effacement anticipé, **rejeu** après restauration, suppression d'événement | **jamais planifiés** : actes humains (`app:retention:replay`, écrans) |
 
