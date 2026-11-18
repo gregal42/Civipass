@@ -8,7 +8,7 @@
 {% block content %}
   {% include 'components/breadcrumb.html.twig' with { items: [{ label: 'Événements', href: list_url }, { label: detail.name, href: event_url }, { label: 'Inviter une commune' }], back: { label: detail.name, href: event_url } } only %}
   {% if cstatus %}{% include 'components/commune_status.html.twig' with cstatus only %}{% endif %}
-  {% include 'components/page_head.html.twig' with { eyebrow: 'Événement · ' ~ detail.name, title: 'Inviter une commune', sub: 'L’invitation n’expire pas. Un e-mail contenant un lien sécurisé est envoyé à l’adresse de contact indiquée.' } only %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Événement · ' ~ detail.name, title: 'Inviter une commune', sub: 'L’invitation reste en attente jusqu’à la clôture de l’événement. Un e-mail contenant un lien sécurisé, valable 14 jours, est envoyé à l’adresse de contact indiquée ; un nouveau lien pourra être envoyé si le précédent a expiré.' } only %}
 
   {% if summary|length %}{% include 'components/error_summary.html.twig' with { errors: summary } only %}{% endif %}
   {% if alert %}{% include 'components/alert.html.twig' with { variant: 'warning', title: 'Rien n’a été enregistré', text: alert, focus: true } only %}{% endif %}

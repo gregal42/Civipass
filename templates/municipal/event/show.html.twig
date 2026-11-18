@@ -34,7 +34,7 @@
           {% endif %}
           {% set accept = detail.action(constant('App\\Event\\Application\\Read\\EventAction::AcceptInvitation')) %}
           {% if accept and not accept.allowed and accept.reason.value == 'ROLE_NOT_ALLOWED' %}<p class="app-note">Seul un administrateur communal peut accepter cette invitation.</p>{% endif %}
-          <p class="app-note">L’invitation n’expire pas. Le refus d’une invitation n’est pas prévu en V1.</p>
+          <p class="app-note">L’invitation reste en attente jusqu’à la clôture de l’événement. La commune invitée peut choisir de ne pas y donner suite.</p>
         </section>
       {% else %}
         <section class="cp-section" aria-labelledby="desc-h">

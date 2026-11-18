@@ -7,7 +7,7 @@ Rôle{{ roles|length > 1 ? 's' : '' }} proposé{{ roles|length > 1 ? 's' : '' }}
 {% endfor %}
 Cette invitation ne vous donne aucun droit tant que vous ne l'avez pas acceptée.
 
-Pour créer votre compte (ou vous connecter) et accepter, ouvrez ce lien personnel, valable jusqu'au {{ expiresAt|date('d/m/Y', 'Europe/Paris') }} et utilisable une seule fois :
+Pour créer votre compte (ou vous connecter) et accepter, ouvrez ce lien personnel, valable jusqu'au {{ expiresAt|date('d/m/Y', 'Europe/Paris') }} à {{ expiresAt|date('H\\hi', 'Europe/Paris') }} (heure de Paris) et utilisable une seule fois :
 
 {{ joinUrl }}
 

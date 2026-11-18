@@ -7,7 +7,7 @@ Message de l'organisatrice :
 {% endif %}
 Qu'est-ce que Civipass ? Civipass est une plateforme qui permet aux communes de se coordonner pendant une situation de crise : zones d'accès, périodes de validité et décisions de chaque commune restent sous sa responsabilité. Participer à cet événement est gratuit et ne crée aucun abonnement.
 
-Pour répondre à cette invitation, ouvrez ce lien (valable jusqu'au {{ expiresAt|date('d/m/Y', 'Europe/Paris') }}) :
+Pour répondre à cette invitation, ouvrez ce lien (valable jusqu'au {{ expiresAt|date('d/m/Y', 'Europe/Paris') }} à {{ expiresAt|date('H\\hi', 'Europe/Paris') }}, heure de Paris). Passé cette échéance, demandez un nouveau lien à {{ organizerName }} : l'invitation, elle, reste en attente :
 
 {{ joinUrl }}
 

@@ -9,7 +9,7 @@
 <p>Rôle{{ roles|length > 1 ? 's' : '' }} proposé{{ roles|length > 1 ? 's' : '' }} :</p>
 <ul>{% for r in roles %}<li><strong>{{ r.label }}</strong> : {{ r.description }}</li>{% endfor %}</ul>
 <p>Cette invitation ne vous donne aucun droit tant que vous ne l'avez pas acceptée.</p>
-<p>Pour créer votre compte (ou vous connecter) et accepter, ouvrez ce lien personnel, valable jusqu'au {{ expiresAt|date('d/m/Y', 'Europe/Paris') }} et utilisable une seule fois :</p>
+<p>Pour créer votre compte (ou vous connecter) et accepter, ouvrez ce lien personnel, valable jusqu'au {{ expiresAt|date('d/m/Y', 'Europe/Paris') }} à {{ expiresAt|date('H\\hi', 'Europe/Paris') }} (heure de Paris) et utilisable une seule fois :</p>
 <p class="cta"><a href="{{ joinUrl }}">Rejoindre {{ communeName }}</a></p>
 <p class="note">Si le lien ne s'ouvre pas, copiez cette adresse dans votre navigateur :<br>{{ joinUrl }}</p>
 <p><strong>À savoir :</strong> ce lien prouve que vous contrôlez cette boîte e-mail ; il ne prouve pas à lui seul que vous êtes habilité(e) à représenter la mairie. Ne l'utilisez que si vous l'êtes, et ne le transmettez à personne.</p>

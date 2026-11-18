@@ -127,6 +127,39 @@ final class InvitationEmailPageTest extends MunicipalPagesTestCase
         self::assertStringContainsString($url, (string) $email->getHtmlBody());
     }
 
+    /**
+     * LOT 10 (point UX O-3) : la date affichée doit être l'échéance RÉELLE du lien (jour et heure, heure de Paris), et l'e-mail dit que
+     * l'invitation, elle, reste en attente (DM-086).
+     */
+    public function testTheEmailShowsTheExactExpiryOfTheLinkAndSaysTheInvitationStaysPending(): void
+    {
+        $this->referential('33503', 'Saumos');
+        $this->loginAs($this->w->adminO);
+
+        $this->invite('33503', 'mairie@saumos.example');
+
+        $expires = $this->lastLink()->expiresAt()->setTimezone(new \DateTimeZone('Europe/Paris'));
+        $expected = sprintf('valable jusqu\'au %s à %sh%s, heure de Paris', $expires->format('d/m/Y'), $expires->format('H'), $expires->format('i'));
+        $email = self::emailAt(0);
+        foreach ([(string) $email->getTextBody(), (string) $email->getHtmlBody()] as $body) {
+            self::assertStringContainsString($expected, $body, 'jour ET heure réels de l’échéance');
+            self::assertStringContainsString('Passé cette échéance, demandez un nouveau lien à '.$this->w->org->name(), $body);
+            self::assertStringContainsString('l\'invitation, elle, reste en attente', $body);
+        }
+    }
+
+    public function testTheInvitePageDistinguishesTheInvitationFromTheLinkValidity(): void
+    {
+        $this->loginAs($this->w->adminO);
+
+        $html = $this->get($this->inviteUrl());
+
+        self::assertStringContainsString('L’invitation reste en attente jusqu’à la clôture de l’événement.', $html);
+        self::assertStringContainsString('valable 14 jours', $html);
+        self::assertStringContainsString('un nouveau lien pourra être envoyé si le précédent a expiré', $html);
+        self::assertStringNotContainsString('n’expire pas', $html);
+    }
+
     public function testTheLinkUsesTheConfiguredBaseUrlNeverTheHostHeader(): void
     {
         $this->referential('33503', 'Saumos');
