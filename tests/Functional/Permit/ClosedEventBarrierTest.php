@@ -140,6 +140,37 @@ final class ClosedEventBarrierTest extends ClosedEventScenarioTestCase
         }
     }
 
+    /** LOT 10 (O-7) : le message de clôture propose les archives (lecture seule) aux seuls rôles qui y ont accès, sans rouvrir aucune modification. */
+    public function testTheClosedEventMessageOffersTheArchivesOnlyToTheRolesWhoHaveThem(): void
+    {
+        $this->close();
+        $archives = '/communes/'.$this->organizerId.'/archives';
+
+        foreach ([[$this->admin, true], [$this->manager, true], [$this->instructor, false]] as [$user, $offered]) {
+            $this->as($user);
+            $crawler = $this->client->request('GET', $this->path('app_municipal_request'));
+            $this->assertNeutral410();
+            $link = $crawler->selectLink('Consulter les archives');
+            self::assertCount($offered ? 1 : 0, $link, 'lien « Consulter les archives » selon le rôle');
+            if ($offered) {
+                self::assertSame($archives, $link->attr('href'));
+                self::assertStringContainsString('lecture seule', $crawler->filter('main')->text());
+            }
+            self::assertCount(1, $crawler->selectLink('Retour à mon espace'));
+        }
+
+        // Une commune où l'utilisateur n'a aucun rôle d'archives : jamais de lien.
+        $this->as($this->partnerInstructor);
+        $crawler = $this->client->request('GET', $this->path('app_municipal_request', $this->partnerId));
+        $this->assertNeutral410();
+        self::assertCount(0, $crawler->selectLink('Consulter les archives'));
+
+        // Aucune modification n'est rouverte : l'écran des archives est en lecture seule et les routes gardées restent à 410 (test de matrice).
+        $this->as($this->admin);
+        $this->client->request('POST', $this->path('app_municipal_request_approve'));
+        $this->assertNeutral410();
+    }
+
     public function testTheCommunalListNoLongerServesAClosedEventAndNeverSelectsItByDefault(): void
     {
         $this->close();

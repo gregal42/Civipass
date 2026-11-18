@@ -2,10 +2,14 @@
 {% set page_title = 'Événement clos' %}
 
 {% block content %}
-    {# Réponse identique pour tous les rôles : aucune donnée de dossier, aucun nom, aucune référence (LOT 05.6.2). #}
-    {% embed 'components/panel.html.twig' with { id: 'err-h', title: 'Événement clos', level: 1 } only %}
+    {# Aucune donnée de dossier, aucun nom, aucune référence (LOT 05.6.2). Seul le lien vers les archives varie : il n'est proposé qu'aux rôles qui y ont accès (O-7, LOT 10). #}
+    {% embed 'components/panel.html.twig' with { id: 'err-h', title: 'Événement clos', level: 1, archives_href: archives_href|default('') } only %}
         {% block body %}
             <p>Cet événement est clos : les données de ses dossiers ne sont plus consultables dans l’espace de gestion.</p>
+            {%- if archives_href|default('') %}
+            <p>Ils restent consultables en lecture seule dans les archives, selon vos droits.</p>
+            {% include 'components/button.html.twig' with { label: 'Consulter les archives', href: archives_href, variant: 'primary', icon: 'file' } only %}
+            {%- endif %}
             {% include 'components/button.html.twig' with { label: 'Retour à mon espace', href: path('app_municipal_select'), variant: 'secondary', icon: 'back' } only %}
         {% endblock %}
     {% endembed %}
