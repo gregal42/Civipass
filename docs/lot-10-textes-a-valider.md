@@ -1,5 +1,17 @@
 # LOT 10 — Textes utilisateurs soumis à validation (18 novembre 2026)
 
+**État au 18 novembre 2026 (après décision du commanditaire)**
+
+| Texte | Décision | État |
+|---|---|---|
+| T1 page d'invitation | Accepté avec ajustement : « un nouveau lien pourra être envoyé si le précédent a expiré » | Intégré (commit `a65c8da`) |
+| T2 fiche événement | Accepté, formulation imposée : « L'invitation reste en attente jusqu'à la clôture de l'événement. La commune invitée peut choisir de ne pas y donner suite. » | Intégré (`a65c8da`) |
+| T3 e-mail d'invitation | Accepté ; vérification demandée : la date affichée doit correspondre à l'expiration réelle | Intégré (`a65c8da`) : jour **et heure** réels, heure de Paris (la date seule faisait croire à une fin de journée) |
+| T4 message de refus | Accepté dans son principe ; **publication bloquée** jusqu'à validation juridique (voies de recours) ; notifications de refus non activées hors recette fictive | Non modifié |
+| T5 consigne de contrôle | Cinq retouches acceptées dans leur principe ; statut « provisoire » conservé jusqu'à validation du texte intégral | Non modifié |
+
+Texte du premier état du document (avant décision) :
+
 **Aucun texte n'a été modifié dans le code ni dans les gabarits.** Pour chacun : formulation actuelle exacte, proposition exacte, raison. Les textes juridiques (refus) et la consigne de terrain restent soumis à la validation du service métier / juridique ; rien n'est publiable ni envoyable en réel avant.
 
 ## T1 — Page « Inviter une commune » (sous-titre)
