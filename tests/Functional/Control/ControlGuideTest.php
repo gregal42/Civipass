@@ -41,6 +41,16 @@ final class ControlGuideTest extends ControlTestCase
         }
     }
 
+    public function testSessionWarningIsInjectedInMunicipalPagesOnly(): void
+    {
+        $this->client->loginUser($this->user($this->instructorO));
+        $this->guide($this->org->id()->toRfc4122());
+        self::assertSelectorExists('[data-controller="session-guard"]');
+        self::assertStringContainsString('/session/prolonger', (string) $this->client->getResponse()->getContent());
+        $this->client->request('GET', '/login');
+        self::assertSelectorNotExists('[data-controller="session-guard"]');
+    }
+
     public function testNavigationShowsTheControlEntry(): void
     {
         $this->client->loginUser($this->user($this->instructorO));

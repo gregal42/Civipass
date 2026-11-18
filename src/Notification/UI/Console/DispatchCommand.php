@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Notification\UI\Console;
 
 use App\Notification\Application\NotificationDispatcher;
-use App\Request\Application\RefusalNoticeDispatcher;
+use App\Notification\Application\RefusalNoticeDispatcher;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;

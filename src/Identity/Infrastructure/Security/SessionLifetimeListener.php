@@ -62,7 +62,7 @@ final readonly class SessionLifetimeListener
     {
         $request = $event->getRequest();
         // Uniquement le pare-feu `main` : les pare-feu sans sécurité (contrôle public /v, PWA /controle) ne lisent ni ne touchent jamais une session.
-        if (!$event->isMainRequest() || !$request->hasPreviousSession() || 'main' !== $this->security->getFirewallConfig($request)?->getName()) {
+        if (!$event->isMainRequest() || 'main' !== $this->security->getFirewallConfig($request)?->getName() || !$request->hasPreviousSession()) {
             return;
         }
         $user = $this->tokens->getToken()?->getUser();

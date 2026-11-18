@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Request\Application;
+namespace App\Notification\Application;
 
 use App\Request\Application\Read\RefusalNoticeFacts;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;

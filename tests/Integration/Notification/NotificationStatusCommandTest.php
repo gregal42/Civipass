@@ -136,7 +136,7 @@ final class NotificationStatusCommandTest extends MunicipalDecisionTestCase
         $this->approve();
         $mailer = new RecordingMailer($this->em->getConnection());
         $dispatcher = NotificationKit::dispatcher(self::getContainer(), NotificationKit::provider(...NotificationKit::newKey('k1')), $this->clock, $mailer);
-        $tester = new CommandTester(new DispatchCommand($dispatcher, self::getContainer()->get(\App\Request\Application\RefusalNoticeDispatcher::class)));
+        $tester = new CommandTester(new DispatchCommand($dispatcher, self::getContainer()->get(\App\Notification\Application\RefusalNoticeDispatcher::class)));
 
         self::assertSame(0, $tester->execute(['--limit' => '10', '--max-seconds' => '20']));
 

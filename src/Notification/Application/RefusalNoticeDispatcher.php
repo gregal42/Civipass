@@ -2,9 +2,8 @@
 
 declare(strict_types=1);
 
-namespace App\Request\Application;
+namespace App\Notification\Application;
 
-use App\Notification\Application\SmtpFailureClassifier;
 use App\Notification\Domain\FailureKind;
 use App\Notification\Domain\OutboxErrorCode;
 use App\Notification\Domain\RetryPolicy;
