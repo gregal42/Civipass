@@ -139,6 +139,7 @@ case "${1:-help}" in
   full) cmd_full ;;
   js) exec_php sh -c 'node --test tests/Js/*.test.mjs' 2>&1 | grep -E '^# (tests|pass|fail)|^not ok|failureType|error:' | head -40 ;;
   e2e) bin/e2e-control ;;
+  e2e-origins) bin/e2e-control-origins ;;
   log) tail -n "${2:-40}" "$OUT/phpunit.log" 2>/dev/null | grep -v '^\[' ;;
   *) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//' ;;
 esac
