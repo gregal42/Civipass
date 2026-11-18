@@ -49,17 +49,8 @@ security:
 
             # 5 tentatives / 15 min par couple identifiant+IP, plafond global par IP (seuils : framework.yaml,
             # section rate_limiter).
-            # « Se souvenir de moi » : cookie signé (sans table), 30 jours maximum, HttpOnly, SameSite=Lax, Secure en
-            # HTTPS. La signature couvre le mot de passe, l'état actif et le privilège superadmin : tout changement
-            # invalide les cookies existants. Case décochée par défaut (always_remember_me: false).
-            remember_me:
-                secret: '%kernel.secret%'
-                lifetime: 2592000
-                secure: auto
-                httponly: true
-                samesite: lax
-                always_remember_me: false
-                signature_properties: [password, active, superAdmin]
+            # « Se souvenir de moi » : SUPPRIMÉ en V1 (LOT 08.3, DM-138). Aucune session ne survit à l'expiration d'inactivité (30 min agents, 15 min CWS) ni à la
+            # durée absolue (12 h / 8 h) : voir App\Identity\Infrastructure\Security\SessionLifetimeListener.
 
             login_throttling:
                 limiter: App\Identity\Infrastructure\Security\LoginRateLimiter

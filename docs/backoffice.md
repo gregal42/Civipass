@@ -9,7 +9,7 @@ Réservé aux **super-administrateurs CWS**. Les modules Sonata sont en **lectur
 | Authentification | Firewall Symfony existant (`/login`) ; Sonata n'a **aucun** système d'authentification propre |
 | Rôle | `ROLE_SUPER_ADMIN` **et** `IS_AUTHENTICATED_FULLY` (`access_control` de `security.yaml`) |
 | Compte communal | 403, quels que soient ses rôles communaux (un membership ne donne aucun rôle Symfony) |
-| Session « mémorisée » (remember-me) seule | Redirigée vers `/login` : mot de passe exigé |
+| Session « mémorisée » (remember-me) seule | Sans objet depuis le LOT 08.3 (remember-me supprimé) |
 | Compte désactivé | Session invalidée immédiatement |
 | Déconnexion | POST + jeton CSRF (bouton du menu Sonata) |
 

@@ -48,7 +48,7 @@ final class AuthenticationDesignSystemTest extends WebTestCase
 
         self::assertSame(2, $page->filter('form .cp-field label.cp-field__label')->count(), 'Deux champs : composant Field.');
         self::assertSame(2, $page->filter('form .cp-field input.cp-input')->count());
-        self::assertSame(1, $page->filter('form label.cp-check input[type="checkbox"]')->count(), 'Composant Check.');
+        self::assertSame(0, $page->filter('form input[type="checkbox"]')->count(), 'Plus de case « Se souvenir de moi » (LOT 08.3) : le composant Check n\'est plus utilisé ici.');
         self::assertSame(1, $page->filter('form button.cp-btn.cp-btn--primary[type="submit"]')->count(), 'Composant Button.');
         self::assertSame(1, $page->filter('.cp-panel h1.cp-panel__title')->count(), 'Composant Panel, un seul h1.');
         self::assertGreaterThan(0, $page->filter('header.cp-public__head .cp-logo')->count(), 'Composant PublicHeader (monogramme Cp).');

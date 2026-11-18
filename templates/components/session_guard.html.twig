@@ -1,0 +1,15 @@
+{# Avertissement d'expiration de session (LOT 08.3) : invisible tant que l'échéance est loin ; rien du tout hors session authentifiée. #}
+{% set guard = session_guard() %}
+{% if guard %}
+<div data-controller="session-guard" data-session-guard-remaining-value="{{ guard.remaining }}" data-session-guard-warning-value="{{ guard.warning }}"
+     data-session-guard-state-url-value="{{ path('app_session_state') }}" data-session-guard-extend-url-value="{{ path('app_session_extend') }}"
+     data-session-guard-token-value="{{ csrf_token('session_extend') }}" data-session-guard-login-url-value="{{ path('app_login') }}">
+  <div class="cp-alert cp-alert--warning" data-session-guard-target="banner" role="alert" hidden style="position: fixed; inset: auto var(--space-3) var(--space-3) var(--space-3); z-index: 1000">
+    {%- include 'components/icon.html.twig' with { name: 'alert', size: 'm' } only -%}
+    <div class="cp-alert__body">
+      <p><b data-session-guard-target="note"></b> Il reste <span data-session-guard-target="count"></span>.</p>
+      <button type="button" class="cp-btn cp-btn--primary" data-session-guard-target="extend" data-action="session-guard#extend">Rester connecté</button>
+    </div>
+  </div>
+</div>
+{% endif %}

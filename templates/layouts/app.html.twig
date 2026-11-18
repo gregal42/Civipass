@@ -42,5 +42,6 @@
   {% include 'components/mobile_menu.html.twig' with { items: menu_items|default([]), commune: commune, user: user|merge({ role: role|default('') }), logout_href: logout_href|default('#') } only %}
   {% include 'components/dialog.html.twig' %}
   {% include 'components/toasts.html.twig' %}
+  {% include 'components/session_guard.html.twig' %}
 </body>
 </html>

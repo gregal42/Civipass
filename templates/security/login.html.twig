@@ -2,8 +2,11 @@
 {% set page_title = 'Connexion' %}
 
 {% block content %}
-    {% embed 'components/panel.html.twig' with { id: 'login-h', title: 'Connexion à Civipass', level: 1, error: error, last_username: last_username } only %}
+    {% embed 'components/panel.html.twig' with { id: 'login-h', title: 'Connexion à Civipass', level: 1, error: error, last_username: last_username, expired: expired } only %}
         {% block body %}
+            {% for message in expired|default([]) %}
+                {% include 'components/alert.html.twig' with { variant: 'info', id: 'session-expired', text: message, focus: true } only %}
+            {% endfor %}
             {% if error %}
                 {% include 'components/alert.html.twig' with { variant: 'error', id: 'login-error', text: error.messageKey|trans(error.messageData, 'security') } only %}
             {% endif %}
@@ -12,11 +15,6 @@
                 {% set invalid = error ? ' aria-invalid="true" aria-describedby="login-error"' : '' %}
                 {% include 'components/field.html.twig' with { id: 'email', name: 'email', type: 'email', label: 'Adresse email', value: last_username, required: true, autocomplete: 'username', attrs: 'autofocus autocapitalize="none"' ~ invalid } only %}
                 {% include 'components/field.html.twig' with { id: 'password', name: 'password', type: 'password', label: 'Mot de passe', required: true, autocomplete: 'current-password', attrs: invalid } only %}
-
-                <div class="cp-stack" style="gap: var(--space-1)">
-                    {% include 'components/check.html.twig' with { id: 'remember_me', name: '_remember_me', value: '1', label: 'Se souvenir de moi', attrs: 'aria-describedby="remember-hint"' } only %}
-                    <p class="cp-help" id="remember-hint">30 jours maximum. À éviter sur un ordinateur partagé.</p>
-                </div>
 
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
                 {% include 'components/button.html.twig' with { label: 'Se connecter', type: 'submit', size: 'l', block: true, loading_label: 'Connexion…' } only %}

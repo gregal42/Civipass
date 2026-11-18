@@ -25,6 +25,12 @@ parameters:
     env(PUBLIC_VERIFICATION_ENABLED): '0'
     # Contrôle hors connexion (LOT 09, DM-129 à DM-132) : DÉSACTIVÉ par défaut (404 uniforme sur /controle/*). Jamais activé sans accord du responsable du projet.
     env(OFFLINE_CONTROL_ENABLED): '0'
+    # Sessions authentifiées (LOT 08.3, DM-138) : secondes ; bornées par App\Identity\Application\SessionLifetime.
+    env(SESSION_AGENT_IDLE_SECONDS): '1800'
+    env(SESSION_AGENT_ABSOLUTE_SECONDS): '43200'
+    env(SESSION_CWS_IDLE_SECONDS): '900'
+    env(SESSION_CWS_ABSOLUTE_SECONDS): '28800'
+    env(SESSION_WARNING_SECONDS): '120'
     # Plafond de CONFIGURATION du seuil dur de confiance (secondes) : 43 200 (12 h) pour le pilote ; le relever exige une décision explicite (DM-130 §4).
     # Le plafond TECHNIQUE absolu (24 h) est une constante du code.
     env(CONTROL_TRUST_HARD_MAX_SECONDS): '43200'

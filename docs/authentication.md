@@ -1,6 +1,6 @@
 # Civipass — Authentification (LOT 01.2)
 
-Périmètre : connexion par email et mot de passe, « Se souvenir de moi », mot de passe oublié, déconnexion, sessions, comptes désactivés, limitation des tentatives, `lastLoginAt`, initialisation du premier superadmin. Les citoyens et les contrôleurs externes n'ont pas de compte (CLAUDE.md, règle 6) et ne passent pas par ce firewall.
+Périmètre : connexion par email et mot de passe, expiration des sessions (« Se souvenir de moi » supprimé), mot de passe oublié, déconnexion, sessions, comptes désactivés, limitation des tentatives, `lastLoginAt`, initialisation du premier superadmin. Les citoyens et les contrôleurs externes n'ont pas de compte (CLAUDE.md, règle 6) et ne passent pas par ce firewall.
 
 ## Parcours
 
@@ -51,17 +51,19 @@ Envoi : `PasswordResetNotifier` (abstraction) → `QueuedPasswordResetNotifier` 
 
 Configuration : `MAILER_DSN` (défaut `null://null` dans `.env` : n'envoie rien ; développement : MailCatcher dans `.env.local`, `smtp://saas_civipass_mailcatcher:1025`, interface sur `mail-civipass.cws.gregory.localhost`), expéditeur `MAILER_FROM` (repli non routable `no-reply@civipass.invalid`, **à définir en production**).
 
-## « Se souvenir de moi »
+## Expiration des sessions et « Se souvenir de moi » (LOT 08.3, DM-138)
 
-- Case **non cochée** par défaut ; durée **30 jours** ; cookie `REMEMBERME` `HttpOnly`, `SameSite=Lax`, `Secure` automatique en HTTPS (testés).
-- Cookie **signé, sans table** : la signature couvre `password`, `active` et `superAdmin`. Démontré par des tests : un changement de mot de passe, la désactivation du compte ou un changement de privilège invalident le cookie ; un cookie modifié est rejeté ; la déconnexion le supprime.
-- **Compte désactivé, deux protections indépendantes** : la signature (`active`) et `UserChecker`. Les tests montrent que retirer l'une des deux laisse l'autre refuser le compte, et que retirer les deux fait échouer le test.
-- **Un utilisateur « mémorisé » n'est pas pleinement authentifié** : `/admin` exige `IS_AUTHENTICATED_FULLY` (il doit retaper son mot de passe) et `/login` s'affiche pour lui (pas de boucle de redirection). **Règle pour les futures opérations sensibles** : `#[IsGranted('IS_AUTHENTICATED_FULLY')]` (changement de mot de passe ou d'email, gestion des accès, exports, etc.).
-- `lastLoginAt` n'est mis à jour que par une authentification par mot de passe, pas par la reconnexion automatique.
+- **« Se souvenir de moi » est supprimé en V1** : plus de case, plus de cookie `REMEMBERME` (le firewall ne déclare plus `remember_me` ; un paramètre forgé ne crée aucun cookie).
+- **Expiration côté serveur** (`SessionLifetimeListener`) pour les utilisateurs **authentifiés seulement** : inactivité **30 min** (agents) / **15 min** (CWS) et durée absolue **12 h** / **8 h**. Variables `SESSION_AGENT_IDLE_SECONDS`, `SESSION_AGENT_ABSOLUTE_SECONDS`, `SESSION_CWS_IDLE_SECONDS`, `SESSION_CWS_ABSOLUTE_SECONDS`, `SESSION_WARNING_SECONDS` ; **bornées** par `SessionLifetime` (inactivité 5 min à 2 h, durée absolue ≤ 24 h, avertissement 30 s à 10 min).
+- Les **visiteurs anonymes** (brouillon de demande publique) ne sont jamais concernés : sans jeton authentifié, l'écouteur ne touche pas à la session.
+- À l'expiration : jeton retiré, session invalidée, message sur l'écran de connexion (inactivité ou durée maximale), retour à la page demandée après reconnexion (GET, chemin interne). Requêtes XHR/JSON : 401.
+- **Avertissement 2 min avant** (espace municipal) : contrôleur Stimulus `session-guard` ; il interroge `/session/etat` (sonde qui **ne prolonge pas** la session) puis propose « Rester connecté » (`POST /session/prolonger`, jeton CSRF). Jamais au-delà de la durée absolue. Limite : les pages Sonata (CWS) n'affichent pas l'avertissement ; l'expiration serveur s'y applique.
+- Plusieurs postes simultanés pour un même compte : conservés (aucune liste de sessions en V1).
+- `lastLoginAt` n'est mis à jour que par une authentification par mot de passe.
 
 ## Stratégie de révocation des sessions et des cookies persistants
 
-| Événement | Sessions ouvertes | Cookies remember-me |
+| Événement | Sessions ouvertes | Cookies persistants |
 |---|---|---|
 | Réinitialisation du mot de passe | Invalidées (hash du mot de passe comparé par `EquatableInterface`) | Invalidés (signature) |
 | Changement de mot de passe par tout autre moyen | Idem | Idem |
