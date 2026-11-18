@@ -8,6 +8,7 @@
 
 {% block content %}
   <div class="vp-col">
+    <h1 class="cp-sr-only">Vérification d’un QR code</h1>
     {% include 'components/alert.html.twig' with { variant: 'warning', title: 'Vérification temporairement indisponible', text: 'La vérification est temporairement indisponible : trop de demandes ont été faites depuis ce réseau. Ce n’est pas un refus d’autorisation. Réessayez dans ' ~ minutes ~ ' minute(s) ou appliquez la procédure de terrain de votre commune.', role: 'alert' } only %}
     <a class="cp-btn cp-btn--primary cp-btn--l vp-refresh__button" href="" rel="nofollow">{% include 'components/icon.html.twig' with { name: 'refresh' } only %}<span>Actualiser</span></a>
   </div>

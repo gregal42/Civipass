@@ -364,6 +364,27 @@ final class PublicVerificationPageTest extends PublicRequestTestCase
 
     // ------------------------------------------------------------------ QR remplacé, inconnu, malformé, interrupteur
 
+    /** LOT 10 (O-4) : chaque état de la page (valide, inconnu, clôturé, remplacé) porte un titre de niveau 1, sans changer le contenu ni le statut. */
+    public function testEveryStateOfThePageHasOneLevelOneHeading(): void
+    {
+        $token = $this->token();
+        self::assertCount(1, $this->client->request('GET', '/v/'.$token)->filter('h1'), 'valide');
+
+        $this->client->request('GET', '/v/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz2');
+        self::assertResponseStatusCodeSame(404);
+        self::assertCount(1, $this->client->getCrawler()->filter('h1'), 'inconnu');
+        self::assertSame('Vérification d’un QR code', trim($this->client->getCrawler()->filter('h1')->text()));
+
+        $this->sql("UPDATE event_event SET status = 'CLOSED'");
+        self::assertCount(1, $this->client->request('GET', '/v/'.$token)->filter('h1'), 'événement terminé');
+
+        $this->sql("UPDATE event_event SET status = 'ACTIVE'");
+        $this->sql('UPDATE permit_verification_token SET retired_at = UTC_TIMESTAMP(), active_permit_id = NULL');
+        $crawler = $this->client->request('GET', '/v/'.$token);
+        self::assertResponseStatusCodeSame(410);
+        self::assertCount(1, $crawler->filter('h1'), 'remplacé');
+    }
+
     public function testAReplacedQrGivesA410WithoutAnyPersonalData(): void
     {
         $token = $this->token();

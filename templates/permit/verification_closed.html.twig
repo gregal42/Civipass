@@ -8,6 +8,7 @@
 
 {% block content %}
   <div class="vp-col">
+    <h1 class="cp-sr-only">Vérification d’un QR code</h1>
     {% include 'components/alert.html.twig' with { variant: 'info', title: 'Événement terminé', text: 'Cet événement est terminé : ce QR code ne donne plus aucune information.', role: 'status' } only %}
   </div>
 {% endblock %}
