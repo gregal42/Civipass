@@ -30,7 +30,7 @@ Source : routes `app_control_*` de l'application (`debug:router`) et ressources 
 | `/controle/api/activation` | POST | Activation avec code (limiteur, réponse uniforme) | code d'activation à usage limité |
 | `/controle/api/device` | GET | État de l'appareil | secret d'appareil (`Authorization`) |
 | `/controle/api/sync` | POST | Synchronisation du jeu de données | secret d'appareil (`Authorization`) |
-| `/assets/styles/…`, `/assets/vendor/jsqr/…`, `/assets/images/control-icon-…`, `/assets/fonts/…` | GET | Ressources statiques compilées (CSS, lecteur de QR, icônes, polices) | aucune (fichiers publics) |
+| `/assets/styles/…`, `/assets/vendor/jsqr/…`, `/assets/images/control-icon-…`, `/assets/fonts/…` | GET | Ressources statiques compilées (CSS, lecteur de QR, icônes, polices) ; caractères `A-Za-z0-9_./-` seulement, jamais `..` ni `%` (même expression côté Nginx et côté application) | aucune (fichiers publics) |
 
 **Tout le reste répond 404** sur cet hôte : `/login`, `/communes/…`, `/admin/…`, `/demandes/…`, `/v/…`, `/laissez-passer/…`, `/invitation/…`, `/dev/…`. Les pages d'administration du contrôle (création de codes, approbation, désactivation) restent **sur l'origine de gestion** (`/communes/{id}/evenements/{id}/controle…`, authentification complète).
 
@@ -160,4 +160,4 @@ Implémentation : `ControlRouteAllowlist` et `ControlOriginListener` (`src/Contr
 | V4 | E2E à deux origines locales, tests cookies et sessions | S |
 | V5 | Mise à jour du runbook de contrôle et du protocole 09.7 | XS |
 
-Incréments V1 (liste blanche et test d'inventaire), V3 (G1, G2, G3 avec tests) et la preuve E2E locale sont **faits** ; restent V2 (gabarit Nginx et extension de `verify-nginx.sh`, à faire en local sans déploiement), V4 (E2E à deux origines distinctes) et V5 (runbook), après validation.
+Tous les incréments sont **faits en local, sans déploiement** : V1 (liste blanche et test d'inventaire), V2 (`20-civipass-control.conf.template`, `render.sh`, `check-deployment.sh --control-domain`, `verify-control-vhost.sh` : 86 contrôles Docker, `ControlVhostTemplateTest`), V3 (G1, G2, G3), V4 (`bin/e2e-control-origins` : 11 étapes à deux origines) et V5 ([runbook](runbooks/vhost-controle.md)). La mise en service reste soumise à l'autorisation d'infrastructure du protocole 09.7 (aucun DNS, aucun certificat réel, aucun serveur à ce stade).

@@ -17,6 +17,7 @@ Objectif : **qu'aucun secret ne soit écrit dans les journaux de nginx** — jet
 | `bin/civipass-nginx-log-hook` | Crochet de rotation : réouverture, filtrage, replis et alertes. |
 | `bin/check-rotation.sh` | Supervision : la rotation horaire tourne-t-elle ? |
 | `bin/check-deployment.sh` | Contrôle de l'environnement de l'application (`DEFAULT_URI` en https, `APP_ENV=prod`, aucun proxy de confiance…). |
+| `templates/20-civipass-control.conf.template` | **Facultatif** : second vhost HTTPS dédié au contrôle (liste blanche de routes, 404 génériques, aucun cookie). Généré seulement si `CONTROL_DOMAIN` est renseigné. Runbook : [`docs/runbooks/vhost-controle.md`](../../docs/runbooks/vhost-controle.md) ; vérification : `tests/verify-control-vhost.sh`. |
 | `systemd/` | Service et minuteur de la rotation **horaire**. |
 | `php-fpm/civipass-pool.conf.example` | Pool PHP-FPM : utilisateur distinct, aucun journal d'accès, journal d'erreur dédié. |
 | `tests/` | Contrôles automatisés (Docker) et jeu de requêtes ; les tests PHPUnit sont dans `tests/Unit/Ops` et `tests/Integration/Ops`. |
