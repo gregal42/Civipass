@@ -48,6 +48,8 @@ final class AccountReferenceCatalog
         'control_device.approved_by',
         'control_device.deactivated_by',
         // LOT 08.6 : bénéficiaire, attributeur et révocateur d'une habilitation CWS (historique conservé : un compte avec attribution ne peut pas être supprimé).
+        // LOT 08.5 : agent ayant informé un demandeur refusé par un autre moyen (traçabilité conservée).
+        'request_refusal_notice.manual_by',
         'identity_cws_permission.user_id',
         'identity_cws_permission.granted_by',
         'identity_cws_permission.revoked_by',

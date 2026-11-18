@@ -156,4 +156,9 @@ enum AuditAction: string
     case CwsPermissionGranted = 'CWS_PERMISSION_GRANTED';
     case CwsPermissionRevoked = 'CWS_PERMISSION_REVOKED';
     case EventForcedClosure = 'EVENT_FORCED_CLOSURE';
+
+    // Information des demandeurs refusés (LOT 08.5, DM-136) : identifiants, codes et canal SEULEMENT ; jamais l'adresse, le texte du message ni le commentaire.
+    case RefusalNoticeSent = 'REFUSAL_NOTICE_SENT';
+    case RefusalNoticeAbandoned = 'REFUSAL_NOTICE_ABANDONED';
+    case RefusalNoticeMarkedInformed = 'REFUSAL_NOTICE_MARKED_INFORMED';
 }

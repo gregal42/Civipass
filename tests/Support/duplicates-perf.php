@@ -89,16 +89,21 @@ $measure = static function (string $label, callable $fn): void {
 foreach ([false, true] as $worst) {
     printf("\n%s\n", $worst ? 'PIRE CAS : toutes les demandes partagent le même téléphone et la même adresse e-mail' : 'JEU RÉALISTE : ~5 % de téléphones, ~2 % de noms et de plaques partagés');
     if ($worst) {
-        $db->executeStatement('DELETE FROM request_permit_request_vehicle');
-        $db->executeStatement('DELETE FROM request_permit_request_municipality');
-        $db->executeStatement('DELETE FROM request_permit_request');
+        $db->executeStatement('SET FOREIGN_KEY_CHECKS = 0');
+        foreach (['request_permit_request_zone', 'request_permit_request_attachment', 'request_permit_request_vehicle', 'request_permit_request_municipality', 'request_permit_request', 'request_idempotency_key'] as $table) {
+            $db->executeStatement('DELETE FROM '.$table);
+        }
+        $db->executeStatement('SET FOREIGN_KEY_CHECKS = 1');
         $created = 0;
     }
     foreach ($sizes as $size) {
         $t0 = microtime(true);
         $make($size, $worst);
         printf("%d demandes (dépôt : %.0f s)\n", $size, microtime(true) - $t0);
-        $event2 = $em->find(App\Event\Domain\Event::class, Uuid::fromString($eventId));
+        // Statistiques à jour (comme après le nettoyage régulier de la base) : sans elles, le plan peut rester celui de la table petite.
+        foreach (['request_permit_request', 'request_permit_request_vehicle', 'request_permit_request_municipality', 'event_participation'] as $table) {
+            $db->executeQuery('ANALYZE TABLE '.$table)->fetchAllAssociative();
+        }
         $options = $read->eventsOf($orgId);
         $page = $read->search($orgId, $options[0], new MunicipalRequestQuery('', null, 1));
         $ids = array_map(static fn ($r): Uuid => Uuid::fromString($r->requestId), $page->items);

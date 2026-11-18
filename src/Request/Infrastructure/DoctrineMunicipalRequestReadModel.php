@@ -16,6 +16,7 @@ use App\Request\Application\Read\MunicipalRequestPage;
 use App\Request\Application\Read\MunicipalRequestQuery;
 use App\Request\Application\Read\MunicipalRequestRow;
 use App\Request\Application\Read\RecentDecision;
+use App\Request\Application\Read\RefusalNoticeView;
 use App\Request\Application\Read\RequestAttachmentView;
 use App\Request\Application\Read\RequestEventOption;
 use App\Request\Application\Read\RequestZoneView;
@@ -23,7 +24,9 @@ use App\Request\Domain\BeneficiaryCategory;
 use App\Event\Domain\EventStatus;
 use App\Request\Domain\MunicipalRequestStatus;
 use App\Request\Domain\PermitRequestAttachment;
+use App\Request\Domain\DecisionOutcome;
 use App\Request\Domain\PermitRequestDecision;
+use App\Request\Domain\RefusalNotice;
 use App\Request\Domain\PermitRequestMunicipality;
 use App\Request\Domain\PermitRequestVehicle;
 use App\Request\Domain\PermitRequestZone;
@@ -176,7 +179,18 @@ final readonly class DoctrineMunicipalRequestReadModel implements MunicipalReque
                 $decision->refusalComment(),
             ),
             $this->duplicatesOf($municipalityId, [$request->id()])[$request->id()->toRfc4122()] ?? [],
+            $this->noticeView($decision),
         );
+    }
+
+    private function noticeView(?PermitRequestDecision $decision): ?RefusalNoticeView
+    {
+        if (null === $decision || DecisionOutcome::Refused !== $decision->outcome()) {
+            return null;
+        }
+        $notice = $this->entityManager->getRepository(RefusalNotice::class)->findOneBy(['decision' => $decision]);
+
+        return $notice instanceof RefusalNotice ? new RefusalNoticeView($notice->status(), $notice->processedAt(), $notice->attempts(), $notice->manualChannel(), $notice->lastErrorCode()) : null;
     }
 
     public function duplicatesOf(Uuid $municipalityId, array $requestIds): array
@@ -184,47 +198,60 @@ final readonly class DoctrineMunicipalRequestReadModel implements MunicipalReque
         if ([] === $requestIds) {
             return [];
         }
-        // Une seule requête pour la page : jointure de chaque demande avec les autres demandes du même événement VISIBLES pour la commune (part non « invitée »).
-        // Égalités sur les valeurs normalisées au dépôt (plaque, téléphone E.164) ; nom et e-mail comparés sans casse ni accents (collation de la base).
-        $sql = <<<'SQL'
-            SELECT a.id AS request_id, b.id AS other_id, b.public_reference AS other_reference, b.submitted_at AS other_submitted_at, pm.status AS other_status,
-                   (a.email IS NOT NULL AND a.email = b.email) AS same_email,
-                   (a.phone IS NOT NULL AND a.phone = b.phone) AS same_phone,
-                   (a.last_name = b.last_name AND a.first_name = b.first_name) AS same_name,
-                   EXISTS (SELECT 1 FROM request_permit_request_vehicle va JOIN request_permit_request_vehicle vb ON vb.registration = va.registration
-                           WHERE va.request_id = a.id AND vb.request_id = b.id) AS same_plate
-            FROM request_permit_request a
-            JOIN request_permit_request b ON b.event_id = a.event_id AND b.id <> a.id
+        // Une seule requête pour la page, en QUATRE jointures d'ÉGALITÉ réunies (UNION ALL) plutôt qu'une jointure à conditions « OU » : chaque critère est une
+        // jointure d'égalité que MySQL résout par table de hachage, SANS index (une passe sur les demandes de l'événement au lieu d'un balayage par demande de la page).
+        // Les autres demandes sont limitées à celles VISIBLES pour la commune (part non « invitée »). Égalités sur les valeurs normalisées au dépôt (plaque,
+        // téléphone E.164) ; nom et e-mail comparés sans casse ni accents (collation de la base).
+        $visible = <<<'SQL'
             JOIN request_permit_request_municipality pm ON pm.request_id = b.id AND pm.municipality_id = :municipality
             JOIN event_participation ep ON ep.id = pm.participation_id AND ep.status <> 'INVITED'
-            WHERE a.id IN (:ids)
-              AND ((a.email IS NOT NULL AND a.email = b.email)
-                OR (a.phone IS NOT NULL AND a.phone = b.phone)
-                OR (a.last_name = b.last_name AND a.first_name = b.first_name)
-                OR EXISTS (SELECT 1 FROM request_permit_request_vehicle va2 JOIN request_permit_request_vehicle vb2 ON vb2.registration = va2.registration
-                           WHERE va2.request_id = a.id AND vb2.request_id = b.id))
-            ORDER BY a.id, b.submitted_at DESC, b.id DESC
-            LIMIT 1000
+            SQL;
+        $columns = 'a.id AS request_id, b.id AS other_id, b.public_reference AS other_reference, b.submitted_at AS other_submitted_at, pm.status AS other_status';
+        $sql = <<<SQL
+            SELECT {$columns}, 'email' AS criterion FROM request_permit_request a JOIN request_permit_request b ON b.event_id = a.event_id AND b.email = a.email AND b.id <> a.id {$visible}
+              WHERE a.id IN (:ids) AND a.email IS NOT NULL
+            UNION ALL
+            SELECT {$columns}, 'phone' FROM request_permit_request a JOIN request_permit_request b ON b.event_id = a.event_id AND b.phone = a.phone AND b.id <> a.id {$visible}
+              WHERE a.id IN (:ids) AND a.phone IS NOT NULL
+            UNION ALL
+            SELECT {$columns}, 'name' FROM request_permit_request a JOIN request_permit_request b ON b.event_id = a.event_id AND b.last_name = a.last_name AND b.first_name = a.first_name AND b.id <> a.id {$visible}
+              WHERE a.id IN (:ids)
+            UNION ALL
+            SELECT {$columns}, 'plate' FROM request_permit_request a
+              JOIN request_permit_request_vehicle va ON va.request_id = a.id
+              JOIN request_permit_request_vehicle vb ON vb.registration = va.registration AND vb.request_id <> a.id
+              JOIN request_permit_request b ON b.id = vb.request_id AND b.event_id = a.event_id {$visible}
+              WHERE a.id IN (:ids)
+            ORDER BY request_id, other_submitted_at DESC, other_id DESC
+            LIMIT 4000
             SQL;
         $rows = $this->entityManager->getConnection()->fetchAllAssociative(
             $sql,
             ['municipality' => $municipalityId->toBinary(), 'ids' => array_map(static fn (Uuid $id): string => $id->toBinary(), $requestIds)],
             ['municipality' => \Doctrine\DBAL\ParameterType::BINARY, 'ids' => ArrayParameterType::BINARY],
         );
-        $matches = [];
+        /** @var array<string, array<string, array{reference: string, at: string, status: string, criteria: list<string>}>> $grouped */
+        $grouped = [];
         foreach ($rows as $row) {
             $key = Uuid::fromBinary((string) $row['request_id'])->toRfc4122();
-            if (\count($matches[$key] ?? []) >= self::MAX_DUPLICATES_PER_REQUEST) {
-                continue;
+            $other = Uuid::fromBinary((string) $row['other_id'])->toRfc4122();
+            $grouped[$key][$other] ??= ['reference' => (string) $row['other_reference'], 'at' => (string) $row['other_submitted_at'], 'status' => (string) $row['other_status'], 'criteria' => []];
+            $grouped[$key][$other]['criteria'][] = (string) $row['criterion'];
+        }
+        $matches = [];
+        foreach ($grouped as $key => $others) {
+            foreach ($others as $otherId => $o) {
+                if (\count($matches[$key] ?? []) >= self::MAX_DUPLICATES_PER_REQUEST) {
+                    break;
+                }
+                $matches[$key][] = new DuplicateMatch(
+                    $otherId,
+                    $o['reference'],
+                    new \DateTimeImmutable($o['at'], new \DateTimeZone('UTC')),
+                    MunicipalRequestStatus::from($o['status']),
+                    array_values(array_unique($o['criteria'])),
+                );
             }
-            $criteria = array_keys(array_filter(['name' => (bool) $row['same_name'], 'email' => (bool) $row['same_email'], 'phone' => (bool) $row['same_phone'], 'plate' => (bool) $row['same_plate']]));
-            $matches[$key][] = new DuplicateMatch(
-                Uuid::fromBinary((string) $row['other_id'])->toRfc4122(),
-                (string) $row['other_reference'],
-                new \DateTimeImmutable((string) $row['other_submitted_at'], new \DateTimeZone('UTC')),
-                MunicipalRequestStatus::from((string) $row['other_status']),
-                $criteria,
-            );
         }
 
         return $matches;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Notification\UI\Console;
 
 use App\Notification\Application\NotificationDispatcher;
+use App\Request\Application\RefusalNoticeDispatcher;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -20,7 +21,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 #[AsCommand(name: 'app:notifications:dispatch', description: 'Envoie les notifications échues du bénéficiaire (un passage ; sûr en concurrence)')]
 final class DispatchCommand extends Command
 {
-    public function __construct(private readonly NotificationDispatcher $dispatcher)
+    public function __construct(private readonly NotificationDispatcher $dispatcher, private readonly RefusalNoticeDispatcher $refusals)
     {
         parent::__construct();
     }
@@ -46,6 +47,10 @@ final class DispatchCommand extends Command
             ['Liens automatiques révoqués (jamais transmis)' => (string) $report->purge['revoked']],
         );
 
-        return isset($report->outcomes['error']) ? Command::FAILURE : Command::SUCCESS;
+        // Information des demandeurs refusés (LOT 08.5) : même passage périodique ; désactivée tant que REFUSAL_NOTICE_ENABLED vaut 0 (libellé juridique à valider).
+        $refusals = $this->refusals->run(max(1, (int) $input->getOption('limit')), max(1, (int) $input->getOption('max-seconds')));
+        $io->definitionList(...($this->refusals->enabled() ? array_map(static fn (string $k, int $v): array => ['Refus — '.$k => (string) $v], array_keys($refusals), $refusals) ?: [['Refus à informer traités' => '0']] : [['Information des refus' => 'désactivée (REFUSAL_NOTICE_ENABLED=0)']]));
+
+        return isset($report->outcomes['error']) || isset($refusals['error']) ? Command::FAILURE : Command::SUCCESS;
     }
 }

@@ -11,6 +11,7 @@ use App\Identity\Domain\User;
 use App\Municipality\Application\MunicipalityContext;
 use App\Municipality\Domain\MunicipalityRole;
 use App\Request\Application\MunicipalRequestReader;
+use App\Request\Application\RefusalNoticeService;
 use Psr\Clock\ClockInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -33,6 +34,7 @@ final class MunicipalHomeController extends AbstractController
         private readonly MunicipalityContext $context,
         private readonly EventListReader $events,
         private readonly MunicipalRequestReader $requests,
+        private readonly RefusalNoticeService $refusals,
         private readonly ClockInterface $clock,
     ) {
     }
@@ -64,6 +66,7 @@ final class MunicipalHomeController extends AbstractController
         if ($membership->hasRole(MunicipalityRole::Instructor)) {
             $summary = $this->requests->homeSummary($user, $municipalityId, $now, self::RECENT_DAYS, self::RECENT_LIMIT);
         }
+        $toCommunicate = $this->refusals->mayAccess($user, $municipalityId) ? $this->refusals->count($user, $municipalityId) : null;
         if ($request->hasSession()) {
             $request->getSession()->set(CommuneSelectionController::SESSION_KEY, $municipalityId);
         }
@@ -74,6 +77,8 @@ final class MunicipalHomeController extends AbstractController
             'current_events' => $current,
             'upcoming_events' => $upcoming,
             'summary' => $summary,
+            'to_communicate' => $toCommunicate,
+            'refusals_url' => $this->generateUrl('app_municipal_refusals', ['municipalityId' => $municipalityId]),
             'quick_links' => $quick,
             'requests_url' => $this->generateUrl('app_municipal_requests', ['municipalityId' => $municipalityId]),
             'pending_url' => $this->generateUrl('app_municipal_requests', ['municipalityId' => $municipalityId, 'statut' => 'en-attente']),

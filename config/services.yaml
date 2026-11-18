@@ -25,6 +25,8 @@ parameters:
     env(PUBLIC_VERIFICATION_ENABLED): '0'
     # Contrôle hors connexion (LOT 09, DM-129 à DM-132) : DÉSACTIVÉ par défaut (404 uniforme sur /controle/*). Jamais activé sans accord du responsable du projet.
     env(OFFLINE_CONTROL_ENABLED): '0'
+    # Information des demandeurs refusés (LOT 08.5, DM-136) : l'envoi réel est DÉSACTIVÉ par défaut tant que le libellé juridique du message n'est pas validé.
+    env(REFUSAL_NOTICE_ENABLED): '0'
     # Sessions authentifiées (LOT 08.3, DM-138) : secondes ; bornées par App\Identity\Application\SessionLifetime.
     env(SESSION_AGENT_IDLE_SECONDS): '1800'
     env(SESSION_AGENT_ABSOLUTE_SECONDS): '43200'
@@ -126,6 +128,10 @@ services:
             # LOT 08 : DTO de lecture/résultat (non services).
             - '../src/Admin/Application/ForcedClosurePreview.php'
             - '../src/Request/Application/Read/DuplicateMatch.php'
+            - '../src/Request/Application/Read/RefusalNoticeFacts.php'
+            - '../src/Request/Application/Read/RefusalToCommunicate.php'
+            - '../src/Request/Application/Read/HomeRequestSummary.php'
+            - '../src/Request/Application/Read/RecentDecision.php'
             # LOT 09 : résultats (non services).
             - '../src/Control/Application/Result/'
             - '../src/Control/Application/RegistrationRefused.php'

@@ -1,0 +1,46 @@
+{% extends 'layouts/app.html.twig' %}
+
+{#
+  « Refus à communiquer » (LOT 08.5, DM-136) : demandeurs refusés qui n'ont pas pu être informés par e-mail (aucune adresse, ou échec définitif d'envoi).
+  L'agent les informe par un autre moyen puis les marque comme informés. Variables : rows (RefusalToCommunicate), channels. Aucune adresse e-mail affichée.
+#}
+{% block content %}
+  {% for message in app.flashes('success') %}{% include 'components/alert.html.twig' with { variant: 'success', title: message, focus: true } only %}{% endfor %}
+  {% for message in app.flashes('error') %}{% include 'components/alert.html.twig' with { variant: 'error', title: 'Rien n’a été modifié', text: message, focus: true } only %}{% endfor %}
+  {% include 'components/page_head.html.twig' with { eyebrow: 'Commune de ' ~ active_municipality_name, title: 'Refus à communiquer', sub: 'Demandeurs refusés à informer par un autre moyen' } only %}
+  {% include 'components/alert.html.twig' with { variant: 'info', title: 'Pourquoi cette liste ?', text: 'Quand une demande est refusée, le demandeur est informé par e-mail. Si aucune adresse n’a été fournie, ou si l’envoi a définitivement échoué, il doit être informé par téléphone, au guichet ou par courrier. Marquez-le ensuite comme informé.' } only %}
+
+  {% if rows is empty %}
+    {% include 'components/empty_state.html.twig' with { icon: 'check', title: 'Aucun refus à communiquer', text: 'Tous les demandeurs refusés ont été informés ou le seront par e-mail.' } only %}
+  {% else %}
+    <div class="cp-table-wrap">
+      <table class="cp-table">
+        <caption class="cp-sr-only">Refus à communiquer</caption>
+        <thead><tr><th scope="col">Demande</th><th scope="col">Demandeur</th><th scope="col">Téléphone</th><th scope="col">Événement</th><th scope="col">Refus du</th><th scope="col">Situation</th><th scope="col">Informé par…</th></tr></thead>
+        <tbody>
+        {% for r in rows %}
+          <tr>
+            <td data-label="Demande"><a class="cp-table__link" href="{{ path('app_municipal_request', { municipalityId: active_municipality_id, requestId: r.requestId }) }}">{{ r.reference }}</a></td>
+            <td data-label="Demandeur">{{ r.lastName|upper }} {{ r.firstName }}</td>
+            <td data-label="Téléphone">{{ r.phone ?? '—' }}</td>
+            <td data-label="Événement">{{ r.eventName }}</td>
+            <td data-label="Refus du">{{ r.decidedAt|date('d/m/Y', 'Europe/Paris') }}</td>
+            <td data-label="Situation">{{ r.status.value == 'NO_RECIPIENT' ? 'Aucune adresse e-mail' : 'Envoi définitivement échoué' }}</td>
+            <td data-label="Informé par…">
+              <form method="post" action="{{ path('app_municipal_refusal_informed', { municipalityId: active_municipality_id, noticeId: r.noticeId }) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('refusal_informed_' ~ r.noticeId) }}">
+                <label class="cp-sr-only" for="ch-{{ r.noticeId }}">Moyen utilisé</label>
+                <select id="ch-{{ r.noticeId }}" name="channel" required>
+                  <option value="">Choisir…</option>
+                  {% for c in channels %}<option value="{{ c.value }}">{{ c.label }}</option>{% endfor %}
+                </select>
+                <button type="submit" class="cp-btn cp-btn--secondary cp-btn--s">Marquer informé</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+{% endblock %}

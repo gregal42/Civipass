@@ -28,4 +28,5 @@ enum AuditSubjectType: string
     case ControlActivation = 'CONTROL_ACTIVATION';
     case ControlDevice = 'CONTROL_DEVICE';
     case CwsPermission = 'CWS_PERMISSION';
+    case RefusalNotice = 'REFUSAL_NOTICE';
 }

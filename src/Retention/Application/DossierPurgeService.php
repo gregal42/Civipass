@@ -132,6 +132,8 @@ final class DossierPurgeService
         if ($execute) {
             $this->observer->afterStep('permit_first_decision_nulled');
         }
+        // LOT 08.5 : le suivi d'information du demandeur refusé référence la décision (clé RESTRICT) : supprimé AVANT elle, dans la même transaction.
+        $step('request_refusal_notice', 'request_refusal_notice', 'decision_id IN (:ids)', [], $decisions);
         $step('request_permit_request_decision', 'request_permit_request_decision', 'id IN (:ids)', [], $decisions);
         $step('archive_consultation', 'archive_consultation', 'request_municipality_id = :d', ['d' => $dossierId->toBinary()]);
         $step('archive_legal_hold', 'archive_legal_hold', 'request_municipality_id = :d', ['d' => $dossierId->toBinary()]);

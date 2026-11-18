@@ -55,6 +55,17 @@
         {% else %}
           {% set decision_items = decision_items|merge([{ label: 'Motif du refus', value: decision.refusalReasonLabel }]) %}
           {% if decision.refusalComment %}{% set decision_items = decision_items|merge([{ label: 'Commentaire', value: decision.refusalComment }]) %}{% endif %}
+          {% set notice = detail.refusalNotice %}
+          {% if notice %}
+            {% set notice_text = {
+              PENDING: 'En attente d’envoi par e-mail (un envoi non abouti est réessayé automatiquement)',
+              SENT: 'Envoyée par e-mail le ' ~ (notice.processedAt ? notice.processedAt|cp_datetime(tz) : '') ~ ' (remise au serveur de messagerie, pas de preuve de lecture)',
+              NO_RECIPIENT: 'Aucune adresse e-mail : à informer par un autre moyen (téléphone, guichet, courrier), puis à marquer comme informé',
+              ABANDONED: 'Envoi définitivement échoué : à informer par un autre moyen, puis à marquer comme informé',
+              MANUAL: 'Informé par ' ~ (notice.manualChannel ? notice.manualChannel.label|lower : 'un autre moyen') ~ ' le ' ~ (notice.processedAt ? notice.processedAt|cp_datetime(tz) : ''),
+            }[notice.status.value] %}
+            {% set decision_items = decision_items|merge([{ label: 'Information du demandeur', value: notice_text }]) %}
+          {% endif %}
         {% endif %}
         {% embed 'components/panel.html.twig' with { id: 'dec-h', title: 'Décision de ' ~ active_municipality_name, items: decision_items } only %}
           {% block body %}{% include 'components/facts.html.twig' with { items: items } only %}{% endblock %}

@@ -50,6 +50,7 @@ final readonly class MunicipalDecisionApplier
         private ApprovedPartListener $approved,
         private GrantWindowCalculator $windows = new GrantWindowCalculator(),
         ZoneValidityCalculator $zoneCalculator = new ZoneValidityCalculator(),
+        private ?RefusalNoticeRecorder $refusalNotices = null,
     ) {
         // Même moteur de périodes de zone que l'évaluation des droits du laissez-passer (LOT 05.1, DT-047).
         $this->periods = new ZoneEffectivePeriodsResolver($validities, $zoneCalculator);
@@ -90,6 +91,8 @@ final readonly class MunicipalDecisionApplier
         $decision = $part->refuse($reason, $comment, $by, $path, $now);
         // Le commentaire libre n'entre JAMAIS dans l'audit (DT-037) : seul le code du motif.
         $this->recordAudit(AuditAction::RequestRefused, $part, $decision, $by, ['reasonCode' => $reason->code()]);
+        // LOT 08.5 : l'information du demandeur naît avec la décision, dans la même transaction (jamais de refus sans suivi d'information).
+        $this->refusalNotices?->record($part, $decision, $now);
 
         return $decision;
     }

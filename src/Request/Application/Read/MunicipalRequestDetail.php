@@ -48,6 +48,8 @@ final readonly class MunicipalRequestDetail
         public ?DecisionView $decision,
         /** @var list<DuplicateMatch> autres demandes possiblement liées, VISIBLES pour la commune (LOT 08.4, informatif) */
         public array $duplicates = [],
+        /** Information du demandeur refusé (LOT 08.5) : seulement pour une décision de refus. */
+        public ?RefusalNoticeView $refusalNotice = null,
     ) {
     }
 }

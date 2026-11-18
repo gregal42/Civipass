@@ -18,6 +18,7 @@
       <h2 class="cp-reqform__legend" id="next-h">Et maintenant ?</h2>
       <ul class="cp-reqform__list">
         <li>Chaque commune concernée examine la demande pour ses zones.</li>
+        <li>{% if email %}Vous serez informé(e) de la décision de chaque commune à l’adresse indiquée.{% else %}Aucune adresse e-mail n’a été fournie : contactez la mairie en indiquant votre référence pour connaître la décision.{% endif %}</li>
         <li>La commune vous contactera avec les coordonnées indiquées{{ email ? ' (' ~ email ~ ')' : '' }}.{% if email %} Un accusé de réception vous est envoyé à cette adresse.{% endif %}</li>
         <li><b>Cette demande ne vaut pas autorisation.</b> Aucun laissez-passer n’est délivré à ce stade.</li>
         <li>La demande ne peut plus être modifiée et ne peut pas être suivie en ligne.</li>

@@ -39,7 +39,7 @@ final class ClosedEventRouteClassifier
     ];
 
     /** Familles de commune qui portent des dossiers. */
-    private const DOSSIER_FAMILIES = ['demandes', 'delivrances', 'corrections-identite'];
+    private const DOSSIER_FAMILIES = ['demandes', 'delivrances', 'corrections-identite', 'refus-a-communiquer'];
 
     public function classify(string $path): RouteClosure
     {

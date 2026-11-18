@@ -13,6 +13,11 @@
     {% include 'components/alert.html.twig' with { variant: 'warning', title: 'Commune suspendue : lecture seule', text: 'Vous pouvez consulter vos données mais aucune décision ni modification n’est possible tant que la commune est suspendue.' } only %}
   {% endif %}
 
+  {% if to_communicate is not null and to_communicate > 0 %}
+    {% include 'components/alert.html.twig' with { variant: 'warning', id: 'home-refusals', title: to_communicate ~ (to_communicate > 1 ? ' refus à communiquer' : ' refus à communiquer'), text: 'Des demandeurs refusés n’ont pas pu être informés par e-mail : informez-les par un autre moyen.' } only %}
+    <p><a href="{{ refusals_url }}">Voir les refus à communiquer</a></p>
+  {% endif %}
+
   {% if summary is not null %}
     {% include 'components/kpi_tiles.html.twig' with { tiles: [
       { label: 'Demandes en attente', value: summary.pendingTotal, foot: summary.pendingTotal == 0 ? 'Rien à traiter' : 'À instruire', urgent: summary.pendingTotal > 0 },
