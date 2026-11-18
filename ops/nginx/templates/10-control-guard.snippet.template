@@ -1,0 +1,36 @@
+    # --- Origine de contrôle dédiée configurée (CONTROL_DOMAIN = __CONTROL_DOMAIN__) : garde-fou complémentaire (LOT 10, V2 bis) -------------------------------------
+    # Inséré par render.sh à la place du repère de garde du gabarit ; absent (aucun changement) sans CONTROL_DOMAIN.
+    # 1. SNI et en-tête Host incohérents : 421, réponse vide (voir 05-civipass-control-maps.conf).
+    if ($civ_sni_mismatch) { return 421; }
+    error_page 421 = @civ_misdirected;
+
+    # 2. Aucune route /controle sur l'origine de gestion : la PWA vit sur son origine dédiée. Chemins déjà décodés et normalisés par nginx (%63ontrole, //, ./, ../).
+    location = /controle {
+        error_page 404 = @civ_denied;
+        return 404;
+    }
+    location ^~ /controle/ {
+        error_page 404 = @civ_denied;
+        return 404;
+    }
+
+    # 3. Réponses générées par nginx : texte neutre, sans divulgation, non mises en cache. Un `add_header` de location remplace ceux du server : HSTS y est répété.
+    location @civ_denied {
+        add_header Strict-Transport-Security "max-age=31536000" always;
+        add_header Cache-Control "no-store, private" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "no-referrer" always;
+        types { }
+        default_type text/plain;
+        return 404 "Not Found";
+    }
+    location @civ_misdirected {
+        add_header Strict-Transport-Security "max-age=31536000" always;
+        add_header Cache-Control "no-store, private" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "no-referrer" always;
+        types { }
+        default_type text/plain;
+        return 421 "Misdirected Request";
+    }
+    # --- fin du garde-fou ------------------------------------------------------------------------------------------------------------------------------------------

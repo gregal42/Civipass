@@ -89,7 +89,93 @@ final class ControlVhostTemplateTest extends TestCase
         self::assertStringNotContainsString('limit_except', $template, 'refus par la carte : 404 générique, jamais 403');
         self::assertMatchesRegularExpression('#\n    location \^~ /assets/ \{\n        if \(\$civ_ctl_allowed = 0\) \{ return 404; \}#', $template);
         self::assertStringContainsString('rewrite ^ /index.php last;', $template, 'contrôleur frontal par réécriture : try_files servirait index.php en statique');
-        self::assertDoesNotMatchRegularExpression('#location[^\n]*\{[^}]*add_header#', $template, 'aucun add_header dans un location');
+        self::assertDoesNotMatchRegularExpression('#location (?!@civ_)[^\n]*\{[^}]*add_header#', $template, 'aucun add_header dans un location ordinaire (seuls les emplacements nommés @civ_* générés par nginx les répètent)');
+        self::assertStringContainsString('error_page 404 = @civ_ctl_denied;', $template, '404 générés par nginx : neutres et non mis en cache');
+        self::assertStringContainsString('if ($civ_sni_mismatch) { return 421; }', $template, 'politique SNI / Host');
+    }
+
+    /**
+     * @param array<string, string> $overrides
+     *
+     * @return array<string, string>
+     */
+    private function renderedFiles(array $overrides = [], bool $control = true): array
+    {
+        $env = ['CIVIPASS_DOMAIN' => 'civipass.test', 'CONTROL_DOMAIN' => 'controle.civipass.test', 'TLS_CERTIFICATE' => '/etc/nginx/tls/cert.pem', 'TLS_CERTIFICATE_KEY' => '/etc/nginx/tls/key.pem',
+            'TLS_CONTROL_CERTIFICATE' => '/etc/nginx/tls/ctl-cert.pem', 'TLS_CONTROL_CERTIFICATE_KEY' => '/etc/nginx/tls/ctl-key.pem', 'DOCROOT' => '/var/www/html/public', 'PHP_FPM_UPSTREAM' => 'php:9000',
+            'LOG_DIR' => '/var/log/civipass/nginx', 'NGINX_USER' => 'nginx'];
+        if (!$control) {
+            unset($env['CONTROL_DOMAIN'], $env['TLS_CONTROL_CERTIFICATE'], $env['TLS_CONTROL_CERTIFICATE_KEY']);
+        }
+        $env = $overrides + $env;
+        $dir = sys_get_temp_dir().'/civipass-render-'.bin2hex(random_bytes(4));
+        $file = $dir.'.env';
+        file_put_contents($file, implode("\n", array_map(static fn (string $k, string $v): string => $k.'='.$v, array_keys($env), $env))."\n");
+        $process = new Process(['bash', self::OPS.'/bin/render.sh', '--env', $file, '--out', $dir, '--allow-example']);
+        $process->mustRun();
+        $files = [];
+        foreach (['nginx.conf', 'conf.d/00-civipass-logging.conf', 'conf.d/10-civipass-site.conf', 'conf.d/05-civipass-control-maps.conf', 'conf.d/20-civipass-control.conf'] as $name) {
+            if (is_file($dir.'/'.$name)) {
+                $files[$name] = (string) file_get_contents($dir.'/'.$name);
+            }
+        }
+        (new \Symfony\Component\Filesystem\Filesystem())->remove([$dir, $file]);
+
+        return $files;
+    }
+
+    /** « Aucun changement pour une installation sans domaine de contrôle dédié » : les fichiers générés sont identiques, à l'octet, à ceux d'avant le garde-fou. */
+    public function testWithoutAControlDomainTheGeneratedFilesAreByteIdenticalToTheReferenceFiles(): void
+    {
+        $files = $this->renderedFiles(control: false);
+
+        self::assertSame(['nginx.conf', 'conf.d/00-civipass-logging.conf', 'conf.d/10-civipass-site.conf'], array_keys($files), 'aucun fichier de contrôle');
+        self::assertStringEqualsFile(self::OPS.'/tests/golden/10-civipass-site.nocontrol.conf', $files['conf.d/10-civipass-site.conf']);
+        self::assertStringEqualsFile(self::OPS.'/tests/golden/nginx.nocontrol.conf', $files['nginx.conf']);
+        self::assertStringEqualsFile(self::OPS.'/tests/golden/00-civipass-logging.nocontrol.conf', $files['conf.d/00-civipass-logging.conf']);
+        self::assertStringNotContainsString('controle', $files['conf.d/10-civipass-site.conf']);
+        self::assertStringNotContainsString('CONTROL_', $files['conf.d/10-civipass-site.conf']);
+    }
+
+    public function testWithAControlDomainTheManagementVhostRefusesControlRoutesAndTheSniHostPolicyApplies(): void
+    {
+        $files = $this->renderedFiles();
+        $site = $files['conf.d/10-civipass-site.conf'];
+
+        self::assertStringContainsString('map "$ssl_server_name:$host" $civ_sni_mismatch', $files['conf.d/05-civipass-control-maps.conf']);
+        self::assertStringContainsString('if ($civ_sni_mismatch) { return 421; }', $site, 'gestion : SNI / Host incohérents → 421');
+        self::assertStringContainsString('location = /controle {', $site);
+        self::assertStringContainsString('location ^~ /controle/ {', $site);
+        self::assertStringContainsString('return 421 "Misdirected Request";', $site, 'serveur par défaut : hôte inconnu derrière un SNI valide → 421 neutre');
+        self::assertStringNotContainsString('CONTROL_GUARD', $site);
+        self::assertSame(2, substr_count($site, 'location @civ_'), 'deux emplacements nommés (refus et 421)');
+        self::assertLessThan(strpos($site, 'location ~* "\.(?:jpg'), strpos($site, 'location ^~ /controle/'), 'le refus précède les statiques (le préfixe ^~ l\'emporte de toute façon)');
+        // Le fichier des cartes est chargé AVANT les vhosts qui utilisent la variable (nginx exige la définition préalable).
+        self::assertSame(-1, strcmp('05-civipass-control-maps.conf', '10-civipass-site.conf'));
+    }
+
+    public function testEveryNginxGeneratedResponseCarriesTheSameSecurityHeadersAndNoStore(): void
+    {
+        $files = $this->renderedFiles();
+        $control = $files['conf.d/20-civipass-control.conf'];
+        $serverHeaders = ['Strict-Transport-Security "max-age=31536000"', 'X-Content-Type-Options "nosniff"', 'Referrer-Policy "no-referrer"', 'X-Frame-Options "DENY"',
+            'Permissions-Policy "camera=(self), microphone=(), geolocation=(), payment=(), usb=()"', 'Content-Security-Policy "'.ControlHeadersListener::CSP.'"'];
+        foreach (['@civ_ctl_denied', '@civ_ctl_misdirected'] as $named) {
+            self::assertSame(1, preg_match('/location '.preg_quote($named, '/').' \{(.*?)\n    \}/s', $control, $m), $named);
+            foreach ([...$serverHeaders, 'Cache-Control "no-store, private"'] as $header) {
+                self::assertStringContainsString('add_header '.$header.' always;', $m[1], $named.' : '.$header);
+            }
+            self::assertStringContainsString('types { }', $m[1], 'type de contenu forcé (jamais celui de l\'extension demandée)');
+            self::assertStringContainsString('default_type text/plain;', $m[1]);
+        }
+        foreach (['@civ_denied', '@civ_misdirected'] as $named) {
+            self::assertSame(1, preg_match('/location '.preg_quote($named, '/').' \{(.*?)\n    \}/s', $files['conf.d/10-civipass-site.conf'], $m), $named);
+            foreach (['Strict-Transport-Security "max-age=31536000"', 'Cache-Control "no-store, private"', 'X-Content-Type-Options "nosniff"', 'Referrer-Policy "no-referrer"'] as $header) {
+                self::assertStringContainsString('add_header '.$header.' always;', $m[1], 'gestion '.$named.' : '.$header);
+            }
+        }
+        self::assertStringNotContainsString('includeSubDomains', implode("\n", $files));
+        self::assertStringNotContainsString('limit_except', implode("\n", $files));
     }
 
     /**

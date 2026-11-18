@@ -13,6 +13,7 @@ server {
     http2 on;
     server_name _;
     ssl_reject_handshake on;
+    # CONTROL_DEFAULT_GUARD
 }
 
 # HTTP : redirection vers l'adresse FIXE configurée. Un secret n'est jamais censé arriver ici (les QR et les liens sont émis en https:// à partir de DEFAULT_URI).
@@ -58,6 +59,8 @@ server {
     location ~ /\.(?!well-known/) {
         return 404;
     }
+
+    # CONTROL_GUARD
 
     # Ressources statiques ; absentes, elles tombent sur Symfony. Aucun add_header ici (voir HSTS).
     location ~* "\.(?:jpg|jpeg|gif|png|ico|svg|svgz|webp|css|js|woff2?|ttf|otf|eot|map)$" {

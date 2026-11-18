@@ -50,10 +50,10 @@ Les points du `.` dans `TRUSTED_HOSTS` sont échappés (`\.`).
    `check-deployment.sh` vérifie : `DEFAULT_URI` sur la gestion en https, `CONTROL_HOST` = domaine de contrôle, `TRUSTED_HOSTS` limité **exactement** aux deux domaines, `CONTROL_PWA_BASE_URL` = `https://<contrôle>/controle/`, `APP_ENV=prod`, `APP_DEBUG` inactif, aucun proxy de confiance.
 4. **Installer le vhost** puis recharger :
    ```
-   install -m 0644 /tmp/civipass-nginx/conf.d/20-civipass-control.conf /etc/nginx/conf.d/
+   install -m 0644 /tmp/civipass-nginx/conf.d/05-civipass-control-maps.conf /tmp/civipass-nginx/conf.d/10-civipass-site.conf /tmp/civipass-nginx/conf.d/20-civipass-control.conf /etc/nginx/conf.d/
    nginx -t && systemctl reload nginx
    ```
-   (Le vhost de gestion, les journaux et la rotation ne changent pas : voir `ops/nginx/README.md`.)
+   Avec `CONTROL_DOMAIN`, le rendu produit trois fichiers : `05-civipass-control-maps.conf` (politique SNI / Host), `10-civipass-site.conf` (le vhost de gestion, **régénéré avec le garde-fou complémentaire** : aucune route `/controle` et 421 pour les combinaisons incohérentes) et `20-civipass-control.conf`. Sans `CONTROL_DOMAIN`, le fichier de gestion généré est **identique à l'octet** à celui d'avant (contrôlé par un fichier de référence). Les journaux et la rotation ne changent pas : voir `ops/nginx/README.md`.
 5. **Activer les garde-fous applicatifs** : renseigner `CONTROL_HOST`, `TRUSTED_HOSTS`, `CONTROL_PWA_BASE_URL`, vider et réchauffer le cache (`cache:clear` puis `cache:warmup` en prod), recharger PHP-FPM.
    *Ordre* : nginx d'abord, garde-fous ensuite ; en sens inverse, la PWA ne serait servie nulle part pendant l'intervalle (G3 refuserait `/controle` sur la gestion alors que le vhost n'existe pas encore).
 6. **Ouvrir le contrôle** seulement ensuite : `OFFLINE_CONTROL_ENABLED=1` avec l'accord horodaté, puis protocole 09.7.
@@ -66,7 +66,9 @@ Les points du `.` dans `TRUSTED_HOSTS` sont échappés (`\.`).
 | Refus génériques | `curl -si https://controle.<d>/login` ; `/communes` ; `/v/AAAA…` ; `/admin/dashboard` ; `POST /controle/` | 404, mêmes en-têtes de sécurité, aucun cookie, aucune version nginx |
 | Méthodes | `curl -si -X PUT https://controle.<d>/controle/api/sync` | 404 (jamais 403 ni 405) |
 | Hôtes inconnus ou falsifiés | `curl -k -H 'Host: x.invalid' http://<IP>/` ; TLS sans SNI | connexion fermée ; `Host` forgé vers l'application : 400 (G2) |
-| Origine de gestion | `curl -si https://<gestion>/controle/` | 404 (G3), pas la coquille de la PWA |
+| Origine de gestion | `curl -si https://<gestion>/controle/` ; `/controle` ; `/controle/sw.js` ; `/%63ontrole/` ; `POST /controle/api/sync` | 404 « Not Found » neutre, `Cache-Control: no-store, private`, HSTS, aucun cookie, jamais la coquille de la PWA (garde-fou Nginx **et** G3) |
+| SNI / Host incohérents | `curl -k --resolve <contrôle>:443:<IP> -H 'Host: <gestion>' https://<contrôle>/controle/` (et l'inverse) | **421** « Misdirected Request », sans cookie, `no-store`, HSTS ; jamais servi par le mauvais vhost |
+| Hôte inconnu derrière un SNI valide | `curl -k --resolve <contrôle>:443:<IP> -H 'Host: x.invalid' https://<contrôle>/` | 421 neutre (jamais la page par défaut de nginx) |
 | Cookies | Inspecter toute réponse de l'origine de contrôle | aucun `Set-Cookie` ; les cookies de la gestion ne sont jamais envoyés (cookies « host-only ») |
 | Certificats | `openssl s_client -connect <IP>:443 -servername controle.<d>` puis `-servername <gestion>` | deux certificats distincts, un par sous-domaine |
 | Vérification en ligne | Scanner un QR de laissez-passer avec le réseau | ouverture de `https://<gestion>/v/{jeton}` (origine de gestion) |
@@ -84,8 +86,8 @@ Les points du `.` dans `TRUSTED_HOSTS` sont échappés (`\.`).
 
 | Situation | Action | Effet |
 |---|---|---|
-| Un défaut sur le vhost de contrôle | Retirer `conf.d/20-civipass-control.conf`, `nginx -t && systemctl reload nginx` | L'origine de contrôle disparaît ; les appareils activés sur cette origine ne peuvent plus se synchroniser (leurs données locales restent lisibles dans la limite de la durée de confiance, 12 h au pilote), puis passent en « indéterminé » |
-| Revenir à la PWA sur l'origine de gestion (comportement V1) | Vider `CONTROL_HOST`, `TRUSTED_HOSTS` et `CONTROL_PWA_BASE_URL`, recharger PHP-FPM | G1 et G3 inactifs, `/controle/` de nouveau servi par la gestion ; les appareils doivent être **réactivés** (stockage local propre à chaque origine) |
+| Un défaut sur le vhost de contrôle | Retirer `conf.d/20-civipass-control.conf` **et** `05-civipass-control-maps.conf`, **réinstaller** le `10-civipass-site.conf` généré sans `CONTROL_DOMAIN` (qui supprime le garde-fou de la gestion et le 421 du serveur par défaut), `nginx -t && systemctl reload nginx` | L'origine de contrôle disparaît ; les appareils activés sur cette origine ne peuvent plus se synchroniser (leurs données locales restent lisibles dans la limite de la durée de confiance, 12 h au pilote), puis passent en « indéterminé » |
+| Revenir à la PWA sur l'origine de gestion (comportement V1) | Régénérer sans `CONTROL_DOMAIN` et réinstaller `10-civipass-site.conf` (sinon le garde-fou Nginx refuse toujours `/controle` sur la gestion), retirer 05 et 20, vider `CONTROL_HOST`, `TRUSTED_HOSTS` et `CONTROL_PWA_BASE_URL`, recharger PHP-FPM | G1 et G3 inactifs, `/controle/` de nouveau servi par la gestion ; les appareils doivent être **réactivés** (stockage local propre à chaque origine) |
 | Un garde-fou applicatif trop strict (ressource de la PWA bloquée) | Corriger la liste blanche (`ControlRouteAllowlist` et gabarit Nginx, qui doivent rester identiques : test `ControlVhostTemplateTest`) ou, en urgence, vider `CONTROL_HOST` | Retour au comportement sans garde-fou applicatif ; la liste blanche Nginx reste active |
 | Interrupteur du contrôle | `OFFLINE_CONTROL_ENABLED=0` | Toutes les routes `/controle/*` répondent 404 uniforme (inchangé) |
 
@@ -98,9 +100,24 @@ Le retour arrière du **HTTPS** n'existe pas : voir l'avertissement HSTS du § 1
 - **Hôte forgé accepté** (G2 absent) : vérifier `TRUSTED_HOSTS` et `check-deployment.sh`.
 - **Cookie vu sur l'origine de contrôle** : défaut à traiter comme anomalie de sécurité (aucun cookie n'est attendu) ; contrôler que le pare-feu `control_pwa` est inchangé.
 
-## 8. Limites connues
+## 8. Politique SNI / Host et garde-fou complémentaire (Nginx)
 
-- **SNI et `Host` discordants** : une requête dont le SNI désigne le contrôle mais dont l'en-tête `Host` désigne la gestion est servie par le vhost de gestion (nginx choisit le serveur d'après `Host`). Aucun navigateur n'émet une telle requête ; la parade est applicative (G3 : `/controle` refusé sur l'hôte de gestion). Un blocage Nginx complémentaire (`location ^~ /controle { return 404; }` dans le vhost de gestion) est possible quand le vhost de contrôle est en service ; il n'est pas généré par défaut afin de ne pas casser la V1 sans vhost dédié.
+Actifs **seulement** quand `CONTROL_DOMAIN` est renseigné ; sans lui, rien ne change.
+
+| Situation | Réponse | Où |
+|---|---|---|
+| `/controle`, `/controle/…` sur l'origine de **gestion** (y compris `%63ontrole`, `//`, `./`, `../`, méthodes quelconques) | **404 « Not Found »**, `text/plain`, `Cache-Control: no-store, private`, HSTS, aucun cookie | `10-civipass-site.conf` (`location = /controle`, `location ^~ /controle/`) ; doublé par G3 côté application |
+| SNI ≠ en-tête Host (comparaison sans casse, sans port), sur l'une ou l'autre origine | **421 « Misdirected Request »**, mêmes en-têtes, aucun cookie | carte `$civ_sni_mismatch` (`05-…`), contrôlée dans les deux vhosts |
+| SNI valide + Host qui ne correspond à aucun vhost | **421** neutre (jamais la page par défaut de nginx) | serveur HTTPS par défaut |
+| Connexion TLS sans SNI valide, SNI inconnu, hôte inconnu en HTTP | connexion fermée (inchangé) | serveurs par défaut |
+| 404 produit par nginx sur l'origine de contrôle (refus de la liste blanche, fichier absent, fichier caché) | 404 « Not Found » neutre, **`no-store`**, tous les en-têtes de sécurité | `@civ_ctl_denied` |
+| 404 de l'**application** (route inconnue) | inchangé : l'application garde ses propres en-têtes (nginx ne les intercepte pas) | — |
+
+Le type de contenu des réponses générées par nginx est toujours `text/plain` (jamais celui de l'extension demandée).
+
+## 9. Limites connues
+
+- Un client forgé qui parvient à produire une requête dont le SNI et l'en-tête Host concordent sur le nom de **gestion** et dont le chemin est `/controle/…` reçoit le 404 du garde-fou ; sur l'origine de **contrôle**, la liste blanche prime : la protection tient aux deux niveaux (Nginx et application).
 - Les polices de `/assets/fonts/` ne figurent pas dans le précache du Service Worker : à observer au 09.7 (première ouverture hors connexion).
-- Le 404 produit par nginx lui-même ne porte pas de `Cache-Control` ; il porte tous les autres en-têtes de sécurité.
+- Le garde-fou Nginx et la politique 421 n'ont été vérifiés que sur Nginx en conteneur local (stable 1.30 et mainline 1.31.8) avec des certificats auto-signés ; ils sont à rejouer sur le serveur HTTPS cible.
 - Rien ne remplace la recette sur appareils réels (09.7).

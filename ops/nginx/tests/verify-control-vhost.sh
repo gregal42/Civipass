@@ -50,7 +50,7 @@ docker exec "$NX" nginx -t >/dev/null 2>&1 && pass "nginx -t (gestion + contrôl
 # --- 3. configuration effective ---
 CONF=$(docker exec "$NX" nginx -T 2>/dev/null)
 CTLCONF=$(echo "$CONF" | awk '/# configuration file .*20-civipass-control.conf/{f=1;next} /# configuration file /{f=0} f')
-echo "$CTLCONF" | grep -E '^\s*(server|location|add_header)' | awk '/^server/{loc=""} /^[ \t]*location[ \t]/{loc=$0} /^[ \t]*add_header/ && loc!=""{print loc" => "$0}' | grep -q . && bad "add_header dans un location du vhost de contrôle (casse l'héritage)" || pass "en-têtes de sécurité au niveau du server uniquement"
+echo "$CTLCONF" | grep -E '^\s*(server|location|add_header)' | awk '/^server/{loc=""} /^[ \t]*location[ \t]/{loc=$0} /^[ \t]*add_header/ && loc!="" && loc !~ /location @civ_/{print loc" => "$0}' | grep -q . && bad "add_header dans un location ordinaire du vhost de contrôle (casse l'héritage)" || pass "en-têtes de sécurité au niveau du server (seuls les emplacements nommés @civ_* générés par nginx les répètent)"
 echo "$CONF" | grep -q 'includeSubDomains\|preload' && bad "HSTS avec sous-domaines ou préchargement" || pass "HSTS sans sous-domaines ni préchargement"
 echo "$CTLCONF" | grep -E 'return 30[1278]' | grep -q '\$host' && bad "redirection construite avec \$host" || pass "redirection vers le domaine fixe (jamais \$host)"
 echo "$CTLCONF" | grep -q 'limit_except' && bad "limit_except présent (renverrait 403, pas le 404 générique)" || pass "refus par la carte de liste blanche (404 générique)"
@@ -78,8 +78,8 @@ for spec in "GET /login" "POST /login" "GET /communes" "GET /communes/x/evenemen
     set -- $spec; c=$(req "$1" "$2")
     if [ "$c" = 404 ]; then
         h=$(hdr strict-transport-security); n=$(hdr x-content-type-options); r=$(hdr referrer-policy); f=$(hdr x-frame-options); s=$(hdr content-security-policy); k=$(grep -ic '^set-cookie:' "$W/h.txt")
-        [ "$h" = "max-age=31536000" ] && [ "$n" = nosniff ] && [ "$r" = no-referrer ] && [ "$f" = DENY ] && echo "$s" | grep -q "default-src 'none'" && [ "$k" = 0 ] && ! grep -qi 'nginx/[0-9]' "$W/h.txt" \
-            && pass "refusé 404 + en-têtes : $1 $2" || bad "refus sans en-têtes complets ou avec cookie/version : $1 $2"
+        cc=$(hdr cache-control); [ "$h" = "max-age=31536000" ] && [ "$n" = nosniff ] && [ "$r" = no-referrer ] && [ "$f" = DENY ] && echo "$s" | grep -q "default-src 'none'" && [ "$k" = 0 ] && ! grep -qi 'nginx/[0-9]' "$W/h.txt" && [ "$cc" = 'no-store, private' ] && [ "$(cat "$W/b.txt")" = 'Not Found' ] && hdr content-type | grep -q '^text/plain' \
+            && pass "refusé 404 neutre + en-têtes + no-store : $1 $2" || bad "refus sans en-têtes complets, avec corps révélateur, sans no-store, avec cookie ou version : $1 $2"
     else
         bad "NON refusé : $1 $2 → $c"
     fi
@@ -108,8 +108,43 @@ c=$(curl -sk -o /dev/null -w '%{http_code}' --resolve "evil.test:$HTTPS_PORT:127
 CN1=$(echo | openssl s_client -connect "127.0.0.1:$HTTPS_PORT" -servername "$CTL" 2>/dev/null | openssl x509 -noout -subject 2>/dev/null); CN2=$(echo | openssl s_client -connect "127.0.0.1:$HTTPS_PORT" -servername "$MGT" 2>/dev/null | openssl x509 -noout -subject 2>/dev/null)
 echo "$CN1" | grep -q "$CTL" && echo "$CN2" | grep -q "CN *= *$MGT" && ! echo "$CN2" | grep -q "$CTL" && pass "certificat distinct par sous-domaine (SNI)" || bad "certificats non distincts : [$CN1] [$CN2]"
 curl -s -o /dev/null -w '%{redirect_url}' --resolve "$R2" "http://$CTL:$HTTP_PORT/controle/?a=1" | grep -q "^https://$CTL/controle/?a=1$" && pass "redirection HTTP vers le domaine fixe du contrôle" || bad "redirection HTTP du contrôle"
-# SNI du contrôle avec en-tête Host de la gestion : nginx choisit le serveur d'après l'en-tête Host. Constat documenté : seul le garde-fou applicatif (G1/G3) isole alors les deux origines.
-c=$(curl -sk --http1.1 --resolve "$R1" -o /dev/null -w '%{http_code}' -H "Host: $MGT" "https://$CTL:$HTTPS_PORT/controle/"); echo "    constat : SNI contrôle + Host gestion sur /controle/ → $c (servi par le vhost de gestion ; isolé par G3 côté application)"
+# --- 5. politique SNI / Host : 421 (réponse vide, sans divulgation), jamais servi par le mauvais vhost ---
+RC="$CTL:$HTTPS_PORT:127.0.0.1"
+sni() { # $1 = nom SNI/URL, $2 = Host forgé, $3 = chemin ; renvoie le statut, en-têtes dans h.txt
+    curl -sk --http1.1 --resolve "$1:$HTTPS_PORT:127.0.0.1" -D "$W/h.txt" -o "$W/b.txt" -w '%{http_code}' -H "Host: $2" "https://$1:$HTTPS_PORT$3"; }
+for spec in "$CTL|$MGT|/controle/" "$CTL|$MGT|/login" "$MGT|$CTL|/controle/" "$MGT|$CTL|/login" "$CTL|$MGT|/controle/api/ping" "$MGT|$CTL|/communes"; do
+    IFS='|' read -r sn ho pa <<< "$spec"; c=$(sni "$sn" "$ho" "$pa")
+    [ "$c" = 421 ] && [ "$(cat "$W/b.txt")" = 'Misdirected Request' ] && [ "$(hdr cache-control)" = 'no-store, private' ] && [ "$(hdr strict-transport-security)" = max-age=31536000 ] && [ "$(grep -ic '^set-cookie:' "$W/h.txt")" = 0 ] \
+        && pass "SNI $sn + Host $ho $pa → 421 neutre, no-store, HSTS, sans cookie" || bad "SNI $sn + Host $ho $pa → $c (attendu 421 neutre)"
+done
+c=$(sni "$CTL" "$CTL" "/controle/"); [ "$c" = 200 ] && pass "SNI et Host identiques (contrôle) → servi" || bad "SNI=Host contrôle refusé : $c"
+c=$(sni "$MGT" "$MGT" "/login"); [ "$c" = 200 ] && pass "SNI et Host identiques (gestion) → servi" || bad "SNI=Host gestion refusé : $c"
+c=$(sni "CONTROLE.CIVIPASS.TEST" "controle.civipass.test" "/controle/"); [ "$c" = 200 ] && pass "SNI en majuscules = Host en minuscules → servi (comparaison sans casse)" || bad "casse du SNI : $c"
+c=$(sni "$CTL" "$CTL" "/controle/"); c2=$(curl -sk --http1.1 --resolve "$RC" -o /dev/null -w '%{http_code}' -H "Host: $CTL." "https://$CTL:$HTTPS_PORT/controle/"); echo "    Host avec point final : $c2"
+for sn in "$CTL" "$MGT"; do c=$(sni "$sn" "evil.test" "/controle/")
+    [ "$c" = 421 ] && [ "$(cat "$W/b.txt")" = 'Misdirected Request' ] && [ "$(hdr cache-control)" = 'no-store, private' ] && [ "$(hdr strict-transport-security)" = max-age=31536000 ] && ! grep -qi '<html\|nginx' "$W/b.txt" \
+        && pass "SNI $sn + Host inconnu → 421 neutre (jamais la page par défaut de nginx)" || bad "SNI $sn + Host inconnu → $c"; done
+c=$(curl -sk --http2 --resolve "$RC" -o "$W/b.txt" -D "$W/h.txt" -w '%{http_code}' -H "Host: $MGT" "https://$CTL:$HTTPS_PORT/controle/"); { [ "$c" = 421 ] && pass "HTTP/2 : SNI contrôle + Host gestion → 421"; } || bad "HTTP/2 SNI/Host incohérents : $c"
+
+# --- 6. origine de gestion : aucune route /controle (garde-fou complémentaire), le reste inchangé ---
+mreq() { curl -sk --http1.1 --path-as-is --resolve "$RM" -X "$1" -D "$W/h.txt" -o "$W/b.txt" -w '%{http_code}' "https://$MGT:$HTTPS_PORT$2"; }
+for spec in "GET /controle" "GET /controle/" "GET /controle/sw.js" "GET /controle/manifest.webmanifest" "GET /controle/js/app.js" "GET /controle/api/ping" "POST /controle/api/sync" "POST /controle/api/activation" "PUT /controle/api/sync" \
+            "GET /%63ontrole/" "GET /%63ontrole/sw.js" "GET /./controle/" "GET //controle/" "GET /x/../controle/" "GET /controle/./sw.js" "GET /controle/%2e%2e/controle/" "GET /CONTROLE/" "HEAD /controle/" "GET /controle/sw.js?v=1"; do
+    set -- $spec; c=$(mreq "$1" "$2")
+    case "$2" in /CONTROLE/*) [ "$c" = 404 ] && pass "gestion : $1 $2 → 404 (casse différente : route inexistante)" || bad "gestion : $1 $2 → $c"; continue;; esac
+    body_ok=0; { [ "$1" = HEAD ] || [ "$(cat "$W/b.txt")" = 'Not Found' ]; } && body_ok=1
+    [ "$c" = 404 ] && [ $body_ok = 1 ] && [ "$(hdr cache-control)" = 'no-store, private' ] && [ "$(hdr strict-transport-security)" = max-age=31536000 ] && [ "$(grep -ic '^set-cookie:' "$W/h.txt")" = 0 ] && ! grep -qi 'nginx/[0-9]' "$W/h.txt" \
+        && pass "gestion : $1 $2 → 404 neutre, no-store, HSTS, sans cookie" || bad "gestion : $1 $2 → $c (attendu 404 générique)"
+done
+# la coquille ne doit jamais venir de l'amont PHP sur l'origine de gestion
+c=$(mreq GET /controle/); grep -q 'Contrôle' "$W/b.txt" && bad "la gestion sert la coquille de la PWA" || pass "la gestion ne sert jamais la coquille de la PWA"
+# le reste de la gestion est inchangé
+for spec in "GET /login 200" "GET /communes 302" "GET /communes/x/evenements/y/controle 302" "GET /v/abcdefghijklmnopqrstuvwxyz234567 404" "GET /assets/styles/control.css 200" "POST /v/abcdefghijklmnopqrstuvwxyz234567 405"; do
+    set -- $spec; c=$(mreq "$1" "$2"); [ "$c" = "$3" ] && pass "gestion inchangée : $1 $2 → $c" || bad "gestion modifiée : $1 $2 → $c (attendu $3)"
+done
+# le 404 de l'application (route inconnue vers PHP) garde ses propres en-têtes : le garde-fou n'intercepte que les 404 de nginx
+c=$(mreq GET /route-inconnue); [ "$c" = 404 ] && pass "gestion : le 404 de l'application n'est pas intercepté" || bad "gestion : 404 applicatif altéré ($c)"
+
 curl -sk --http2 --resolve "$R1" -I "https://$CTL:$HTTPS_PORT/controle/" | head -1 | grep -q 'HTTP/2' && pass "HTTP/2 actif" || bad "HTTP/2 absent"
 # 4h. journal d'accès : aucun secret d'appareil ni requête
 curl -sk --http1.1 --resolve "$R1" -o /dev/null -H 'Authorization: Bearer SECRETAPPAREILxyz' "https://$CTL:$HTTPS_PORT/controle/api/device?q=DonneeSensible"; sleep 1

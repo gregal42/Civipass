@@ -161,3 +161,7 @@ Implémentation : `ControlRouteAllowlist` et `ControlOriginListener` (`src/Contr
 | V5 | Mise à jour du runbook de contrôle et du protocole 09.7 | XS |
 
 Tous les incréments sont **faits en local, sans déploiement** : V1 (liste blanche et test d'inventaire), V2 (`20-civipass-control.conf.template`, `render.sh`, `check-deployment.sh --control-domain`, `verify-control-vhost.sh` : 86 contrôles Docker, `ControlVhostTemplateTest`), V3 (G1, G2, G3), V4 (`bin/e2e-control-origins` : 11 étapes à deux origines) et V5 ([runbook](runbooks/vhost-controle.md)). La mise en service reste soumise à l'autorisation d'infrastructure du protocole 09.7 (aucun DNS, aucun certificat réel, aucun serveur à ce stade).
+
+## 10. Garde-fou Nginx complémentaire (18 novembre 2026)
+
+Autorisé et développé en local : **aucune route `/controle` sur le vhost de gestion**, **politique SNI / Host (421)**, **serveur par défaut HTTPS en 421 neutre**, et **`Cache-Control: no-store` sur les 404 générés par Nginx**, le tout conditionné à `CONTROL_DOMAIN` (sans lui, fichiers générés identiques à l'octet à ceux d'avant). Fichiers : `05-civipass-control-maps.conf`, fragments `10-control-guard` et `10-control-default-guard` insérés dans `10-civipass-site.conf` par `render.sh`, emplacements nommés `@civ_*`. Vérifié sur Nginx réel (`ops/nginx/tests/verify-control-vhost.sh` : 125 contrôles dont Host forgé, SNI incohérent, chemins encodés, méthodes interdites, HTTP/2) et par `ControlVhostTemplateTest`. Détail : [runbook](runbooks/vhost-controle.md) § 8.

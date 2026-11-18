@@ -68,7 +68,22 @@ render() { # $1 = modèle, $2 = sortie
 T="$HERE/templates"
 render "$T/nginx.conf.template" "$OUT/nginx.conf"
 render "$T/00-civipass-logging.conf.template" "$OUT/conf.d/00-civipass-logging.conf"
-render "$T/10-civipass-site.conf.template" "$OUT/conf.d/10-civipass-site.conf"
+# Gabarit de gestion : le repère CONTROL_GUARD est remplacé par le garde-fou complémentaire quand CONTROL_DOMAIN est renseigné, et SUPPRIMÉ sinon (le fichier généré
+# est alors strictement identique à celui d'avant : contrôlé par comparaison à un fichier de référence).
+SITE_TMP=$(mktemp); GUARD_TMP=""; DEFAULT_GUARD_TMP=""; trap 'rm -f "$SITE_TMP" "$GUARD_TMP" "$DEFAULT_GUARD_TMP"' EXIT
+if [ -n "$V_CONTROL_DOMAIN" ]; then
+    GUARD_TMP=$(mktemp); render "$T/10-control-guard.snippet.template" "$GUARD_TMP"
+    DEFAULT_GUARD_TMP=$(mktemp); render "$T/10-control-default-guard.snippet.template" "$DEFAULT_GUARD_TMP"
+    awk -v guard="$GUARD_TMP" -v dguard="$DEFAULT_GUARD_TMP" '
+        /^    # CONTROL_GUARD$/ { while ((getline line < guard) > 0) print line; next }
+        /^    # CONTROL_DEFAULT_GUARD$/ { while ((getline line < dguard) > 0) print line; next }
+        { print }' "$T/10-civipass-site.conf.template" > "$SITE_TMP"
+else
+    grep -v -e '^    # CONTROL_GUARD$' -e '^    # CONTROL_DEFAULT_GUARD$' "$T/10-civipass-site.conf.template" | cat -s > "$SITE_TMP"
+fi
+render "$SITE_TMP" "$OUT/conf.d/10-civipass-site.conf"
+
+[ -z "$V_CONTROL_DOMAIN" ] || render "$T/05-civipass-control-maps.conf.template" "$OUT/conf.d/05-civipass-control-maps.conf"
 [ -z "$V_CONTROL_DOMAIN" ] || render "$T/20-civipass-control.conf.template" "$OUT/conf.d/20-civipass-control.conf"
 render "$T/logrotate-civipass-nginx.conf.template" "$OUT/logrotate.conf"
 render "$HERE/systemd/civipass-nginx-logrotate.service.template" "$OUT/systemd/civipass-nginx-logrotate.service"

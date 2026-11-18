@@ -67,6 +67,14 @@ server {
     set $civ_path $civ_path;
     if ($civ_path = "") { set $civ_path $uri; }
 
+    # SNI et en-tête Host incohérents : 421 (voir 05-civipass-control-maps.conf).
+    if ($civ_sni_mismatch) { return 421; }
+    error_page 421 = @civ_ctl_misdirected;
+
+    # Toute réponse 404 GÉNÉRÉE PAR NGINX (refus de la liste blanche, fichier absent, fichier caché…) : vide, non mise en cache, avec les en-têtes de sécurité. Les 404 de
+    # l'application ne sont pas interceptées (fastcgi_intercept_errors est inactif) : elle garde les siens.
+    error_page 404 = @civ_ctl_denied;
+
     # Fichiers cachés (hors .well-known) : jamais servis ni transmis à PHP.
     location ~ /\.(?!well-known/) {
         return 404;
@@ -107,6 +115,32 @@ server {
         fastcgi_hide_header Permissions-Policy;
         fastcgi_hide_header Content-Security-Policy;
         internal;
+    }
+
+    # Réponses générées par nginx. Un `add_header` de location remplace ceux du server : la liste complète y est répétée (identique, contrôlée par test) plus Cache-Control.
+    location @civ_ctl_denied {
+        add_header Strict-Transport-Security "max-age=31536000" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "no-referrer" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Permissions-Policy "camera=(self), microphone=(), geolocation=(), payment=(), usb=()" always;
+        add_header Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" always;
+        add_header Cache-Control "no-store, private" always;
+        types { }
+        default_type text/plain;
+        return 404 "Not Found";
+    }
+    location @civ_ctl_misdirected {
+        add_header Strict-Transport-Security "max-age=31536000" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "no-referrer" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Permissions-Policy "camera=(self), microphone=(), geolocation=(), payment=(), usb=()" always;
+        add_header Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" always;
+        add_header Cache-Control "no-store, private" always;
+        types { }
+        default_type text/plain;
+        return 421 "Misdirected Request";
     }
 
     # Tout autre fichier PHP : introuvable.

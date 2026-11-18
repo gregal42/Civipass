@@ -1,0 +1,10 @@
+# Cartes communes aux deux origines (gestion et contrôle), générées SEULEMENT si CONTROL_DOMAIN est renseigné (LOT 10, V2 bis). NE PAS éditer à la main.
+# Nom : 05-… pour être chargé AVANT 10-civipass-site.conf (nginx exige qu'une variable soit définie avant son utilisation).
+#
+# Politique SNI / Host : sur une connexion TLS, le nom demandé dans le handshake (SNI) doit être celui de l'en-tête Host (comparaison sans casse, sans port). Sinon la
+# requête reçoit 421 (Misdirected Request, RFC 9110) : jamais servie par le mauvais vhost, réponse neutre (« Misdirected Request »), sans divulgation. Les certificats étant distincts par
+# sous-domaine, aucun navigateur ne regroupe les connexions des deux origines : seul un client forgé produit cette combinaison.
+map "$ssl_server_name:$host" $civ_sni_mismatch {
+    default 1;
+    "~*^(?<civ_sni>[^:]+):\k<civ_sni>$" 0;
+}

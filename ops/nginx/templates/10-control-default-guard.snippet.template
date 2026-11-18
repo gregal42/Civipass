@@ -1,0 +1,13 @@
+    # --- Origine de contrôle dédiée configurée (CONTROL_DOMAIN = __CONTROL_DOMAIN__) : hôte inconnu derrière un SNI valide (LOT 10, V2 bis) -----------------------------
+    # Une requête qui arrive ici a passé un handshake TLS valide (SNI d'un vhost réel : sans SNI valide, ssl_reject_handshake ferme la connexion) mais porte un en-tête Host
+    # qui ne correspond à aucun vhost : 421 neutre, non mis en cache, jamais la page par défaut de nginx. Absent sans CONTROL_DOMAIN.
+    location / {
+        add_header Strict-Transport-Security "max-age=31536000" always;
+        add_header Cache-Control "no-store, private" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "no-referrer" always;
+        types { }
+        default_type text/plain;
+        return 421 "Misdirected Request";
+    }
+    # --- fin ---------------------------------------------------------------------------------------------------------------------------------------------------
