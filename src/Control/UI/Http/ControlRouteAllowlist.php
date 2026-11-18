@@ -27,12 +27,13 @@ final class ControlRouteAllowlist
     /** Modules de l'application (même contrainte que la route `app_control_script`). */
     public const SCRIPT_PATTERN = '#^/controle/js/[a-z]+(?:-[a-z]+)*\.js$#';
 
-    /** @var list<string> préfixes des ressources compilées nécessaires à la PWA (lecture seule) */
-    public const STATIC_PREFIXES = [
-        '/assets/styles/',
-        '/assets/vendor/jsqr/',
-        '/assets/images/control-icon-',
-        '/assets/fonts/',
+    /**
+     * @var list<string> ressources compilées strictement nécessaires à la PWA (lecture seule) : même expression que le gabarit Nginx
+     *                    (caractères sûrs seulement, jamais `..` ni `%`), pour qu'un chemin détourné ne passe pas non plus par l'application
+     */
+    public const STATIC_PATTERNS = [
+        '#^/assets/(?:styles|vendor/jsqr|fonts)/(?!.*\.\.)[A-Za-z0-9_./-]+$#',
+        '#^/assets/images/control-icon-[A-Za-z0-9_.-]+$#',
     ];
 
     public static function allows(string $method, string $path): bool
@@ -52,8 +53,8 @@ final class ControlRouteAllowlist
         if (1 === preg_match(self::SCRIPT_PATTERN, $path)) {
             return true;
         }
-        foreach (self::STATIC_PREFIXES as $prefix) {
-            if (str_starts_with($path, $prefix)) {
+        foreach (self::STATIC_PATTERNS as $pattern) {
+            if (1 === preg_match($pattern, $path)) {
                 return true;
             }
         }

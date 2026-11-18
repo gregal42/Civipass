@@ -15,7 +15,7 @@ while [ $# -gt 0 ]; do
 done
 [ -n "$ENV_FILE" ] && [ -f "$ENV_FILE" ] && [ -n "$OUT" ] || { echo "usage: $0 --env FICHIER --out DOSSIER [--allow-example]" >&2; exit 2; }
 
-KEYS="CIVIPASS_DOMAIN TLS_CERTIFICATE TLS_CERTIFICATE_KEY DOCROOT PHP_FPM_UPSTREAM LOG_DIR ACCESS_LOG_RETENTION_DAYS ERROR_LOG_RETENTION_HOURS NGINX_USER ADMIN_GROUP NGINX_PID_FILE SANITIZER_PATH HOOK_PATH LOGROTATE_STATE LOGROTATE_CONF"
+KEYS="CIVIPASS_DOMAIN CONTROL_DOMAIN TLS_CONTROL_CERTIFICATE TLS_CONTROL_CERTIFICATE_KEY TLS_CERTIFICATE TLS_CERTIFICATE_KEY DOCROOT PHP_FPM_UPSTREAM LOG_DIR ACCESS_LOG_RETENTION_DAYS ERROR_LOG_RETENTION_HOURS NGINX_USER ADMIN_GROUP NGINX_PID_FILE SANITIZER_PATH HOOK_PATH LOGROTATE_STATE LOGROTATE_CONF"
 for k in $KEYS; do printf -v "V_$k" '%s' ""; done
 V_LOG_DIR=/var/log/civipass/nginx; V_ACCESS_LOG_RETENTION_DAYS=30; V_ERROR_LOG_RETENTION_HOURS=168
 V_NGINX_USER=www-data; V_ADMIN_GROUP=adm; V_NGINX_PID_FILE=/run/nginx.pid
@@ -40,6 +40,21 @@ for k in ACCESS_LOG_RETENTION_DAYS ERROR_LOG_RETENTION_HOURS; do [[ "$(get "$k")
 for k in TLS_CERTIFICATE TLS_CERTIFICATE_KEY DOCROOT LOG_DIR NGINX_PID_FILE SANITIZER_PATH HOOK_PATH LOGROTATE_STATE LOGROTATE_CONF; do
     [[ "$(get "$k")" =~ ^/[A-Za-z0-9_./-]+$ ]] || die "$k (chemin absolu, caractères A-Za-z0-9_./- seulement)"
 done
+# Origine dédiée au contrôle (facultative) : domaine propre, DISTINCT de celui de la gestion, et certificat propre à ce sous-domaine.
+if [ -n "$V_CONTROL_DOMAIN" ]; then
+    [[ "$V_CONTROL_DOMAIN" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$ ]] && [[ "$V_CONTROL_DOMAIN" == *.* ]] || die "CONTROL_DOMAIN (nom de domaine en minuscules)"
+    [ "$V_CONTROL_DOMAIN" != "$V_CIVIPASS_DOMAIN" ] || die "CONTROL_DOMAIN doit être différent de CIVIPASS_DOMAIN (origines distinctes : stockage local et cookies séparés)"
+    if [ "$ALLOW_EXAMPLE" -ne 1 ] && [[ "$V_CONTROL_DOMAIN" =~ \.(example|test|invalid|localhost)$ || "$V_CONTROL_DOMAIN" == example.* ]]; then
+        die "CONTROL_DOMAIN=$V_CONTROL_DOMAIN est un domaine d'EXEMPLE : renseigner le vrai domaine avant de déployer"
+    fi
+    for k in TLS_CONTROL_CERTIFICATE TLS_CONTROL_CERTIFICATE_KEY; do
+        [ -n "$(get "$k")" ] || die "$k est obligatoire avec CONTROL_DOMAIN (un certificat par sous-domaine)"
+        [[ "$(get "$k")" =~ ^/[A-Za-z0-9_./-]+$ ]] || die "$k (chemin absolu, caractères A-Za-z0-9_./- seulement)"
+    done
+    [ "$V_TLS_CONTROL_CERTIFICATE" != "$V_TLS_CERTIFICATE" ] || die "TLS_CONTROL_CERTIFICATE doit être distinct de TLS_CERTIFICATE (un certificat par sous-domaine)"
+else
+    [ -z "$V_TLS_CONTROL_CERTIFICATE$V_TLS_CONTROL_CERTIFICATE_KEY" ] || die "TLS_CONTROL_CERTIFICATE* renseigné sans CONTROL_DOMAIN"
+fi
 [[ "$V_PHP_FPM_UPSTREAM" =~ ^(unix:/[A-Za-z0-9_./-]+|[A-Za-z0-9_.-]+:[0-9]{1,5})$ ]] || die "PHP_FPM_UPSTREAM (unix:/chemin ou hôte:port)"
 for k in NGINX_USER ADMIN_GROUP; do [[ "$(get "$k")" =~ ^[a-z_][a-z0-9_-]*$ ]] || die "$k"; done
 
@@ -54,7 +69,8 @@ T="$HERE/templates"
 render "$T/nginx.conf.template" "$OUT/nginx.conf"
 render "$T/00-civipass-logging.conf.template" "$OUT/conf.d/00-civipass-logging.conf"
 render "$T/10-civipass-site.conf.template" "$OUT/conf.d/10-civipass-site.conf"
+[ -z "$V_CONTROL_DOMAIN" ] || render "$T/20-civipass-control.conf.template" "$OUT/conf.d/20-civipass-control.conf"
 render "$T/logrotate-civipass-nginx.conf.template" "$OUT/logrotate.conf"
 render "$HERE/systemd/civipass-nginx-logrotate.service.template" "$OUT/systemd/civipass-nginx-logrotate.service"
 render "$HERE/systemd/civipass-nginx-logrotate.timer.template" "$OUT/systemd/civipass-nginx-logrotate.timer"
-echo "Fichiers générés dans $OUT (domaine $V_CIVIPASS_DOMAIN). Voir ops/nginx/README.md pour l'installation."
+echo "Fichiers générés dans $OUT (domaine $V_CIVIPASS_DOMAIN${V_CONTROL_DOMAIN:+, contrôle $V_CONTROL_DOMAIN}). Voir ops/nginx/README.md pour l'installation."

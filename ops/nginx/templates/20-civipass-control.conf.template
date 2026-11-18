@@ -1,0 +1,116 @@
+# Origine DÉDIÉE AU CONTRÔLE (domaine : __CONTROL_DOMAIN__) — second vhost HTTPS, même serveur, même application Symfony (LOT 10, DT-056, V2).
+# Généré par ops/nginx/bin/render.sh seulement si CONTROL_DOMAIN est renseigné : NE PAS éditer à la main. Rien n'est appliqué automatiquement.
+#
+# Principe : cette origine ne sert QUE la PWA de contrôle et son API d'appareil, par une LISTE BLANCHE de méthodes et de chemins ; tout le reste répond 404.
+# Aucun cookie n'y est posé (l'application n'y démarre aucune session), aucun cookie de la gestion n'y est envoyé (cookies « host-only »). La vérification en
+# ligne `/v/{jeton}` reste sur l'origine de gestion (DEFAULT_URI). La même liste existe côté application (ControlRouteAllowlist) : le test
+# tests/Unit/Ops/ControlVhostTemplateTest.php échoue si elles divergent.
+#
+# Méthode ET chemin brut de la requête (`$request_uri`, non normalisé : `//`, `..`, `%2e` ne correspondent à rien) ; HEAD vaut GET.
+map "$request_method:$request_uri" $civ_ctl_allowed {
+    default 0;
+    "~^(?:GET|HEAD):/controle/(?:\?.*)?$"                                  1;
+    "~^(?:GET|HEAD):/controle/manifest\.webmanifest(?:\?.*)?$"             1;
+    "~^(?:GET|HEAD):/controle/sw\.js(?:\?.*)?$"                            1;
+    "~^(?:GET|HEAD):/controle/js/[a-z]+(?:-[a-z]+)*\.js(?:\?.*)?$"         1;
+    "~^(?:GET|HEAD):/controle/api/ping(?:\?.*)?$"                          1;
+    "~^(?:GET|HEAD):/controle/api/device(?:\?.*)?$"                        1;
+    "~^POST:/controle/api/activation(?:\?.*)?$"                            1;
+    "~^POST:/controle/api/sync(?:\?.*)?$"                                  1;
+    "~^(?:GET|HEAD):/assets/(?:styles|vendor/jsqr|fonts)/(?!.*\.\.)[A-Za-z0-9_./-]+(?:\?.*)?$"  1;
+    "~^(?:GET|HEAD):/assets/images/control-icon-[A-Za-z0-9_.-]+(?:\?.*)?$" 1;
+}
+
+# HTTP : redirection vers l'adresse FIXE du contrôle (jamais construite avec `$host`).
+server {
+    listen 80;
+    listen [::]:80;
+    server_name __CONTROL_DOMAIN__;
+
+    set $civ_path $civ_path;
+    if ($civ_path = "") { set $civ_path $uri; }
+
+    location / {
+        return 301 https://__CONTROL_DOMAIN__$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name __CONTROL_DOMAIN__;
+
+    # Certificat PROPRE à ce sous-domaine (préférence retenue le 18 novembre 2026).
+    ssl_certificate     __TLS_CONTROL_CERTIFICATE__;
+    ssl_certificate_key __TLS_CONTROL_CERTIFICATE_KEY__;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:civipass_ctl_ssl:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    # En-têtes de sécurité de TOUTE réponse de cette origine (pages, API, statiques et refus nginx). Au niveau du `server` uniquement : un `add_header` dans un
+    # `location` supprimerait les en-têtes hérités. Les mêmes en-têtes émis par l'application sont retirés plus bas (fastcgi_hide_header) : une seule instance de chacun.
+    # La CSP est identique à ControlHeadersListener::CSP (contrôlé par test).
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "no-referrer" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Permissions-Policy "camera=(self), microphone=(), geolocation=(), payment=(), usb=()" always;
+    add_header Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" always;
+
+    root __DOCROOT__;
+
+    # Chemin d'origine pour le journal (voir 00-civipass-logging.conf).
+    set $civ_path $civ_path;
+    if ($civ_path = "") { set $civ_path $uri; }
+
+    # Fichiers cachés (hors .well-known) : jamais servis ni transmis à PHP.
+    location ~ /\.(?!well-known/) {
+        return 404;
+    }
+
+    # Ressources compilées strictement nécessaires à la PWA : le fichier existe ou 404 (jamais le contrôleur frontal). Aucun add_header ici.
+    location ^~ /assets/ {
+        if ($civ_ctl_allowed = 0) { return 404; }
+        expires 1M;
+        try_files $uri =404;
+    }
+
+    # Tout le reste : liste blanche, puis contrôleur frontal SEULEMENT (aucun fichier statique hors /assets/). `rewrite … last` (et non `try_files`, qui servirait
+    # le fichier index.php lui-même en statique) transmet à PHP en conservant la requête.
+    location / {
+        if ($civ_ctl_allowed = 0) { return 404; }
+        rewrite ^ /index.php last;
+    }
+
+    # Seul le contrôleur frontal est exécuté, et jamais directement depuis l'extérieur (`internal`).
+    location ~ ^/index\.php(/|$) {
+        fastcgi_pass __PHP_FPM_UPSTREAM__;
+        fastcgi_split_path_info ^(.+\.php)(/.*)$;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        fastcgi_param DOCUMENT_ROOT $realpath_root;
+        fastcgi_param HTTP_X_FORWARDED_FOR "";
+        fastcgi_param HTTP_X_FORWARDED_HOST "";
+        fastcgi_param HTTP_X_FORWARDED_PROTO "";
+        fastcgi_param HTTP_X_FORWARDED_PORT "";
+        fastcgi_param HTTP_X_FORWARDED_PREFIX "";
+        fastcgi_param HTTP_FORWARDED "";
+        fastcgi_param HTTP_X_REAL_IP "";
+        # Une seule instance de chaque en-tête de sécurité : celle de nginx (valeurs identiques à celles de l'application).
+        fastcgi_hide_header X-Content-Type-Options;
+        fastcgi_hide_header Referrer-Policy;
+        fastcgi_hide_header X-Frame-Options;
+        fastcgi_hide_header Permissions-Policy;
+        fastcgi_hide_header Content-Security-Policy;
+        internal;
+    }
+
+    # Tout autre fichier PHP : introuvable.
+    location ~ \.php$ {
+        return 404;
+    }
+}
