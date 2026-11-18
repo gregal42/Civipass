@@ -6,6 +6,7 @@ namespace App\Control\UI\Http;
 
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -38,7 +39,7 @@ final readonly class ControlOriginListener
         }
         $request = $event->getRequest();
         $path = $request->getPathInfo();
-        if ($request->getHost() === $this->controlHost) {
+        if (self::hostOf($request) === $this->controlHost) {
             if (!ControlRouteAllowlist::allows($request->getMethod(), $path)) {
                 throw new NotFoundHttpException(); // G1
             }
@@ -54,11 +55,22 @@ final readonly class ControlOriginListener
     #[AsEventListener(event: KernelEvents::RESPONSE, priority: -260)]
     public function onResponse(ResponseEvent $event): void
     {
-        if (!$event->isMainRequest() || '' === $this->controlHost || $event->getRequest()->getHost() !== $this->controlHost) {
+        if (!$event->isMainRequest() || '' === $this->controlHost || self::hostOf($event->getRequest()) !== $this->controlHost) {
             return;
         }
         if (!ControlHeadersListener::concerns($event->getRequest()->getPathInfo())) {
             ControlHeadersListener::protect($event->getResponse(), false);
         }
+    }
+
+    /**
+     * Nom d'hôte de la requête (en-tête `Host`, minuscules, sans port ni point final), utilisé UNIQUEMENT pour comparer à `CONTROL_HOST` : jamais pour
+     * construire une URL (règle d'architecture : DEFAULT_URI est la seule source des adresses absolues).
+     */
+    private static function hostOf(Request $request): string
+    {
+        $host = strtolower(trim((string) $request->headers->get('Host')));
+
+        return rtrim((string) preg_replace('/:\d+$/', '', $host), '.');
     }
 }
