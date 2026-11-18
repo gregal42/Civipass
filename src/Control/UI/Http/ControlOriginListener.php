@@ -16,6 +16,9 @@ use Symfony\Component\HttpKernel\KernelEvents;
  *
  * G1 — sur l'hôte de contrôle, seules les routes de la liste blanche (`ControlRouteAllowlist`) sont servies ; toute autre requête reçoit le 404
  * générique de l'application, avant le routage, la sécurité et la base de données : aucun contrôleur, aucun cookie, aucune donnée.
+ *
+ * G3 — sur tout AUTRE hôte (l'origine de gestion), les chemins `/controle…` répondent le même 404 générique : la PWA, son Service Worker et son stockage local
+ * ne peuvent jamais s'installer sur l'origine de gestion, où vivent les cookies de session des agents.
  */
 final readonly class ControlOriginListener
 {
@@ -34,8 +37,16 @@ final readonly class ControlOriginListener
             return;
         }
         $request = $event->getRequest();
-        if ($request->getHost() === $this->controlHost && !ControlRouteAllowlist::allows($request->getMethod(), $request->getPathInfo())) {
-            throw new NotFoundHttpException();
+        $path = $request->getPathInfo();
+        if ($request->getHost() === $this->controlHost) {
+            if (!ControlRouteAllowlist::allows($request->getMethod(), $path)) {
+                throw new NotFoundHttpException(); // G1
+            }
+
+            return;
+        }
+        if (ControlHeadersListener::concerns($path)) {
+            throw new NotFoundHttpException(); // G3
         }
     }
 

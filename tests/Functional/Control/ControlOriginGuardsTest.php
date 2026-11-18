@@ -95,6 +95,39 @@ final class ControlOriginGuardsTest extends WebTestCase
         self::assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
     }
 
+    /** @return list<array{string, string}> */
+    public static function controlPathsOnTheManagementOrigin(): array
+    {
+        return [
+            ['GET', '/controle/'], ['GET', '/controle'], ['GET', '/controle/sw.js'], ['GET', '/controle/manifest.webmanifest'], ['GET', '/controle/js/app.js'],
+            ['GET', '/controle/api/ping'], ['GET', '/controle/api/device'], ['POST', '/controle/api/activation'], ['POST', '/controle/api/sync'], ['GET', '/controle/inconnu'],
+        ];
+    }
+
+    /** G3 : la PWA, son Service Worker et son API ne sont jamais servis par l'origine de gestion (ni par un autre hôte). */
+    #[\PHPUnit\Framework\Attributes\DataProvider('controlPathsOnTheManagementOrigin')]
+    public function testTheControlRoutesAreRefusedOnTheManagementOrigin(string $method, string $path): void
+    {
+        foreach ([self::MANAGEMENT, 'localhost'] as $host) {
+            $client = $this->call($host, $method, $path);
+            $response = $client->getResponse();
+
+            self::assertSame(404, $response->getStatusCode(), $host.' '.$method.' '.$path);
+            self::assertNull($response->headers->get('Set-Cookie'));
+            self::assertSame(0, $client->getCrawler()->filter('form, input')->count(), 'aucune page de l’application');
+            self::assertStringNotContainsString('cc-app', (string) $response->getContent(), 'jamais la coquille de la PWA');
+        }
+    }
+
+    public function testTheManagementPagesThatDriveTheControlAreNotTheControlRoutes(): void
+    {
+        // Les écrans d'administration du contrôle (codes, approbation) restent sur l'origine de gestion, derrière l'authentification.
+        $client = $this->call(self::MANAGEMENT, 'GET', '/communes/01a1ef3f-3bab-7303-b66e-19756ad81ba4/evenements/01a1ef40-9087-734c-8893-297a256ac133/controle');
+
+        self::assertSame(302, $client->getResponse()->getStatusCode(), 'redirigé vers la connexion, pas un 404 de G3');
+        self::assertStringContainsString('/login', (string) $client->getResponse()->headers->get('Location'));
+    }
+
     public function testTheManagementOriginAndTheOnlineVerificationAreNotAffected(): void
     {
         self::assertSame(200, $this->call(self::MANAGEMENT, 'GET', '/login')->getResponse()->getStatusCode());
@@ -110,6 +143,7 @@ final class ControlOriginGuardsTest extends WebTestCase
 
         self::assertSame(200, $this->call(self::CONTROL, 'GET', '/login')->getResponse()->getStatusCode());
         self::assertSame(200, $this->call(self::CONTROL, 'GET', '/controle/')->getResponse()->getStatusCode());
+        self::assertSame(200, $this->call(self::MANAGEMENT, 'GET', '/controle/')->getResponse()->getStatusCode(), 'G3 inactif aussi : le développement local sert /controle/ sous localhost');
     }
 
     public function testTheHostComparisonIgnoresCaseAndPortButNeverAcceptsALookalike(): void
@@ -117,6 +151,7 @@ final class ControlOriginGuardsTest extends WebTestCase
         self::assertSame(404, $this->call('CONTROLE.CIVIPASS.EXAMPLE', 'GET', '/login')->getResponse()->getStatusCode(), 'même hôte, casse différente');
         self::assertSame(404, $this->call(self::CONTROL.':8443', 'GET', '/login')->getResponse()->getStatusCode(), 'même hôte avec port');
         self::assertSame(200, $this->call('controle.civipass.example.evil.example', 'GET', '/login')->getResponse()->getStatusCode(), 'un hôte différent n’est pas l’hôte de contrôle (refusé par G2 si actif)');
+        self::assertSame(404, $this->call('controle.civipass.example.evil.example', 'GET', '/controle/')->getResponse()->getStatusCode(), 'et ne sert jamais /controle/ (G3)');
     }
 
     /** Inventaire : toute route `/controle…` de l'application est dans la liste blanche, et aucune autre route n'y est jamais. */
