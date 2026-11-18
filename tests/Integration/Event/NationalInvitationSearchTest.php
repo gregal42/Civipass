@@ -33,6 +33,9 @@ final class NationalInvitationSearchTest extends EventSchemaTestCase
     private ServiceWorld $w;
     private string $event;
 
+    /** @var array<string, true> codes INSEE déclarés PAR ce test : les communes du « monde » de test (noms « Commune 12345 », codes séquentiels globaux) ne sont pas l'objet de l'assertion. */
+    private array $declared = [];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -50,6 +53,7 @@ final class NationalInvitationSearchTest extends EventSchemaTestCase
 
     private function commune(string $code, string $name, bool $active = true): void
     {
+        $this->declared[$code] = true;
         $commune = new NationalCommune(new NationalCommuneRecord($code, $name, substr($code, 0, 2), '75', ['33000'], 1000), 'test', EventFixtures::now());
         if (!$active) {
             $commune->deactivate(EventFixtures::now());
@@ -60,6 +64,7 @@ final class NationalInvitationSearchTest extends EventSchemaTestCase
 
     private function register(string $code, string $name, MunicipalityStatus $status = MunicipalityStatus::Active): Municipality
     {
+        $this->declared[$code] = true;
         $municipality = new Municipality($name, InseeCode::fromString($code), EventFixtures::now());
         if (MunicipalityStatus::Active !== $status) {
             $municipality->changeStatus($status, EventFixtures::now());
@@ -79,7 +84,10 @@ final class NationalInvitationSearchTest extends EventSchemaTestCase
         $found = [];
         foreach ($this->service(InvitationCandidateReader::class)->search($this->as($this->w->adminO), $this->w->org->id()->toRfc4122(), $this->event, $term)->items as $candidate) {
             self::assertArrayNotHasKey($candidate->inseeCode, $found, 'aucun doublon : '.$candidate->inseeCode);
-            $found[$candidate->inseeCode] = $candidate;
+            // Déterministe : seules les communes déclarées par ce test comptent (le nom « Commune 12233 » d'une commune du monde de test contient « 33 »).
+            if (isset($this->declared[$candidate->inseeCode])) {
+                $found[$candidate->inseeCode] = $candidate;
+            }
         }
 
         return $found;
