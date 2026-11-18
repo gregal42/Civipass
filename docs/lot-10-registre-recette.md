@@ -4,11 +4,10 @@ Base `civipass_recette`, serveur local, données fictives, MailCatcher. Plan : [
 
 ## Synthèse
 
-- Scénarios : **113** — Réussi : 104 · Non applicable : 1 · Non exécuté : 6 · Contradiction documentaire : 2.
+- Scénarios : **113** — Réussi : 105 · Non applicable : 1 · Non exécuté : 5 · Contradiction documentaire : 2.
 - P1 : **78** — Réussi : 74 · Non exécuté : 2 · Contradiction documentaire : 2.
-- Recettes conditionnelles : 6/6 exécutées et réussies. Matrice rejouée : 1 853 tests, 0 échec. `bin/qa full` : vert. E2E navigateur du contrôle hors connexion : 11/11.
+- Recettes conditionnelles : 6/6 exécutées et réussies. Matrice rejouée : 1 853 tests, 0 échec. `bin/qa full` : vert (deux passages, avant et après la campagne complète). E2E navigateur du contrôle hors connexion : 11/11.
 - Aucune faille d'isolation ni contournement de permission. Aucune anomalie produit ouverte.
-
 
 ## Six recettes conditionnelles (variables non versionnées, poste local)
 
@@ -26,6 +25,30 @@ Base `civipass_recette`, serveur local, données fictives, MailCatcher. Plan : [
 ## Parcours « Inondation » (P0 → P14)
 
 P0 à P10 et P12 rejoués sur la base de recette. P11 : voir la contradiction R-CLO-02. P13 rejoué sur un second événement (clôture forcée). Détail : matrice ci-dessus. Deux événements, trois communes, 16 demandes, 8 laissez-passer.
+
+## Invitation : validité du lien et durée de l'invitation (point UX O-3)
+
+Constat : il n'y a pas d'incohérence de fond. L'invitation d'une commune à un événement **n'expire pas** (DM-086 ; elle ne peut plus être acceptée après la clôture de l'événement) ; seul le **lien sécurisé** de l'e-mail a une durée : 14 jours pour le contact, 3 jours pour un administrateur (`InvitationLink`, paramètres techniques). Un lien expiré se réémet par « Renvoyer l'invitation » ; la page de lien expiré le dit déjà. Le défaut est de **formulation** : l'écran dit « n'expire pas » et l'e-mail « valable jusqu'au… » sans relier les deux.
+
+Textes corrigés **proposés, non appliqués** (à valider) :
+
+| Où | Texte actuel | Proposition |
+|---|---|---|
+| Page « Inviter une commune » | « L'invitation n'expire pas. Un e-mail contenant un lien sécurisé est envoyé… » | « L'invitation reste en attente jusqu'à la clôture de l'événement. Le lien sécurisé envoyé par e-mail est valable 14 jours ; vous pourrez en envoyer un nouveau à tout moment. » |
+| Fiche de l'événement (commune invitée) | « L'invitation n'expire pas. Le refus d'une invitation n'est pas prévu en V1. » | « L'invitation reste en attente jusqu'à la clôture de l'événement. Elle ne peut pas être refusée dans cette version. » |
+| E-mail d'invitation | « …ouvrez ce lien (valable jusqu'au JJ/MM/AAAA) : » | « …ouvrez ce lien (valable jusqu'au JJ/MM/AAAA ; passé cette date, demandez un nouveau lien à la commune organisatrice : l'invitation, elle, reste en attente) : » |
+
+## Limiteur de connexion et sessions HTTP de recette
+
+Le limiteur est conservé tel quel (5 tentatives / 15 min par identifiant et IP ; plafond global 50 connexions / 15 min / IP, qui survit à une connexion réussie). Il m'a bloqué une fois : trop de connexions scriptées depuis la même IP, message « réessayer dans 10 minutes », levé à l'expiration de la fenêtre sans contournement. Ensuite, le pilote HTTP réutilise des cookies de session sur disque (`var/lot10/campaign/jars/`, ignoré par Git) : aucun nouveau blocage. Les connexions par navigateur (session, captures) restent des connexions réelles.
+
+## Scénarios « Sans objet » (hors périmètre V1)
+
+| ID | Justification | Décision |
+|---|---|---|
+| R-COL-02 | Une invitation inter-communes n'est pas déclinable en V1 ; l'écran l'affiche | DM-037 (UI-02 D7), DM-056 |
+
+Les autres scénarios non exécutés ne sont pas « sans objet » : ils sont reportés (09.7, textes à valider, VPS pour le runbook de vérification publique, mesure de collisions en pilote) et restent à faire.
 
 ## Registre des anomalies et observations
 
@@ -76,15 +99,15 @@ Aucune anomalie produit ouverte. Aucun correctif fonctionnel ni push de dévelop
 | R-ADM-05 | P2 | Réussi | Mot de passe réinitialisé par lien MailCatcher ; rejeu → « Lien invalide ». |
 | R-ADM-06 | P2 | Réussi | Compte b-instr rattaché à Aubenas et Privas : sélection de commune, droits distincts, demande A via B → 404. |
 | R-EVT-01 | P1 | Réussi | Événements EVT-2026-000001 et 000002 créés, références uniques. |
-| R-EVT-02 | P1 | Réussi | Brouillon → actif → clôturé rejoués (A+M) ; transitions invalides : tests rejoués. La suspension d’événement n’a pas été rejouée à la main. |
+| R-EVT-02 | P1 | Réussi | Brouillon → actif → suspendu → réactivé → clôturé rejoués à la main (événement 3) : suspension = droits « suspendus », dépôt public fermé, réactivation rétablit les droits (DM-056 A6.2) ; transitions invalides : EventLifecycleServiceTest rejoué. |
 | R-EVT-03 | P2 | Réussi | ScheduledActivationTest rejoué (A). |
 | R-EVT-04 | P3 | Réussi | EventDormancyTest rejoué (A). |
 | R-EVT-05 | P1 | Réussi | Liste de B : événement de A visible comme « Invitée » ; liste de C : absent. |
 | R-COL-01 | P1 | Réussi | A invite B (e-mail MailCatcher), B accepte ; participation active. |
-| R-COL-02 | P2 | Non applicable | Refus d’invitation « non prévu en V1 » (écran). Scénario du plan sans objet. |
+| R-COL-02 | P2 | Non applicable | Refus d’une invitation non prévu en V1 : « invitation non déclinable » (UI-02 D7, DM-037 ; DM-056). L’écran le dit (« Le refus d’une invitation n’est pas prévu en V1 »). Hors périmètre V1. |
 | R-COL-03 | P1 | Réussi | B crée ses zones, décide, révoque, suspend, reprend et clôture sa participation seule ; zones de A en lecture seule (DM-084). |
 | R-COL-04 | P1 | Réussi | 36 contrôles d’identifiants forgés (R-NEG-01/02/03, R-CWS-04) refusés. |
-| R-COL-05 | P2 | Réussi | Comportement réel : chaque commune suspend sa propre participation (A n’a aucun levier sur B). Plan imprécis. Suspension/reprise : droits de B suspendus puis rétablis, droits de A inchangés. Écriture sur participation clôturée → 403. Écriture en suspension : à confirmer par EventParticipationLockTest (rejoué, vert). |
+| R-COL-05 | P2 | Réussi | Comportement réel : chaque commune suspend sa propre participation (A n’a aucun levier sur B). Plan imprécis. Suspension/reprise : droits de B suspendus puis rétablis, droits de A inchangés. Écriture sur participation clôturée → 403. Participation suspendue : création de zone autorisée, aucune zone opérationnelle, révocation de droits refusée (409 explicite) — conforme à DM-066 ; rejoué sur l’événement 3. |
 | R-COL-06 | P3 | Réussi | NationalInvitationSearchTest rejoué ; recherche « Privas » rejouée en UI. |
 | R-ZON-01 | P1 | Réussi | Zones créées/validées ; type invalide → 422 ; 2e « Commune entière » refusée. |
 | R-ZON-02 | P2 | Réussi | Rue du Port à validité restreinte : droit borné au 22/11 20:00 sur la vérification. |
@@ -97,20 +120,20 @@ Aucune anomalie produit ouverte. Aucun correctif fonctionnel ni push de dévelop
 | R-DEM-04 | P1 | Réussi | Double POST simultané du récapitulatif → une seule demande. |
 | R-DEM-05 | P2 | Réussi | Dossier professionnel catégorie « Professionnels ». |
 | R-DEM-06 | P2 | Réussi | Délivrance par agent : agent émetteur tracé. |
-| R-DEM-07 | P1 | Réussi | Après clôture : formulaire « demandes plus ouvertes ». Avant ouverture : non rejoué à la main (RequestSubmissionServiceTest/ClosedEventGuardsTest rejoués). |
+| R-DEM-07 | P1 | Réussi | Après clôture : formulaire « demandes plus ouvertes ». Avant ouverture (brouillon) : 404 uniforme, aucune étape accessible ; pendant suspension : formulaire fermé. |
 | R-DEM-08 | P2 | Réussi | Correction du nom avec confirmation « même personne » ; version périmée → 409 ; B-instr sur dossier A → 404. |
 | R-INS-01 | P1 | Réussi | Listes filtrées par commune : A 7→9 dossiers, B 3. |
 | R-INS-02 | P1 | Réussi | Approbations 24/48/72 h et jusqu’à clôture ; autorisation propre à la commune. |
 | R-INS-03 | P1 | Réussi | 3 refus avec motif ; décision définitive. |
-| R-INS-04 | P1 | Réussi | Approbation et refus simultanés : une seule décision, l’autre informé. Serveur mono-processus : sérialisé ; concurrence réelle couverte par MunicipalDecisionConcurrencyTest rejoué. |
+| R-INS-04 | P1 | Réussi | Approbation et refus simultanés : une seule décision, l’autre informé. Rejoué sur 6 paires (1 + 5) : une seule décision à chaque fois, message du perdant clair. Serveur mono-processus : sérialisé ; concurrence réelle couverte par MunicipalDecisionConcurrencyTest rejoué. |
 | R-INS-05 | P1 | Réussi | Gestionnaire seul (A-lect) : pages et POST décision → 403. |
 | R-INS-06 | P2 | Réussi | MunicipalApprovalWindowCompatibilityTest rejoué (A). |
 | R-INS-07 | P2 | Réussi | Délivrance directe DEM-2026-0014, durée 24 h. |
-| R-INS-08 | P3 | Non exécuté | Mesure de collisions en usage réel (DM-137) : sans objet en recette locale à un opérateur. |
+| R-INS-08 | P3 | Non exécuté | DM-137 : compréhension du message de conflit vérifiée (6 cas) ; fréquence réelle des collisions non mesurable en recette locale à un opérateur : à mesurer en pilote. |
 | R-DBL-01 | P1 | Réussi | « Doublon possible » avec lien DEM-0001↔0004. |
-| R-DBL-02 | P1 | Réussi | Mode A rejoué (RequestDuplicatesTest) ; fiche partagée 0002 vue par B sans les zones de A. Doublon construit à cheval sur deux communes : non rejoué à la main. |
+| R-DBL-02 | P1 | Réussi | Même identité déposée pour A (DEM-0016) et pour B seul (DEM-0017) : A voit son doublon interne (0018, 0020) mais pas celui de B ; B n’a aucun signal. Fiche partagée 0002 vue par B sans les zones de A. |
 | R-DBL-03 | P1 | Réussi | Les deux dossiers Martin approuvés malgré le signal. |
-| R-DBL-04 | P3 | Non exécuté | Limites connues (accents, noms inversés) non rejouées. |
+| R-DBL-04 | P3 | Réussi | Conforme à ecarts-techniques-connus.md : accents/casse détectés, « famille » (même téléphone) signalée, noms/prénoms inversés non détectés. |
 | R-LP-01 | P1 | Réussi | LP-2026-0001…0008 délivrés, notifications regroupées (1 message pour Hugo A+B). |
 | R-LP-02 | P1 | Réussi | Lien bénéficiaire, PDF 200 application/pdf, QR = jeton opaque 32 car. sans donnée personnelle. Le contenu de l’image QR n’a pas été décodé (limite). |
 | R-LP-03 | P1 | Réussi | Retrait de zone : effet immédiat à la vérification. |
@@ -126,7 +149,7 @@ Aucune anomalie produit ouverte. Aucun correctif fonctionnel ni push de dévelop
 | R-VP-05 | P1 | Réussi | Événement clos → « Événement terminé… aucune information ». |
 | R-VP-06 | P1 | Réussi | Interrupteur à 0 : PublicVerificationSecurityTest rejoué. |
 | R-VP-07 | P2 | Réussi | Limiteur : PublicVerificationSecurityTest rejoué (A). |
-| R-VP-08 | P2 | Non exécuté | Runbook recette-verification-publique.md non déroulé pas à pas. |
+| R-VP-08 | P2 | Non exécuté | Le runbook exige un VPS HTTPS dédié, reporté par décision du 17/11 : hors périmètre local. Équivalent fonctionnel local : R-VP-01 à 05 rejoués. |
 | R-OFF-01 | P1 | Réussi | ControlHttpTest/ControlActivationServiceTest rejoués ; route ouverte à 1 sur le poste. |
 | R-OFF-02 | P1 | Réussi | Code d’activation créé sur la base de recette (une seule fois affiché, accès instructeur 403, C 404, code invalide 403) ; cycle complet appareil par e2e navigateur sur données de test. |
 | R-OFF-03 | P1 | Réussi | ControlDatasetTest et tests JS rejoués. |
@@ -144,7 +167,7 @@ Aucune anomalie produit ouverte. Aucun correctif fonctionnel ni push de dévelop
 | R-NOT-08 | P2 | Réussi | OutboxPurgeTest/SecretPurgeTest rejoués. |
 | R-SES-01 | P1 | Réussi | Test unitaire rejoué + navigateur (voir R-SES-03). |
 | R-SES-02 | P1 | Réussi | SessionLifetimeTest rejoué. |
-| R-SES-03 | P2 | Réussi | Navigateur réel (Chrome piloté, délai minimal produit 300 s) : avertissement à 180 s avec compte à rebours, sonde sans prolongation, « Rester connecté » prolonge (299 s), expiration → /login, page protégée redirigée. Captures R-SES-03 et R-SES-01. |
+| R-SES-03 | P2 | Réussi | Navigateur réel (Chrome piloté, délai minimal produit 300 s) : avertissement à 180 s avec compte à rebours, sonde sans prolongation (119→114 s), « Rester connecté » prolonge (299 s), expiration → /login, page protégée redirigée. Captures R-SES-03 et R-SES-01. |
 | R-SES-04 | P1 | Réussi | AuthenticationTest rejoué (cookie forgé ignoré). |
 | R-SES-05 | P2 | Réussi | /v : aucun cookie. Dépôt public : un cookie de session anonyme (brouillon du formulaire) est posé, sans session authentifiée (SessionExpiryTest). Voir observation O-2. |
 | R-SES-06 | P1 | Réussi | Opérateur sans habilitation : 404 ; habilité : clôture ; trace CWS_PERMISSION_GRANTED. |
