@@ -13,6 +13,13 @@
 | [`lot-03-schema.md`](lot-03-schema.md) | **Schéma de données LOT 03 (demandes) proposé, en attente de validation** |
 | [`lot-04-schema.md`](lot-04-schema.md) | Modèle de décision municipale LOT 04.1 (DM-106 à DM-111, DT-040 à DT-045) |
 | [`runbooks/`](runbooks/README.md) | **Runbooks d'exploitation** (LOT 05.6.7) : sauvegarde, restauration et rejeu, cohérence, incidents, remise en service |
+| [`registre-anomalies-v1.md`](registre-anomalies-v1.md) | **Registre consolidé des anomalies V1.0** (LOT 11.1 à 11.3, kit d'installation), priorités P0 à P3 |
+| [`lot-11-plan-audit-securite-rgpd.md`](lot-11-plan-audit-securite-rgpd.md) | LOT 11 : plan d'audit sécurité et RGPD (validé comme base de cadrage) |
+| [`lot-11-1-audit-automatise.md`](lot-11-1-audit-automatise.md) | LOT 11.1 : audit automatisé (routes, isolation, en-têtes, dépendances, secrets) ; constats dans [`registre-securite.md`](registre-securite.md) |
+| [`lot-11-2-revue-manuelle.md`](lot-11-2-revue-manuelle.md) | LOT 11.2 : revue manuelle, modèle de menace du contrôle hors connexion, matrice de révocation et d'expiration |
+| [`lot-11-3-dossier-rgpd.md`](lot-11-3-dossier-rgpd.md) | LOT 11.3 : **projet technique** de dossier RGPD (inventaire, durées, AIPD technique, décisions DPO) ; non validé juridiquement |
+| [`exploitation/`](exploitation/README.md) | **Kit d'installation et guides d'exploitation V1.0** (Linux, Nginx), checklists de mise en service et GO / NO-GO, prérequis serveur |
+| [`recette/`](recette/plan-recette-smtp.md) | Plans de recette sur serveur de recette : [SMTP réel](recette/plan-recette-smtp.md) et [09.7 smartphones](recette/plan-recette-09-7.md) (non exécutés) |
 | [`lot-06-audit.md`](lot-06-audit.md) | Audit global et préparation de la V1 pilote (LOT 06) |
 | [`audit-couverture-fonctionnelle.md`](audit-couverture-fonctionnelle.md) | Audit de couverture SFD / CDC, périmètre figé du premier pilote, lots restants (17 nov. 2026) |
 | [`arbitrages-pilote-fiches.md`](arbitrages-pilote-fiches.md) | Fiches d'arbitrage avant le LOT 08 : papier 48 h, verrou 15 min, révocation globale, état indéterminé, notification de refus |
