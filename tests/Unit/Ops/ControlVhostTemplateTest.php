@@ -247,7 +247,7 @@ final class ControlVhostTemplateTest extends TestCase
         return [$process->getExitCode() ?? 1, $process->getOutput()];
     }
 
-    private const SECRETS = ['APP_SECRET=0123456789abcdef0123456789abcdef0123456789abcdef', 'DATABASE_URL=mysql://civipass:s3cr3t-v4lue@127.0.0.1:3306/civipass?serverVersion=8.4.0', 'MAILER_DSN=smtp://relais.exemple.fr:587', 'NOTIFICATION_KEYRING=k1:AAAA', 'NOTIFICATION_ACTIVE_KEY_ID=k1', 'OPS_ALERT_EMAIL=exploitation@exemple.fr', 'BACKUP_AGE_RECIPIENTS=age1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq'];
+    private const SECRETS = ['APP_SECRET=0123456789abcdef0123456789abcdef0123456789abcdef', 'DATABASE_URL=mysql://civipass:s3cr3t-v4lue@127.0.0.1:3306/civipass?serverVersion=8.4.0', 'MAILER_DSN=smtp://relais.exemple.fr:587', 'NOTIFICATION_KEYRING=k1:AAAA', 'NOTIFICATION_ACTIVE_KEY_ID=k1', 'TWO_FACTOR_KEYRING=t1:AAAA', 'TWO_FACTOR_ACTIVE_KEY_ID=t1', 'OPS_ALERT_EMAIL=exploitation@exemple.fr', 'BACKUP_AGE_RECIPIENTS=age1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq'];
 
     /** @return list<string> */
     private static function goodEnv(): array
