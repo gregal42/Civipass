@@ -62,6 +62,8 @@ check_system() {
     [ "$perm" = "640 root:civipass" ] && ok "$ENV_FILE ($perm)" || ko "$ENV_FILE : droits $perm (attendu 640 root:civipass)"
     grep -q 'CHANGE_ME' "$ENV_FILE" && ko "valeurs CHANGE_ME restantes dans $ENV_FILE"
   else ko "$ENV_FILE absent"; fi
+  command -v age >/dev/null 2>&1 && ok "age installé (chiffrement des sauvegardes)" || ko "age absent (apt install age) : les sauvegardes ne peuvent pas être chiffrées (SEC-004)"
+  if grep -rIl 'AGE-SECRET-KEY-' /etc/civipass "$APP_DIR" 2>/dev/null | grep -q .; then ko "une clé PRIVÉE age se trouve sur ce serveur : la retirer et la conserver hors serveur (SEC-004)"; else ok "aucune clé privée age sur le serveur"; fi
   systemctl is-active --quiet php8.4-fpm && ok "php8.4-fpm actif" || ko "php8.4-fpm inactif"
   [ -S /run/php/php8.4-fpm-civipass.sock ] && ok "socket du pool civipass" || ko "socket /run/php/php8.4-fpm-civipass.sock absente"
   for f in /etc/php/8.4/fpm/pool.d/www.conf; do [ -e "$f" ] && warn "pool « www » encore actif ($f)"; done

@@ -62,6 +62,17 @@ if [ -z "$(declare_get NOTIFICATION_KEYRING)" ] || [ -z "$(declare_get NOTIFICAT
     ko "NOTIFICATION_KEYRING ou NOTIFICATION_ACTIVE_KEY_ID absent (secrets bénéficiaires non chiffrables ; à mettre sous séquestre hors serveur, voir sauvegarde)"
 else ok "NOTIFICATION_KEYRING et NOTIFICATION_ACTIVE_KEY_ID définis (vérifier : bin/console app:notifications:check-crypto)"; fi
 [ -n "$(declare_get OPS_ALERT_EMAIL)" ] && ok "OPS_ALERT_EMAIL défini" || ko "OPS_ALERT_EMAIL vide (aucune alerte d'exploitation ne serait envoyée)"
+# Chiffrement des sauvegardes (SEC-004) : clés PUBLIQUES age valides, jamais de clé privée sur le serveur. Passer aussi le fichier d'environnement des services.
+[ -z "$(declare_get BACKUP_AGE_IDENTITY)" ] && ok "aucune clé privée de sauvegarde déclarée sur le serveur" || ko "BACKUP_AGE_IDENTITY défini : la clé PRIVÉE de sauvegarde ne doit jamais se trouver sur le serveur"
+recipients=$(declare_get BACKUP_AGE_RECIPIENTS)
+if [ -z "$recipients" ]; then ko "BACKUP_AGE_RECIPIENTS absent (clés publiques age : les sauvegardes sont chiffrées, jamais écrites en clair)"
+else
+    badkey=0; nkeys=0
+    for k in $(printf '%s' "$recipients" | tr ',' ' '); do nkeys=$((nkeys + 1)); [[ "$k" =~ ^age1[0-9a-z]{58}$ ]] || badkey=1; done
+    if [ "$badkey" -eq 1 ]; then ko "BACKUP_AGE_RECIPIENTS contient une valeur qui n'est pas une clé publique age (attendu : age1…)"
+    elif [ "$nkeys" -lt 2 ]; then ok "BACKUP_AGE_RECIPIENTS : 1 clé publique (une seconde clé de secours est recommandée)"
+    else ok "BACKUP_AGE_RECIPIENTS : $nkeys clés publiques"; fi
+fi
 case "$(declare_get OFFLINE_CONTROL_ENABLED)" in
     1|true|on|yes) [ -n "$CONTROL" ] || ko "OFFLINE_CONTROL_ENABLED actif sans --control-domain : la PWA partagerait l'origine des cookies de session (origine dédiée obligatoire)";;
 esac

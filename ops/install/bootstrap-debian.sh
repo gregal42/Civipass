@@ -43,7 +43,7 @@ version_ge() { [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -n1)" = "$2" ];
 have_candidate() { apt-cache policy "$1" 2>/dev/null | awk '/Candidate:/ {print $2}' | grep -qv '(none)'; }
 
 run apt-get update -y
-run apt-get install -y ca-certificates curl gnupg lsb-release unzip git logrotate perl rsync openssl cron
+run apt-get install -y ca-certificates curl gnupg lsb-release unzip git logrotate perl rsync openssl cron age
 
 if [ "$APPLY" -eq 1 ]; then apt-get update -y >/dev/null; fi
 if ! have_candidate php8.4-fpm; then
@@ -203,6 +203,8 @@ RETENTION_PURGE_ENABLED='0'
 RIGHTS_ERASURE_EXECUTION_ENABLED='0'
 # Sauvegarde (unités civipass-backup*) :
 BACKUP_DIR='/var/backups/civipass'
+# Chiffrement des sauvegardes (SEC-004) : CLÉS PUBLIQUES age1… seulement (deux recommandées). La clé PRIVÉE reste HORS serveur : jamais ici.
+BACKUP_AGE_RECIPIENTS='CHANGE_ME'
 DB_NAME='civipass'
 MYSQL_DEFAULTS_FILE='/etc/civipass/mysql-backup.cnf'
 STORAGE_DIR='${APP_DIR}/var/storage'

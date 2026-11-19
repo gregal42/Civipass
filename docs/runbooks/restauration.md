@@ -5,7 +5,7 @@
 ## Étapes techniques
 1. **Maintenance d'abord** : `php bin/console app:ops:maintenance --reason="restauration <ticket>"` puis `systemctl stop 'civipass-*.timer'`. Toute tâche planifiée est refusée (code 75).
 2. **Conserver les fichiers courants** : le registre de purge (`RETENTION_REGISTER_PATH`) et le fichier d'ancrage (`RETENTION_ANCHOR_PATH`) **ne sont pas restaurés**. En faire une copie datée avant toute opération.
-3. **Restaurer** la base (`db.sql.gz`) et, si nécessaire, le stockage. Ne pas restaurer les fichiers du registre.
+3. **Restaurer** la base (`db.sql.gz.age`) et, si nécessaire, le stockage (`storage.tar.gz.age`) avec `ops/backup/restore-from-age.sh` et la **clé privée détenue hors serveur** (voir [sauvegarde.md](sauvegarde.md), « Clés de chiffrement » : ne jamais la copier durablement sur le serveur restauré ; la retirer après usage). Ne pas restaurer les fichiers du registre : `--archive-dir` en dépose seulement des copies d'archive.
 4. **Contrôler** : `php bin/console app:retention:restore-check` (ajouter `--external-anchors=<copie externe>` avec les points d'ancrage reçus par courriel ou le collecteur distant). Lire :
    - `PROOF_PROBLEM` : preuve externe absente, chaîne rompue ou ancrage incohérent → **aucun rejeu**, voir [incident-securite.md](incident-securite.md) ;
    - `REINTRODUCED_DOSSIER` / `REINTRODUCED_SHARED` `REPLAYABLE` : à rejouer ; `BLOCKED_*` : voir ci-dessous ;

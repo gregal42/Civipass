@@ -158,17 +158,21 @@ final class OpsUnitsTest extends TestCase
     public function testBackupDryRunExecutesNothingAndRefusesUnsafeSettings(): void
     {
         $dir = sys_get_temp_dir().'/civipass-backup-'.bin2hex(random_bytes(4));
-        $dry = new Process([self::ROOT.'/backup/backup.sh', '--dry-run'], null, ['BACKUP_DIR' => $dir, 'DB_NAME' => 'civipass', 'PATH' => (string) getenv('PATH')]);
+        $recipient = 'age1'.str_repeat('q', 58); // clé publique de forme valide (SEC-004 : le chiffrement est obligatoire, y compris en simulation)
+        $dry = new Process([self::ROOT.'/backup/backup.sh', '--dry-run'], null, ['BACKUP_DIR' => $dir, 'DB_NAME' => 'civipass', 'BACKUP_AGE_RECIPIENTS' => $recipient, 'PATH' => (string) getenv('PATH')]);
         $dry->run();
         self::assertSame(0, $dry->getExitCode(), $dry->getErrorOutput());
         self::assertStringContainsString('[dry-run] mysqldump', $dry->getOutput());
         self::assertDirectoryDoesNotExist($dir, 'le mode dry-run ne crée rien');
 
         foreach ([['BACKUP_DIR' => 'relatif/chemin'], ['BACKUP_DIR' => '/'], ['BACKUP_DIR' => $dir, 'BACKUP_RETENTION_DAYS' => '0'], ['BACKUP_DIR' => $dir, 'BACKUP_RETENTION_DAYS' => 'abc']] as $env) {
-            $bad = new Process([self::ROOT.'/backup/backup.sh', '--dry-run'], null, $env + ['DB_NAME' => 'civipass', 'PATH' => (string) getenv('PATH')]);
+            $bad = new Process([self::ROOT.'/backup/backup.sh', '--dry-run'], null, $env + ['DB_NAME' => 'civipass', 'BACKUP_AGE_RECIPIENTS' => $recipient, 'PATH' => (string) getenv('PATH')]);
             $bad->run();
             self::assertSame(64, $bad->getExitCode(), json_encode($env, \JSON_THROW_ON_ERROR));
         }
+        $clear = new Process([self::ROOT.'/backup/backup.sh', '--dry-run'], null, ['BACKUP_DIR' => $dir, 'DB_NAME' => 'civipass', 'PATH' => (string) getenv('PATH')]);
+        $clear->run();
+        self::assertSame(64, $clear->getExitCode(), 'sans clé publique : refus, jamais de sauvegarde en clair (SEC-004)');
         $verify = new Process([self::ROOT.'/backup/verify-backup.sh', '--dry-run'], null, ['BACKUP_DIR' => $dir, 'DB_NAME' => 'civipass', 'PATH' => (string) getenv('PATH')]);
         $verify->run();
         self::assertSame(1, $verify->getExitCode(), 'aucune sauvegarde : échec explicite');

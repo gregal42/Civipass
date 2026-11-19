@@ -463,7 +463,7 @@ final class NginxOperationsTest extends TestCase
     }
 
     /** Secrets et exploitation conformes (SEC-005) ; les cas de non-conformité les surchargent (la dernière valeur gagne). */
-    private const CONFORMING_SECRETS = ['APP_SECRET=0123456789abcdef0123456789abcdef0123456789abcdef', 'DATABASE_URL=mysql://civipass:s3cr3t-v4lue@127.0.0.1:3306/civipass?serverVersion=8.4.0', 'MAILER_DSN=smtp://relais.exemple.fr:587', 'NOTIFICATION_KEYRING=k1:AAAA', 'NOTIFICATION_ACTIVE_KEY_ID=k1', 'OPS_ALERT_EMAIL=exploitation@exemple.fr'];
+    private const CONFORMING_SECRETS = ['APP_SECRET=0123456789abcdef0123456789abcdef0123456789abcdef', 'DATABASE_URL=mysql://civipass:s3cr3t-v4lue@127.0.0.1:3306/civipass?serverVersion=8.4.0', 'MAILER_DSN=smtp://relais.exemple.fr:587', 'NOTIFICATION_KEYRING=k1:AAAA', 'NOTIFICATION_ACTIVE_KEY_ID=k1', 'OPS_ALERT_EMAIL=exploitation@exemple.fr', 'BACKUP_AGE_RECIPIENTS=age1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq'];
 
     public function testAConformingProductionEnvironmentPasses(): void
     {
@@ -515,6 +515,9 @@ final class NginxOperationsTest extends TestCase
         yield 'trousseau absent' => [['NOTIFICATION_KEYRING='], 'NOTIFICATION_KEYRING'];
         yield 'clé active absente' => [['NOTIFICATION_ACTIVE_KEY_ID='], 'NOTIFICATION_KEYRING'];
         yield 'alertes sans destinataire' => [['OPS_ALERT_EMAIL='], 'OPS_ALERT_EMAIL'];
+        yield 'sauvegardes sans clé publique' => [['BACKUP_AGE_RECIPIENTS='], 'BACKUP_AGE_RECIPIENTS absent'];
+        yield 'sauvegardes avec une valeur qui n\'est pas une clé publique' => [['BACKUP_AGE_RECIPIENTS=pas-une-cle'], 'pas une clé publique age'];
+        yield 'clé privée de sauvegarde sur le serveur' => [['BACKUP_AGE_IDENTITY=/etc/civipass/backup.key'], 'clé PRIVÉE'];
         yield 'contrôle hors connexion sans origine dédiée' => [['OFFLINE_CONTROL_ENABLED=1'], 'origine dédiée obligatoire'];
     }
 
