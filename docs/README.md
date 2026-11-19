@@ -15,6 +15,7 @@
 | [`runbooks/`](runbooks/README.md) | **Runbooks d'exploitation** (LOT 05.6.7) : sauvegarde, restauration et rejeu, cohérence, incidents, remise en service |
 | [`registre-anomalies-v1.md`](registre-anomalies-v1.md) | **Registre consolidé des anomalies V1.0** (LOT 11.1 à 11.3, kit d'installation), priorités P0 à P3 |
 | [`lot-11-sec-015-secret-appareil.md`](lot-11-sec-015-secret-appareil.md) | SEC-015 : analyse de la validité du secret d'appareil, de la durée hors connexion, de la synchronisation et de la révocation (pour arbitrage) |
+| [`lot-11-b-arbitrages-sec-016-sec-020.md`](lot-11-b-arbitrages-sec-016-sec-020.md) | SEC-016 (invitation « contact ») et SEC-020 (jeton de contrôle haché) : analyse et options pour arbitrage |
 | [`lot-11-plan-audit-securite-rgpd.md`](lot-11-plan-audit-securite-rgpd.md) | LOT 11 : plan d'audit sécurité et RGPD (validé comme base de cadrage) |
 | [`lot-11-1-audit-automatise.md`](lot-11-1-audit-automatise.md) | LOT 11.1 : audit automatisé (routes, isolation, en-têtes, dépendances, secrets) ; constats dans [`registre-securite.md`](registre-securite.md) |
 | [`lot-11-2-revue-manuelle.md`](lot-11-2-revue-manuelle.md) | LOT 11.2 : revue manuelle, modèle de menace du contrôle hors connexion, matrice de révocation et d'expiration |
