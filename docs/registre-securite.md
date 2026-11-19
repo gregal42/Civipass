@@ -5,6 +5,27 @@
 | ID | Date | Constat | Gravité | Statut |
 |---|---|---|---|---|
 | [SEC-001](#sec-001) | 18 novembre 2026 | Énumération de comptes par le temps de réponse de la connexion | Moyenne | **Corrigée en développement — validation en environnement cible en attente** (commit `b36fa06`, poussé) |
+| [SEC-002](lot-11-1-audit-automatise.md#sec-002--en-têtes-de-sécurité-absents-sur-lorigine-de-gestion--moyenne) | 19 novembre 2026 | En-têtes de sécurité (CSP, X-Frame-Options, nosniff, Referrer-Policy) absents sur l'origine de gestion : connexion, pages agent, Sonata, dépôt public | Moyenne | **Ouverte** (constat LOT 11.1) |
+| [SEC-003](lot-11-1-audit-automatise.md#sec-003--aucune-limitation-de-débit-à-la-soumission-du-dépôt-public--moyenne) | 19 novembre 2026 | Aucune limitation de débit à la soumission du dépôt public (seuls les téléversements sont limités) | Moyenne | **Ouverte** (seuils : décision S6) |
+| [SEC-004](lot-11-1-audit-automatise.md#sec-004--sauvegardes-non-chiffrées-avant-la-copie-hors-serveur--moyenne) | 19 novembre 2026 | Sauvegardes non chiffrées avant la copie hors serveur (relevé Élevée en 11.3 F01 : elles contiennent toutes les données personnelles et les justificatifs ; gravité retenue : Élevée) | Élevée | **Ouverte** |
+| [SEC-005](lot-11-1-audit-automatise.md#sec-005--contrôle-de-déploiement-incomplet--moyenne) | 19 novembre 2026 | Contrôle de déploiement incomplet (`APP_SECRET`, base, SMTP, trousseau de chiffrement) | Moyenne | **Ouverte** |
+| [SEC-006](lot-11-1-audit-automatise.md#sec-006--pas-de-second-facteur-pour-les-super-administrateurs-cws--moyenne-décision-s3-en-attente) | 19 novembre 2026 | Pas de second facteur pour les super-administrateurs CWS ; pas de contrôle des mots de passe compromis (relevé Élevée en 11.2 F1 : ce compte peut ouvrir une commune et s'en inviter l'administrateur ; gravité retenue : Élevée) | Élevée | **Ouverte** (décision S3) |
+| [SEC-007](lot-11-1-audit-automatise.md#sec-007--cache-control-no-store-absent-du-formulaire-public-et-des-pages-dinstruction--faible) | 19 novembre 2026 | `no-store` absent du formulaire public et des pages d'instruction | Faible | **Ouverte** (à confirmer en 11.2) |
+| [SEC-008](lot-11-1-audit-automatise.md#sec-008--jeton-csrf-vérifié-avant-lautorisation-sur-app_municipal_refusal_informed--faible) | 19 novembre 2026 | CSRF vérifié avant l'autorisation sur « refus informé » (303 sans effet) | Faible | **Ouverte** |
+| [SEC-009](lot-11-1-audit-automatise.md#sec-009--route-dannulation-dun-code-dactivation-sans-test-fonctionnel-dédié--faible) | 19 novembre 2026 | Route d'annulation d'un code d'activation sans test HTTP dédié | Faible | **Ouverte** |
+| [SEC-010](lot-11-1-audit-automatise.md#sec-010--règle-daccès-communes-en--mémorisé--alors-que--se-souvenir-de-moi--est-supprimé--info) | 19 novembre 2026 | Règle `/communes` en « mémorisé » alors que « se souvenir de moi » est supprimé | Info | **Ouverte** |
+| [SEC-011](lot-11-1-audit-automatise.md#sec-011--dépendances--mises-à-jour-disponibles-jsqr-non-maintenu--info) | 19 novembre 2026 | 18 mises à jour disponibles ; jsQR non maintenu (aucun avis de sécurité) | Info | **Ouverte** |
+| [SEC-012](lot-11-1-audit-automatise.md#sec-012--sauvegardes-de-développement-lisibles-par-tous-les-comptes-du-poste--info) | 19 novembre 2026 | Sauvegardes de développement lisibles par tous les comptes du poste (poste local) | Info | **Ouverte** |
+| SEC-013 | 19 novembre 2026 | Garde-fous G1–G3 (hôtes de confiance, liste blanche, refus de `/controle` sur la gestion) inactifs tant que `CONTROL_HOST` est vide ; activer la PWA sans `CONTROL_HOST` la place sur l'origine des cookies de session | Moyenne | **Ouverte** (11.2 F4, lot-11-2-revue-manuelle.md) |
+| SEC-014 | 19 novembre 2026 | Limiteurs de connexion, de réinitialisation, d'invitation et de téléversement : un échec d'écriture du cache est ignoré silencieusement (limitation inopérante sans signal) | Moyenne | **Ouverte** (11.2 F5) |
+| SEC-015 | 19 novembre 2026 | Secret d'appareil de contrôle volé utilisable depuis n'importe quelle machine ; durée de vie par défaut 72 h (14 j au plus) pour une confiance de 12 h sur les données | Moyenne | **Ouverte** (11.2 F6) |
+| SEC-016 | 19 novembre 2026 | Lien d'invitation « contact » : prise de contrôle possible d'une commune encore sans administrateur (risque documenté, non arbitré) | Moyenne | **Ouverte** (11.2 F7 ; invitations-intercommunales.md) |
+| SEC-017 | 19 novembre 2026 | Références d'événement séquentielles (`EVT-2026-000001`), donc énumérables | Faible | **Ouverte** (11.1 §4 et 11.2 F8) |
+| SEC-018 | 19 novembre 2026 | Aucun antivirus sur les pièces jointes ; format DOC (macros) accepté | Faible | **Ouverte** (11.2 F9) |
+| SEC-019 | 19 novembre 2026 | Masquage des journaux ne couvrant pas les objets `Stringable` ; rotation du journal PHP absente du kit Nginx ; temps de réponse du « mot de passe oublié » non mesuré | Faible | **Ouverte** (11.2 F10–F11) |
+| SEC-020 | 19 novembre 2026 | `permit_verification_token.token` stocké en clair alors que les autres secrets sont hachés | Moyenne | **Ouverte** (11.3 F06, lot-11-3-dossier-rgpd.md §2) |
+
+> **LOT 11.1 (19 novembre 2026)** : SEC-002 à SEC-012 sont des constats d'audit, détaillés avec preuves et corrections recommandées dans [lot-11-1-audit-automatise.md](lot-11-1-audit-automatise.md). Aucune correction n'est engagée : elles feront l'objet de sous-lots cadrés séparément.
 
 ## SEC-001
 
