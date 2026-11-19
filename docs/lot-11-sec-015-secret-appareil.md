@@ -1,6 +1,6 @@
 # SEC-015 — Secret d'appareil de contrôle : analyse pour arbitrage (19 novembre 2026)
 
-**Statut : analyse seule. Aucune valeur ni aucun comportement n'a été modifié** (la durée de 72 h reste en vigueur, décision du commanditaire du 19 novembre 2026). Sources : `src/Control/Domain/ControlDevice.php`, `ControlSettings.php`, `DeviceApprovalService.php`, `docs/lot-09-controle-hors-connexion-cadrage.md` (§5, A3), DM-130 à DM-132, constat 11.2-F6.
+**Statut : analyse seule, complétée le 19 novembre 2026 par la vérification séparée du §6 (arbitrage : durée de 72 h conservée, fonctionnement hors connexion inchangé, aucune modification de durée sans nouvel arbitrage). Aucune valeur ni aucun comportement n'a été modifié** (la durée de 72 h reste en vigueur, décision du commanditaire du 19 novembre 2026). Sources : `src/Control/Domain/ControlDevice.php`, `ControlSettings.php`, `DeviceApprovalService.php`, `docs/lot-09-controle-hors-connexion-cadrage.md` (§5, A3), DM-130 à DM-132, constat 11.2-F6.
 
 ## 1. Quatre notions à ne pas confondre
 
@@ -40,3 +40,16 @@ Le secret est un **jeton porteur** : seule son empreinte est stockée côté ser
 ## 5. Constat annexe (aucun correctif engagé)
 
 `check-deployment.sh` ne contrôle pas `CONTROL_DEVICE_LIFETIME_HOURS` : une valeur de 336 h (14 jours, maximum accepté) serait acceptée sans avertissement. Un simple contrôle informatif « valeur supérieure à 72 h » pourrait être ajouté si l'option A est retenue.
+
+## 6. Vérification séparée des quatre notions (19 novembre 2026, aucune valeur modifiée)
+
+Preuves = tests existants, relancés verts avec la QA complète ; aucun code de contrôle n'a été modifié pour ce point.
+
+| Notion | Comportement vérifié | Preuve |
+|---|---|---|
+| **Validité du secret d'appareil** (72 h par défaut, `CONTROL_DEVICE_LIFETIME_HOURS`, plafonnée à la fin de l'événement) | un appareil expiré n'est plus opérationnel ; aucun jeu de données n'est construit pour un appareil en attente, désactivé ou expiré ; la durée ne dépasse jamais la fin planifiée de l'événement ; le renouvellement ne vaut que pour un appareil actif | `ControlDeviceLifecycleTest` (`testTheLifetimeNeverExceedsThePlannedEndOfTheEvent`, `testAnExpiredDeviceIsNoLongerOperational`, `testRenewalExtendsTheAuthorizationOfAnActiveDeviceOnly`), `ControlDatasetTest::testNoDatasetIsEverBuiltForAPendingDeactivatedOrExpiredDevice` |
+| **Validité des données hors connexion** (avertissement 6 h, verdict « indéterminé » au-delà de 12 h, indépendante du secret) | verdict indéterminé sans jeu valide, avec appareil en attente/désactivé/expiré ou horloge incohérente ; les seuils de la commune sont transmis avec le jeu | `tests/Js/verdict.test.mjs` (seuils du pilote 6 h/12 h, « aucun jeu valide… : indéterminé », horloge), `ControlDatasetTest::testTheDatasetCarriesTheCommunesTrustParametersAndTheDeviceExpiry` |
+| **Comportement après désactivation** | la désactivation (motif obligatoire) coupe l'accès : le serveur ne répond plus à la synchronisation (réponse uniforme) et l'application purge à la prochaine connexion ou à l'ouverture ; une autre commune ne peut ni désactiver ni renouveler ; un appareil désactivé ne se renouvelle pas | `ControlDeviceLifecycleTest::testDeactivationWithAReasonCutsTheAccess`, `testADeactivatedDeviceCannotBeRenewed`, `testAnotherCommuneCannotDeactivateOrRenew`, `ControlHttpTest::testASynchronizationNeverAnswersAnUnknownMalformedPendingOrDeactivatedDevice`, `tests/Js/sync.test.mjs` (état de l'appareil : désactivation → purge ; expiré côté serveur → suppression) |
+| **Limites de révocation sans réseau** | une révocation d'autorisation devient une pierre tombale sans nom dans le jeu suivant ; **sans réseau, ni la révocation d'une autorisation ni la désactivation d'un appareil ne sont connues de l'appareil** avant la prochaine synchronisation : la protection hors connexion repose sur la fenêtre de confiance (12 h) et l'expiration (72 h), pas sur une révocation instantanée (risque R-OFF-01 accepté, documenté) | `ControlDatasetTest::testARevokedAuthorizationBecomesATombstoneWithoutAnyName`, `tests/Js/sync.test.mjs` (synchronisation interrompue : l'ancien jeu reste intact), §1–2 ci-dessus |
+
+**Conclusion** : les quatre notions sont indépendantes et chacune est couverte par un test ; la fenêtre résiduelle de F6 (secret volé et déverrouillé, rejouable ≤ 72 h jusqu'à désactivation) est inchangée. Aucune durée n'est modifiée sans nouvel arbitrage ; les options B (validité glissante) et C (liaison à l'appareil) restent à arbitrer.

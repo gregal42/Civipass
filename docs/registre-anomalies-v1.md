@@ -12,7 +12,7 @@ C-01, C-02, C-03, C-04, SEC-002, SEC-005, SEC-013 : corrigés et testés (voir l
 
 ## Correctif B (19 novembre 2026)
 
-Corrigés en développement : **SEC-003, SEC-004, SEC-014, C-09** (voir les commits « correctif B »). **SEC-015** : analyse remise, aucune modification (durée de 72 h inchangée). **SEC-016** et **SEC-020** : arbitrage demandé avant tout code (incompatibilité métier). **SEC-006** : corrigé en développement (TOTP obligatoire des super-administrateurs ; migration créée et appliquée à `civipass_test` seulement, base de développement `civipass` non migrée).
+Corrigés en développement : **SEC-003, SEC-004, SEC-014, C-09** (voir les commits « correctif B »). **SEC-016** et **SEC-020** : corrigés en développement après arbitrage A du 19 novembre 2026 (validation CWS du premier administrateur ; jetons sans clair). **SEC-006** : corrigé en développement (TOTP obligatoire, clé dédiée et rotation). **SEC-015** : 72 h conservées, vérification séparée documentée, risque résiduel accepté pour le pilote. Migrations locales (`civipass_test` et `civipass`) uniquement, aucune migration distante.
 
 ## P0
 
