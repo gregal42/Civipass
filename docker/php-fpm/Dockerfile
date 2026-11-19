@@ -4,6 +4,8 @@ RUN apt-get update && apt-get upgrade -y
 
 RUN apt-get update && apt-get install -y --fix-missing wget libicu-dev libpq-dev libonig-dev git ssh libgd3 libfreetype6-dev libjpeg62-turbo-dev libpng-dev libwebp-dev libzip-dev zip xdg-utils xvfb optipng pngquant libgbm-dev libssl-dev
 RUN apt-get update && apt-get install -y libmagickwand-dev libmagickcore-dev --no-install-recommends
+# SEC-004 : age pour les tests de chiffrement des sauvegardes (QA reproductible).
+RUN apt-get update && apt-get install -y --no-install-recommends age
 RUN curl -sL https://deb.nodesource.com/setup_20.x | bash -
 RUN apt-get update && apt-get install -y gnupg nodejs build-essential
 RUN npm install -g yarn gulp-cli

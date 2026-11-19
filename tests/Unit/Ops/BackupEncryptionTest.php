@@ -49,7 +49,12 @@ SH);
         $probe = new Process(['age', '--version']);
         $probe->run();
         if (!$probe->isSuccessful()) {
-            self::markTestSkipped('La commande « age » est requise (paquet age ; à ajouter à l\'image de développement).');
+            // Plus d'abandon silencieux : age fait partie de l'image de développement (docker/php-fpm/Dockerfile). Seul un environnement qui
+            // l'accepte explicitement (BACKUP_TESTS_ALLOW_SKIP=1) peut ignorer ces tests.
+            if ('1' === getenv('BACKUP_TESTS_ALLOW_SKIP')) {
+                self::markTestSkipped('La commande « age » est absente (ignoré explicitement).');
+            }
+            self::fail('La commande « age » est requise : image de développement à reconstruire (docker/php-fpm/Dockerfile, SEC-004).');
         }
     }
 
