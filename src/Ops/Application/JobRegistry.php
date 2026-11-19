@@ -14,6 +14,7 @@ final class JobRegistry
     public const GO_LIVE = [
         'backup' => 129600,            // quotidienne : 36 h
         'backup-verify' => 691200,     // hebdomadaire : 8 j
+        'offsite-sync' => 7200,        // horaire : 2 h (copie hors serveur des sauvegardes chiffrées et des preuves de purge ; sans elle, la perte du serveur est la perte des données)
         'anchor' => 7200,              // horaire : 2 h
         'register-check' => 129600,
         'integrity-check' => 129600,

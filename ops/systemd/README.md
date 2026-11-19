@@ -19,7 +19,7 @@
 Les unités supposent l'application dans `/opt/civipass`, un compte `civipass` et `/etc/civipass/civipass.env` (variables d'environnement : base, `OPS_ALERT_EMAIL`, `RETENTION_ANCHOR_PATH`, `BACKUP_DIR`, `DB_NAME`, `MYSQL_DEFAULTS_FILE`…, mode 640). **Les interrupteurs `RETENTION_PURGE_ENABLED`, `RIGHTS_ERASURE_EXECUTION_ENABLED` et `PUBLIC_VERIFICATION_ENABLED` restent à `0` dans ce fichier.**
 
 ```
-sudo cp ops/systemd/*.service ops/systemd/*.timer /etc/systemd/system/     # PAS optional/
+sudo cp ops/systemd/*.service ops/systemd/*.timer /etc/systemd/system/     # PAS optional/ ; inclut civipass-offsite-sync (copie hors serveur chiffrée, sous run-job, à activer une fois /etc/civipass/offsite.env renseigné)
 sudo systemd-analyze verify /etc/systemd/system/civipass-*.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now civipass-backup.timer civipass-anchor.timer civipass-ops-status.timer …
