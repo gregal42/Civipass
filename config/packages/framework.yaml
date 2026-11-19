@@ -157,6 +157,18 @@ framework:
             limit: 10
             interval: '15 minutes'
             storage_service: App\Permit\Infrastructure\RateLimiter\StrictCacheStorage
+        # Dépôt public (SEC-003) : dépôts par adresse réseau (IPv6 : /64) ET par événement (seuil réglable PUBLIC_REQUEST_SUBMIT_LIMIT, 15 / heure par défaut) ;
+        # accusés de réception : 3 / heure par adresse destinataire (jamais de rafale vers un tiers). Stockage STRICT (SEC-014).
+        public_request_submit:
+            policy: sliding_window
+            limit: '%env(int:PUBLIC_REQUEST_SUBMIT_LIMIT)%'
+            interval: '1 hour'
+            storage_service: App\Permit\Infrastructure\RateLimiter\StrictCacheStorage
+        public_request_receipt_email:
+            policy: sliding_window
+            limit: 3
+            interval: '1 hour'
+            storage_service: App\Permit\Infrastructure\RateLimiter\StrictCacheStorage
 
     #esi: true
     #fragments: true

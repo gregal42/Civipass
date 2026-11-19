@@ -144,6 +144,14 @@ abstract class AbstractRequestFormController extends AbstractController
 
         if ([] === $errors) {
             if (PublicRequestStep::Recap === $current) {
+                // SEC-003 : le dépôt PUBLIC est limité par adresse réseau et par événement (la saisie par un agent connecté ne l'est pas).
+                if (!$c->agent && null !== ($wait = $this->s->depositThrottle->checkDeposit($request, $c->event->id()->toRfc4122()))) {
+                    $response = $this->form($c, $current, $communes, ['form' => 'Trop de demandes ont été déposées depuis cette connexion en peu de temps. Patientez quelques minutes avant de renvoyer la vôtre ; votre saisie est conservée.'], Response::HTTP_TOO_MANY_REQUESTS);
+                    $response->headers->set('Retry-After', (string) $wait);
+
+                    return $response;
+                }
+
                 return $this->submit($c, $communes, $proposable);
             }
             if ($removed) {
@@ -221,6 +229,10 @@ abstract class AbstractRequestFormController extends AbstractController
         // Aucun accusé de réception pour une délivrance directe : le message du dépôt public annonce une demande à instruire (hors périmètre : e-mails).
         if (!$c->agent && !$result->replayed && '' !== trim($values['email'])) {
             try {
+                if (!$this->s->depositThrottle->allowReceipt($values['email'])) {
+                    // Plafond d'accusés vers une même adresse atteint (pas de rafale vers un tiers) : le dépôt aboutit, l'accusé est omis.
+                    throw new \RuntimeException('Plafond d\'accusés de réception atteint pour une adresse.');
+                }
                 $this->s->receipts->sendReceipt(trim($values['email']), $result->reference, $c->event->name());
             } catch (\Throwable $e) {
                 // L'accusé de réception ne doit jamais défaire un dépôt réussi.

@@ -36,6 +36,7 @@ final readonly class RequestFormServices
         #[Autowire(service: 'limiter.public_request_upload_ip')]
         public RateLimiterFactory $uploadLimiter,
         public DirectIssuancePreview $issuance,
+        public PublicDepositThrottle $depositThrottle,
     ) {
     }
 }

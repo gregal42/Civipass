@@ -54,6 +54,8 @@ parameters:
     env(EVENT_MAX_ZONES_PER_BULK_OPERATION): '100'
     # Invitations d'administrateur communal émises par CWS (LOT 07.1) : validité en jours (paramètre technique, 1 à 30).
     env(ADMIN_INVITATION_DAYS): '7'
+    # Dépôt public (SEC-003) : dépôts par heure, par adresse réseau et par événement (voir PublicDepositThrottle). Seuil initial justifié dans la classe ; réglable sans code.
+    env(PUBLIC_REQUEST_SUBMIT_LIMIT): '15'
     # Seuil PROVISOIRE de confidentialité des bilans statistiques de clôture (LOT 05.6.2) : effectifs non nuls inférieurs au seuil masqués. À valider par le DPO.
     env(CLOSURE_STATISTICS_MIN_COUNT): '5'
     # Archives (LOT 05.6.3) : HYPOTHÈSES à valider avec le DPO et les archives avant production. Durée de l'accès à l'archive après la clôture (sauf gel actif),
