@@ -10,6 +10,10 @@ Recoupements entre flux (dédoublonnés) : 11.2-F1 = SEC-006 ; 11.2-F2 = SEC-003
 
 C-01, C-02, C-03, C-04, SEC-002, SEC-005, SEC-013 : corrigés et testés (voir les commits « correctif A »). Restent à **valider sur le serveur de recette** : en-têtes réels derrière nginx, `check-deployment.sh` sur un `.env` de production, `CONTROL_HOST` et échec fermé, installation depuis l'archive. Les lignes ci-dessous les conservent pour la traçabilité, marquées « corrigé ».
 
+## Correctif B (19 novembre 2026)
+
+Corrigés en développement : **SEC-003, SEC-004, SEC-014, C-09** (voir les commits « correctif B »). **SEC-015** : analyse remise, aucune modification (durée de 72 h inchangée). **SEC-016** et **SEC-020** : arbitrage demandé avant tout code (incompatibilité métier). **SEC-006** : voir le registre de sécurité.
+
 ## P0
 
 | ID | Constat | Source | Statut |
@@ -21,12 +25,12 @@ C-01, C-02, C-03, C-04, SEC-002, SEC-005, SEC-013 : corrigés et testés (voir l
 | ID | Constat | Gravité | Source |
 |---|---|---|---|
 | SEC-006 | Pas de second facteur pour les super-administrateurs CWS (décision S3) | Élevée | registre sécurité ; 11.2 F1 |
-| SEC-004 | Sauvegardes non chiffrées avant copie hors serveur (+ C-05 : clé `NOTIFICATION_KEYRING` et environnement hors sauvegarde ; C-06 : copie hors serveur à outiller, outil proposé `offsite-sync.sh`) | Élevée | registre sécurité ; 11.3 F01 ; constats-kit |
+| SEC-004 | ✅ *corrigé en développement* — Sauvegardes non chiffrées avant copie hors serveur (+ C-05 : clé `NOTIFICATION_KEYRING` et environnement hors sauvegarde ; C-06 : copie hors serveur à outiller, outil proposé `offsite-sync.sh`) | Élevée | registre sécurité ; 11.3 F01 ; constats-kit |
 | SEC-002 | ✅ *corrigé en développement* — En-têtes de sécurité absents sur l'origine de gestion | Moyenne | 11.1 ; 11.2 F3 |
-| SEC-003 | Aucune limitation de débit à la soumission du dépôt public (accusé de réception envoyé à une adresse arbitraire) | Moyenne | 11.1 ; 11.2 F2 |
+| SEC-003 | ✅ *corrigé en développement* — Aucune limitation de débit à la soumission du dépôt public (accusé de réception envoyé à une adresse arbitraire) | Moyenne | 11.1 ; 11.2 F2 |
 | SEC-005 | ✅ *corrigé en développement* — `check-deployment.sh` ne contrôle ni `APP_SECRET`, ni base, ni SMTP réel, ni trousseau | Moyenne | 11.1 ; 11.2 F13 |
 | SEC-013 | ✅ *corrigé en développement* — Garde-fous G1–G3 inactifs sans `CONTROL_HOST` ; activation de la PWA possible sur l'origine de gestion | Moyenne | 11.2 F4 |
-| SEC-014 | Limiteurs : échec d'écriture du cache ignoré silencieusement | Moyenne | 11.2 F5 |
+| SEC-014 | ✅ *corrigé en développement* — Limiteurs : échec d'écriture du cache ignoré silencieusement | Moyenne | 11.2 F5 |
 | SEC-015 | Secret d'appareil volé utilisable partout, durée par défaut 72 h | Moyenne | 11.2 F6 |
 | SEC-016 | Lien d'invitation « contact » : prise de contrôle d'une commune sans administrateur (arbitrage à rendre) | Moyenne | 11.2 F7 |
 | SEC-020 | Jeton de contrôle `permit_verification_token.token` stocké en clair | Moyenne | 11.3 F06 |
@@ -50,7 +54,7 @@ C-01, C-02, C-03, C-04, SEC-002, SEC-005, SEC-013 : corrigés et testés (voir l
 | SEC-018 | Pas d'antivirus ; format DOC accepté | 11.2 F9 |
 | SEC-019 | Masquage des journaux (`Stringable`), rotation du journal PHP hors kit, mot de passe oublié non mesuré | 11.2 F10–F11 |
 | C-05 / C-08 | Séquestre du trousseau ; volume des sauvegardes (archive complète, 35 j) | constats-kit |
-| C-09 | `JobRegistry` figé : la copie hors serveur (`ops/backup/systemd/`) ne passe pas par `run-job`, donc ni verrou ni battement supervisé ; les tests `OpsUnitsTest` l'interdisent dans `ops/systemd/` | constats-kit |
+| C-09 | ✅ *corrigé en développement* — `JobRegistry` figé : la copie hors serveur (`ops/backup/systemd/`) ne passe pas par `run-job`, donc ni verrou ni battement supervisé ; les tests `OpsUnitsTest` l'interdisent dans `ops/systemd/` | constats-kit |
 | C-13 | Dimensionnement non mesuré sous charge | constats-kit |
 | TEST | Tests intermittents `RevocationConcurrencyTest` et `RestoreReplayTest` | ecarts-techniques-connus.md |
 
