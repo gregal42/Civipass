@@ -31,9 +31,9 @@ Corrigés en développement : **SEC-003, SEC-004, SEC-014, C-09** (voir les comm
 | SEC-005 | ✅ *corrigé en développement* — `check-deployment.sh` ne contrôle ni `APP_SECRET`, ni base, ni SMTP réel, ni trousseau | Moyenne | 11.1 ; 11.2 F13 |
 | SEC-013 | ✅ *corrigé en développement* — Garde-fous G1–G3 inactifs sans `CONTROL_HOST` ; activation de la PWA possible sur l'origine de gestion | Moyenne | 11.2 F4 |
 | SEC-014 | ✅ *corrigé en développement* — Limiteurs : échec d'écriture du cache ignoré silencieusement | Moyenne | 11.2 F5 |
-| SEC-015 | Secret d'appareil volé utilisable partout, durée par défaut 72 h | Moyenne | 11.2 F6 |
-| SEC-016 | Lien d'invitation « contact » : prise de contrôle d'une commune sans administrateur (arbitrage à rendre) | Moyenne | 11.2 F7 |
-| SEC-020 | Jeton de contrôle `permit_verification_token.token` stocké en clair | Moyenne | 11.3 F06 |
+| SEC-015 | ⚖️ *arbitré : 72 h conservées, risque résiduel accepté pour le pilote* — secret d'appareil volé utilisable partout ; consigne de désactivation immédiate et limite de révocation hors connexion documentées ([runbooks/controle-hors-connexion.md](runbooks/controle-hors-connexion.md) §4) ; options B/C non développées | Moyenne | 11.2 F6 |
+| SEC-016 | ✅ *corrigé en développement* — Lien d'invitation « contact » : aucun droit sans validation d'un super-administrateur CWS (motif, traçabilité, alerte e-mail) ; délai et procédure d'urgence à définir avant le pilote | Moyenne | 11.2 F7 |
+| SEC-020 | ✅ *corrigé en développement* — Jeton de contrôle sans stockage en clair (empreinte + copie scellée, clé dédiée) | Moyenne | 11.3 F06 |
 | C-02 | ✅ *corrigé en développement* — `composer install` télécharge Stimulus/Turbo depuis un CDN (installation non reproductible hors ligne) | Élevée (kit) | constats-kit |
 | C-03 | ✅ *corrigé en développement* — Aucun réglage PHP des tailles d'envoi dans `ops/` (défauts 2 Mo / 8 Mo, pièces de 10 Mo en échec) | Moyenne | constats-kit |
 | C-04 | ✅ *corrigé en développement* — Chemins incohérents `/opt/civipass` / `/var/www/civipass/current/public` | Moyenne | constats-kit |
