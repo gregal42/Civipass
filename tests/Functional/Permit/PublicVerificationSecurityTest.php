@@ -171,7 +171,10 @@ final class PublicVerificationSecurityTest extends PublicRequestTestCase
 
         $this->client->request('GET', '/versions');
         self::assertResponseStatusCodeSame(404);
-        self::assertFalse($this->client->getResponse()->headers->has('Content-Security-Policy'), 'une route voisine n\'est pas concernée par le listener public');
+        // SEC-002 : l'origine de gestion porte désormais une CSP de base ; une route voisine ne reçoit NI la politique du contrôle public NI son `no-store`.
+        self::assertNotSame(PublicVerificationHeadersListener::CSP, $this->client->getResponse()->headers->get('Content-Security-Policy'), 'une route voisine n\'est pas concernée par le listener public');
+        self::assertNotSame('no-referrer', $this->client->getResponse()->headers->get('Referrer-Policy'));
+        self::assertStringNotContainsString('no-store', (string) $this->client->getResponse()->headers->get('Cache-Control'));
 
         $this->client->request('GET', '/communes');
         self::assertResponseRedirects('/login', null, 'le pare-feu principal protège toujours l\'espace municipal');
