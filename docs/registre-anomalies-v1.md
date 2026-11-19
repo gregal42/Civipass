@@ -6,11 +6,15 @@ Consolide les constats des sous-lots LOT 11.1, 11.2, 11.3 et de la préparation 
 
 Recoupements entre flux (dédoublonnés) : 11.2-F1 = SEC-006 ; 11.2-F2 = SEC-003 ; 11.2-F3 = SEC-002 ; 11.2-F13 = SEC-005 ; 11.3-F01 = SEC-004 ; C-06 complète SEC-004. Gravités retenues : SEC-004 et SEC-006 relevées à Élevée (voir le registre de sécurité).
 
+## Correctif A (19 novembre 2026) — corrigés en développement
+
+C-01, C-02, C-03, C-04, SEC-002, SEC-005, SEC-013 : corrigés et testés (voir les commits « correctif A »). Restent à **valider sur le serveur de recette** : en-têtes réels derrière nginx, `check-deployment.sh` sur un `.env` de production, `CONTROL_HOST` et échec fermé, installation depuis l'archive. Les lignes ci-dessous les conservent pour la traçabilité, marquées « corrigé ».
+
 ## P0
 
 | ID | Constat | Source | Statut |
 |---|---|---|---|
-| C-01 | `assets/vendor/` est ignoré par Git : le scanneur jsQR du contrôle hors connexion n'est dans aucun commit ; un clone propre ne le contient pas | [constats-kit](exploitation/constats-kit.md) | Ouvert (contournement : `ops/install/build-release.sh` ; correction recommandée : versionner `assets/vendor/jsqr/`) |
+| C-01 | ✅ *corrigé en développement* — `assets/vendor/` est ignoré par Git : le scanneur jsQR du contrôle hors connexion n'est dans aucun commit ; un clone propre ne le contient pas | [constats-kit](exploitation/constats-kit.md) | Ouvert (contournement : `ops/install/build-release.sh` ; correction recommandée : versionner `assets/vendor/jsqr/`) |
 
 ## P1
 
@@ -18,17 +22,17 @@ Recoupements entre flux (dédoublonnés) : 11.2-F1 = SEC-006 ; 11.2-F2 = SEC-003
 |---|---|---|---|
 | SEC-006 | Pas de second facteur pour les super-administrateurs CWS (décision S3) | Élevée | registre sécurité ; 11.2 F1 |
 | SEC-004 | Sauvegardes non chiffrées avant copie hors serveur (+ C-05 : clé `NOTIFICATION_KEYRING` et environnement hors sauvegarde ; C-06 : copie hors serveur à outiller, outil proposé `offsite-sync.sh`) | Élevée | registre sécurité ; 11.3 F01 ; constats-kit |
-| SEC-002 | En-têtes de sécurité absents sur l'origine de gestion | Moyenne | 11.1 ; 11.2 F3 |
+| SEC-002 | ✅ *corrigé en développement* — En-têtes de sécurité absents sur l'origine de gestion | Moyenne | 11.1 ; 11.2 F3 |
 | SEC-003 | Aucune limitation de débit à la soumission du dépôt public (accusé de réception envoyé à une adresse arbitraire) | Moyenne | 11.1 ; 11.2 F2 |
-| SEC-005 | `check-deployment.sh` ne contrôle ni `APP_SECRET`, ni base, ni SMTP réel, ni trousseau | Moyenne | 11.1 ; 11.2 F13 |
-| SEC-013 | Garde-fous G1–G3 inactifs sans `CONTROL_HOST` ; activation de la PWA possible sur l'origine de gestion | Moyenne | 11.2 F4 |
+| SEC-005 | ✅ *corrigé en développement* — `check-deployment.sh` ne contrôle ni `APP_SECRET`, ni base, ni SMTP réel, ni trousseau | Moyenne | 11.1 ; 11.2 F13 |
+| SEC-013 | ✅ *corrigé en développement* — Garde-fous G1–G3 inactifs sans `CONTROL_HOST` ; activation de la PWA possible sur l'origine de gestion | Moyenne | 11.2 F4 |
 | SEC-014 | Limiteurs : échec d'écriture du cache ignoré silencieusement | Moyenne | 11.2 F5 |
 | SEC-015 | Secret d'appareil volé utilisable partout, durée par défaut 72 h | Moyenne | 11.2 F6 |
 | SEC-016 | Lien d'invitation « contact » : prise de contrôle d'une commune sans administrateur (arbitrage à rendre) | Moyenne | 11.2 F7 |
 | SEC-020 | Jeton de contrôle `permit_verification_token.token` stocké en clair | Moyenne | 11.3 F06 |
-| C-02 | `composer install` télécharge Stimulus/Turbo depuis un CDN (installation non reproductible hors ligne) | Élevée (kit) | constats-kit |
-| C-03 | Aucun réglage PHP des tailles d'envoi dans `ops/` (défauts 2 Mo / 8 Mo, pièces de 10 Mo en échec) | Moyenne | constats-kit |
-| C-04 | Chemins incohérents `/opt/civipass` / `/var/www/civipass/current/public` | Moyenne | constats-kit |
+| C-02 | ✅ *corrigé en développement* — `composer install` télécharge Stimulus/Turbo depuis un CDN (installation non reproductible hors ligne) | Élevée (kit) | constats-kit |
+| C-03 | ✅ *corrigé en développement* — Aucun réglage PHP des tailles d'envoi dans `ops/` (défauts 2 Mo / 8 Mo, pièces de 10 Mo en échec) | Moyenne | constats-kit |
+| C-04 | ✅ *corrigé en développement* — Chemins incohérents `/opt/civipass` / `/var/www/civipass/current/public` | Moyenne | constats-kit |
 | C-07 | Supervision non indépendante de l'application (même SMTP ; pas de surveillance du certificat ni du disque) | Moyenne | constats-kit |
 | SEC-001 | Correctif à valider sur le serveur HTTPS cible | Moyenne | registre sécurité |
 | RGPD | Durées de conservation à valider (toutes provisoires) ; décision d'activer ou non `RETENTION_PURGE_ENABLED` ; absence d'exécution de suppression des comptes agents inactifs ; autres écarts F02–F11 | Moyenne | [lot-11-3-dossier-rgpd.md](lot-11-3-dossier-rgpd.md) §2 et §7 |
