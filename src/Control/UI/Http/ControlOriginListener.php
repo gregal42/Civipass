@@ -13,7 +13,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
- * Garde-fou de l'origine dédiée au contrôle (LOT 10, DT-056) : INACTIF tant que `CONTROL_HOST` est vide (développement, tests).
+ * Garde-fou de l'origine dédiée au contrôle (LOT 10, DT-056) : INACTIF tant que `CONTROL_HOST` est vide (développement, tests) ; en production (`APP_ENV=prod`), si le contrôle hors connexion est activé alors que `CONTROL_HOST` est vide, les chemins `/controle…` répondent le même 404 générique (échec fermé, SEC-013).
  *
  * G1 — sur l'hôte de contrôle, seules les routes de la liste blanche (`ControlRouteAllowlist`) sont servies ; toute autre requête reçoit le 404
  * générique de l'application, avant le routage, la sécurité et la base de données : aucun contrôleur, aucun cookie, aucune donnée.
@@ -25,20 +25,34 @@ final readonly class ControlOriginListener
 {
     private string $controlHost;
 
-    public function __construct(#[Autowire('%env(CONTROL_HOST)%')] string $controlHost)
-    {
+    /** Échec fermé (SEC-013) : en production, le contrôle hors connexion activé SANS `CONTROL_HOST` ne partage jamais l'origine des cookies de session. */
+    private bool $failClosed;
+
+    public function __construct(
+        #[Autowire('%env(CONTROL_HOST)%')] string $controlHost,
+        #[Autowire('%env(bool:OFFLINE_CONTROL_ENABLED)%')] bool $offlineControlEnabled = false,
+        #[Autowire('%kernel.environment%')] string $environment = 'dev',
+    ) {
         $this->controlHost = strtolower(trim($controlHost));
+        $this->failClosed = $offlineControlEnabled && 'prod' === $environment;
     }
 
     /** Priorité 512 : avant le routeur (32) et le pare-feu (8). */
     #[AsEventListener(event: KernelEvents::REQUEST, priority: 512)]
     public function onRequest(RequestEvent $event): void
     {
-        if (!$event->isMainRequest() || '' === $this->controlHost) {
+        if (!$event->isMainRequest()) {
             return;
         }
         $request = $event->getRequest();
         $path = $request->getPathInfo();
+        if ('' === $this->controlHost) {
+            if ($this->failClosed && ControlHeadersListener::concerns($path)) {
+                throw new NotFoundHttpException(); // SEC-013 : pas d'origine dédiée, pas de PWA en production
+            }
+
+            return;
+        }
         if (self::hostOf($request) === $this->controlHost) {
             if (!ControlRouteAllowlist::allows($request->getMethod(), $path)) {
                 throw new NotFoundHttpException(); // G1

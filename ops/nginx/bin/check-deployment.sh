@@ -6,12 +6,17 @@
 # l'activation exige l'accord du responsable du projet, ce script ne la décide pas).
 # Avec --control-domain (origine dédiée au contrôle) : CONTROL_HOST = ce domaine, TRUSTED_HOSTS limité aux deux domaines, CONTROL_PWA_BASE_URL = https://<domaine de contrôle>/controle/,
 # domaines distincts, DEFAULT_URI toujours sur la gestion ; OFFLINE_CONTROL_ENABLED signalé (informatif).
+# Secrets et exploitation (SEC-005) : APP_SECRET (32 caractères au moins, hors valeur d'exemple), DATABASE_URL (ni mot de passe d'exemple, ni compte root), MAILER_DSN (pas
+# null://), NOTIFICATION_KEYRING et NOTIFICATION_ACTIVE_KEY_ID, OPS_ALERT_EMAIL. Aucune valeur n'est jamais affichée.
+# OFFLINE_CONTROL_ENABLED actif SANS --control-domain : échec (SEC-013, la PWA partagerait l'origine des cookies de session).
+# Avec --app-dir /opt/civipass : var/ et ses sous-dossiers ne doivent pas appartenir à root (une mise à jour lancée en root rendrait le cache inaccessible au pool
+# PHP-FPM et les limiteurs inopérants, SEC-014 / 11.2-F5).
 set -u
-DOMAIN=""; CONTROL=""; FILES=()
+DOMAIN=""; CONTROL=""; APPDIR=""; FILES=()
 while [ $# -gt 0 ]; do
-    case "$1" in --domain) DOMAIN=${2:?}; shift 2;; --control-domain) CONTROL=${2:?}; shift 2;; *) FILES+=("$1"); shift;; esac
+    case "$1" in --domain) DOMAIN=${2:?}; shift 2;; --control-domain) CONTROL=${2:?}; shift 2;; --app-dir) APPDIR=${2:?}; shift 2;; *) FILES+=("$1"); shift;; esac
 done
-[ -n "$DOMAIN" ] && [ ${#FILES[@]} -gt 0 ] || { echo "usage: $0 --domain NOM [--control-domain NOM] FICHIER.env [FICHIER.env ...]" >&2; exit 2; }
+[ -n "$DOMAIN" ] && [ ${#FILES[@]} -gt 0 ] || { echo "usage: $0 --domain NOM [--control-domain NOM] [--app-dir CHEMIN] FICHIER.env [FICHIER.env ...]" >&2; exit 2; }
 declare_get() { # $1 = clé ; dernière valeur trouvée
     local key=$1 val="" f line
     for f in "${FILES[@]}"; do
@@ -36,6 +41,36 @@ esac
 case "$(declare_get APP_DEBUG)" in 1|true|on|yes) ko "APP_DEBUG actif (les pages d'erreur de débogage citent l'URL, jeton compris)";; *) ok "APP_DEBUG inactif";; esac
 [ -z "$(declare_get SYMFONY_TRUSTED_PROXIES)" ] && ok "SYMFONY_TRUSTED_PROXIES vide (nginx est le premier saut)" || ko "SYMFONY_TRUSTED_PROXIES défini : aucun proxy de confiance en production mono-instance"
 case "$(declare_get PUBLIC_VERIFICATION_ENABLED)" in 1|true|on|yes) echo "!!  PUBLIC_VERIFICATION_ENABLED actif : le contrôle public est OUVERT (exige l'accord explicite du responsable du projet)";; *) ok "PUBLIC_VERIFICATION_ENABLED inactif (contrôle public fermé)";; esac
+# --- Secrets et exploitation (SEC-005) : on ne teste que la présence et la forme, jamais on n'affiche une valeur.
+secret=$(declare_get APP_SECRET)
+if [ -z "$secret" ]; then ko "APP_SECRET absent ou vide (les jetons CSRF et les liens signés ne seraient pas protégés)"
+elif [ "${#secret}" -lt 32 ]; then ko "APP_SECRET trop court (${#secret} caractères ; 32 au moins : openssl rand -hex 32)"
+else case "$secret" in *CHANGE_ME*|*ChangeMe*|*changeme*) ko "APP_SECRET est une valeur d'exemple";; *) ok "APP_SECRET défini (${#secret} caractères)";; esac; fi
+dburl=$(declare_get DATABASE_URL)
+if [ -z "$dburl" ]; then ko "DATABASE_URL absent"
+else
+    dbuser=${dburl#*://}; dbuser=${dbuser%%[:@]*}
+    case "$dburl" in *CHANGE_ME*|*ChangeMe*|*changeme*) ko "DATABASE_URL contient un mot de passe d'exemple";; *) ok "DATABASE_URL sans mot de passe d'exemple";; esac
+    [ "$dbuser" = root ] && ko "DATABASE_URL utilise le compte root de MySQL (compte applicatif dédié attendu)" || ok "DATABASE_URL : compte applicatif non root"
+fi
+case "$(declare_get MAILER_DSN)" in
+    "") ko "MAILER_DSN absent (aucune invitation ni notification ne partirait)";;
+    null://*) ko "MAILER_DSN = null:// (aucun message n'est envoyé : invitations et liens bénéficiaires perdus)";;
+    *) ok "MAILER_DSN défini (transport réel)";;
+esac
+if [ -z "$(declare_get NOTIFICATION_KEYRING)" ] || [ -z "$(declare_get NOTIFICATION_ACTIVE_KEY_ID)" ]; then
+    ko "NOTIFICATION_KEYRING ou NOTIFICATION_ACTIVE_KEY_ID absent (secrets bénéficiaires non chiffrables ; à mettre sous séquestre hors serveur, voir sauvegarde)"
+else ok "NOTIFICATION_KEYRING et NOTIFICATION_ACTIVE_KEY_ID définis (vérifier : bin/console app:notifications:check-crypto)"; fi
+[ -n "$(declare_get OPS_ALERT_EMAIL)" ] && ok "OPS_ALERT_EMAIL défini" || ko "OPS_ALERT_EMAIL vide (aucune alerte d'exploitation ne serait envoyée)"
+case "$(declare_get OFFLINE_CONTROL_ENABLED)" in
+    1|true|on|yes) [ -n "$CONTROL" ] || ko "OFFLINE_CONTROL_ENABLED actif sans --control-domain : la PWA partagerait l'origine des cookies de session (origine dédiée obligatoire)";;
+esac
+if [ -n "$APPDIR" ]; then
+    if [ -d "$APPDIR/var" ]; then
+        bad=$(find "$APPDIR/var" -maxdepth 2 -user root 2>/dev/null | head -3 | tr '\n' ' ')
+        [ -z "$bad" ] && ok "var/ : aucun élément appartenant à root" || ko "var/ contient des éléments appartenant à root ($bad) : chown -R sur l'utilisateur du pool PHP-FPM (SEC-014)"
+    else ko "$APPDIR/var introuvable"; fi
+fi
 if [ -n "$CONTROL" ]; then
     [ "$CONTROL" != "$DOMAIN" ] && ok "origines distinctes : gestion $DOMAIN, contrôle $CONTROL" || ko "le domaine de contrôle doit différer de celui de la gestion"
     [ "$(declare_get CONTROL_HOST)" = "$CONTROL" ] && ok "CONTROL_HOST = $CONTROL (liste blanche G1 et refus de /controle sur la gestion G3 actifs)" || ko "CONTROL_HOST doit valoir $CONTROL (valeur : '$(declare_get CONTROL_HOST)')"

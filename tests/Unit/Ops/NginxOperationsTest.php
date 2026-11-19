@@ -456,11 +456,14 @@ final class NginxOperationsTest extends TestCase
     private function deployment(array $lines, string $domain = 'civipass.exemple.fr'): array
     {
         $env = $this->temp('.env');
-        file_put_contents($env, implode("\n", $lines)."\n");
+        file_put_contents($env, implode("\n", [...self::CONFORMING_SECRETS, ...$lines])."\n");
         [$code, $out] = $this->exec(['bash', $this->ops.'/bin/check-deployment.sh', '--domain', $domain, $env]);
 
         return [$code, $out];
     }
+
+    /** Secrets et exploitation conformes (SEC-005) ; les cas de non-conformité les surchargent (la dernière valeur gagne). */
+    private const CONFORMING_SECRETS = ['APP_SECRET=0123456789abcdef0123456789abcdef0123456789abcdef', 'DATABASE_URL=mysql://civipass:s3cr3t-v4lue@127.0.0.1:3306/civipass?serverVersion=8.4.0', 'MAILER_DSN=smtp://relais.exemple.fr:587', 'NOTIFICATION_KEYRING=k1:AAAA', 'NOTIFICATION_ACTIVE_KEY_ID=k1', 'OPS_ALERT_EMAIL=exploitation@exemple.fr'];
 
     public function testAConformingProductionEnvironmentPasses(): void
     {
@@ -496,6 +499,56 @@ final class NginxOperationsTest extends TestCase
         self::assertStringContainsString('KO', $out);
     }
 
+    /**
+     * @return iterable<string, array{list<string>, string}>
+     */
+    public static function nonConformingSecrets(): iterable
+    {
+        yield 'APP_SECRET vide' => [['APP_SECRET='], 'APP_SECRET absent'];
+        yield 'APP_SECRET trop court' => [['APP_SECRET=abc123'], 'APP_SECRET trop court'];
+        yield 'APP_SECRET d\'exemple' => [['APP_SECRET=CHANGE_ME_CHANGE_ME_CHANGE_ME_CHANGE_ME'], 'valeur d\'exemple'];
+        yield 'DATABASE_URL absent' => [['DATABASE_URL='], 'DATABASE_URL absent'];
+        yield 'mot de passe de base d\'exemple' => [['DATABASE_URL=mysql://app:!ChangeMe!@127.0.0.1:3306/app?serverVersion=8.4.13'], 'mot de passe d\'exemple'];
+        yield 'compte root' => [['DATABASE_URL=mysql://root:s3cr3t-v4lue@127.0.0.1:3306/civipass'], 'compte root'];
+        yield 'MAILER_DSN null' => [['MAILER_DSN=null://null'], 'null://'];
+        yield 'MAILER_DSN vide' => [['MAILER_DSN='], 'MAILER_DSN absent'];
+        yield 'trousseau absent' => [['NOTIFICATION_KEYRING='], 'NOTIFICATION_KEYRING'];
+        yield 'clé active absente' => [['NOTIFICATION_ACTIVE_KEY_ID='], 'NOTIFICATION_KEYRING'];
+        yield 'alertes sans destinataire' => [['OPS_ALERT_EMAIL='], 'OPS_ALERT_EMAIL'];
+        yield 'contrôle hors connexion sans origine dédiée' => [['OFFLINE_CONTROL_ENABLED=1'], 'origine dédiée obligatoire'];
+    }
+
+    /**
+     * @param list<string> $override
+     */
+    #[DataProvider('nonConformingSecrets')]
+    public function testMissingOrExampleSecretsAreRejectedWithoutEchoingAnyValue(array $override, string $message): void
+    {
+        [$code, $out] = $this->deployment(['DEFAULT_URI=https://civipass.exemple.fr', 'APP_ENV=prod', ...$override]);
+
+        self::assertSame(1, $code, $out);
+        self::assertStringContainsString($message, $out);
+        foreach (['0123456789abcdef', 's3cr3t-v4lue', 'k1:AAAA'] as $secret) {
+            self::assertStringNotContainsString($secret, $out, 'aucune valeur de secret ne doit être affichée');
+        }
+    }
+
+    public function testVarOwnedByRootIsRejectedAndAnOwnedOneAccepted(): void
+    {
+        if (!\function_exists('posix_geteuid') || 0 !== posix_geteuid()) {
+            self::markTestSkipped('Test exécuté en root (conteneur) : var/ créé appartient à root.');
+        }
+        $app = $this->temp('app');
+        @mkdir($app.'/var/cache', 0o755, true);
+        $env = $this->temp('.env');
+        file_put_contents($env, implode("\n", [...self::CONFORMING_SECRETS, 'DEFAULT_URI=https://civipass.exemple.fr', 'APP_ENV=prod'])."\n");
+
+        [$code, $out] = $this->exec(['bash', $this->ops.'/bin/check-deployment.sh', '--domain', 'civipass.exemple.fr', '--app-dir', $app, $env]);
+
+        self::assertSame(1, $code, $out);
+        self::assertStringContainsString('appartenant à root', $out);
+    }
+
     public function testAnOpenPublicVerificationIsReportedLoudlyButNotDecidedByTheScript(): void
     {
         [$code, $out] = $this->deployment(['DEFAULT_URI=https://civipass.exemple.fr', 'APP_ENV=prod', 'PUBLIC_VERIFICATION_ENABLED=1']);
@@ -509,7 +562,7 @@ final class NginxOperationsTest extends TestCase
         $base = $this->temp('.env');
         $local = $this->temp('.env');
         file_put_contents($base, "DEFAULT_URI=http://localhost\nAPP_ENV=dev\n");
-        file_put_contents($local, "DEFAULT_URI=https://civipass.exemple.fr\nAPP_ENV=prod\n");
+        file_put_contents($local, "DEFAULT_URI=https://civipass.exemple.fr\nAPP_ENV=prod\n".implode("\n", self::CONFORMING_SECRETS)."\n");
 
         [$ok] = $this->exec(['bash', $this->ops.'/bin/check-deployment.sh', '--domain', 'civipass.exemple.fr', $base, $local]);
         [$ko] = $this->exec(['bash', $this->ops.'/bin/check-deployment.sh', '--domain', 'civipass.exemple.fr', \dirname($this->ops, 2).'/.env']);

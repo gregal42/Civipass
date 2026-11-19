@@ -247,10 +247,12 @@ final class ControlVhostTemplateTest extends TestCase
         return [$process->getExitCode() ?? 1, $process->getOutput()];
     }
 
+    private const SECRETS = ['APP_SECRET=0123456789abcdef0123456789abcdef0123456789abcdef', 'DATABASE_URL=mysql://civipass:s3cr3t-v4lue@127.0.0.1:3306/civipass?serverVersion=8.4.0', 'MAILER_DSN=smtp://relais.exemple.fr:587', 'NOTIFICATION_KEYRING=k1:AAAA', 'NOTIFICATION_ACTIVE_KEY_ID=k1', 'OPS_ALERT_EMAIL=exploitation@exemple.fr'];
+
     /** @return list<string> */
     private static function goodEnv(): array
     {
-        return ['DEFAULT_URI=https://civipass.exemple.fr', 'APP_ENV=prod', 'APP_DEBUG=0', 'CONTROL_HOST=controle.civipass.exemple.fr',
+        return [...self::SECRETS, 'DEFAULT_URI=https://civipass.exemple.fr', 'APP_ENV=prod', 'APP_DEBUG=0', 'CONTROL_HOST=controle.civipass.exemple.fr',
             'TRUSTED_HOSTS=^(civipass\.exemple\.fr|controle\.civipass\.exemple\.fr)$', 'CONTROL_PWA_BASE_URL=https://controle.civipass.exemple.fr/controle/'];
     }
 
@@ -276,7 +278,7 @@ final class ControlVhostTemplateTest extends TestCase
 
     public function testWithoutTheControlDomainTheDeploymentCheckIsUnchanged(): void
     {
-        [$code, $out] = $this->check(['DEFAULT_URI=https://civipass.exemple.fr', 'APP_ENV=prod', 'APP_DEBUG=0'], control: false);
+        [$code, $out] = $this->check([...self::SECRETS, 'DEFAULT_URI=https://civipass.exemple.fr', 'APP_ENV=prod', 'APP_DEBUG=0'], control: false);
 
         self::assertSame(0, $code, $out);
         self::assertStringNotContainsString('CONTROL_HOST', $out);
