@@ -23,6 +23,11 @@
 4. QR compromis : remplacement du QR (DM-113 §4) ; l'ancien reste « valide selon synchronisation » hors ligne jusqu'à la synchronisation suivante.
 
 ## 4. Perte, vol ou compromission d'un téléphone
+
+> **Consigne (SEC-015)** : tout appareil **déclaré perdu ou volé** est **désactivé IMMÉDIATEMENT** par l'administrateur communal, sans attendre une enquête, une confirmation ou la fin du service. Un appareil retrouvé se réactive par un nouveau code. Qui peut désactiver : tout administrateur communal de la commune ; le contrôleur prévient d'abord son poste, qui prévient l'administrateur sans délai.
+>
+> **Limite de révocation hors connexion (à connaître et à dire aux agents)** : la désactivation et la révocation d'une autorisation ne sont connues d'un téléphone **qu'à sa prochaine connexion**. Un téléphone resté hors réseau continue de fonctionner jusqu'à ce que (a) son jeu de données dépasse la durée de confiance (avertissement 6 h, « indéterminé » au-delà de 12 h) ou (b) son secret expire (**72 h** au plus, plafonné à la fin de l'événement). Par ailleurs, le secret d'un téléphone volé et déverrouillé, s'il est extrait, peut être rejoué depuis une autre machine **jusqu'à la désactivation ou l'expiration (72 h)**. Ce risque résiduel (SEC-015) est accepté pour le pilote et inscrit au registre ; la durée de 72 h n'est pas modifiée sans nouvel arbitrage.
+
 | Étape | Action |
 |---|---|
 | 1. Signalement | le contrôleur prévient son poste, qui prévient l'administrateur communal |
