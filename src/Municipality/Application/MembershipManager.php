@@ -94,9 +94,9 @@ final readonly class MembershipManager
      *
      * @throws OperationNotAllowed
      */
-    public function enrollFirstAdministrator(User $user, Municipality $municipality, \Closure $withinTransaction): MunicipalityMembership
+    public function enrollFirstAdministrator(User $user, Municipality $municipality, \Closure $withinTransaction, ?AuditActor $actor = null, string $origin = 'INVITATION_LINK'): MunicipalityMembership
     {
-        return $this->transaction->run(function () use ($user, $municipality, $withinTransaction): MunicipalityMembership {
+        return $this->transaction->run(function () use ($user, $municipality, $withinTransaction, $actor, $origin): MunicipalityMembership {
             $municipality = $this->lockedMunicipality($municipality);
             if (MunicipalityStatus::Active !== $municipality->status()) {
                 throw new OperationNotAllowed('Cette commune n\'est pas disponible.');
@@ -127,9 +127,41 @@ final readonly class MembershipManager
                 $membership = $existing;
                 $action = AuditAction::MembershipActivated;
             }
-            $this->audit->record(new AuditEvent($now, $action, AuditSubjectType::MunicipalityMembership, $membership->id(), $municipality->id(), AuditActor::user($user->id()), $previous, $this->snapshot($membership) + ['origin' => 'INVITATION_LINK']));
+            $this->audit->record(new AuditEvent($now, $action, AuditSubjectType::MunicipalityMembership, $membership->id(), $municipality->id(), $actor ?? AuditActor::user($user->id()), $previous, $this->snapshot($membership) + ['origin' => $origin]));
 
             return $membership;
+        });
+    }
+
+    /**
+     * SEC-016 : vérifie, SOUS le verrou de la commune, qu'une demande de premier administrateur peut être enregistrée (mêmes gardes que l'attribution) puis exécute
+     * `$withinTransaction` (consommation du lien et enregistrement de la demande). N'attribue AUCUN droit : l'attribution se fait à la validation par un
+     * super-administrateur CWS (`enrollFirstAdministrator`).
+     *
+     * @param \Closure(): bool $withinTransaction
+     *
+     * @throws OperationNotAllowed
+     */
+    public function requestFirstAdministrator(User $user, Municipality $municipality, \Closure $withinTransaction): void
+    {
+        $this->transaction->run(function () use ($user, $municipality, $withinTransaction): void {
+            $municipality = $this->lockedMunicipality($municipality);
+            if (MunicipalityStatus::Active !== $municipality->status()) {
+                throw new OperationNotAllowed('Cette commune n\'est pas disponible.');
+            }
+            if (!$user->isActive()) {
+                throw new OperationNotAllowed('Un compte désactivé ne peut pas être rattaché à une commune.');
+            }
+            if ($this->memberships->countEffectiveAdmins($municipality) > 0) {
+                throw new OperationNotAllowed('Cette commune dispose déjà d\'un administrateur.');
+            }
+            $existing = $this->memberships->findOneByUserAndMunicipality($user, $municipality);
+            if (null !== $existing && $existing->isActive()) {
+                throw new OperationNotAllowed('Ce compte est déjà rattaché à la commune.');
+            }
+            if (!$withinTransaction()) {
+                throw new OperationNotAllowed('Ce lien n\'est plus utilisable.');
+            }
         });
     }
 

@@ -10,6 +10,8 @@ use App\Identity\Domain\User;
 use App\Identity\Domain\UserRepository;
 use App\Municipality\Application\MembershipManager;
 use App\Onboarding\Domain\AdministratorStep;
+use App\Onboarding\Domain\AdministratorValidation;
+use App\Onboarding\Domain\AdministratorValidationRepository;
 use App\Onboarding\Domain\EnrollmentResult;
 use App\Onboarding\Domain\InvitationLinkKind;
 use App\Onboarding\Domain\InvitationLinkRepository;
@@ -33,6 +35,7 @@ use Psr\Clock\ClockInterface;
  *   - la possession du lien et de la boîte e-mail est prouvée (le lien n'a été envoyé qu'à cette adresse) ;
  *   - l'HABILITATION OFFICIELLE à représenter la mairie n'est PAS vérifiée : aucune règle validée ne le permet. L'utilisateur
  *     l'atteste (case à cocher) et l'attestation est conservée dans l'audit.
+ * SEC-016 : la demande n'attribue AUCUN droit ; un super-administrateur CWS la valide (AdministratorValidationService).
  * Garde-fous : rôle administrateur seul ; refusé si la commune a déjà un administrateur (relu sous verrou) ; un compte existant
  * doit se connecter (jamais rattaché sur la seule foi du lien) avec l'adresse invitée ; lien à usage unique consommé dans la même
  * transaction que l'appartenance ; ni abonnement, ni droit commercial, ni droit de créer des événements.
@@ -44,6 +47,7 @@ final readonly class AdministratorEnrollment
         private UserManager $userManager,
         private MembershipManager $memberships,
         private InvitationLinkRepository $links,
+        private AdministratorValidationRepository $validations,
         private AuditTrail $audit,
         private ClockInterface $clock,
     ) {
@@ -100,16 +104,22 @@ final readonly class AdministratorEnrollment
         $municipality = $link->participation()->municipality();
         $linkId = $link->id();
         $participationId = $link->participation()->id();
-        $this->memberships->enrollFirstAdministrator($user, $municipality, function () use ($linkId, $user, $municipality, $participationId): bool {
+        // SEC-016 : AUCUN droit n'est attribué ici. Le lien est consommé et une demande est enregistrée ; un super-administrateur CWS la valide (ou la refuse)
+        // après vérification de la légitimité hors Civipass (AdministratorValidationService).
+        $this->memberships->requestFirstAdministrator($user, $municipality, function () use ($linkId, $user, $municipality, $participationId, $link): bool {
             $now = $this->clock->now();
             if (!$this->links->consume($linkId, $now)) {
-                return false; // consommé, remplacé ou expiré entre-temps : une seule inscription par lien
+                return false; // consommé, remplacé ou expiré entre-temps : une seule demande par lien
             }
-            $this->audit->record(new AuditEvent($now, AuditAction::InvitationAdministratorEnrolled, AuditSubjectType::InvitationLink, $linkId, $municipality->id(), AuditActor::user($user->id()), null, [
+            $validation = new AdministratorValidation($municipality, $user, $link, $now);
+            $this->validations->add($validation);
+            $this->audit->record(new AuditEvent($now, AuditAction::AdministratorValidationRequested, AuditSubjectType::AdministratorValidation, $validation->id(), $municipality->id(), AuditActor::user($user->id()), null, [
+                'linkId' => $linkId->toRfc4122(),
                 'participationId' => $participationId->toRfc4122(),
                 'attestedRepresentation' => true,
                 'emailControlProven' => true,
                 'officialHabilitationVerified' => false,
+                'status' => 'PENDING',
             ]));
 
             return true;

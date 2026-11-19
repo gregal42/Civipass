@@ -39,6 +39,9 @@ final class AccountReferenceCatalog
         'municipality_commercial_access.revoked_by',
         'municipality_membership.user_id',
         'onboarding_invitation_link.created_by',
+        // SEC-016 : demandeur et valideur CWS d'une demande de premier administrateur (traçabilité conservée).
+        'onboarding_administrator_validation.user_id',
+        'onboarding_administrator_validation.decided_by',
         // LOT 07.1 : auteur, accepteur et révocateur d'une invitation d'administrateur (traçabilité conservée comme les autres liens d'invitation).
         'municipality_admin_invitation.consumed_by',
         'municipality_admin_invitation.created_by',

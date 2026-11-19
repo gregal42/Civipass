@@ -21,6 +21,10 @@ enum AuditAction: string
     case InvitationEmailFailed = 'INVITATION_EMAIL_FAILED';
     case InvitationAdministratorDelegated = 'INVITATION_ADMINISTRATOR_DELEGATED';
     case InvitationAdministratorEnrolled = 'INVITATION_ADMINISTRATOR_ENROLLED';
+    /** SEC-016 : demande de premier administrateur communal (aucun droit attribué), puis décision d'un super-administrateur CWS (valideur, date et motif conservés). */
+    case AdministratorValidationRequested = 'ADMINISTRATOR_VALIDATION_REQUESTED';
+    case AdministratorValidationApproved = 'ADMINISTRATOR_VALIDATION_APPROVED';
+    case AdministratorValidationRejected = 'ADMINISTRATOR_VALIDATION_REJECTED';
     case MunicipalityRegisteredFromReferential = 'MUNICIPALITY_REGISTERED_FROM_REFERENTIAL';
     case UserSuperAdminChanged = 'USER_SUPER_ADMIN_CHANGED';
     case UserActivationChanged = 'USER_ACTIVATION_CHANGED';

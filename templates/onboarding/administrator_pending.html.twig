@@ -1,0 +1,17 @@
+{% extends 'layouts/auth.html.twig' %}
+{% set page_title = 'Demande en cours de vérification' %}
+{% block meta %}<meta name="referrer" content="no-referrer"><meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{#
+  SEC-016 : après l'inscription par un lien personnel, AUCUN droit n'est attribué. Message neutre : demande enregistrée, vérification par CWS, aucun délai promis.
+  Variables : commune, account_created.
+#}
+{% block content %}
+  {% embed 'components/panel.html.twig' with { id: 'pending-h', title: 'Votre demande est en cours de vérification', level: 1, commune: commune, account_created: account_created } only %}
+    {% block body %}
+      <p>Votre demande d’administration de {{ commune ?: 'la commune' }} a bien été enregistrée{% if account_created %} et votre compte est créé{% endif %}.</p>
+      <p>Avant d’attribuer des droits d’administration, CWS vérifie que vous êtes habilité(e) à représenter la commune. Aucun droit ne vous est attribué tant que cette vérification n’est pas terminée.</p>
+      <p>Vous pourrez vous connecter à Civipass une fois la vérification effectuée. Aucune autre démarche n’est nécessaire de votre part pour le moment.</p>
+    {% endblock %}
+  {% endembed %}
+{% endblock %}

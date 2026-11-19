@@ -170,9 +170,9 @@ final class InvitationLinkController extends AbstractController
             $this->security->login($result->user, 'form_login', 'main'); // compte créé à l'instant : connexion directe
         }
         $request->getSession()->remove(self::SESSION_KEY);
-        $this->addFlash('success', 'Vous êtes administrateur de la commune. Vous pouvez maintenant accepter l’invitation à l’événement.');
 
-        return $this->redirectToRoute('app_municipal_event', ['municipalityId' => $result->municipalityId, 'eventId' => $result->eventId], Response::HTTP_SEE_OTHER);
+        // SEC-016 : aucun droit n'est attribué ; la demande est en cours de vérification par CWS (message neutre, aucun délai promis).
+        return $this->secured($this->render('onboarding/administrator_pending.html.twig', ['commune' => $resolution->communeName ?? '', 'account_created' => $result->accountCreated]));
     }
 
     private function current(Request $request): LinkResolution

@@ -20,6 +20,7 @@ Procédures **exploitables** par l'exploitation (VPS, nginx natif, systemd). Ell
 | Violation de données personnelles (qualification, CNIL 72 h, information des personnes) | [violation-de-donnees.md](violation-de-donnees.md) |
 | Liste de vérification avant remise en service | [remise-en-service.md](remise-en-service.md) |
 | Récupération d'accès (comptes, administrateurs communaux) | [recuperation-acces.md](recuperation-acces.md) |
+| Validation d'un administrateur communal désigné par un lien (SEC-016) | [validation-administrateur-communal.md](validation-administrateur-communal.md) |
 | Recette du contrôle public sur un VPS HTTPS dédié (LOT 07.3.5, **non exécutée**) | [recette-verification-publique.md](recette-verification-publique.md) |
 
 Les interrupteurs `PUBLIC_VERIFICATION_ENABLED`, `RIGHTS_ERASURE_EXECUTION_ENABLED` et `RETENTION_PURGE_ENABLED` valent **0** tant que les validations de [lot-05-6-7-cadrage.md](../lot-05-6-7-cadrage.md) §9 ne sont pas données. Les durées (sauvegardes 35 jours, seuils) sont des **hypothèses à valider**.

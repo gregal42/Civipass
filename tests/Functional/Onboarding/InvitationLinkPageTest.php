@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Onboarding;
 
+use Symfony\Component\Uid\Uuid;
+use App\Shared\Domain\OperationNotAllowed;
+use App\Shared\Domain\DomainRuleViolation;
+use App\Onboarding\Application\AdministratorValidationService;
 use App\Event\Application\Service\EventLifecycleService;
 use App\Identity\Domain\User;
 use App\Municipality\Application\MembershipManager;
@@ -362,7 +366,21 @@ final class InvitationLinkPageTest extends MunicipalPagesTestCase
 
     // ═══ Inscription de l'administrateur par lien personnel ═════════════════
 
-    public function testANewAdministratorCreatesAnAccountBecomesTheOnlyAdministratorAndThenAcceptsExplicitly(): void
+    private function validator(bool $superAdmin = true): User
+    {
+        $user = $superAdmin ? UserBuilder::aUser()->superAdmin()->build() : UserBuilder::aUser()->build();
+        $this->em()->persist($user);
+        $this->em()->flush();
+
+        return $user;
+    }
+
+    private function pendingId(): Uuid
+    {
+        return Uuid::fromBinary((string) $this->em()->getConnection()->fetchOne("SELECT id FROM onboarding_administrator_validation WHERE status = 'PENDING' ORDER BY requested_at LIMIT 1"));
+    }
+
+    public function testANewAdministratorCreatesAnAccountButReceivesNoRightUntilCwsValidates(): void
     {
         $this->referential();
         [$adminToken, $email] = $this->adminLink();
@@ -376,32 +394,103 @@ final class InvitationLinkPageTest extends MunicipalPagesTestCase
         self::assertStringContainsString('d***@mairie.example', $html);
         self::assertStringContainsString('ne prouve pas à lui seul votre habilitation officielle', $html);
 
-        $this->join($html, $this->signup());
+        $page = $this->join($html, $this->signup());
 
-        self::assertSame(303, $this->httpStatus());
-        $communeId = $this->communeId('33503');
-        self::assertStringContainsString('/communes/'.$communeId.'/evenements/', $this->location());
+        // SEC-016 : compte créé, lien consommé, demande enregistrée, AUCUN droit.
+        self::assertSame(200, $this->httpStatus());
+        self::assertStringContainsString('en cours de vérification', $page);
+        self::assertStringNotContainsString('Vous êtes administrateur', $page);
         $user = $this->em()->getRepository(User::class)->findOneBy(['email' => $email]) ?? self::fail('compte non créé');
         self::assertSame('directrice@mairie.example', $user->email(), 'adresse du lien, non saisie');
-        $roles = (string) $this->em()->getConnection()->fetchOne('SELECT roles FROM municipality_membership WHERE user_id = ?', [$user->id()->toBinary()]);
-        self::assertSame(['MUNICIPALITY_ADMIN'], json_decode($roles, true), 'rôle administrateur UNIQUEMENT');
-        self::assertSame(1, $this->memberships('33503'));
-        self::assertSame($access, $this->scalar('SELECT COUNT(*) FROM municipality_commercial_access'), 'aucun abonnement ni droit commercial');
+        self::assertSame(0, $this->memberships('33503'), 'aucun rôle attribué automatiquement');
+        self::assertSame($access, $this->scalar('SELECT COUNT(*) FROM municipality_commercial_access'));
         self::assertSame(1, $this->links('consumed_at IS NOT NULL'));
-        self::assertSame(1, $this->audits('INVITATION_ADMINISTRATOR_ENROLLED'));
-        $audit = (string) $this->em()->getConnection()->fetchOne("SELECT new_value FROM audit_log WHERE action = 'INVITATION_ADMINISTRATOR_ENROLLED'");
+        self::assertSame(1, $this->scalar("SELECT COUNT(*) FROM onboarding_administrator_validation WHERE status = 'PENDING'"));
+        self::assertSame(1, $this->audits('ADMINISTRATOR_VALIDATION_REQUESTED'));
+        self::assertSame(0, $this->audits('MEMBERSHIP_CREATED'));
+        $audit = (string) $this->em()->getConnection()->fetchOne("SELECT new_value FROM audit_log WHERE action = 'ADMINISTRATOR_VALIDATION_REQUESTED'");
         self::assertEquals(['attestedRepresentation' => true, 'emailControlProven' => true, 'officialHabilitationVerified' => false], array_intersect_key(json_decode($audit, true), ['attestedRepresentation' => 1, 'emailControlProven' => 1, 'officialHabilitationVerified' => 1]));
 
-        // Connecté d'office, l'invitation est toujours en attente : l'acceptation reste une action explicite.
-        $page = $this->get($this->location());
+        // Connecté d'office mais sans droit : la page de la commune est refusée.
+        $communeId = $this->communeId('33503');
+        $this->get($this->eventUrl($communeId, $this->fire));
+        self::assertContains($this->httpStatus(), [403, 404]);
+
+        // Validation par un super-administrateur CWS : valideur, date et motif conservés ; rôle administrateur UNIQUEMENT.
+        $cws = $this->validator();
+        static::getContainer()->get(AdministratorValidationService::class)->approve($cws, $this->pendingId(), 'Rappel du standard officiel de la mairie le 19/11, identité confirmée par la secrétaire générale.');
+        $this->em()->clear();
+        $roles = (string) $this->em()->getConnection()->fetchOne('SELECT roles FROM municipality_membership WHERE user_id = ?', [$user->id()->toBinary()]);
+        self::assertSame(['MUNICIPALITY_ADMIN'], json_decode($roles, true));
+        self::assertSame(1, $this->memberships('33503'));
+        self::assertSame(1, $this->audits('ADMINISTRATOR_VALIDATION_APPROVED'));
+        $decision = $this->em()->getConnection()->fetchAssociative('SELECT decided_by, decided_at, decision_reason, status FROM onboarding_administrator_validation');
+        self::assertSame('APPROVED', $decision['status']);
+        self::assertSame($cws->id()->toBinary(), $decision['decided_by']);
+        self::assertNotNull($decision['decided_at']);
+        self::assertStringContainsString('standard officiel', (string) $decision['decision_reason']);
+        $approved = json_decode((string) $this->em()->getConnection()->fetchOne("SELECT new_value FROM audit_log WHERE action = 'ADMINISTRATOR_VALIDATION_APPROVED'"), true);
+        self::assertSame($cws->id()->toRfc4122(), $approved['validatorUserId']);
+        self::assertSame($user->id()->toRfc4122(), $approved['administratorUserId']);
+
+        // L'acceptation de l'invitation reste une action explicite du nouvel administrateur.
+        $page = $this->get($this->eventUrl($communeId, $this->fire));
         self::assertSame(200, $this->httpStatus());
         self::assertStringContainsString('Accepter l’invitation', $page);
         self::assertSame('INVITED', (string) $this->em()->getConnection()->fetchOne("SELECT p.status FROM event_participation p JOIN municipality m ON m.id = p.municipality_id WHERE m.insee_code = '33503'"));
-
         $this->client->request('POST', $this->eventUrl($communeId, $this->fire).'/participation/accepter', ['_token' => $this->csrf($page, '/participation/accepter')]);
         self::assertSame(303, $this->httpStatus());
         self::assertSame('ACTIVE', (string) $this->em()->getConnection()->fetchOne("SELECT p.status FROM event_participation p JOIN municipality m ON m.id = p.municipality_id WHERE m.insee_code = '33503'"));
         self::assertFalse(static::getContainer()->get(EventCreationPolicy::class)->canCreateEvent($this->em()->find(Municipality::class, $communeId) ?? self::fail(), EventFixtures::now()), 'aucun droit de créer ses propres événements');
+    }
+
+    public function testOnlyAnActiveCwsSuperAdministratorWithAReasonCanDecide(): void
+    {
+        $this->referential();
+        [$adminToken] = $this->adminLink();
+        $this->visitor();
+        $this->join($this->open($adminToken), $this->signup());
+        $id = $this->pendingId();
+        $service = static::getContainer()->get(AdministratorValidationService::class);
+        $reason = 'Courrier officiel de la mairie reçu et rappel au standard.';
+
+        foreach ([[$this->validator(false), 'non super-administrateur'], [$this->em()->getRepository(User::class)->findOneBy(['email' => 'directrice@mairie.example']) ?? self::fail(), 'le demandeur lui-même']] as [$who, $label]) {
+            try {
+                $service->approve($who, $id, $reason);
+                self::fail($label.' ne doit pas pouvoir valider');
+            } catch (OperationNotAllowed) {
+                self::assertSame(0, $this->memberships('33503'), $label);
+            }
+        }
+        $cws = $this->validator();
+        foreach (['', 'court', str_repeat('x', 501)] as $bad) {
+            try {
+                $service->approve($cws, $id, $bad);
+                self::fail('motif invalide accepté');
+            } catch (DomainRuleViolation) {
+                self::assertSame(0, $this->memberships('33503'));
+            }
+        }
+        self::assertSame(1, $this->scalar("SELECT COUNT(*) FROM onboarding_administrator_validation WHERE status = 'PENDING'"));
+    }
+
+    public function testARejectedRequestGrantsNothingAndCannotBeDecidedTwice(): void
+    {
+        $this->referential();
+        [$adminToken] = $this->adminLink();
+        $this->visitor();
+        $this->join($this->open($adminToken), $this->signup());
+        $id = $this->pendingId();
+        $service = static::getContainer()->get(AdministratorValidationService::class);
+        $cws = $this->validator();
+
+        $service->reject($cws, $id, 'Standard de la mairie : personne inconnue du service.');
+
+        self::assertSame(0, $this->memberships('33503'));
+        self::assertSame(1, $this->audits('ADMINISTRATOR_VALIDATION_REJECTED'));
+        self::assertSame('REJECTED', (string) $this->em()->getConnection()->fetchOne('SELECT status FROM onboarding_administrator_validation'));
+        $this->expectException(OperationNotAllowed::class);
+        $service->approve($cws, $id, 'Tentative de revirement après refus enregistré.');
     }
 
     public function testAPersonalLinkWorksOnlyOnce(): void
@@ -411,14 +500,15 @@ final class InvitationLinkPageTest extends MunicipalPagesTestCase
         $this->visitor();
         $html = $this->open($adminToken);
         $this->join($html, $this->signup());
-        self::assertSame(303, $this->httpStatus());
+        self::assertSame(200, $this->httpStatus());
 
         $this->visitor();
         $again = $this->open($adminToken);
 
         self::assertSame(410, $this->httpStatus());
         self::assertStringContainsString('déjà été utilisé', $again);
-        self::assertSame(1, $this->memberships('33503'));
+        self::assertSame(0, $this->memberships('33503'), 'SEC-016 : aucun droit avant la validation CWS');
+        self::assertSame(1, $this->scalar('SELECT COUNT(*) FROM onboarding_administrator_validation'), 'une seule demande par lien');
     }
 
     public function testWithoutTheRepresentationAttestationNothingIsCreated(): void
@@ -478,10 +568,12 @@ final class InvitationLinkPageTest extends MunicipalPagesTestCase
         self::assertStringContainsString('J’atteste être habilité(e)', $html);
         self::assertStringNotContainsString('name="password"', $html);
 
-        $this->join($html, ['attest' => '1']);
+        $page = $this->join($html, ['attest' => '1']);
 
-        self::assertSame(303, $this->httpStatus());
-        self::assertSame(1, $this->memberships('33503'));
+        self::assertSame(200, $this->httpStatus());
+        self::assertStringContainsString('en cours de vérification', $page);
+        self::assertSame(0, $this->memberships('33503'), 'SEC-016 : aucun droit avant la validation CWS');
+        self::assertSame(1, $this->scalar("SELECT COUNT(*) FROM onboarding_administrator_validation WHERE status = 'PENDING'"));
         self::assertSame(1, $this->scalar("SELECT COUNT(*) FROM identity_user WHERE email = 'directrice@mairie.example'"), 'aucun doublon de compte');
         self::assertSame($hash, (string) $this->em()->getConnection()->fetchOne('SELECT password FROM identity_user WHERE email = ?', ['directrice@mairie.example']), 'mot de passe inchangé');
     }
@@ -528,7 +620,7 @@ final class InvitationLinkPageTest extends MunicipalPagesTestCase
         self::assertSame($users, $this->scalar('SELECT COUNT(*) FROM identity_user'), 'aucun compte créé');
     }
 
-    public function testTwoPersonalLinksForTheSameCommuneOnlyTheFirstEnrolls(): void
+    public function testTwoPersonalLinksForTheSameCommuneNeverYieldTwoAdministrators(): void
     {
         $this->referential();
         $this->invited('33503', 'a@mairie.example', $this->fire);
@@ -541,15 +633,24 @@ final class InvitationLinkPageTest extends MunicipalPagesTestCase
 
         $this->visitor();
         $this->join($this->open($first), $this->signup());
-        self::assertSame(303, $this->httpStatus());
-
+        self::assertSame(200, $this->httpStatus());
         $this->visitor();
-        $html = $this->open($second);
-        self::assertStringContainsString('dispose déjà d’un administrateur', $html);
-        $this->client->request('POST', '/invitation/rejoindre', $this->signup() + ['_token' => 'forgé']);
-        self::assertContains($this->httpStatus(), [409, 422]);
-        self::assertSame(1, $this->memberships('33503'), 'un seul administrateur, jamais deux par deux liens');
-        self::assertSame(0, $this->scalar("SELECT COUNT(*) FROM identity_user WHERE email = 'second@mairie.example'"));
+        $this->join($this->open($second), $this->signup());
+        self::assertSame(200, $this->httpStatus());
+        self::assertSame(0, $this->memberships('33503'), 'aucun droit avant validation');
+        self::assertSame(2, $this->scalar("SELECT COUNT(*) FROM onboarding_administrator_validation WHERE status = 'PENDING'"));
+
+        // CWS valide la première : la seconde ne peut plus être approuvée (commune déjà administrée).
+        $cws = $this->validator();
+        $service = static::getContainer()->get(AdministratorValidationService::class);
+        $ids = array_map(static fn (mixed $b): Uuid => Uuid::fromBinary((string) $b), $this->em()->getConnection()->fetchFirstColumn('SELECT id FROM onboarding_administrator_validation ORDER BY requested_at'));
+        $service->approve($cws, $ids[0], 'Appel au standard officiel : premier demandeur confirmé.');
+        try {
+            $service->approve($cws, $ids[1], 'Appel au standard officiel : second demandeur confirmé.');
+            self::fail('une seconde approbation ne doit pas aboutir');
+        } catch (OperationNotAllowed) {
+            self::assertSame(1, $this->memberships('33503'), 'un seul administrateur, jamais deux par deux liens');
+        }
     }
 
     public function testALinkOfOneCommuneNeverGivesAccessToAnother(): void
@@ -562,8 +663,9 @@ final class InvitationLinkPageTest extends MunicipalPagesTestCase
 
         $this->join($this->open($adminToken), $this->signup());
 
-        self::assertSame(1, $this->memberships('33503'));
-        self::assertSame(0, $this->memberships('33504'), 'le lien est lié à SA participation, donc à SA commune');
+        self::assertSame(0, $this->memberships('33503') + $this->memberships('33504'), 'aucun droit avant la validation CWS');
+        self::assertSame(1, $this->scalar("SELECT COUNT(*) FROM onboarding_administrator_validation v JOIN municipality m ON m.id = v.municipality_id WHERE m.insee_code = '33503'"), 'la demande porte sur SA commune');
+        self::assertSame(0, $this->scalar("SELECT COUNT(*) FROM onboarding_administrator_validation v JOIN municipality m ON m.id = v.municipality_id WHERE m.insee_code = '33504'"));
     }
 
     public function testOpeningLinksIsRateLimitedPerIp(): void

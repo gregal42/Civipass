@@ -34,7 +34,7 @@
           <input type="hidden" name="_token" value="{{ csrf_delegate }}">
           {% include 'components/button.html.twig' with { label: 'Envoyer le lien à cette personne', type: 'submit', icon: 'mail', loading_label: 'Envoi…' } only %}
         </form>
-        {% include 'components/alert.html.twig' with { variant: 'info', icon: 'shield', title: 'Ce que vérifie Civipass', text: 'La personne désignée prouve qu’elle contrôle cette boîte e-mail ; Civipass ne peut pas vérifier à elle seule qu’elle est habilitée à représenter la mairie : elle l’atteste. Le lien est personnel, valable 3 jours et utilisable une seule fois.' } only %}
+        {% include 'components/alert.html.twig' with { variant: 'info', icon: 'shield', title: 'Ce que vérifie Civipass', text: 'La personne désignée prouve qu’elle contrôle cette boîte e-mail ; Civipass ne peut pas vérifier à elle seule qu’elle est habilitée à représenter la mairie : elle l’atteste. Le lien est personnel, valable 3 jours et utilisable une seule fois ; la qualité d’administrateur est attribuée par CWS après vérification.' } only %}
 
       {% elseif case == 'admin_commune_administered' %}
         <p><b>{{ r.communeName }} dispose déjà d’un administrateur sur Civipass.</b> Ce lien ne donne aucun droit. Connectez-vous avec un compte administrateur de la commune pour répondre à l’invitation.</p>
@@ -56,8 +56,8 @@
             {% include 'components/field.html.twig' with { id: 'password', name: 'password', type: 'password', label: 'Mot de passe', required: true, autocomplete: 'new-password', attrs: 'minlength="12"', help: '12 caractères minimum : préférez une phrase longue.' } only %}
             {% include 'components/field.html.twig' with { id: 'password-confirm', name: 'password_confirm', type: 'password', label: 'Confirmez le mot de passe', required: true, autocomplete: 'new-password', attrs: 'minlength="12"' } only %}
           {% endif %}
-          {% include 'components/check.html.twig' with { id: 'attest', name: 'attest', value: '1', label: 'J’atteste être habilité(e) à représenter ' ~ r.communeName ~ ' et à gérer sa participation sur Civipass.' } only %}
-          {% include 'components/alert.html.twig' with { variant: 'quiet', icon: 'shield', text: 'Ouvrir ce lien depuis votre boîte e-mail prouve que vous la contrôlez ; cela ne prouve pas à lui seul votre habilitation officielle, que vous attestez ici. Vous recevrez uniquement le rôle d’administrateur communal : aucun abonnement n’est créé.' } only %}
+          {% include 'components/check.html.twig' with { id: 'attest', name: 'attest', value: '1', label: 'J’atteste être habilité(e) à représenter ' ~ r.communeName ~ ' et à gérer sa participation sur Civipass. Cette attestation sera vérifiée avant toute attribution de droits.' } only %}
+          {% include 'components/alert.html.twig' with { variant: 'quiet', icon: 'shield', text: 'Ouvrir ce lien depuis votre boîte e-mail prouve que vous la contrôlez ; cela ne prouve pas à lui seul votre habilitation officielle, que vous attestez ici. Votre demande sera ensuite vérifiée par CWS : aucun droit n’est attribué avant cette vérification, et aucun abonnement n’est créé.' } only %}
           <input type="hidden" name="_token" value="{{ csrf_join }}">
           {% include 'components/button.html.twig' with { label: case == 'admin_signup' ? 'Créer mon compte' : 'Devenir administrateur', type: 'submit', icon: 'check', loading_label: 'Enregistrement…' } only %}
         </form>
