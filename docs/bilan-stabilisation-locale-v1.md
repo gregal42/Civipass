@@ -50,7 +50,12 @@ QA : `bin/qa full` vert (3 806 tests, 0 échec, 6 ignorés) ; PHPStan niveau 6, 
 SMTP réel ([plan](recette/plan-recette-smtp.md)) ; smartphones 09.7 ([plan](recette/plan-recette-09-7.md)) ; restauration réelle ; Nginx réel ; charge (C-13, P2).
 
 ## D. Prérequis d'exploitation
-Serveur HTTPS de recette, DNS, SMTP avec SPF/DKIM/DMARC ; **séquestre hors serveur des trousseaux et clés** (TOTP, jetons QR, notifications, clés privées `age`) avec exercice de restauration ([runbooks/sequestre-trousseaux.md](runbooks/sequestre-trousseaux.md), GO / NO-GO 3.4) ; supervision indépendante (C-07) ; adresse d'alerte (`OPS_ALERT_EMAIL`, `ADMIN_VALIDATION_ALERT_EMAIL`) ; image Docker de développement à reconstruire pour embarquer `age` durablement ; [prerequis-serveur.md](exploitation/prerequis-serveur.md).
+Serveur HTTPS de recette, DNS, SMTP avec SPF/DKIM/DMARC ; **séquestre hors serveur des trousseaux et clés** (TOTP, jetons QR, notifications, clés privées `age`) avec exercice de restauration ([runbooks/sequestre-trousseaux.md](runbooks/sequestre-trousseaux.md), GO / NO-GO 3.4) ; supervision indépendante (C-07) ; adresse d'alerte (`OPS_ALERT_EMAIL`, `ADMIN_VALIDATION_ALERT_EMAIL`) ; image Docker de développement reconstruite le 19 novembre 2026 (`age` 1.2.1 présent dans un conteneur recréé, 9 tests de chiffrement sans test ignoré, `bin/qa full` vert) : prérequis soldé en local ; [prerequis-serveur.md](exploitation/prerequis-serveur.md).
 
 ## Conclusion
 **Stabilisation locale : terminée pour le code** — toute anomalie P0/P1 corrigeable en local l'est, aucune n'a de test en échec, aucune décision de code n'est en attente. Elle ne vaut **pas** validation : A2, B, C et D demeurent. **Réserve** : C-07 (supervision) est la seule anomalie P1 technique non traitée ; elle dépend de l'infrastructure et doit être cadrée avec les prérequis. Condition pour passer à la **recette d'installation** : constituer D (serveur HTTPS, SMTP, séquestre) puis dérouler A2 sur la cible avant tout audit externe et toute ouverture à une commune pilote.
+
+
+## Clôture (19 novembre 2026)
+
+Push sur `origin/develop` (2c86cf4). Image `php-fpm` reconstruite, conteneur recréé : `age` 1.2.1 vient du Dockerfile. `BackupEncryptionTest` : 9 tests, 57 assertions, aucun ignoré. `bin/qa full` vert, `verify-docs.sh` OK, `doctrine:schema:validate` synchronisé (`civipass`, `civipass_test`). C-07 confirmé comme prérequis d'exploitation, point ouvert jusqu'à vérification effective. Stabilisation locale clôturée.
