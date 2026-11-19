@@ -19,6 +19,7 @@ use App\Permit\Domain\PermitRevisionRepository;
 use App\Permit\Domain\RevisionType;
 use App\Permit\Domain\TokenReplacementReason;
 use App\Permit\Domain\TokenReplacementRules;
+use App\Permit\Domain\TokenSealer;
 use App\Permit\Domain\VerificationToken;
 use App\Shared\Application\AuditEvent;
 use App\Shared\Application\AuditTrail;
@@ -59,6 +60,7 @@ final readonly class PermitTokenReplacementService
         private ClockInterface $clock,
         private AuditTrail $audit,
         private NotificationIntentRecorder $notifications,
+        private TokenSealer $sealer,
         private ?LoggerInterface $logger = null,
         private ?\Closure $tokenGenerator = null,
     ) {
@@ -101,7 +103,7 @@ final readonly class PermitTokenReplacementService
 
             TokenReplacementRules::assertAllowed($scope->authorization->isRevoked(), $event->status());
             $active = $this->permits->lockActiveToken($permit) ?? throw new \LogicException('Un laissez-passer possède toujours un jeton de vérification actif.');
-            if (str_contains(strtolower((string) preg_replace('/[\s\-_.]+/', '', (string) $comment)), $active->value())) {
+            if (str_contains(strtolower((string) preg_replace('/[\s\-_.]+/', '', (string) $comment)), $active->reveal($this->sealer))) {
                 throw new DomainRuleViolation(self::TOKEN_IN_COMMENT);
             }
             $times = $this->revisions->lockedTokenReplacementTimes($permit->id());

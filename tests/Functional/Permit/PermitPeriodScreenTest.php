@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Permit;
 
+use App\Tests\Support\PlainTokens;
 use App\Identity\Domain\User;
 use App\Municipality\Domain\Municipality;
 use App\Municipality\Domain\MunicipalityRole as Role;
@@ -283,7 +284,7 @@ final class PermitPeriodScreenTest extends PublicRequestTestCase
         $_SERVER['PUBLIC_VERIFICATION_ENABLED'] = $_ENV['PUBLIC_VERIFICATION_ENABLED'] = '1';
         putenv('PUBLIC_VERIFICATION_ENABLED=1');
         try {
-            $this->client->request('GET', '/v/'.$this->em()->getConnection()->fetchOne('SELECT token FROM permit_verification_token'));
+            $this->client->request('GET', '/v/'.PlainTokens::one($this->em()->getConnection()));
             self::assertResponseStatusCodeSame(200);
             foreach ([self::COMMENT, 'Autre motif', 'OTHER', 'Période prolongée'] as $forbidden) {
                 self::assertStringNotContainsString($forbidden, $this->html());

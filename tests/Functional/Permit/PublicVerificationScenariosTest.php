@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Permit;
 
+use App\Tests\Support\PlainTokens;
 use App\Event\Application\Command\UpdateEventCommand;
 use App\Event\Application\Command\UpdateZoneCommand;
 use App\Event\Application\Service\EventLifecycleService;
@@ -168,7 +169,7 @@ final class PublicVerificationScenariosTest extends PublicRequestTestCase
 
     private function token(): string
     {
-        return (string) $this->em()->getConnection()->fetchOne('SELECT token FROM permit_verification_token');
+        return (string) PlainTokens::one($this->em()->getConnection());
     }
 
     private function open(): string

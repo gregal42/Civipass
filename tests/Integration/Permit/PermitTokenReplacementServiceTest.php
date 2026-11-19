@@ -80,6 +80,7 @@ final class PermitTokenReplacementServiceTest extends MunicipalDecisionTestCase
             $this->clock,
             $audit ?? $c->get(AuditTrail::class),
             $c->get(NotificationIntentRecorder::class),
+            $c->get(\App\Permit\Domain\TokenSealer::class),
             $logger,
             $generator,
         );

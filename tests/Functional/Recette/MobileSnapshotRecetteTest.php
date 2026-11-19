@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Recette;
 
+use App\Tests\Support\PlainTokens;
 use App\Identity\Domain\User;
 use App\Municipality\Domain\Municipality;
 use App\Municipality\Domain\MunicipalityRole as Role;
@@ -77,7 +78,7 @@ final class MobileSnapshotRecetteTest extends PublicRequestTestCase
         $this->client->loginUser($this->em()->find(User::class, $admin->id()));
         $secret = static::getContainer()->get(PermitAccessService::class)->issue($this->em()->find(User::class, $admin->id()), $organizer->id()->toRfc4122(), $requestId)->secret;
         $base = '/communes/'.$organizer->id()->toRfc4122().'/demandes/'.$requestId.'/droits';
-        $old = (string) $this->em()->getConnection()->fetchOne('SELECT token FROM permit_verification_token');
+        $old = (string) PlainTokens::one($this->em()->getConnection());
 
         $this->client->request('GET', '/v/'.$old);
         $this->save2('01-public-actif');
@@ -95,7 +96,7 @@ final class MobileSnapshotRecetteTest extends PublicRequestTestCase
         $this->client->request('POST', $base.'/qr', ['reason' => 'LOST', 'confirm_global' => '1', '_token' => (string) $crawler->filter('input[name=_token]')->attr('value'), 'operation_id' => (string) $crawler->filter('input[name=operation_id]')->attr('value')]);
         $this->client->request('GET', '/v/'.$old);
         $this->save2('06-public-qr-remplace-410');
-        $new = (string) $this->em()->getConnection()->fetchOne('SELECT token FROM permit_verification_token WHERE active_permit_id IS NOT NULL');
+        $new = (string) PlainTokens::one($this->em()->getConnection(), 't.active_permit_id IS NOT NULL');
         $this->client->request('GET', $base.'/qr');
         $this->save2('07-ecran-qr-remplacement-rapproche');
         $this->sql("UPDATE event_event SET status = 'CLOSED', closed_at = UTC_TIMESTAMP()");

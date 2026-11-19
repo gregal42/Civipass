@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Permit;
 
+use App\Tests\Support\PlainTokens;
 use App\Identity\Domain\User;
 use App\Municipality\Domain\Municipality;
 use App\Municipality\Domain\MunicipalityRole as Role;
@@ -89,7 +90,7 @@ final class PublicVerificationClosedEventTest extends PublicRequestTestCase
 
     private function token(): string
     {
-        return (string) $this->em()->getConnection()->fetchOne('SELECT token FROM permit_verification_token WHERE active_permit_id IS NOT NULL');
+        return (string) PlainTokens::one($this->em()->getConnection(), 't.active_permit_id IS NOT NULL');
     }
 
     private function close(): void
@@ -191,7 +192,7 @@ final class PublicVerificationClosedEventTest extends PublicRequestTestCase
     public function testAnOldReplacedQrStaysGoneWithNoDataAndAnUnknownQrStaysNeutralAfterTheClosure(): void
     {
         $old = $this->token();
-        $this->sql('UPDATE permit_verification_token SET active_permit_id = NULL, retired_at = UTC_TIMESTAMP() WHERE token = :t', ['t' => $old]);
+        $this->sql('UPDATE permit_verification_token SET active_permit_id = NULL, retired_at = UTC_TIMESTAMP() WHERE token_sha256 = :t', ['t' => hash('sha256', $old)]);
         $this->close();
 
         $this->client->request('GET', '/v/'.$old);

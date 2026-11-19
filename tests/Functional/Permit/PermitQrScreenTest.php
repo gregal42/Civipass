@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Permit;
 
+use App\Tests\Support\PlainTokens;
 use App\Identity\Domain\User;
 use App\Municipality\Domain\Municipality;
 use App\Municipality\Domain\MunicipalityRole as Role;
@@ -118,12 +119,12 @@ final class PermitQrScreenTest extends PublicRequestTestCase
     /** @return list<string> du plus ancien au plus récent */
     private function tokens(): array
     {
-        return array_map('strval', $this->em()->getConnection()->fetchFirstColumn('SELECT token FROM permit_verification_token ORDER BY created_at, id'));
+        return array_map('strval', PlainTokens::all($this->em()->getConnection()));
     }
 
     private function activeToken(): string
     {
-        return (string) $this->em()->getConnection()->fetchOne('SELECT token FROM permit_verification_token WHERE active_permit_id IS NOT NULL');
+        return (string) PlainTokens::one($this->em()->getConnection(), 't.active_permit_id IS NOT NULL');
     }
 
     private function revisions(): int

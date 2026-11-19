@@ -6,7 +6,7 @@ namespace App\Tests\Unit\Notification;
 
 use App\Notification\Application\SecretCipher;
 use App\Notification\Domain\EncryptedSecret;
-use App\Notification\Domain\KeyRing;
+use App\Shared\Domain\KeyRing;
 use App\Notification\Domain\NotificationType;
 use App\Notification\Domain\SecretDecryptionFailed;
 use PHPUnit\Framework\Attributes\DataProvider;

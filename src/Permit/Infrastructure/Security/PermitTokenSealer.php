@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Permit\Infrastructure\Security;
 
-use App\Notification\Domain\KeyRing;
+use App\Shared\Domain\KeyRing;
 use App\Permit\Domain\TokenSealer;
 use Symfony\Component\DependencyInjection\Attribute\AsAlias;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;

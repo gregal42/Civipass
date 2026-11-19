@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Recette;
 
+use App\Tests\Support\PlainTokens;
 use App\Event\Application\Support\EventLocker;
 use App\Event\Application\Support\EventTransactions;
 use App\Event\Domain\EventParticipation;
@@ -159,7 +160,7 @@ final class TransversalRecetteTest extends MunicipalDecisionTestCase
     private function replaceQr(string $request, ?string $reference = null): void
     {
         $c = self::getContainer();
-        (new PermitTokenReplacementService($c->get(EventTransactions::class), $c->get(EventLocker::class), $c->get(PermitRevisionGuard::class), $c->get(PermitRevisionRepository::class), $c->get(PermitRepository::class), $this->clock, $c->get(AuditTrail::class), $c->get(NotificationIntentRecorder::class)))
+        (new PermitTokenReplacementService($c->get(EventTransactions::class), $c->get(EventLocker::class), $c->get(PermitRevisionGuard::class), $c->get(PermitRevisionRepository::class), $c->get(PermitRepository::class), $this->clock, $c->get(AuditTrail::class), $c->get(NotificationIntentRecorder::class), $c->get(\App\Permit\Domain\TokenSealer::class)))
             ->replace($this->managed($this->adminOnly), $this->organizer->id()->toRfc4122(), $request, new TokenReplacementRequest(Uuid::v7()->toRfc4122(), 'SUSPECTED_MISUSE', null, true, $reference));
     }
 
@@ -198,7 +199,7 @@ final class TransversalRecetteTest extends MunicipalDecisionTestCase
 
     private function activeToken(): string
     {
-        return (string) $this->em->getConnection()->fetchOne('SELECT token FROM permit_verification_token WHERE active_permit_id IS NOT NULL');
+        return (string) PlainTokens::one($this->em->getConnection(), 't.active_permit_id IS NOT NULL');
     }
 
     // ------------------------------------------------------------------ R-TR-01 : enchaînement multi-lots, deux communes

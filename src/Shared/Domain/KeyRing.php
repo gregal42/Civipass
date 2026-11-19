@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Notification\Domain;
+namespace App\Shared\Domain;
 
 /**
  * Trousseau de clés de chiffrement des secrets bénéficiaires (LOT 05.3.2, D3). Fourni par l'environnement, jamais par le dépôt.

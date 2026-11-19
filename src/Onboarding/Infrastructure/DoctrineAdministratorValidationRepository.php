@@ -30,6 +30,9 @@ final readonly class DoctrineAdministratorValidationRepository implements Admini
 
     public function pending(): array
     {
-        return array_values($this->entityManager->getRepository(AdministratorValidation::class)->findBy(['status' => AdministratorValidationStatus::Pending], ['requestedAt' => 'ASC']));
+        /** @var list<AdministratorValidation> $found */
+        $found = $this->entityManager->getRepository(AdministratorValidation::class)->findBy(['status' => AdministratorValidationStatus::Pending], ['requestedAt' => 'ASC']);
+
+        return $found;
     }
 }

@@ -85,7 +85,7 @@ final readonly class DoctrinePermitRepository implements PermitRepository
 
     public function tokenExists(string $token): bool
     {
-        return false !== $this->entityManager->getConnection()->fetchOne('SELECT 1 FROM permit_verification_token WHERE token = :t', ['t' => $token]);
+        return false !== $this->entityManager->getConnection()->fetchOne('SELECT 1 FROM permit_verification_token WHERE token_sha256 = :t', ['t' => VerificationToken::fingerprint($token)]);
     }
 
     public function flush(): void

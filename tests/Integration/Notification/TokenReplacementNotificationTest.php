@@ -84,7 +84,7 @@ final class TokenReplacementNotificationTest extends MunicipalDecisionTestCase
     private function replace(string $requestId, ?string $reference = null): void
     {
         $c = self::getContainer();
-        (new PermitTokenReplacementService($c->get(EventTransactions::class), $c->get(EventLocker::class), $c->get(PermitRevisionGuard::class), $c->get(PermitRevisionRepository::class), $c->get(PermitRepository::class), $this->clock, $c->get(AuditTrail::class), $c->get(NotificationIntentRecorder::class)))
+        (new PermitTokenReplacementService($c->get(EventTransactions::class), $c->get(EventLocker::class), $c->get(PermitRevisionGuard::class), $c->get(PermitRevisionRepository::class), $c->get(PermitRepository::class), $this->clock, $c->get(AuditTrail::class), $c->get(NotificationIntentRecorder::class), $c->get(\App\Permit\Domain\TokenSealer::class)))
             ->replace($this->managed($this->organizerAdmin), $this->organizer->id()->toRfc4122(), $requestId, new TokenReplacementRequest(Uuid::v7()->toRfc4122(), 'OTHER', self::COMMENT, true, $reference));
     }
 

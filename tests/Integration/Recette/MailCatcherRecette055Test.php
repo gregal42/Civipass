@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Recette;
 
+use App\Tests\Support\PlainTokens;
 use App\Event\Application\Support\EventLocker;
 use App\Event\Application\Support\EventTransactions;
 use App\Event\Domain\EventParticipation;
@@ -157,7 +158,7 @@ final class MailCatcherRecette055Test extends MunicipalDecisionTestCase
     /** @return list<string> */
     private function secrets(): array
     {
-        return array_map('strval', $this->em->getConnection()->fetchFirstColumn('SELECT token FROM permit_verification_token'));
+        return array_map('strval', PlainTokens::all($this->em->getConnection()));
     }
 
     private function assertSafe(string $source, string $context): void
@@ -190,7 +191,7 @@ final class MailCatcherRecette055Test extends MunicipalDecisionTestCase
         $this->dispatch(self::DSN, 900);
 
         // 3. QR : remplacement (prioritaire)
-        (new PermitTokenReplacementService($c->get(EventTransactions::class), $c->get(EventLocker::class), $c->get(PermitRevisionGuard::class), $c->get(PermitRevisionRepository::class), $c->get(PermitRepository::class), $this->clock, $c->get(AuditTrail::class), $c->get(NotificationIntentRecorder::class)))
+        (new PermitTokenReplacementService($c->get(EventTransactions::class), $c->get(EventLocker::class), $c->get(PermitRevisionGuard::class), $c->get(PermitRevisionRepository::class), $c->get(PermitRepository::class), $this->clock, $c->get(AuditTrail::class), $c->get(NotificationIntentRecorder::class), $c->get(\App\Permit\Domain\TokenSealer::class)))
             ->replace($this->managed($this->adminOnly), $organizer, $requestId, new TokenReplacementRequest(Uuid::v7()->toRfc4122(), 'OTHER', self::COMMENT, true));
         $this->dispatch(self::DSN, 1000);
 
@@ -236,7 +237,7 @@ final class MailCatcherRecette055Test extends MunicipalDecisionTestCase
         $c = self::getContainer();
         $this->dispatch(self::DSN, 700);
         $count = \count($this->messages());
-        (new PermitTokenReplacementService($c->get(EventTransactions::class), $c->get(EventLocker::class), $c->get(PermitRevisionGuard::class), $c->get(PermitRevisionRepository::class), $c->get(PermitRepository::class), $this->clock, $c->get(AuditTrail::class), $c->get(NotificationIntentRecorder::class)))
+        (new PermitTokenReplacementService($c->get(EventTransactions::class), $c->get(EventLocker::class), $c->get(PermitRevisionGuard::class), $c->get(PermitRevisionRepository::class), $c->get(PermitRepository::class), $this->clock, $c->get(AuditTrail::class), $c->get(NotificationIntentRecorder::class), $c->get(\App\Permit\Domain\TokenSealer::class)))
             ->replace($this->managed($this->adminOnly), $this->organizer->id()->toRfc4122(), $requestId, new TokenReplacementRequest(Uuid::v7()->toRfc4122(), 'LOST', null, true));
 
         $this->dispatch('smtp://127.0.0.1:1', 800); // aucun serveur : panne temporaire

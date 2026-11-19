@@ -60,6 +60,7 @@ try {
                 $clock,
                 $audit,
                 $container->get(NotificationIntentRecorder::class),
+                $container->get(App\Permit\Domain\TokenSealer::class),
             );
             $r = $service->replace($actor, $argv[2], $argv[3], new TokenReplacementRequest($payload['operation'], $payload['reason'] ?? 'LOST', $payload['comment'] ?? null, $payload['confirm'] ?? true, $payload['reference'] ?? null));
 

@@ -172,7 +172,7 @@ final class InvitationLinkController extends AbstractController
         $request->getSession()->remove(self::SESSION_KEY);
 
         // SEC-016 : aucun droit n'est attribué ; la demande est en cours de vérification par CWS (message neutre, aucun délai promis).
-        return $this->secured($this->render('onboarding/administrator_pending.html.twig', ['commune' => $resolution->communeName ?? '', 'account_created' => $result->accountCreated]));
+        return $this->secured($this->render('onboarding/administrator_pending.html.twig', ['commune' => $resolution->communeName, 'account_created' => $result->accountCreated]));
     }
 
     private function current(Request $request): LinkResolution

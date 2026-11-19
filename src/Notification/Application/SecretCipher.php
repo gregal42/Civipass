@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Notification\Application;
 
 use App\Notification\Domain\EncryptedSecret;
-use App\Notification\Domain\KeyRing;
+use App\Shared\Domain\KeyRing;
 use App\Notification\Domain\NotificationType;
 use App\Notification\Domain\SecretDecryptionFailed;
 use Symfony\Component\Uid\Uuid;

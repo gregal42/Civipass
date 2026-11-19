@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Permit;
 
+use App\Tests\Support\PlainTokens;
 use App\Event\Domain\EventParticipation;
 use App\Event\Domain\EventZone;
 use App\Event\Domain\EventZoneValidity;
@@ -101,7 +102,7 @@ final class PublicVerificationPageTest extends PublicRequestTestCase
 
     private function token(): string
     {
-        return (string) $this->em()->getConnection()->fetchOne('SELECT token FROM permit_verification_token');
+        return (string) PlainTokens::one($this->em()->getConnection());
     }
 
     /** Noyau neuf, sans redémarrage entre requêtes (pour remplacer un service avant son premier usage) ; base de test conservée. */

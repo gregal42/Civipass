@@ -39,7 +39,7 @@ class VerificationToken
     private string $sealed = '';
 
     /** Clair transitoire d'un jeton qui vient d'être généré (jamais mappé, jamais relu depuis la base). */
-    private ?string $plain;
+    private ?string $plain = null;
 
     #[ORM\Column(type: UuidType::NAME, nullable: true)]
     private ?Uuid $activePermitId;

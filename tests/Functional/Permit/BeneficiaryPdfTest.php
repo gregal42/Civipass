@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Permit;
 
+use App\Tests\Support\PlainTokens;
 use App\Identity\Domain\User;
 use App\Municipality\Domain\Municipality;
 use App\Municipality\Domain\MunicipalityRole as Role;
@@ -84,7 +85,7 @@ final class BeneficiaryPdfTest extends PublicRequestTestCase
 
     private function token(): string
     {
-        return (string) $this->em()->getConnection()->fetchOne('SELECT token FROM permit_verification_token');
+        return (string) PlainTokens::one($this->em()->getConnection());
     }
 
     private function revoke(User $agent, string $commune): void

@@ -270,7 +270,7 @@ final class PermitAccessServiceTest extends MunicipalDecisionTestCase
         $this->issue($request);
         $permit = $this->em->getRepository(Permit::class)->findOneBy([]) ?? self::fail('Laissez-passer absent.');
 
-        self::assertNull($this->reader()->find($permit->activeToken()->value(), $this->at('2026-06-12 10:00:00')), 'le jeton du QR n\'ouvre pas la page bénéficiaire');
+        self::assertNull($this->reader()->find(PlainTokens::one($this->em->getConnection()), $this->at('2026-06-12 10:00:00')), 'le jeton du QR n\'ouvre pas la page bénéficiaire');
     }
 
     public function testTheQrTokenIsStableAcrossNewLinksAndASecondApproval(): void
