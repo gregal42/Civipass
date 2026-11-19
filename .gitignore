@@ -20,8 +20,10 @@
 
 ###> symfony/asset-mapper ###
 /public/assets/
-/assets/vendor/
 ###< symfony/asset-mapper ###
+
+# `assets/vendor/` (Stimulus, Turbo, jsQR) est VERSIONNÉ : une installation ne doit dépendre d'aucun téléchargement (C-01, C-02).
+# Pour mettre à jour un paquet : `php bin/console importmap:update`, puis committer le résultat.
 
 ###> phpunit/phpunit ###
 /phpunit.xml
