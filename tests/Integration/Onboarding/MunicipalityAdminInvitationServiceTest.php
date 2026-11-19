@@ -74,6 +74,18 @@ final class MunicipalityAdminInvitationServiceTest extends DatabaseTestCase
         return $this->service(\App\Municipality\Domain\MembershipRepository::class)->countEffectiveAdmins($this->commune);
     }
 
+    /** Décision du 19 novembre 2026 : invitations d'administrateur à 7 jours (les liens de commune restent à 14 jours : InvitationLinkTest, InvitationEmailPageTest). */
+    public function testAnAdministratorInvitationIsValidForSevenDaysByDefault(): void
+    {
+        self::assertSame('7', self::getContainer()->getParameter('env(ADMIN_INVITATION_DAYS)'), 'valeur par défaut de la configuration');
+
+        $result = $this->service->issue($this->commune, 'maire@mairie.example', $this->cws);
+
+        $invitation = $result->invitation;
+        self::assertSame(7 * 86400, $invitation->expiresAt()->getTimestamp() - $invitation->createdAt()->getTimestamp());
+        self::assertFalse($invitation->expiresAt() <= $invitation->createdAt()->add(new \DateInterval('P6D')), 'pas moins de 7 jours');
+    }
+
     public function testIssuingGivesNoRightAndNoGhostAdministratorAndLeaksNoSecret(): void
     {
         $result = $this->service->issue($this->commune, 'Maire@Mairie.example', $this->cws);
