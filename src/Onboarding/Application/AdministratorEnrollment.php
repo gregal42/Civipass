@@ -48,6 +48,7 @@ final readonly class AdministratorEnrollment
         private MembershipManager $memberships,
         private InvitationLinkRepository $links,
         private AdministratorValidationRepository $validations,
+        private AdministratorValidationNotifier $notifier,
         private AuditTrail $audit,
         private ClockInterface $clock,
     ) {
@@ -106,13 +107,15 @@ final readonly class AdministratorEnrollment
         $participationId = $link->participation()->id();
         // SEC-016 : AUCUN droit n'est attribué ici. Le lien est consommé et une demande est enregistrée ; un super-administrateur CWS la valide (ou la refuse)
         // après vérification de la légitimité hors Civipass (AdministratorValidationService).
-        $this->memberships->requestFirstAdministrator($user, $municipality, function () use ($linkId, $user, $municipality, $participationId, $link): bool {
+        $requested = null;
+        $this->memberships->requestFirstAdministrator($user, $municipality, function () use ($linkId, $user, $municipality, $participationId, $link, &$requested): bool {
             $now = $this->clock->now();
             if (!$this->links->consume($linkId, $now)) {
                 return false; // consommé, remplacé ou expiré entre-temps : une seule demande par lien
             }
             $validation = new AdministratorValidation($municipality, $user, $link, $now);
             $this->validations->add($validation);
+            $requested = [$validation->id(), $now];
             $this->audit->record(new AuditEvent($now, AuditAction::AdministratorValidationRequested, AuditSubjectType::AdministratorValidation, $validation->id(), $municipality->id(), AuditActor::user($user->id()), null, [
                 'linkId' => $linkId->toRfc4122(),
                 'participationId' => $participationId->toRfc4122(),
@@ -124,6 +127,11 @@ final readonly class AdministratorEnrollment
 
             return true;
         });
+
+        // Après validation de la transaction : avertir CWS (un échec d'envoi ne change rien à la demande enregistrée ni aux droits).
+        if (null !== $requested) {
+            $this->notifier->notifyPending($requested[0], $municipality->name(), $requested[1]);
+        }
 
         return new EnrollmentResult($user, $resolution->municipalityId ?? '', $resolution->eventId ?? '', $accountCreated);
     }

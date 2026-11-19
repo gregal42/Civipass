@@ -33,6 +33,7 @@ use App\Tests\Support\UserBuilder;
 final class InvitationLinkPageTest extends MunicipalPagesTestCase
 {
     private RecordingInvitationNotifier $mails;
+    private \App\Tests\Support\RecordingAdministratorValidationNotifier $validationAlerts;
 
     protected function setUp(): void
     {
@@ -40,6 +41,8 @@ final class InvitationLinkPageTest extends MunicipalPagesTestCase
         $this->client->disableReboot();
         $this->mails = new RecordingInvitationNotifier();
         static::getContainer()->set(InvitationNotifier::class, $this->mails);
+        $this->validationAlerts = new \App\Tests\Support\RecordingAdministratorValidationNotifier();
+        static::getContainer()->set(\App\Onboarding\Application\AdministratorValidationNotifier::class, $this->validationAlerts);
     }
 
     private function referential(string $code = '33503', string $name = 'Saumos'): void
@@ -408,6 +411,8 @@ final class InvitationLinkPageTest extends MunicipalPagesTestCase
         self::assertSame(1, $this->scalar("SELECT COUNT(*) FROM onboarding_administrator_validation WHERE status = 'PENDING'"));
         self::assertSame(1, $this->audits('ADMINISTRATOR_VALIDATION_REQUESTED'));
         self::assertSame(0, $this->audits('MEMBERSHIP_CREATED'));
+        self::assertCount(1, $this->validationAlerts->sent, 'CWS est averti une seule fois, sans effet sur les droits');
+        self::assertSame($this->pendingId()->toRfc4122(), $this->validationAlerts->sent[0]['id']);
         $audit = (string) $this->em()->getConnection()->fetchOne("SELECT new_value FROM audit_log WHERE action = 'ADMINISTRATOR_VALIDATION_REQUESTED'");
         self::assertEquals(['attestedRepresentation' => true, 'emailControlProven' => true, 'officialHabilitationVerified' => false], array_intersect_key(json_decode($audit, true), ['attestedRepresentation' => 1, 'emailControlProven' => 1, 'officialHabilitationVerified' => 1]));
 

@@ -86,6 +86,8 @@ parameters:
     env(RETENTION_ANCHOR_PATH): '%kernel.project_dir%/var/retention/anchors.jsonl'
     env(OPS_DIR): '%kernel.project_dir%/var/ops'
     env(OPS_ALERT_EMAIL): ''
+    # SEC-016 : destinataire de l'alerte « demande de validation d'un administrateur communal en attente » ; vide = OPS_ALERT_EMAIL.
+    env(ADMIN_VALIDATION_ALERT_EMAIL): ''
 
 services:
     # default configuration for services in *this* file

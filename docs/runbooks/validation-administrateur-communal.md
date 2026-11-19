@@ -5,7 +5,7 @@
 **Délai** : aucun délai de traitement n'est garanti ni promis par l'application ni dans les messages. Il sera défini par la procédure opérationnelle de CWS (à fixer avant le pilote ; canal d'urgence en crise : la même commande, exécutée par un super-administrateur).
 
 ## 1. Ce que voit le demandeur
-Après l'inscription : « Votre demande est en cours de vérification », sans délai annoncé, **aucun droit** attribué. Il pourra se connecter une fois la vérification faite. (Aucune notification automatique n'est envoyée : voir §5.)
+Après l'inscription : « Votre demande est en cours de vérification », sans délai annoncé, **aucun droit** attribué. Il pourra se connecter une fois la vérification faite. CWS reçoit un e-mail d'alerte (§5).
 
 ## 2. Qui valide
 Uniquement un **super-administrateur CWS actif**, identifié par son adresse (`--operator`) : le valideur, la date et le motif sont conservés dans la demande et dans l'audit (`ADMINISTRATOR_VALIDATION_REQUESTED / APPROVED / REJECTED`). Un compte non super-administrateur est refusé.
@@ -25,7 +25,10 @@ Uniquement un **super-administrateur CWS actif**, identifié par son adresse (`-
 - Une demande ne se traite qu'une fois ; un refus n'attribue rien et laisse la trace.
 - Les communes ouvertes par CWS (invitation d'administrateur 7 jours, parcours 07.1) ne passent pas par cette validation : CWS en est l'émetteur.
 
-## 5. Limites connues (à arbitrer)
-- Pas de notification automatique à CWS d'une demande en attente ni au demandeur d'une décision : à intégrer à la procédure opérationnelle (consultation régulière de la liste) ou à ajouter ultérieurement.
+## 5. Alerte e-mail à CWS
+À chaque nouvelle demande, un e-mail part vers `ADMIN_VALIDATION_ALERT_EMAIL` (à défaut `OPS_ALERT_EMAIL`), par le transport Mailer habituel. Il ne contient que : commune, identifiant de la demande, date (UTC) et la commande de traitement — **ni nom ni adresse du demandeur, ni lien d'action**. L'envoi se fait après l'enregistrement de la demande ; un échec d'envoi (ou aucun destinataire) est journalisé et **ne bloque rien** : la demande reste dans la liste des demandes en attente (la commande sans argument). L'e-mail n'attribue aucun droit.
+
+## 6. Limites connues (à arbitrer)
+- Aucune notification au demandeur d'une décision ; le **délai de traitement et la procédure d'urgence** seront définis avant le pilote (aucun délai n'est garanti).
 - Pas d'écran Sonata de validation : console uniquement (même choix que la réinitialisation du second facteur).
 - Le lien contact peut encore concurrencer l'invitation CWS d'une commune qui attend son premier administrateur ; la validation CWS couvre ce cas (la demande est examinée par CWS, qui connaît l'invitation en cours).
