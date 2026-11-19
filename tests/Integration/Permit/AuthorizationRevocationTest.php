@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Permit;
 
+use App\Tests\Support\PlainTokens;
 use App\Event\Application\Support\EventTransactions;
 use App\Identity\Domain\User;
 use App\Municipality\Domain\Municipality;
@@ -108,7 +109,7 @@ final class AuthorizationRevocationTest extends MunicipalDecisionTestCase
     {
         $this->em->clear();
 
-        return ($this->em->getRepository(Permit::class)->findOneBy([]) ?? self::fail('Laissez-passer absent.'))->activeToken()->value();
+        return PlainTokens::one($this->em->getConnection(), 't.retired_at IS NULL');
     }
 
     /** @return array{revisions: int, audits: int, outbox: int, revoked: int} */

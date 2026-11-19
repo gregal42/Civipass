@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Permit;
 
+use App\Tests\Support\PlainTokens;
 use App\Event\Domain\EventZone;
 use App\Event\Domain\EventZoneValidity;
 use App\Event\Domain\Validity\ValiditySlot;
@@ -85,7 +86,7 @@ final class PublicVerificationReaderTest extends MunicipalDecisionTestCase
     {
         $this->em->clear();
 
-        return ($this->em->getRepository(Permit::class)->findOneBy([]) ?? self::fail('Laissez-passer absent.'))->activeToken()->value();
+        return PlainTokens::one($this->em->getConnection(), 't.retired_at IS NULL');
     }
 
     private function find(string $at = '2026-06-12 10:00:00', ?string $token = null): PublicVerificationLookup

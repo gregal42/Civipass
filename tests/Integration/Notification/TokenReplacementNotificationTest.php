@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Notification;
 
+use App\Tests\Support\PlainTokens;
 use App\Event\Application\Support\EventLocker;
 use App\Event\Application\Support\EventTransactions;
 use App\Identity\Domain\User;
@@ -101,7 +102,7 @@ final class TokenReplacementNotificationTest extends MunicipalDecisionTestCase
 
     private function assertNoLeak(string $requestId): void
     {
-        $tokens = $this->em->getConnection()->fetchFirstColumn('SELECT token FROM permit_verification_token');
+        $tokens = PlainTokens::all($this->em->getConnection());
         $text = implode("\n", array_map(static fn (array $m): string => $m['text']."\n".$m['html'].$m['subject'], $this->mailer->sent));
         foreach ([...$tokens, ...array_map('strtoupper', $tokens), 'QW-123-ER', 'QW123ER', self::COMMENT, 'Autre motif', 'OTHER', 'http', '/v/', $requestId] as $forbidden) {
             self::assertStringNotContainsString($forbidden, $text, 'ni jeton, ni lien, ni plaque, ni motif, ni commentaire : '.$forbidden);
@@ -223,7 +224,7 @@ final class TokenReplacementNotificationTest extends MunicipalDecisionTestCase
         $row = $this->em->getConnection()->fetchAssociative("SELECT authorization_id, deduplication_key FROM notification_outbox WHERE type = 'QR_REPLACED'");
         self::assertIsArray($row);
         self::assertNull($row['authorization_id'], 'niveau laissez-passer');
-        foreach ($this->em->getConnection()->fetchFirstColumn('SELECT token FROM permit_verification_token') as $token) {
+        foreach (PlainTokens::all($this->em->getConnection()) as $token) {
             self::assertStringNotContainsString($token, (string) $row['deduplication_key']);
         }
     }

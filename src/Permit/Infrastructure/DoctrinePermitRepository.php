@@ -126,8 +126,8 @@ final readonly class DoctrinePermitRepository implements PermitRepository
         $found = $this->entityManager->createQueryBuilder()
             ->select('t')
             ->from(VerificationToken::class, 't')
-            ->where('t.token = :token')
-            ->setParameter('token', $token)
+            ->where('t.fingerprint = :fingerprint')
+            ->setParameter('fingerprint', VerificationToken::fingerprint($token))
             ->getQuery()
             ->getOneOrNullResult();
 
@@ -142,8 +142,8 @@ final readonly class DoctrinePermitRepository implements PermitRepository
             ->join('t.permit', 'p')
             ->join('p.event', 'e')
             ->join('p.request', 'r')
-            ->where('t.token = :token')
-            ->setParameter('token', $token)
+            ->where('t.fingerprint = :fingerprint')
+            ->setParameter('fingerprint', VerificationToken::fingerprint($token))
             ->getQuery()
             ->getOneOrNullResult();
         if (!$found instanceof VerificationToken) {

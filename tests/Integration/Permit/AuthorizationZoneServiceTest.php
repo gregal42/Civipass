@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Permit;
 
+use App\Tests\Support\PlainTokens;
 use App\Event\Application\Support\EventLocker;
 use App\Event\Application\Support\EventTransactions;
 use App\Event\Domain\EventZone;
@@ -135,7 +136,7 @@ final class AuthorizationZoneServiceTest extends MunicipalDecisionTestCase
     {
         $this->em->clear();
 
-        return ($this->em->getRepository(Permit::class)->findOneBy([]) ?? self::fail('Laissez-passer absent.'))->activeToken()->value();
+        return PlainTokens::one($this->em->getConnection(), 't.retired_at IS NULL');
     }
 
     /** @return array<string, array{label: string, removed: bool}> lignes de l'autorisation de la commune, par libellé de zone du référentiel (id en clé) */

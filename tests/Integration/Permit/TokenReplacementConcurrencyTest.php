@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Permit;
 
+use App\Tests\Support\PlainTokens;
 use App\Identity\Domain\User;
 use App\Municipality\Domain\Municipality;
 use App\Municipality\Domain\MunicipalityRole as Role;
@@ -144,7 +145,8 @@ final class TokenReplacementConcurrencyTest extends MunicipalDecisionTestCase
     private function tokens(): array
     {
         $this->em->clear();
-        $rows = $this->em->getConnection()->fetchAllAssociative('SELECT token, active_permit_id FROM permit_verification_token ORDER BY created_at, id');
+        $rows = $this->em->getConnection()->fetchAllAssociative('SELECT id, token_encrypted, active_permit_id FROM permit_verification_token ORDER BY created_at, id');
+        $rows = array_map(static fn (array $r): array => ['token' => PlainTokens::open((string) $r['token_encrypted'], (string) $r['id']), 'active_permit_id' => $r['active_permit_id']], $rows);
 
         return [
             'active' => array_values(array_map(static fn (array $r): string => (string) $r['token'], array_filter($rows, static fn (array $r): bool => null !== $r['active_permit_id']))),

@@ -12,14 +12,16 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * Jeton de vérification porté par le QR (DM-113) : 160 bits aléatoires encodés en 32 caractères base32 minuscules, sans aucune
- * donnée personnelle, stocké EN CLAIR pour pouvoir régénérer le QR et le PDF. Un seul jeton ACTIF par laissez-passer :
+ * donnée personnelle. SEC-020 : la base ne contient JAMAIS le jeton en clair mais (1) son empreinte SHA-256 (`token_sha256`, recherche du contrôle en
+ * ligne et du jeu de données hors connexion, identique à `DatasetCodec::tokenKey`) et (2) une copie scellée (`token_encrypted`, AEAD, trousseau dédié) qui
+ * permet de réafficher le QR et de régénérer le PDF (DM-113, DM-118). Un seul jeton ACTIF par laissez-passer :
  * `active_permit_id` vaut l'identifiant du laissez-passer tant que le jeton est actif et NULL une fois retiré (MySQL n'a pas
  * d'index unique partiel ; plusieurs NULL sont permis). Le retrait sert au remplacement exceptionnel du LOT 05.5.
  * Le jeton ne doit JAMAIS figurer dans un journal, une exception, un audit ni un message d'erreur.
  */
 #[ORM\Entity]
 #[ORM\Table(name: 'permit_verification_token')]
-#[ORM\UniqueConstraint(name: 'uniq_permit_token_value', columns: ['token'])]
+#[ORM\UniqueConstraint(name: 'uniq_permit_token_sha256', columns: ['token_sha256'])]
 #[ORM\UniqueConstraint(name: 'uniq_permit_token_active', columns: ['active_permit_id'])]
 class VerificationToken
 {
@@ -30,8 +32,14 @@ class VerificationToken
     #[ORM\Column(type: UuidType::NAME)]
     private Uuid $id;
 
-    #[ORM\Column(type: Types::STRING, length: self::LENGTH, options: ['fixed' => true, 'collation' => 'utf8mb4_bin'])]
-    private string $token;
+    #[ORM\Column(name: 'token_sha256', type: Types::STRING, length: 64, options: ['fixed' => true, 'collation' => 'utf8mb4_bin'])]
+    private string $fingerprint;
+
+    #[ORM\Column(name: 'token_encrypted', type: Types::STRING, length: 255)]
+    private string $sealed = '';
+
+    /** Clair transitoire d'un jeton qui vient d'être généré (jamais mappé, jamais relu depuis la base). */
+    private ?string $plain;
 
     #[ORM\Column(type: UuidType::NAME, nullable: true)]
     private ?Uuid $activePermitId;
@@ -54,7 +62,8 @@ class VerificationToken
             throw new DomainRuleViolation('Jeton de vérification invalide.');
         }
         $this->id = Uuid::v7();
-        $this->token = $token;
+        $this->plain = $token;
+        $this->fingerprint = self::fingerprint($token);
         $this->activePermitId = $permit->id();
     }
 
@@ -113,9 +122,34 @@ class VerificationToken
         return $this->permit;
     }
 
-    public function value(): string
+    /** Empreinte SHA-256 (hex) d'un jeton normalisé : clé de recherche ; identique à la clé du jeu de données hors connexion. */
+    public static function fingerprint(#[\SensitiveParameter] string $token): string
     {
-        return $this->token;
+        return hash('sha256', strtolower($token));
+    }
+
+    public function fingerprintValue(): string
+    {
+        return $this->fingerprint;
+    }
+
+    /** @internal appelé par l'écouteur de persistance : scelle le clair d'un jeton neuf. */
+    public function seal(TokenSealer $sealer): void
+    {
+        if ('' === $this->sealed && null !== $this->plain) {
+            $this->sealed = $sealer->seal($this->plain, $this->id);
+        }
+    }
+
+    /** Jeton en clair, pour réafficher le QR ou le PDF : rouvre la copie scellée (le clair n'est jamais relu depuis la base). */
+    public function reveal(TokenSealer $sealer): string
+    {
+        return $this->plain ?? $sealer->open($this->sealed, $this->id);
+    }
+
+    public function sealedValue(): string
+    {
+        return $this->sealed;
     }
 
     public function createdAt(): \DateTimeImmutable

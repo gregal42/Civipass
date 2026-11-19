@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Permit;
 
+use App\Tests\Support\PlainTokens;
 use App\Event\Domain\EventZone;
 use App\Event\Domain\EventZoneValidity;
 use App\Event\Domain\Validity\ValiditySlot;
@@ -11,7 +12,6 @@ use App\Identity\Domain\User;
 use App\Permit\Application\PublicVerificationReader;
 use App\Permit\Application\Read\PublicVerification;
 use App\Permit\Application\Result\PublicVerificationOutcome;
-use App\Permit\Domain\Permit;
 use App\Permit\Domain\RightState;
 use App\Request\Application\Command\SubmitRequestCommand;
 use App\Request\Application\RequestSubmissionService;
@@ -60,7 +60,7 @@ final class PublicVerificationTimeTest extends MunicipalDecisionTestCase
 
     private function verification(string $at): PublicVerification
     {
-        $token = ($this->em->getRepository(Permit::class)->findOneBy([]) ?? self::fail('Laissez-passer absent.'))->activeToken()->value();
+        $token = PlainTokens::one($this->em->getConnection(), 't.retired_at IS NULL');
         $this->em->clear();
         $lookup = $this->service(PublicVerificationReader::class)->find($token, $this->at($at));
         self::assertSame(PublicVerificationOutcome::Found, $lookup->outcome);

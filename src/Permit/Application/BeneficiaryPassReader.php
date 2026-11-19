@@ -8,6 +8,7 @@ use App\Event\Application\EventOperationalGuard;
 use App\Permit\Application\Read\BeneficiaryPass;
 use App\Permit\Domain\AccessSecret;
 use App\Permit\Domain\PermitAccessTokenRepository;
+use App\Permit\Domain\TokenSealer;
 use App\Permit\Domain\PermitVehicle;
 use App\Request\Domain\TravelMode;
 
@@ -24,6 +25,7 @@ final readonly class BeneficiaryPassReader
         private PermitAccessTokenRepository $tokens,
         private PermitRightsEvaluator $evaluator,
         private EventOperationalGuard $closure,
+        private TokenSealer $sealer,
     ) {
     }
 
@@ -53,7 +55,7 @@ final readonly class BeneficiaryPassReader
             TravelMode::Vehicle === $request->travelMode() ? 'vehicle' : 'foot_bike',
             array_map(static fn (PermitVehicle $v): string => PlateFormatter::format($v), $permit->activeVehicles()),
             $this->evaluator->evaluate($permit, $now),
-            $permit->activeToken()->value(),
+            $permit->activeToken()->reveal($this->sealer),
         );
     }
 }

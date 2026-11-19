@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Permit;
 
+use App\Tests\Support\PlainTokens;
 use App\Event\Application\Support\EventLocker;
 use App\Event\Application\Support\EventTransactions;
 use App\Identity\Domain\User;
@@ -15,7 +16,6 @@ use App\Permit\Application\PermitRevisionGuard;
 use App\Permit\Application\PermitRightsOverviewReader;
 use App\Permit\Application\PermitVehicleService;
 use App\Permit\Application\Result\VehicleChangeRequest;
-use App\Permit\Domain\Permit;
 use App\Permit\Domain\PermitRepository;
 use App\Permit\Domain\PermitRevisionRepository;
 use App\Request\Application\Command\SubmitRequestCommand;
@@ -145,7 +145,7 @@ final class PermitVehicleServiceTest extends MunicipalDecisionTestCase
     {
         $this->em->clear();
 
-        return ($this->em->getRepository(Permit::class)->findOneBy([]) ?? self::fail('Laissez-passer absent.'))->activeToken()->value();
+        return PlainTokens::one($this->em->getConnection(), 't.retired_at IS NULL');
     }
 
     /** @return array{revisions: int, vehicleLines: int, audits: int, outbox: int, plates: int} */

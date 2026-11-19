@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Permit;
 
+use App\Tests\Support\PlainTokens;
 use App\Identity\Domain\User;
 use App\Municipality\Domain\Municipality;
 use App\Permit\Application\BeneficiaryPassReader;
@@ -275,14 +276,14 @@ final class PermitAccessServiceTest extends MunicipalDecisionTestCase
     public function testTheQrTokenIsStableAcrossNewLinksAndASecondApproval(): void
     {
         $request = $this->approved([$this->organizerZone, $this->partnerZone]);
-        $before = $this->em->getConnection()->fetchOne('SELECT token FROM permit_verification_token');
+        $before = PlainTokens::one($this->em->getConnection());
         $first = $this->issue($request);
         $this->issue($request);
 
         $this->instruction()->approve($this->managed($this->partnerInstructor), $this->partner->id()->toRfc4122(), $request, ApprovalDuration::fixed(DurationMode::H24));
         $this->issue($request, $this->partnerInstructor, $this->partner);
 
-        self::assertSame($before, $this->em->getConnection()->fetchOne('SELECT token FROM permit_verification_token'));
+        self::assertSame($before, PlainTokens::one($this->em->getConnection()));
         self::assertSame(1, $this->rows('permit_verification_token'));
         $pass = $this->reader()->find($first, $this->at('2026-06-12 10:00:00')) ?? self::fail('Lien attendu.');
         self::assertSame($before, $pass->verificationToken);

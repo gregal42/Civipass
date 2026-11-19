@@ -68,6 +68,10 @@ case "$(declare_get TWO_FACTOR_REQUIRED)" in 0|false|off|no) ko "TWO_FACTOR_REQU
 if [ -z "$(declare_get TWO_FACTOR_KEYRING)" ] || [ -z "$(declare_get TWO_FACTOR_ACTIVE_KEY_ID)" ]; then
     ko "TWO_FACTOR_KEYRING ou TWO_FACTOR_ACTIVE_KEY_ID absent (secrets TOTP liés à APP_SECRET : clé dédiée exigée en production)"
 else ok "TWO_FACTOR_KEYRING et TWO_FACTOR_ACTIVE_KEY_ID définis (clé dédiée des secrets TOTP)"; fi
+# Clé DÉDIÉE de la copie scellée des jetons de contrôle (SEC-020) : même format ; à mettre sous séquestre (sa perte rend les QR non réaffichables, le contrôle continue).
+if [ -z "$(declare_get PERMIT_TOKEN_KEYRING)" ] || [ -z "$(declare_get PERMIT_TOKEN_ACTIVE_KEY_ID)" ]; then
+    ko "PERMIT_TOKEN_KEYRING ou PERMIT_TOKEN_ACTIVE_KEY_ID absent (copie scellée des jetons liée à APP_SECRET : clé dédiée exigée en production)"
+else ok "PERMIT_TOKEN_KEYRING et PERMIT_TOKEN_ACTIVE_KEY_ID définis (clé dédiée des jetons de contrôle)"; fi
 # Chiffrement des sauvegardes (SEC-004) : clés PUBLIQUES age valides, jamais de clé privée sur le serveur. Passer aussi le fichier d'environnement des services.
 [ -z "$(declare_get BACKUP_AGE_IDENTITY)" ] && ok "aucune clé privée de sauvegarde déclarée sur le serveur" || ko "BACKUP_AGE_IDENTITY défini : la clé PRIVÉE de sauvegarde ne doit jamais se trouver sur le serveur"
 recipients=$(declare_get BACKUP_AGE_RECIPIENTS)

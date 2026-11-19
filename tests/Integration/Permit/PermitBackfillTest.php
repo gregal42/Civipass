@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Permit;
 
+use App\Tests\Support\PlainTokens;
 use App\Identity\Domain\User;
 use App\Permit\Application\PermitBackfill;
 use App\Permit\UI\Console\BackfillPermitsCommand;
@@ -90,13 +91,21 @@ final class PermitBackfillTest extends MunicipalDecisionTestCase
         $this->legacyApprovals();
         $this->backfill()->run(false);
         $before = [$this->rows('permit_permit'), $this->rows('permit_authorization'), $this->rows('audit_log'), $this->rows('permit_verification_token')];
-        $tokens = $this->em->getConnection()->fetchFirstColumn('SELECT token FROM permit_verification_token ORDER BY token');
+        $tokens = (static function (array $t): array {
+            sort($t);
+
+            return $t;
+        })(PlainTokens::all($this->em->getConnection()));
 
         $report = $this->backfill()->run(false);
 
         self::assertSame([0, 0, 0, 0], [$report->approvalsMissing, $report->permitsCreated, $report->authorizationsAdded, \count($report->errors)]);
         self::assertSame($before, [$this->rows('permit_permit'), $this->rows('permit_authorization'), $this->rows('audit_log'), $this->rows('permit_verification_token')]);
-        self::assertSame($tokens, $this->em->getConnection()->fetchFirstColumn('SELECT token FROM permit_verification_token ORDER BY token'), 'les QR ne changent pas');
+        self::assertSame($tokens, (static function (array $t): array {
+            sort($t);
+
+            return $t;
+        })(PlainTokens::all($this->em->getConnection())), 'les QR ne changent pas');
     }
 
     public function testAnApprovalAlreadyHandledByTheNormalPathIsNotDuplicated(): void

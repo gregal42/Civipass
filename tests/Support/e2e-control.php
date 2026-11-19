@@ -84,8 +84,8 @@ switch ($argv[1] ?? '') {
             )->requestId;
             $c->get(MunicipalInstructionService::class)->approve($em->find(User::class, $instructor->id()), $org->id()->toRfc4122(), $requestId, ApprovalDuration::untilClosure());
             $em->clear();
-            $row = $db->fetchAssociative('SELECT t.token, p.reference FROM permit_verification_token t JOIN permit_permit p ON p.id = t.permit_id WHERE p.request_id = :r', ['r' => Symfony\Component\Uid\Uuid::fromString($requestId)->toBinary()]);
-            $tokens[$last] = $row['token'];
+            $row = $db->fetchAssociative('SELECT p.reference FROM permit_permit p WHERE p.request_id = :r', ['r' => Symfony\Component\Uid\Uuid::fromString($requestId)->toBinary()]);
+            $tokens[$last] = App\Tests\Support\PlainTokens::one($db, 'p.request_id = ?', [Symfony\Component\Uid\Uuid::fromString($requestId)->toBinary()]);
             $references[$last] = $row['reference'];
         }
         $issued = $c->get(ControlActivationService::class)->issue($em->find(Municipality::class, $org->id()), $event->id(), $em->find(User::class, $admin->id()), AssuranceMode::Standard, 5, null, null);

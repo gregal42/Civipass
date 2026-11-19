@@ -86,7 +86,7 @@ final readonly class DatasetBuilder
             $alive = null === $untilTs || $untilTs >= $lower; // le laissez-passer pourrait encore être présenté
 
             foreach ($tokens[$permitId->toRfc4122()] ?? [] as [$token, $active]) {
-                $key = DatasetCodec::tokenKey($token);
+                $key = $token; // empreinte SHA-256 déjà calculée (SEC-020) : identique à DatasetCodec::tokenKey
                 if ($revoked || !$active) {
                     if ($alive) {
                         $lines[$key] = DatasetCodec::line(['k' => $key, 't' => $revoked ? 'R' : 'X']);
@@ -138,11 +138,11 @@ final readonly class DatasetBuilder
         $result = [];
         foreach (array_chunk($permitIds, 500) as $chunk) {
             $rows = $this->entityManager->getConnection()->fetchAllAssociative(
-                'SELECT permit_id, token, retired_at FROM permit_verification_token WHERE permit_id IN ('.implode(',', array_fill(0, \count($chunk), '?')).') ORDER BY created_at',
+                'SELECT permit_id, token_sha256, retired_at FROM permit_verification_token WHERE permit_id IN ('.implode(',', array_fill(0, \count($chunk), '?')).') ORDER BY created_at',
                 array_map(static fn (Uuid $id): string => $id->toBinary(), $chunk),
             );
             foreach ($rows as $row) {
-                $result[Uuid::fromBinary((string) $row['permit_id'])->toRfc4122()][] = [(string) $row['token'], null === $row['retired_at']];
+                $result[Uuid::fromBinary((string) $row['permit_id'])->toRfc4122()][] = [(string) $row['token_sha256'], null === $row['retired_at']];
             }
         }
 

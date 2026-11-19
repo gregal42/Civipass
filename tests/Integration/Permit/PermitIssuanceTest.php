@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Permit;
 
+use App\Tests\Support\PlainTokens;
 use App\Identity\Domain\User;
 use App\Municipality\Domain\Municipality;
 use App\Permit\Application\PermitIssuer;
@@ -97,9 +98,34 @@ final class PermitIssuanceTest extends MunicipalDecisionTestCase
         self::assertSame(bin2hex((string) $decision['id']), bin2hex((string) $permit['first_decision_id']));
         self::assertSame('GH482KT', $this->em->getConnection()->fetchOne('SELECT registration FROM permit_vehicle'), 'plaque normalisée, copiée de la demande');
         self::assertSame($this->organizerZone->label(), $this->em->getConnection()->fetchOne('SELECT zone_label FROM permit_authorization_zone'));
-        $token = (string) $this->em->getConnection()->fetchOne('SELECT token FROM permit_verification_token');
+        $token = PlainTokens::one($this->em->getConnection());
         self::assertMatchesRegularExpression('/^[a-z2-7]{32}$/', $token, '160 bits en base32');
         self::assertSame(bin2hex((string) $permit['id']), bin2hex((string) $this->em->getConnection()->fetchOne('SELECT active_permit_id FROM permit_verification_token')));
+    }
+
+    public function testTheTokenIsNeverStoredInClearOnlyItsFingerprintAndASealedCopy(): void
+    {
+        $id = $this->submitWithPlate();
+        $this->approve($this->instructor, $this->organizer, $id);
+        $db = $this->em->getConnection();
+        $token = PlainTokens::one($db);
+
+        // SEC-020 : plus de colonne en clair ; empreinte SHA-256 (= clé du jeu de données hors connexion) et copie scellée.
+        self::assertSame([], $db->fetchFirstColumn("SELECT column_name FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'permit_verification_token' AND column_name = 'token'"));
+        $row = $db->fetchAssociative('SELECT token_sha256, token_encrypted FROM permit_verification_token');
+        self::assertSame(hash('sha256', $token), $row['token_sha256']);
+        self::assertSame(\App\Control\Application\Dataset\DatasetCodec::tokenKey($token), $row['token_sha256']);
+        self::assertStringNotContainsString($token, (string) $row['token_encrypted']);
+        self::assertStringStartsWith('k1.', (string) $row['token_encrypted']);
+        $dump = implode('|', array_map('strval', array_merge(...array_map('array_values', $db->fetchAllAssociative('SELECT * FROM permit_verification_token')))));
+        self::assertStringNotContainsString($token, str_replace((string) $row['token_encrypted'], '', $dump));
+
+        // Recherche par empreinte et réaffichage identique (DM-113, DM-118).
+        $this->em->clear();
+        $viaFingerprint = self::getContainer()->get(\App\Permit\Domain\PermitRepository::class)->findVerificationToken($token);
+        self::assertNotNull($viaFingerprint);
+        self::assertSame($token, $viaFingerprint->reveal(self::getContainer()->get(\App\Permit\Domain\TokenSealer::class)));
+        self::assertNull(self::getContainer()->get(\App\Permit\Domain\PermitRepository::class)->findVerificationToken(strrev($token)));
     }
 
     public function testTheAuthorizationCopiesTheWindowOfTheDecisionAndLeavesTheDecisionUntouched(): void
@@ -119,13 +145,13 @@ final class PermitIssuanceTest extends MunicipalDecisionTestCase
         $id = $this->submitWithPlate();
         $this->approve($this->instructor, $this->organizer, $id);
         $permit = $this->permit();
-        $token = $this->em->getConnection()->fetchOne('SELECT token FROM permit_verification_token');
+        $token = PlainTokens::one($this->em->getConnection());
 
         $this->approve($this->partnerInstructor, $this->partner, $id, DurationMode::H48);
 
         self::assertSame([1, 1, 2, 2, 1], [$this->n('permit_permit'), $this->n('permit_verification_token'), $this->n('permit_authorization'), $this->n('permit_authorization_zone'), $this->n('permit_vehicle')]);
         self::assertSame($permit['reference'], $this->permit()['reference']);
-        self::assertSame($token, $this->em->getConnection()->fetchOne('SELECT token FROM permit_verification_token'), 'le QR ne change pas');
+        self::assertSame($token, PlainTokens::one($this->em->getConnection()), 'le QR ne change pas');
         self::assertSame(1, (int) $this->em->getConnection()->fetchOne('SELECT last_number FROM permit_reference_counter'), 'aucune référence supplémentaire');
         self::assertSame(['H24', 'H48'], $this->em->getConnection()->fetchFirstColumn('SELECT duration_mode FROM permit_authorization ORDER BY duration_mode'));
         self::assertSame(bin2hex((string) $permit['first_decision_id']), bin2hex((string) $this->permit()['first_decision_id']), 'la première décision reste celle de la première approbation');
@@ -159,7 +185,7 @@ final class PermitIssuanceTest extends MunicipalDecisionTestCase
         $rows = $this->em->getConnection()->fetchAllAssociative("SELECT action, LOWER(HEX(municipality_id)) AS municipality, new_value FROM audit_log WHERE action IN ('PERMIT_ISSUED', 'PERMIT_AUTHORIZATION_ADDED') ORDER BY occurred_at, action DESC");
         self::assertSame(['PERMIT_ISSUED', 'PERMIT_AUTHORIZATION_ADDED'], array_column($rows, 'action'));
         self::assertSame([bin2hex($this->organizer->id()->toBinary()), bin2hex($this->partner->id()->toBinary())], array_column($rows, 'municipality'));
-        $token = (string) $this->em->getConnection()->fetchOne('SELECT token FROM permit_verification_token');
+        $token = PlainTokens::one($this->em->getConnection());
         foreach ($rows as $row) {
             foreach ([$token, 'Martin', 'Camille', 'camille@exemple.fr', 'GH-482-KT', 'GH482KT'] as $secret) {
                 self::assertStringNotContainsString($secret, (string) $row['new_value']);
@@ -271,8 +297,8 @@ final class PermitIssuanceTest extends MunicipalDecisionTestCase
         $duplicates = [
             'un second laissez-passer pour la demande' => ['INSERT INTO permit_permit (id, reference, created_at, request_id, event_id, first_decision_id) VALUES (UNHEX(REPLACE(UUID(), \'-\', \'\')), \'LP-2026-0099\', NOW(), :request, :event, :decision)', ['request' => $permit['request_id'], 'event' => $permit['event_id'], 'decision' => $permit['first_decision_id']]],
             'une référence déjà prise' => ['INSERT INTO permit_permit (id, reference, created_at, request_id, event_id, first_decision_id) SELECT UNHEX(REPLACE(UUID(), \'-\', \'\')), reference, NOW(), UNHEX(REPLACE(UUID(), \'-\', \'\')), event_id, first_decision_id FROM permit_permit', []],
-            'un second jeton actif' => ['INSERT INTO permit_verification_token (id, token, active_permit_id, created_at, permit_id) VALUES (UNHEX(REPLACE(UUID(), \'-\', \'\')), \'abcdefghijklmnopqrstuvwxyz234567\', :permit, NOW(), :permit)', ['permit' => $permit['id']]],
-            'un jeton déjà pris' => ['INSERT INTO permit_verification_token (id, token, active_permit_id, created_at, permit_id) SELECT UNHEX(REPLACE(UUID(), \'-\', \'\')), token, NULL, NOW(), permit_id FROM permit_verification_token', []],
+            'un second jeton actif' => ['INSERT INTO permit_verification_token (id, token_sha256, token_encrypted, active_permit_id, created_at, permit_id) VALUES (UNHEX(REPLACE(UUID(), \'-\', \'\')), SHA2(\'abcdefghijklmnopqrstuvwxyz234567\', 256), \'x\', :permit, NOW(), :permit)', ['permit' => $permit['id']]],
+            'un jeton déjà pris' => ['INSERT INTO permit_verification_token (id, token_sha256, token_encrypted, active_permit_id, created_at, permit_id) SELECT UNHEX(REPLACE(UUID(), \'-\', \'\')), token_sha256, token_encrypted, NULL, NOW(), permit_id FROM permit_verification_token', []],
             'une seconde autorisation pour la participation' => ['INSERT INTO permit_authorization (id, duration_mode, valid_from, participation_id, municipality_id, decision_id, permit_id) SELECT UNHEX(REPLACE(UUID(), \'-\', \'\')), duration_mode, valid_from, participation_id, municipality_id, UNHEX(REPLACE(UUID(), \'-\', \'\')), permit_id FROM permit_authorization LIMIT 1', []],
             'une seconde autorisation pour la décision' => ['INSERT INTO permit_authorization (id, duration_mode, valid_from, participation_id, municipality_id, decision_id, permit_id) SELECT UNHEX(REPLACE(UUID(), \'-\', \'\')), duration_mode, valid_from, UNHEX(REPLACE(UUID(), \'-\', \'\')), municipality_id, decision_id, permit_id FROM permit_authorization LIMIT 1', []],
         ];
@@ -295,7 +321,7 @@ final class PermitIssuanceTest extends MunicipalDecisionTestCase
         $permit = $this->permit();
 
         $conn->executeStatement('UPDATE permit_verification_token SET active_permit_id = NULL, retired_at = NOW()');
-        $conn->executeStatement('INSERT INTO permit_verification_token (id, token, active_permit_id, created_at, permit_id) VALUES (UNHEX(REPLACE(UUID(), \'-\', \'\')), :token, :permit, NOW(), :permit)', ['token' => VerificationToken::generate(), 'permit' => $permit['id']]);
+        $conn->executeStatement('INSERT INTO permit_verification_token (id, token_sha256, token_encrypted, active_permit_id, created_at, permit_id) VALUES (UNHEX(REPLACE(UUID(), \'-\', \'\')), :sha, \'x\', :permit, NOW(), :permit)', ['sha' => VerificationToken::fingerprint(VerificationToken::generate()), 'permit' => $permit['id']]);
 
         self::assertSame(2, $this->n('permit_verification_token'));
         self::assertSame(1, $this->n('permit_verification_token WHERE active_permit_id IS NOT NULL'));

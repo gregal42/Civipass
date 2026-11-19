@@ -157,7 +157,7 @@ abstract class ControlTestCase extends PublicRequestTestCase
 
     protected function tokenOf(string $requestId): string
     {
-        return (string) $this->scalar('SELECT t.token FROM permit_verification_token t JOIN permit_permit p ON p.id = t.permit_id WHERE p.request_id = ? AND t.retired_at IS NULL', [Uuid::fromString($requestId)->toBinary()]);
+        return PlainTokens::one($this->em()->getConnection(), 'p.request_id = ? AND t.retired_at IS NULL', [Uuid::fromString($requestId)->toBinary()]);
     }
 
     /** @param array<int|string, mixed> $params */

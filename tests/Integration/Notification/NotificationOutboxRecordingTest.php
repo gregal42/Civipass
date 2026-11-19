@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Notification;
 
+use App\Tests\Support\PlainTokens;
 use App\Identity\Domain\User;
 use App\Municipality\Domain\Municipality;
 use App\Permit\Application\PermitBackfill;
@@ -231,7 +232,7 @@ final class NotificationOutboxRecordingTest extends MunicipalDecisionTestCase
         foreach (['lea@exemple.fr', 'Dupont', 'Léa', 'Lilas', 'QW-123-ER', 'QW123ER', '+33612345678'] as $personal) {
             self::assertStringNotContainsString($personal, $dump);
         }
-        $token = (string) $this->em->getConnection()->fetchOne('SELECT token FROM permit_verification_token');
+        $token = PlainTokens::one($this->em->getConnection());
         self::assertStringNotContainsString($token, $dump);
         $columns = array_column($this->em->getConnection()->fetchAllAssociative('SHOW COLUMNS FROM notification_outbox'), 'Field');
         self::assertSame([null, null], array_values($this->em->getConnection()->fetchAssociative('SELECT revision_id, covered_revisions FROM notification_outbox LIMIT 1') ?: []), 'une approbation ne produit aucune référence de révision');

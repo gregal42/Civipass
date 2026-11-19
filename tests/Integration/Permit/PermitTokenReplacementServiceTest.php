@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Permit;
 
+use App\Tests\Support\PlainTokens;
 use App\Event\Application\Support\EventLocker;
 use App\Event\Application\Support\EventTransactions;
 use App\Identity\Domain\User;
@@ -123,7 +124,7 @@ final class PermitTokenReplacementServiceTest extends MunicipalDecisionTestCase
     {
         $this->em->clear();
 
-        return array_map(static fn (array $r): array => ['token' => (string) $r['token'], 'active' => null !== $r['active_permit_id'], 'retired' => null !== $r['retired_at']], $this->em->getConnection()->fetchAllAssociative('SELECT token, active_permit_id, retired_at FROM permit_verification_token ORDER BY created_at, id'));
+        return array_map(static fn (array $r): array => ['token' => PlainTokens::open((string) $r['token_encrypted'], (string) $r['id']), 'active' => null !== $r['active_permit_id'], 'retired' => null !== $r['retired_at']], $this->em->getConnection()->fetchAllAssociative('SELECT id, token_encrypted, active_permit_id, retired_at FROM permit_verification_token ORDER BY created_at, id'));
     }
 
     private function activeToken(): string
