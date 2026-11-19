@@ -17,6 +17,7 @@ Procédures **exploitables** par l'exploitation (VPS, nginx natif, systemd). Ell
 | Données temporaires du dépôt public : brouillons, justificatifs, sessions (LOT 10) | [donnees-temporaires-depot-public.md](donnees-temporaires-depot-public.md) |
 | Incident de notification | [incident-notification.md](incident-notification.md) |
 | Incident de sécurité (registre rompu, accès suspect) | [incident-securite.md](incident-securite.md) |
+| Violation de données personnelles (qualification, CNIL 72 h, information des personnes) | [violation-de-donnees.md](violation-de-donnees.md) |
 | Liste de vérification avant remise en service | [remise-en-service.md](remise-en-service.md) |
 | Récupération d'accès (comptes, administrateurs communaux) | [recuperation-acces.md](recuperation-acces.md) |
 | Recette du contrôle public sur un VPS HTTPS dédié (LOT 07.3.5, **non exécutée**) | [recette-verification-publique.md](recette-verification-publique.md) |
