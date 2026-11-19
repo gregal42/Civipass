@@ -24,7 +24,7 @@ final class RateLimiterStorageFailureListenerTest extends TestCase
 
     public function testAStorageFailureAnywhereInTheCauseChainBecomesANeutralLoggedServiceUnavailable(): void
     {
-        $logger = new class extends AbstractLogger {
+        $logger = new class () extends AbstractLogger {
             /** @var list<array{string, string}> */
             public array $records = [];
 
