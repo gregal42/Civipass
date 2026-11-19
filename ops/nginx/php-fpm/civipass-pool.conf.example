@@ -27,5 +27,10 @@ php_admin_flag[display_errors] = off
 php_admin_flag[html_errors] = off
 ; Les arguments des fonctions ne figurent pas dans les traces d'exception (un jeton passé en argument n'y apparaîtrait pas) ; `#[\SensitiveParameter]` complète.
 php_admin_value[zend.exception_ignore_args] = On
+; Téléversements (C-03) : justificatifs de 10 Mo, 5 par demande (limite applicative), soit 50 Mo + champs. Les défauts de Debian/Ubuntu (2 Mo / 8 Mo) feraient échouer
+; les envois ; les mêmes valeurs que l'image de développement (docker/php-fpm/php.ini). Fixées ici, au niveau du pool, pour ne dépendre d'aucun autre fichier.
+php_admin_value[upload_max_filesize] = 10M
+php_admin_value[post_max_size] = 64M
+php_admin_value[max_file_uploads] = 20
 ; Variables d'environnement de l'application : fichier .env.local / environnement systemd, jamais ici.
 clear_env = yes
