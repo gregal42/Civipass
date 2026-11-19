@@ -515,6 +515,7 @@ final class NginxOperationsTest extends TestCase
         yield 'trousseau absent' => [['NOTIFICATION_KEYRING='], 'NOTIFICATION_KEYRING'];
         yield 'clé active absente' => [['NOTIFICATION_ACTIVE_KEY_ID='], 'NOTIFICATION_KEYRING'];
         yield 'alertes sans destinataire' => [['OPS_ALERT_EMAIL='], 'OPS_ALERT_EMAIL'];
+        yield 'second facteur CWS désactivé' => [['TWO_FACTOR_REQUIRED=0'], 'TWO_FACTOR_REQUIRED désactivé'];
         yield 'sauvegardes sans clé publique' => [['BACKUP_AGE_RECIPIENTS='], 'BACKUP_AGE_RECIPIENTS absent'];
         yield 'sauvegardes avec une valeur qui n\'est pas une clé publique' => [['BACKUP_AGE_RECIPIENTS=pas-une-cle'], 'pas une clé publique age'];
         yield 'clé privée de sauvegarde sur le serveur' => [['BACKUP_AGE_IDENTITY=/etc/civipass/backup.key'], 'clé PRIVÉE'];

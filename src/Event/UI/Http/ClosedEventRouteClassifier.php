@@ -25,6 +25,7 @@ final class ClosedEventRouteClassifier
         '=/logout' => 'déconnexion',
         '/forgot-password' => 'réinitialisation de mot de passe : lien lié à l\'utilisateur, aucun lien d\'événement',
         '/reset-password' => 'réinitialisation de mot de passe',
+        '/2fa/' => 'second facteur des comptes CWS (SEC-006) : aucune donnée de dossier ni d\'événement, test dédié (TwoFactorFlowTest)',
         '=/communes' => 'sélecteur de commune (aucune donnée de dossier)',
         '=/communes/{municipalityId}' => 'accueil de la commune (LOT 08.1) : événements clos exclus, aucune demande ni décision d\'un événement clos, test dédié (MunicipalHomeTest)',
         '/session/' => 'sonde et prolongation de la session authentifiée (LOT 08.3) : aucune donnée métier',

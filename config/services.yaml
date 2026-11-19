@@ -53,6 +53,8 @@ parameters:
     env(VERIFICATION_FAILURE_LIMIT): '20'
     env(EVENT_MAX_ZONES_PER_BULK_OPERATION): '100'
     # Invitations d'administrateur communal émises par CWS (LOT 07.1) : validité en jours (paramètre technique, 1 à 30).
+    # Second facteur TOTP des comptes CWS (SEC-006) : OBLIGATOIRE en production (1). 0 réservé aux tests automatisés ; check-deployment.sh refuse 0.
+    env(TWO_FACTOR_REQUIRED): '1'
     env(ADMIN_INVITATION_DAYS): '7'
     # Dépôt public (SEC-003) : dépôts par heure, par adresse réseau et par événement (voir PublicDepositThrottle). Seuil initial justifié dans la classe ; réglable sans code.
     env(PUBLIC_REQUEST_SUBMIT_LIMIT): '15'
@@ -101,6 +103,10 @@ services:
             - '../src/Kernel.php'
             - '../src/*/Domain/'
             - '../src/Shared/Application/AuditEvent.php'
+            - '../src/Identity/Application/EnrollmentChallenge.php'
+            - '../src/Identity/Application/TwoFactorState.php'
+            - '../src/Identity/Application/TwoFactorOutcome.php'
+            - '../src/Identity/Application/Totp.php'
             - '../src/Municipality/Application/SynchronizationReport.php'
             - '../src/Municipality/Application/DryRunCompleted.php'
             - '../src/Event/Application/AccessDecision.php'

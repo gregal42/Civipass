@@ -147,3 +147,8 @@ button.cp-nav__link { width: 100%; border: 0; background: none; font: inherit; t
 @supports selector(:has(a)) {
   .cp-ctxstrip > span[aria-hidden="true"]:has(+ .cp-ctxstrip__role) { display: none; }
 }
+
+/* Double authentification des comptes CWS (SEC-006) : liste de codes de secours et bouton d'apparence de lien (déconnexion). */
+.cp-codes { list-style: none; margin: 0 0 var(--space-4, 16px); padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.cp-codes code { display: block; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius-m); font-size: 1.05rem; letter-spacing: .06em; text-align: center; }
+.cp-link-button { background: none; border: 0; padding: 0; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }

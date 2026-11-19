@@ -1,0 +1,22 @@
+{% extends 'layouts/auth.html.twig' %}
+{% set page_title = 'Vérification en deux étapes' %}
+
+{% block content %}
+    {% embed 'components/panel.html.twig' with { id: 'tf-challenge-h', title: 'Vérification en deux étapes', level: 1, error: error } only %}
+        {% block body %}
+            <p>Saisissez le code à 6 chiffres affiché par votre application d'authentification, ou l'un de vos codes de secours (à usage unique).</p>
+            {% if error %}
+                {% include 'components/alert.html.twig' with { variant: 'error', id: 'tf-error', text: error, focus: true } only %}
+            {% endif %}
+            <form method="post" action="{{ path('app_two_factor_challenge') }}" novalidate>
+                {% include 'components/field.html.twig' with { id: 'code', name: 'code', label: 'Code ou code de secours', required: true, autocomplete: 'one-time-code', attrs: ' inputmode="text" maxlength="16" autofocus' ~ (error ? ' aria-invalid="true" aria-describedby="tf-error"' : '') } only %}
+                <input type="hidden" name="_token" value="{{ csrf_token('two_factor_challenge') }}">
+                {% include 'components/button.html.twig' with { label: 'Valider', type: 'submit', size: 'l', block: true } only %}
+            </form>
+            <form method="post" action="{{ path('app_logout') }}" class="cp-auth__links">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}">
+                <button type="submit" class="cp-link-button">Se déconnecter</button>
+            </form>
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

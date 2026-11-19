@@ -12,7 +12,7 @@ C-01, C-02, C-03, C-04, SEC-002, SEC-005, SEC-013 : corrigés et testés (voir l
 
 ## Correctif B (19 novembre 2026)
 
-Corrigés en développement : **SEC-003, SEC-004, SEC-014, C-09** (voir les commits « correctif B »). **SEC-015** : analyse remise, aucune modification (durée de 72 h inchangée). **SEC-016** et **SEC-020** : arbitrage demandé avant tout code (incompatibilité métier). **SEC-006** : voir le registre de sécurité.
+Corrigés en développement : **SEC-003, SEC-004, SEC-014, C-09** (voir les commits « correctif B »). **SEC-015** : analyse remise, aucune modification (durée de 72 h inchangée). **SEC-016** et **SEC-020** : arbitrage demandé avant tout code (incompatibilité métier). **SEC-006** : corrigé en développement (TOTP obligatoire des super-administrateurs ; migration créée et appliquée à `civipass_test` seulement, base de développement `civipass` non migrée).
 
 ## P0
 
@@ -24,7 +24,7 @@ Corrigés en développement : **SEC-003, SEC-004, SEC-014, C-09** (voir les comm
 
 | ID | Constat | Gravité | Source |
 |---|---|---|---|
-| SEC-006 | Pas de second facteur pour les super-administrateurs CWS (décision S3) | Élevée | registre sécurité ; 11.2 F1 |
+| SEC-006 | ✅ *corrigé en développement* — Pas de second facteur pour les super-administrateurs CWS (décision S3) | Élevée | registre sécurité ; 11.2 F1 |
 | SEC-004 | ✅ *corrigé en développement* — Sauvegardes non chiffrées avant copie hors serveur (+ C-05 : clé `NOTIFICATION_KEYRING` et environnement hors sauvegarde ; C-06 : copie hors serveur à outiller, outil proposé `offsite-sync.sh`) | Élevée | registre sécurité ; 11.3 F01 ; constats-kit |
 | SEC-002 | ✅ *corrigé en développement* — En-têtes de sécurité absents sur l'origine de gestion | Moyenne | 11.1 ; 11.2 F3 |
 | SEC-003 | ✅ *corrigé en développement* — Aucune limitation de débit à la soumission du dépôt public (accusé de réception envoyé à une adresse arbitraire) | Moyenne | 11.1 ; 11.2 F2 |

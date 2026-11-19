@@ -1,0 +1,28 @@
+{% extends 'layouts/auth.html.twig' %}
+{% set page_title = 'Second facteur' %}
+
+{% block content %}
+    {% embed 'components/panel.html.twig' with { id: 'tf-enroll-h', title: 'Activer la double authentification', level: 1, secret: secret, qr: qr, error: error } only %}
+        {% block body %}
+            <p>Votre compte CWS exige un second facteur. Installez une application d'authentification (par exemple FreeOTP, Aegis, Google Authenticator ou Microsoft Authenticator), puis ajoutez ce compte.</p>
+            {% if error %}
+                {% include 'components/alert.html.twig' with { variant: 'error', id: 'tf-error', text: error, focus: true } only %}
+            {% endif %}
+            <ol>
+                <li>Scannez ce code avec l'application :</li>
+            </ol>
+            <div class="cp-qr" role="img" aria-label="Code à scanner avec l'application d'authentification"><div class="cp-qr__img" style="--cp-qr-size: 220px">{{ qr|raw }}</div></div>
+            <p>Ou saisissez cette clé à la main (type « basé sur le temps ») :</p>
+            <p><code id="tf-secret">{{ secret }}</code></p>
+            <form method="post" action="{{ path('app_two_factor_enroll') }}" novalidate>
+                {% include 'components/field.html.twig' with { id: 'code', name: 'code', label: 'Code à 6 chiffres affiché par l\'application', required: true, autocomplete: 'one-time-code', attrs: ' inputmode="numeric" pattern="[0-9 ]*" maxlength="7"' ~ (error ? ' aria-invalid="true" aria-describedby="tf-error"' : '') } only %}
+                <input type="hidden" name="_token" value="{{ csrf_token('two_factor_enroll') }}">
+                {% include 'components/button.html.twig' with { label: 'Vérifier et activer', type: 'submit', size: 'l', block: true } only %}
+            </form>
+            <form method="post" action="{{ path('app_logout') }}" class="cp-auth__links">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}">
+                <button type="submit" class="cp-link-button">Se déconnecter</button>
+            </form>
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

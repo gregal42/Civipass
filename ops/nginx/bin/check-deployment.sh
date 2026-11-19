@@ -62,6 +62,8 @@ if [ -z "$(declare_get NOTIFICATION_KEYRING)" ] || [ -z "$(declare_get NOTIFICAT
     ko "NOTIFICATION_KEYRING ou NOTIFICATION_ACTIVE_KEY_ID absent (secrets bénéficiaires non chiffrables ; à mettre sous séquestre hors serveur, voir sauvegarde)"
 else ok "NOTIFICATION_KEYRING et NOTIFICATION_ACTIVE_KEY_ID définis (vérifier : bin/console app:notifications:check-crypto)"; fi
 [ -n "$(declare_get OPS_ALERT_EMAIL)" ] && ok "OPS_ALERT_EMAIL défini" || ko "OPS_ALERT_EMAIL vide (aucune alerte d'exploitation ne serait envoyée)"
+# Second facteur des comptes CWS (SEC-006) : obligatoire en production (valeur par défaut de l'application : 1). Refus si désactivé explicitement.
+case "$(declare_get TWO_FACTOR_REQUIRED)" in 0|false|off|no) ko "TWO_FACTOR_REQUIRED désactivé : le second facteur des comptes CWS est obligatoire en production";; *) ok "second facteur CWS obligatoire (TWO_FACTOR_REQUIRED non désactivé)";; esac
 # Chiffrement des sauvegardes (SEC-004) : clés PUBLIQUES age valides, jamais de clé privée sur le serveur. Passer aussi le fichier d'environnement des services.
 [ -z "$(declare_get BACKUP_AGE_IDENTITY)" ] && ok "aucune clé privée de sauvegarde déclarée sur le serveur" || ko "BACKUP_AGE_IDENTITY défini : la clé PRIVÉE de sauvegarde ne doit jamais se trouver sur le serveur"
 recipients=$(declare_get BACKUP_AGE_RECIPIENTS)

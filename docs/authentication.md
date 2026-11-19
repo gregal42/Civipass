@@ -105,6 +105,18 @@ docker exec -it saas_civipass_php-fpm php bin/console app:super-admin:create adm
 - **Audit** : `USER_SUPER_ADMIN_CHANGED`, origine `CONSOLE`, sans acteur.
 - Deux exécutions concurrentes sont sérialisées par un verrou sur les superadmins actifs.
 
+## Second facteur des comptes CWS (SEC-006, LOT 11)
+
+- **Qui** : tout super-administrateur CWS actif (accès à Sonata et aux actions `/admin/cws/…`) ; les comptes communaux ne sont **pas** concernés. Décision du 19 novembre 2026.
+- **Mécanisme** : TOTP (RFC 6238 : HMAC-SHA-1, 30 s, 6 chiffres, tolérance ±1 pas), compatible avec les applications d'authentification courantes. Après la saisie du mot de passe, `TwoFactorGate` (écouteur de requête, côté serveur) **barre toute route** sauf l'inscription (`/2fa/activation`), la vérification (`/2fa/verification`) et la déconnexion, tant que la session n'a pas passé le second facteur. Le drapeau vit dans la session : une nouvelle connexion exige un nouveau code ; l'identifiant de session est renouvelé à la réussite.
+- **Inscription** (première connexion après la mise en service, ou après une réinitialisation) : secret affiché en QR et en clair, **premier code à confirmer**, puis **10 codes de secours affichés une seule fois** (à conserver hors de l'ordinateur). Un second facteur non confirmé ne protège rien.
+- **Stockage** : le secret est chiffré au repos (XChaCha20-Poly1305, clé dérivée de `APP_SECRET`, lié au compte) ; les codes de secours ne sont conservés que sous forme d'empreintes (HMAC-SHA-256). **Changer `APP_SECRET` rend les secrets illisibles** : les comptes CWS se réinscrivent (réinitialisation).
+- **Pas de rejeu** : un pas de temps déjà accepté, ou plus ancien, est refusé (mise à jour SQL atomique) ; un code de secours ne sert qu'une fois (atomique).
+- **Limitation** : 5 essais par compte et 30 par adresse réseau sur 15 minutes, stockage strict (SEC-014) ; au-delà, 429.
+- **Perte du téléphone et des codes** : [runbooks/recuperation-acces.md](runbooks/recuperation-acces.md) (réinitialisation par un AUTRE super-administrateur, ou par la console avec accès au serveur ; tracée, motif obligatoire).
+- **Configuration** : `TWO_FACTOR_REQUIRED` vaut `1` par défaut ; `0` est réservé aux tests automatisés et **refusé** par `check-deployment.sh`.
+- **Limite connue** : aucune interface de réinitialisation dans Sonata (console seulement) ; la première connexion d'un compte CWS est toujours protégée par le seul mot de passe jusqu'à l'inscription (le compte ne peut rien faire d'autre qu'activer son second facteur).
+
 ## Risques et limites
 
 1. **Une seule instance** : voir la section « Adresse IP du client, proxys et déploiement » (limiteurs en cache fichier, sessions fichiers).

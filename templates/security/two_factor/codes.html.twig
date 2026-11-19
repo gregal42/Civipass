@@ -1,0 +1,14 @@
+{% extends 'layouts/auth.html.twig' %}
+{% set page_title = 'Codes de secours' %}
+
+{% block content %}
+    {% embed 'components/panel.html.twig' with { id: 'tf-codes-h', title: 'Double authentification activée', level: 1, codes: codes } only %}
+        {% block body %}
+            {% include 'components/alert.html.twig' with { variant: 'warning', id: 'tf-codes-warning', text: 'Conservez ces codes de secours hors de cet ordinateur (gestionnaire de mots de passe, coffre). Ils ne seront plus jamais affichés. Chacun ne sert qu\'une fois.', focus: true } only %}
+            <ul class="cp-codes" aria-label="Codes de secours">
+                {% for code in codes %}<li><code>{{ code }}</code></li>{% endfor %}
+            </ul>
+            <p><a href="{{ path('app_login') }}">J'ai conservé mes codes : continuer</a></p>
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

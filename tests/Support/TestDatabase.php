@@ -13,7 +13,7 @@ use PHPUnit\Framework\Assert;
  */
 final class TestDatabase
 {
-    private const TABLES = ['audit_log', 'municipality_membership', 'municipality', 'identity_password_reset_request', 'identity_user'];
+    private const TABLES = ['audit_log', 'municipality_membership', 'municipality', 'identity_password_reset_request', 'identity_two_factor_backup_code', 'identity_two_factor', 'identity_user'];
 
     /**
      * Tables du LOT TECH-02.1, purgées dès qu'elles existent (schéma migré à l'étape 3). `event_reference_counter`

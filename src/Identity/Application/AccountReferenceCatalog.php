@@ -17,7 +17,8 @@ use Doctrine\DBAL\Connection;
 final class AccountReferenceCatalog
 {
     /** @var list<string> */
-    public const OWNED = ['identity_password_reset_request.user_id'];
+    /** Le second facteur CWS (SEC-006) n'appartient qu'au compte (supprimable avec lui) ; ses codes de secours dépendent du second facteur, pas du compte. */
+    public const OWNED = ['identity_password_reset_request.user_id', 'identity_two_factor.user_id'];
 
     /** @var list<string> */
     public const RETAINED = [
